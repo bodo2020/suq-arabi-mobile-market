@@ -8,14 +8,14 @@ import { useCart } from '@/contexts/CartContext';
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
 
-  const handleIncreaseQuantity = (productId: number) => {
+  const handleIncreaseQuantity = (productId: string) => {
     const item = items.find(item => item.product.id === productId);
     if (item) {
       updateQuantity(productId, item.quantity + 1);
     }
   };
 
-  const handleDecreaseQuantity = (productId: number) => {
+  const handleDecreaseQuantity = (productId: string) => {
     const item = items.find(item => item.product.id === productId);
     if (item && item.quantity > 1) {
       updateQuantity(productId, item.quantity - 1);
@@ -24,8 +24,15 @@ const Cart = () => {
     }
   };
 
-  const handleRemoveItem = (productId: number) => {
+  const handleRemoveItem = (productId: string) => {
     removeFromCart(productId);
+  };
+
+  // Get the image of a product, handling the new image_urls array
+  const getProductImage = (item) => {
+    return item.product.image_urls && item.product.image_urls.length > 0 
+      ? item.product.image_urls[0] 
+      : '/placeholder.svg';
   };
 
   return (
@@ -60,10 +67,10 @@ const Cart = () => {
                         {item.product.name}
                       </Link>
                       <div className="flex items-center mt-1">
-                        {item.product.sale_price ? (
+                        {item.product.offer_price ? (
                           <>
                             <span className="text-sm font-bold text-primary ml-2">
-                              {item.product.sale_price} ر.س
+                              {item.product.offer_price} ر.س
                             </span>
                             <span className="text-xs line-through text-gray-500">
                               {item.product.price} ر.س
@@ -77,7 +84,7 @@ const Cart = () => {
                       </div>
                     </div>
                     <img 
-                      src={item.product.image} 
+                      src={getProductImage(item)} 
                       alt={item.product.name} 
                       className="h-16 w-16 object-contain"
                     />
