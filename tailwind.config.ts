@@ -10,6 +10,10 @@ export default {
 	],
 	prefix: "",
 	theme: {
+		fontFamily: {
+			sans: ['Cairo', 'sans-serif'],
+			cairo: ['Cairo', 'sans-serif'],
+		},
 		container: {
 			center: true,
 			padding: '2rem',

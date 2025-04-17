@@ -13,7 +13,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    /* Primary color for our supermarket app - this can be replaced with the color from Supabase */
+    --primary: 130 60% 42%; /* Green color for supermarket theme */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -95,7 +96,53 @@
     @apply border-border;
   }
 
+  html {
+    direction: rtl;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-cairo;
+  }
+}
+
+@layer components {
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white shadow-lg flex justify-around items-center h-16 border-t z-50;
+  }
+  
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center text-sm text-gray-500 hover:text-primary;
+  }
+
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  .product-card {
+    @apply bg-white rounded-lg shadow-md p-2 relative;
+  }
+
+  .product-card .favorite-btn {
+    @apply absolute top-2 right-2 text-gray-400 hover:text-red-500;
+  }
+
+  .add-to-cart-btn {
+    @apply flex items-center justify-center text-white rounded-full transition-all duration-300;
+  }
+
+  .add-to-cart-btn.empty {
+    @apply bg-primary h-10 w-10 rounded-full;
+  }
+
+  .add-to-cart-btn.has-items {
+    @apply bg-primary h-10 px-2 rounded-full;
+  }
+  
+  .category-item {
+    @apply flex flex-col items-center p-2 rounded-lg;
+  }
+  
+  .search-bar {
+    @apply flex items-center bg-gray-100 rounded-full px-4 py-2 mb-4;
   }
 }
