@@ -1,36 +1,45 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 
-// Initialize the Supabase client - these will need to be replaced with actual values
-const supabaseUrl = 'YOUR_SUPABASE_URL';
-const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Use the properly configured supabase client from the integrations folder
+export const supabase = configuredSupabase;
 
 // Types based on expected Supabase schema
 export type Product = {
-  id: number;
+  id: string;
   name: string;
   description: string;
   price: number;
-  sale_price?: number;
-  image: string;
-  category_id: number;
-  company_id: number;
-  in_stock: boolean;
+  offer_price?: number;
+  image_urls: string[];
+  category_id: string;
+  company_id: string;
+  quantity: number;
   created_at: string;
+  is_offer: boolean;
+  bulk_enabled: boolean;
+  bulk_quantity?: number;
+  bulk_price?: number;
 };
 
 export type Category = {
-  id: number;
+  id: string;
   name: string;
-  image: string;
+  image_url: string;
+  description?: string;
+  level: string;
+  parent_id?: string;
 };
 
 export type Company = {
-  id: number;
+  id: string;
   name: string;
-  logo: string;
+  logo_url: string;
+  description?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  address?: string;
 };
 
 export type CartItem = {
@@ -39,19 +48,23 @@ export type CartItem = {
 };
 
 export type Address = {
-  id: number;
+  id: string;
   user_id: string;
   address: string;
   is_default: boolean;
 };
 
 export type Order = {
-  id: number;
-  user_id: string;
+  id: string;
+  user_id?: string;
   status: string;
   total: number;
-  address: string;
-  phone: string;
+  shipping_address?: string;
+  shipping_cost?: number;
+  payment_method?: string;
+  payment_status?: string;
+  notes?: string;
+  items: any;
   created_at: string;
 };
 
@@ -62,7 +75,7 @@ export async function getCategories() {
   return data || [];
 }
 
-export async function getProducts(categoryId?: number) {
+export async function getProducts(categoryId?: string) {
   let query = supabase.from('products').select('*');
   
   if (categoryId) {
@@ -74,7 +87,7 @@ export async function getProducts(categoryId?: number) {
   return data || [];
 }
 
-export async function getProductById(id: number) {
+export async function getProductById(id: string) {
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -85,7 +98,7 @@ export async function getProductById(id: number) {
   return data;
 }
 
-export async function getProductsByCompany(companyId: number) {
+export async function getProductsByCompany(companyId: string) {
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -95,7 +108,7 @@ export async function getProductsByCompany(companyId: number) {
   return data || [];
 }
 
-export async function getCompanyById(id: number) {
+export async function getCompanyById(id: string) {
   const { data, error } = await supabase
     .from('companies')
     .select('*')
@@ -106,7 +119,7 @@ export async function getCompanyById(id: number) {
   return data;
 }
 
-export async function getRelatedProducts(productId: number, categoryId: number) {
+export async function getRelatedProducts(productId: string, categoryId: string) {
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -139,7 +152,7 @@ export async function submitOrder(order: Omit<Order, 'id' | 'created_at'>) {
 
 export async function getStoreInfo() {
   const { data, error } = await supabase
-    .from('store_info')
+    .from('store_settings')
     .select('*')
     .single();
   
