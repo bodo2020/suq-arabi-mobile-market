@@ -40,6 +40,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     updateQuantity(product.id, quantity - 1);
   };
 
+  // Use the first image from image_urls array, or a placeholder
+  const productImage = product.image_urls && product.image_urls.length > 0 
+    ? product.image_urls[0] 
+    : '/placeholder.svg';
+
   return (
     <Link to={`/product/${product.id}`} className="product-card">
       <button 
@@ -52,7 +57,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       
       <div className="relative pt-[100%] mb-2">
         <img 
-          src={product.image} 
+          src={productImage} 
           alt={product.name} 
           className="absolute top-0 left-0 w-full h-full object-contain"
         />
@@ -63,10 +68,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         
         <div className="flex justify-between items-center">
           <div className="flex flex-col">
-            {product.sale_price ? (
+            {product.offer_price ? (
               <>
                 <span className="text-xs line-through text-gray-500">{product.price} ر.س</span>
-                <span className="font-bold text-primary">{product.sale_price} ر.س</span>
+                <span className="font-bold text-primary">{product.offer_price} ر.س</span>
               </>
             ) : (
               <span className="font-bold">{product.price} ر.س</span>

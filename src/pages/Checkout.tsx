@@ -20,6 +20,13 @@ const Checkout = () => {
     address: '',
   });
 
+  // Get the image of a product, handling the new image_urls array
+  const getProductImage = (item) => {
+    return item.product.image_urls && item.product.image_urls.length > 0 
+      ? item.product.image_urls[0] 
+      : '/placeholder.svg';
+  };
+
   useEffect(() => {
     // If cart is empty, redirect to cart page
     if (items.length === 0) {
@@ -91,12 +98,15 @@ const Checkout = () => {
         user_id: phone, // Using phone as user identifier for now
         status: 'pending',
         total: getTotalPrice(),
-        address,
-        phone,
+        shipping_address: address,
+        shipping_cost: 0,
+        payment_method: 'cash_on_delivery',
+        payment_status: 'pending',
+        notes: '',
         items: items.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity,
-          price: item.product.sale_price || item.product.price,
+          price: item.product.offer_price || item.product.price,
         })),
       };
 
@@ -202,7 +212,7 @@ const Checkout = () => {
                     <span className="text-gray-500 ml-1">{item.quantity} ×</span>
                     <span className="font-medium">{item.product.name}</span>
                   </div>
-                  <span>{((item.product.sale_price || item.product.price) * item.quantity).toFixed(2)} ر.س</span>
+                  <span>{((item.product.offer_price || item.product.price) * item.quantity).toFixed(2)} ر.س</span>
                 </div>
               ))}
             </div>

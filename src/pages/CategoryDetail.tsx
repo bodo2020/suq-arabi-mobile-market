@@ -19,15 +19,13 @@ const CategoryDetail = () => {
       try {
         if (!id) return;
         
-        const categoryId = parseInt(id, 10);
-        
         // Fetch the category and its products in parallel
         const [categoriesData, productsData] = await Promise.all([
           getCategories(),
-          getProducts(categoryId)
+          getProducts(id)
         ]);
         
-        const categoryData = categoriesData.find(cat => cat.id === categoryId);
+        const categoryData = categoriesData.find(cat => cat.id === id);
         if (!categoryData) {
           throw new Error('Category not found');
         }

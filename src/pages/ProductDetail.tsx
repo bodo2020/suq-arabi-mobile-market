@@ -26,8 +26,7 @@ const ProductDetail = () => {
       try {
         if (!id) return;
         
-        const productId = parseInt(id, 10);
-        const productData = await getProductById(productId);
+        const productData = await getProductById(id);
         
         if (!productData) {
           throw new Error('Product not found');
@@ -38,7 +37,7 @@ const ProductDetail = () => {
         // Fetch company and related products
         const [companyData, relatedProductsData] = await Promise.all([
           getCompanyById(productData.company_id),
-          getRelatedProducts(productId, productData.category_id)
+          getRelatedProducts(id, productData.category_id)
         ]);
         
         setCompany(companyData as Company);
@@ -77,6 +76,13 @@ const ProductDetail = () => {
     if (product) {
       updateQuantity(product.id, quantity - 1);
     }
+  };
+
+  // Get the image of a product, handling the new image_urls array
+  const getProductImage = (product) => {
+    return product.image_urls && product.image_urls.length > 0 
+      ? product.image_urls[0] 
+      : '/placeholder.svg';
   };
 
   if (loading) {
@@ -150,7 +156,7 @@ const ProductDetail = () => {
         {/* Product Image */}
         <div className="bg-white rounded-lg p-4 mb-4 flex justify-center">
           <img 
-            src={product.image} 
+            src={getProductImage(product)} 
             alt={product.name} 
             className="max-h-64 object-contain"
           />
@@ -162,10 +168,10 @@ const ProductDetail = () => {
           
           {/* Price */}
           <div className="mb-4">
-            {product.sale_price ? (
+            {product.offer_price ? (
               <div className="flex items-center">
                 <span className="text-lg font-bold text-primary ml-2">
-                  {product.sale_price} ر.س
+                  {product.offer_price} ر.س
                 </span>
                 <span className="text-sm line-through text-gray-500">
                   {product.price} ر.س
@@ -187,7 +193,7 @@ const ProductDetail = () => {
               <div className="mr-auto flex items-center">
                 <span className="text-sm font-medium">{company.name}</span>
                 <img 
-                  src={company.logo} 
+                  src={company.logo_url} 
                   alt={company.name} 
                   className="w-10 h-10 object-contain ml-2"
                 />
