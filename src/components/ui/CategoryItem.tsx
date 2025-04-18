@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Category } from '@/lib/supabase';
+import { MainCategory } from '@/lib/supabase';
 
 interface CategoryItemProps {
-  category: Category;
+  category: MainCategory;
 }
 
 const CategoryItem: React.FC<CategoryItemProps> = ({ category }) => {

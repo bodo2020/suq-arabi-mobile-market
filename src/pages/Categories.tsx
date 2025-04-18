@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { 
-  Category, 
+  MainCategory, 
   Subcategory, 
   Subsubcategory, 
   getCategories, 
@@ -14,7 +14,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ChevronLeft } from 'lucide-react';
 
 const Categories = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<MainCategory[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [subsubcategories, setSubsubcategories] = useState<Subsubcategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ const Categories = () => {
     const fetchCategories = async () => {
       try {
         const data = await getCategories();
-        setCategories(data as Category[]);
+        setCategories(data);
       } catch (error) {
         console.error('Error fetching categories:', error);
       } finally {

@@ -22,6 +22,17 @@ export type Product = {
   bulk_price?: number;
 };
 
+// Updated Category type to match the main_categories table
+export type MainCategory = {
+  id: string;
+  name: string;
+  image_url: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// Legacy Category type - keeping for backward compatibility
 export type Category = {
   id: string;
   name: string;
@@ -29,6 +40,8 @@ export type Category = {
   description?: string;
   level: string;
   parent_id?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type Subcategory = {
@@ -37,6 +50,8 @@ export type Subcategory = {
   image_url: string;
   description?: string;
   category_id: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type Subsubcategory = {
@@ -45,6 +60,8 @@ export type Subsubcategory = {
   image_url: string;
   description?: string;
   subcategory_id: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type Company = {
@@ -87,7 +104,7 @@ export type Order = {
 export async function getCategories() {
   const { data, error } = await supabase.from('main_categories').select('*');
   if (error) console.error('Error fetching categories:', error);
-  return data || [];
+  return data as MainCategory[] || [];
 }
 
 export async function getSubcategories(categoryId?: string) {

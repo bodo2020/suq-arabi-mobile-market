@@ -6,25 +6,30 @@ import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
 import ProductCard from '@/components/ui/ProductCard';
 import Banner from '@/components/ui/Banner';
-import { getCategories, getProducts, getStoreInfo, supabase, Category, Product } from '@/lib/supabase';
+import { getCategories, getProducts, getStoreInfo, supabase, MainCategory, Product } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 const Index = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<MainCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch all required data in parallel
-        const [categoriesData, productsData, storeInfoData, bannersData] = await Promise.all([getCategories(), getProducts(), getStoreInfo(), supabase.from('banners').select('*').eq('active', true).order('position')]);
+        const [categoriesData, productsData, storeInfoData, bannersData] = await Promise.all([
+          getCategories(), 
+          getProducts(), 
+          getStoreInfo(), 
+          supabase.from('banners').select('*').eq('active', true).order('position')
+        ]);
 
-        // Filter main categories only (where level is 'main')
-        const mainCategories = categoriesData.filter(cat => cat.level === 'main') as Category[];
-        setCategories(mainCategories);
+        setCategories(categoriesData);
         setProducts(productsData as Product[]);
         setStoreInfo(storeInfoData);
         if (bannersData.data) {
@@ -50,6 +55,7 @@ const Index = () => {
 
   // For our featured products, we'll show the first few products
   const featuredProducts = products.slice(0, isMobile ? 4 : 10);
+  
   return <MainLayout>
       <div className="py-4">
         {/* Store Logo and Name */}
@@ -126,4 +132,5 @@ const Index = () => {
       </div>
     </MainLayout>;
 };
+
 export default Index;

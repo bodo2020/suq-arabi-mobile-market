@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import { 
-  Category, 
+  MainCategory,
   Subcategory, 
   Subsubcategory, 
   Product, 
