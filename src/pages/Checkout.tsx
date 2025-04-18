@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check } from 'lucide-react';
@@ -101,6 +102,7 @@ const Checkout = () => {
         shipping_cost: 0,
         payment_method: 'cash_on_delivery',
         payment_status: 'pending',
+        status: 'pending', // Add the missing status field
         notes: `Customer Name: ${name}\nPhone: ${phone}`,
       };
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Package } from 'lucide-react';
@@ -95,11 +94,20 @@ const Orders = () => {
                   <div>
                     <strong>المنتجات:</strong>
                     <ul className="list-disc list-inside mr-4 mt-1">
-                      {order.items.map((item: any, index: number) => (
-                        <li key={index}>
-                          {item.name} - {item.quantity} قطعة
-                        </li>
-                      ))}
+                      {Array.isArray(order.items) ? 
+                        order.items.map((item: any, index: number) => (
+                          <li key={index}>
+                            {item.name} - {item.quantity} قطعة
+                          </li>
+                        )) : 
+                        typeof order.items === 'object' ?
+                          Object.values(order.items).map((item: any, index: number) => (
+                            <li key={index}>
+                              {item.name} - {item.quantity} قطعة
+                            </li>
+                          )) : 
+                          <li>لا توجد منتجات</li>
+                      }
                     </ul>
                   </div>
                 </div>
