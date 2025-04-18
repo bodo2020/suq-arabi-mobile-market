@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, Search, Barcode } from 'lucide-react';
+import { ChevronLeft, Search, Barcode, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
@@ -8,6 +9,7 @@ import ProductCard from '@/components/ui/ProductCard';
 import Banner from '@/components/ui/Banner';
 import { getCategories, getProducts, getStoreInfo, supabase, MainCategory, Product } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { processImageBackground } from '@/utils/imageUtils';
 
 const Index = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
@@ -16,6 +18,8 @@ const Index = () => {
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchBackground, setSearchBackground] = useState<string | null>(null);
+  const [processingImage, setProcessingImage] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -50,6 +54,23 @@ const Index = () => {
     fetchData();
   }, []);
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      setProcessingImage(true);
+      const backgroundUrl = await processImageBackground(file);
+      if (backgroundUrl) {
+        setSearchBackground(backgroundUrl);
+      }
+    } catch (error) {
+      console.error('Error processing image:', error);
+    } finally {
+      setProcessingImage(false);
+    }
+  };
+
   // Calculate how many categories to show based on screen size
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
 
@@ -63,12 +84,30 @@ const Index = () => {
             <img src={storeInfo.logo_url} alt={storeInfo.name} className="h-12 object-contain" />
           </div>}
 
-        {/* Search Bar with Barcode Button */}
+        {/* Search Bar with Background Image */}
         <div className="relative mb-4">
-          <SearchBar />
-          <button className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-full">
-            <Barcode size={20} className="text-gray-500" />
-          </button>
+          <SearchBar backgroundImage={searchBackground} />
+          
+          {/* Image upload button */}
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
+            <button 
+              type="button" 
+              onClick={() => document.getElementById('bgImageUpload')?.click()}
+              className="p-2 bg-gray-100 rounded-full"
+              aria-label="إضافة صورة خلفية"
+              disabled={processingImage}
+            >
+              <Upload size={20} className={`text-gray-500 ${processingImage ? 'animate-pulse' : ''}`} />
+            </button>
+            <input 
+              id="bgImageUpload" 
+              type="file" 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleImageUpload} 
+              disabled={processingImage}
+            />
+          </div>
         </div>
 
         {/* User Address - only show if address exists */}
