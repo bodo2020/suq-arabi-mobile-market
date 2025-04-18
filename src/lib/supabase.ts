@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 
@@ -30,6 +29,22 @@ export type Category = {
   description?: string;
   level: string;
   parent_id?: string;
+};
+
+export type Subcategory = {
+  id: string;
+  name: string;
+  image_url: string;
+  description?: string;
+  category_id: string;
+};
+
+export type Subsubcategory = {
+  id: string;
+  name: string;
+  image_url: string;
+  description?: string;
+  subcategory_id: string;
 };
 
 export type Company = {
@@ -72,6 +87,30 @@ export type Order = {
 export async function getCategories() {
   const { data, error } = await supabase.from('categories').select('*');
   if (error) console.error('Error fetching categories:', error);
+  return data || [];
+}
+
+export async function getSubcategories(categoryId?: string) {
+  let query = supabase.from('subcategories').select('*');
+  
+  if (categoryId) {
+    query = query.eq('category_id', categoryId);
+  }
+  
+  const { data, error } = await query;
+  if (error) console.error('Error fetching subcategories:', error);
+  return data || [];
+}
+
+export async function getSubsubcategories(subcategoryId?: string) {
+  let query = supabase.from('subsubcategories').select('*');
+  
+  if (subcategoryId) {
+    query = query.eq('subcategory_id', subcategoryId);
+  }
+  
+  const { data, error } = await query;
+  if (error) console.error('Error fetching subsubcategories:', error);
   return data || [];
 }
 

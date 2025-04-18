@@ -4,33 +4,64 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
-import { Category, Product, getProducts, getCategories } from '@/lib/supabase';
+import { 
+  Category, 
+  Subcategory, 
+  Subsubcategory, 
+  Product, 
+  getProducts, 
+  getCategories,
+  getSubcategories,
+  getSubsubcategories
+} from '@/lib/supabase';
 
 const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-  const [category, setCategory] = useState<Category | null>(null);
+  const [categoryInfo, setCategoryInfo] = useState<Category | Subcategory | Subsubcategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categoryType, setCategoryType] = useState<'main' | 'sub' | 'subsub'>('main');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (!id) return;
+        setLoading(true);
         
-        // Fetch the category and its products in parallel
-        const [categoriesData, productsData] = await Promise.all([
+        // Try to find the category in each level
+        const [categoriesData, subcategoriesData, subsubcategoriesData] = await Promise.all([
           getCategories(),
-          getProducts(id)
+          getSubcategories(),
+          getSubsubcategories()
         ]);
         
-        const categoryData = categoriesData.find(cat => cat.id === id);
-        if (!categoryData) {
-          throw new Error('Category not found');
+        // Check if it's a main category
+        let categoryData = categoriesData.find(cat => cat.id === id);
+        if (categoryData) {
+          setCategoryInfo(categoryData);
+          setCategoryType('main');
+        } else {
+          // Check if it's a subcategory
+          categoryData = subcategoriesData.find(subcat => subcat.id === id);
+          if (categoryData) {
+            setCategoryInfo(categoryData);
+            setCategoryType('sub');
+          } else {
+            // Check if it's a subsubcategory
+            categoryData = subsubcategoriesData.find(subsubcat => subsubcat.id === id);
+            if (categoryData) {
+              setCategoryInfo(categoryData);
+              setCategoryType('subsub');
+            } else {
+              throw new Error('Category not found');
+            }
+          }
         }
         
-        setCategory(categoryData as Category);
+        // Fetch products for this category ID
+        const productsData = await getProducts(id);
         setProducts(productsData as Product[]);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -59,7 +90,7 @@ const CategoryDetail = () => {
             <ArrowRight size={24} />
           </button>
           <h1 className="text-xl font-bold flex-1 text-center">
-            {loading ? 'جاري التحميل...' : category?.name}
+            {loading ? 'جاري التحميل...' : categoryInfo?.name}
           </h1>
           <div className="w-10"></div> {/* Spacer for alignment */}
         </div>
