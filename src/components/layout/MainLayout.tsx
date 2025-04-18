@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Layers, ShoppingCart, User } from 'lucide-react';
@@ -26,7 +25,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <main className="container mx-auto px-4 md:max-w-6xl">
         {!isMobile && (
           <div className="hidden md:flex justify-between items-center py-4 mb-4 border-b">
-            <Link to="/" className="text-xl font-bold">سوق عربي</Link>
+            <Link to="/" className="text-xl font-bold">ماركت المعداوي</Link>
             <div className="flex space-x-6">
               <Link 
                 to="/" 
