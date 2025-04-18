@@ -1,13 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Barcode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { processImageBackground } from '@/utils/imageUtils';
 
 interface SearchBarProps {
   placeholder?: string;
+  backgroundImage?: string;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ placeholder = "ابحث عن منتجات..." }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ 
+  placeholder = "البحث عن منتجات...", 
+  backgroundImage 
+}) => {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   
@@ -26,7 +31,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder = "ابحث عن من
   return (
     <form 
       onSubmit={handleSubmit} 
-      className="flex items-center gap-2 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100 relative"
+      className={`flex items-center gap-2 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100 relative ${backgroundImage ? 'bg-cover bg-center' : ''}`}
+      style={backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {}}
     >
       <Search className="w-5 h-5 text-gray-400" />
       <input
