@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/CartContext';
 import { submitOrder } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -20,7 +20,6 @@ const Checkout = () => {
     address: '',
   });
 
-  // Get the image of a product, handling the new image_urls array
   const getProductImage = (item) => {
     return item.product.image_urls && item.product.image_urls.length > 0 
       ? item.product.image_urls[0] 
@@ -28,13 +27,11 @@ const Checkout = () => {
   };
 
   useEffect(() => {
-    // If cart is empty, redirect to cart page
     if (items.length === 0) {
       navigate('/cart');
       return;
     }
 
-    // Load user info if available
     const savedName = localStorage.getItem('userName');
     const savedPhone = localStorage.getItem('userPhone');
     const savedAddress = localStorage.getItem('userAddress');
@@ -78,7 +75,7 @@ const Checkout = () => {
     return isValid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
 
     if (!validate()) {
@@ -88,53 +85,47 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
-      // Save user info
       localStorage.setItem('userName', name);
       localStorage.setItem('userPhone', phone);
       localStorage.setItem('userAddress', address);
 
-      // Prepare order data
       const orderData = {
-        user_id: phone, // Using phone as user identifier for now
-        status: 'pending',
+        items: items.map(item => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+          price: item.product.offer_price || item.product.price,
+          name: item.product.name,
+        })),
         total: getTotalPrice(),
         shipping_address: address,
         shipping_cost: 0,
         payment_method: 'cash_on_delivery',
         payment_status: 'pending',
-        notes: '',
-        items: items.map(item => ({
-          product_id: item.product.id,
-          quantity: item.quantity,
-          price: item.product.offer_price || item.product.price,
-        })),
+        notes: `Customer Name: ${name}\nPhone: ${phone}`,
       };
 
-      // Submit order to Supabase (in real implementation)
-      // await submitOrder(orderData);
-
-      // Clear cart
+      await submitOrder(orderData);
+      
       clearCart();
+      
+      toast.success('تم تأكيد طلبك بنجاح');
 
-      // Navigate to success page
       navigate('/order-success');
     } catch (error) {
       console.error('Error submitting order:', error);
-      alert('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى');
+      toast.error('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Total calculations
   const subtotal = getTotalPrice();
-  const deliveryFee = 0; // Free delivery for now
+  const deliveryFee = 0;
   const total = subtotal + deliveryFee;
 
   return (
     <MainLayout>
       <div className="py-4 pb-24">
-        {/* Header with back button */}
         <div className="flex items-center mb-6">
           <button
             onClick={handleBack}
@@ -144,11 +135,10 @@ const Checkout = () => {
             <ArrowRight size={24} />
           </button>
           <h1 className="text-xl font-bold flex-1 text-center">إتمام الطلب</h1>
-          <div className="w-10"></div> {/* Spacer for alignment */}
+          <div className="w-10"></div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* User Information */}
           <div className="bg-white rounded-lg p-4">
             <h2 className="font-bold text-lg mb-4">معلومات التوصيل</h2>
 
@@ -201,7 +191,6 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Order Summary */}
           <div className="bg-white rounded-lg p-4">
             <h2 className="font-bold text-lg mb-4">ملخص الطلب</h2>
             
@@ -233,7 +222,6 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Payment Method (Currently only cash on delivery) */}
           <div className="bg-white rounded-lg p-4">
             <h2 className="font-bold text-lg mb-4">طريقة الدفع</h2>
             
@@ -252,7 +240,6 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
           <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t">
             <button
               type="submit"
