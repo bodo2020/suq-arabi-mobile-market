@@ -15,11 +15,19 @@ import {
   getSubsubcategories
 } from '@/lib/supabase';
 
+// Create a common interface that can represent any type of category
+interface CategoryInfo {
+  id: string;
+  name: string;
+  image_url?: string;
+  description?: string;
+}
+
 const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-  const [categoryInfo, setCategoryInfo] = useState<Category | Subcategory | Subsubcategory | null>(null);
+  const [categoryInfo, setCategoryInfo] = useState<CategoryInfo | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryType, setCategoryType] = useState<'main' | 'sub' | 'subsub'>('main');
@@ -40,19 +48,34 @@ const CategoryDetail = () => {
         // Check if it's a main category
         let categoryData = categoriesData.find(cat => cat.id === id);
         if (categoryData) {
-          setCategoryInfo(categoryData);
+          setCategoryInfo({
+            id: categoryData.id,
+            name: categoryData.name,
+            image_url: categoryData.image_url,
+            description: categoryData.description
+          });
           setCategoryType('main');
         } else {
           // Check if it's a subcategory
-          categoryData = subcategoriesData.find(subcat => subcat.id === id);
-          if (categoryData) {
-            setCategoryInfo(categoryData);
+          const subcategoryData = subcategoriesData.find(subcat => subcat.id === id);
+          if (subcategoryData) {
+            setCategoryInfo({
+              id: subcategoryData.id,
+              name: subcategoryData.name,
+              image_url: subcategoryData.image_url,
+              description: subcategoryData.description
+            });
             setCategoryType('sub');
           } else {
             // Check if it's a subsubcategory
-            categoryData = subsubcategoriesData.find(subsubcat => subsubcat.id === id);
-            if (categoryData) {
-              setCategoryInfo(categoryData);
+            const subsubcategoryData = subsubcategoriesData.find(subsubcat => subsubcat.id === id);
+            if (subsubcategoryData) {
+              setCategoryInfo({
+                id: subsubcategoryData.id,
+                name: subsubcategoryData.name,
+                image_url: subsubcategoryData.image_url,
+                description: subsubcategoryData.description
+              });
               setCategoryType('subsub');
             } else {
               throw new Error('Category not found');
