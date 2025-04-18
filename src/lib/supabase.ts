@@ -85,7 +85,7 @@ export type Order = {
 
 // Fetching functions
 export async function getCategories() {
-  const { data, error } = await supabase.from('categories').select('*');
+  const { data, error } = await supabase.from('main_categories').select('*');
   if (error) console.error('Error fetching categories:', error);
   return data || [];
 }

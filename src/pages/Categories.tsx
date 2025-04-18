@@ -79,7 +79,7 @@ const Categories = () => {
   const getDisplayItems = () => {
     switch (activeLevel) {
       case 'main':
-        return categories.filter(category => category.level === 'main');
+        return categories;
       case 'sub':
         return subcategories;
       case 'subsub':
