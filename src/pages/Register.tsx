@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -16,6 +16,8 @@ const Register = () => {
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [selectedGovernorate, setSelectedGovernorate] = useState('');
+  const [governorates, setGovernorates] = useState<{ id: string; name: string }[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({
@@ -25,6 +27,18 @@ const Register = () => {
     password: '',
     passwordConfirm: '',
   });
+
+  useEffect(() => {
+    const fetchGovernorates = async () => {
+      const { data, error } = await supabase
+        .from('governorates')
+        .select('id, name');
+      if (!error && data) {
+        setGovernorates(data);
+      }
+    };
+    fetchGovernorates();
+  }, []);
 
   const validateRegister = () => {
     let valid = true;
@@ -114,6 +128,7 @@ const Register = () => {
               last_name: lastName,
               phone: phone,
               address: address,
+              governorate: selectedGovernorate,
               name: `${firstName} ${lastName}`,
             },
           },
@@ -271,6 +286,37 @@ const Register = () => {
                   />
                   {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
                 </div>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <label htmlFor="governorate" className="font-medium">المحافظة</label>
+                  </div>
+                  <select
+                    id="governorate"
+                    value={selectedGovernorate}
+                    onChange={e => setSelectedGovernorate(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                    required
+                  >
+                    <option value="">اختر المحافظة</option>
+                    {governorates.map(gov => (
+                      <option key={gov.id} value={gov.name}>{gov.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <MapPin size={18} className="ml-2 text-gray-500" />
+                    <label htmlFor="address" className="font-medium">العنوان</label>
+                  </div>
+                  <textarea
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                    placeholder="أدخل عنوانك"
+                    rows={3}
+                  />
+                </div>
               </>
             )}
 
@@ -289,23 +335,6 @@ const Register = () => {
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
-
-            {mode === 'register' && (
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <MapPin size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="address" className="font-medium">العنوان</label>
-                </div>
-                <textarea
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                  placeholder="أدخل عنوانك"
-                  rows={3}
-                />
-              </div>
-            )}
 
             <div className="mb-4">
               <div className="flex items-center mb-2">
