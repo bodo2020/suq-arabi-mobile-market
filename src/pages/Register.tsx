@@ -1,8 +1,7 @@
-// This page implements signup & registration functionality integrated with Supabase Auth and customer data saving
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, User, Phone, MapPin, Mail } from 'lucide-react';
+import { ArrowRight, User, Phone, MapPin, Mail, LogIn } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +10,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [mode, setMode] = useState<'register' | 'login'>('register');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -29,7 +29,7 @@ const Register = () => {
     passwordConfirm: '',
   });
 
-  const validate = () => {
+  const validateRegister = () => {
     let valid = true;
     const newErrors = {
       firstName: '',
@@ -75,54 +75,166 @@ const Register = () => {
     return valid;
   };
 
+  const validateLogin = () => {
+    let valid = true;
+    const newErrors = {
+      email: '',
+      phone: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      passwordConfirm: ''
+    };
+    if (!email.trim() && !phone.trim()) {
+      newErrors.email = 'أدخل البريد الإلكتروني أو رقم الهاتف';
+      newErrors.phone = 'أدخل البريد الإلكتروني أو رقم الهاتف';
+      valid = false;
+    }
+    if (!password) {
+      newErrors.password = 'كلمة المرور مطلوبة';
+      valid = false;
+    }
+    setErrors(newErrors);
+    return valid;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      password: '',
+      passwordConfirm: '',
+    });
 
-    if (!validate()) return;
+    if (mode === 'register') {
+      if (!validateRegister()) return;
+      setIsSubmitting(true);
 
-    setIsSubmitting(true);
-
-    try {
-      // Sign up with Supabase auth
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            phone: phone,
-            address: address,
+      try {
+        // Sign up with Supabase auth
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+              phone: phone,
+              address: address,
+            },
           },
-        },
-      });
-      if (error) throw error;
+        });
+        if (error) throw error;
 
-      // If signUp does not auto login, you might need to log in manually here
-      // Sign in after signup to establish session for redirect
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) throw signInError;
+        // Sign in after signup to establish session for redirect
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) throw signInError;
 
-      toast({
-        title: 'تم التسجيل بنجاح',
-        description: 'تم إنشاء الحساب وتسجيل الدخول',
-      });
+        toast({
+          title: 'تم التسجيل بنجاح',
+          description: 'تم إنشاء الحساب وتسجيل الدخول',
+        });
 
-      navigate('/account');
-    } catch (error: any) {
-      console.error('Error during signup:', error);
-      toast({
-        title: 'خطأ في التسجيل',
-        description: error.message || 'حدث خطأ أثناء التسجيل',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
+        navigate('/account');
+      } catch (error: any) {
+        toast({
+          title: 'خطأ في التسجيل',
+          description: error.message || 'حدث خطأ أثناء التسجيل',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else if (mode === 'login') {
+      if (!validateLogin()) return;
+      setIsSubmitting(true);
+
+      // Try login by email first, if email looks valid
+      let loginError = null;
+      let userEmail = email;
+      try {
+        // If an email is entered, try to login with it
+        if (email.trim()) {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
+          if (!error) {
+            toast({
+              title: 'تم تسجيل الدخول بنجاح',
+            });
+            navigate('/account');
+            setIsSubmitting(false);
+            return;
+          }
+          loginError = error;
+        }
+
+        // If a phone is entered, try to find user's email by phone
+        if (phone.trim()) {
+          // Find email by phone via customer table
+          const { data: customerData, error: custErr } = await supabase
+            .from('customers')
+            .select('email')
+            .eq('phone', phone.trim())
+            .maybeSingle();
+          if (!customerData || !customerData.email) {
+            throw new Error('لم يتم العثور على حساب مرتبط بهذا الرقم');
+          }
+          userEmail = customerData.email;
+          const { error } = await supabase.auth.signInWithPassword({
+            email: userEmail,
+            password,
+          });
+          if (!error) {
+            toast({
+              title: 'تم تسجيل الدخول بنجاح',
+            });
+            navigate('/account');
+            setIsSubmitting(false);
+            return;
+          }
+          loginError = error;
+        }
+
+        if (loginError) throw loginError;
+        throw new Error('بيانات الدخول غير صحيحة');
+      } catch (error: any) {
+        toast({
+          title: 'خطأ في تسجيل الدخول',
+          description: error.message || 'حدث خطأ أثناء تسجيل الدخول',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const switchMode = () => {
+    setMode(mode === 'register' ? 'login' : 'register');
+    setErrors({
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      password: '',
+      passwordConfirm: '',
+    });
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    setEmail('');
+    setAddress('');
+    setPassword('');
+    setPasswordConfirm('');
   };
 
   return (
@@ -132,43 +244,49 @@ const Register = () => {
           <button onClick={handleBack} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">تسجيل مستخدم جديد</h1>
+          <h1 className="text-xl font-bold flex-1 text-center">
+            {mode === 'register' ? 'تسجيل مستخدم جديد' : 'تسجيل الدخول'}
+          </h1>
           <div className="w-10" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-lg p-4">
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <User size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="firstName" className="font-medium">الاسم الأول</label>
-              </div>
-              <input
-                id="firstName"
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل الاسم الأول"
-              />
-              {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
-            </div>
+            {mode === 'register' && (
+              <>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <User size={18} className="ml-2 text-gray-500" />
+                    <label htmlFor="firstName" className="font-medium">الاسم الأول</label>
+                  </div>
+                  <input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className={`w-full p-3 border rounded-lg text-right ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                    placeholder="أدخل الاسم الأول"
+                  />
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+                </div>
 
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <User size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="lastName" className="font-medium">اسم العائلة</label>
-              </div>
-              <input
-                id="lastName"
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل اسم العائلة"
-              />
-              {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
-            </div>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <User size={18} className="ml-2 text-gray-500" />
+                    <label htmlFor="lastName" className="font-medium">اسم العائلة</label>
+                  </div>
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className={`w-full p-3 border rounded-lg text-right ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                    placeholder="أدخل اسم العائلة"
+                  />
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+                </div>
+              </>
+            )}
 
             <div className="mb-4">
               <div className="flex items-center mb-2">
@@ -202,20 +320,22 @@ const Register = () => {
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="address" className="font-medium">العنوان</label>
+            {mode === 'register' && (
+              <div className="mb-4">
+                <div className="flex items-center mb-2">
+                  <MapPin size={18} className="ml-2 text-gray-500" />
+                  <label htmlFor="address" className="font-medium">العنوان</label>
+                </div>
+                <textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                  placeholder="أدخل عنوانك"
+                  rows={3}
+                />
               </div>
-              <textarea
-                id="address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل عنوانك"
-                rows={3}
-              />
-            </div>
+            )}
 
             <div className="mb-4">
               <div className="flex items-center mb-2">
@@ -233,21 +353,23 @@ const Register = () => {
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
 
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <User size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="passwordConfirm" className="font-medium">تأكيد كلمة المرور</label>
+            {mode === 'register' && (
+              <div className="mb-4">
+                <div className="flex items-center mb-2">
+                  <User size={18} className="ml-2 text-gray-500" />
+                  <label htmlFor="passwordConfirm" className="font-medium">تأكيد كلمة المرور</label>
+                </div>
+                <input
+                  id="passwordConfirm"
+                  type="password"
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  className={`w-full p-3 border rounded-lg text-right ${errors.passwordConfirm ? 'border-red-500' : 'border-gray-300'}`}
+                  placeholder="أدخل تأكيد كلمة المرور"
+                />
+                {errors.passwordConfirm && <p className="text-red-500 text-sm mt-1">{errors.passwordConfirm}</p>}
               </div>
-              <input
-                id="passwordConfirm"
-                type="password"
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.passwordConfirm ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل تأكيد كلمة المرور"
-              />
-              {errors.passwordConfirm && <p className="text-red-500 text-sm mt-1">{errors.passwordConfirm}</p>}
-            </div>
+            )}
           </div>
 
           <button
@@ -258,13 +380,27 @@ const Register = () => {
             {isSubmitting ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
             ) : (
-              'تسجيل'
+              mode === 'register' ? 'تسجيل' : <>
+                <LogIn className="ml-2" size={20}/>تسجيل الدخول
+              </>
             )}
           </button>
         </form>
+        <div className="my-4 text-center">
+          <button
+            onClick={switchMode}
+            className="text-sm text-primary underline mt-1"
+          >
+            {mode === 'register'
+              ? 'لديك حساب بالفعل؟ تسجيل الدخول'
+              : 'ليس لديك حساب؟ إنشاء حساب جديد'
+            }
+          </button>
+        </div>
       </div>
     </MainLayout>
   );
 };
 
 export default Register;
+
