@@ -6,9 +6,22 @@ import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+type UserType = {
+  id: string;
+  email?: string;
+};
+
+type ProfileType = {
+  user_id?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  address?: string;
+};
+
 const Account = () => {
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<UserType | null>(null);
+  const [profile, setProfile] = useState<ProfileType | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
