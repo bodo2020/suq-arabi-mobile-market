@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, User, Phone, MapPin, Mail, LogIn, UserPlus } from 'lucide-react';
@@ -85,9 +84,11 @@ const Register = () => {
       lastName: '',
       passwordConfirm: ''
     };
-    if (!email.trim() && !phone.trim()) {
-      newErrors.email = 'أدخل البريد الإلكتروني أو رقم الهاتف';
-      newErrors.phone = 'أدخل البريد الإلكتروني أو رقم الهاتف';
+    if (!phone.trim()) {
+      newErrors.phone = 'رقم الهاتف مطلوب';
+      valid = false;
+    } else if (!/^\d{10,11}$/.test(phone.trim())) {
+      newErrors.phone = 'رقم الهاتف غير صحيح';
       valid = false;
     }
     if (!password) {
@@ -150,52 +151,29 @@ const Register = () => {
       if (!validateLogin()) return;
       setIsSubmitting(true);
 
-      let loginError = null;
-      let userEmail = email;
       try {
-        if (email.trim()) {
-          const { error } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password,
-          });
-          if (!error) {
-            toast({
-              title: 'تم تسجيل الدخول بنجاح',
-            });
-            navigate('/account');
-            setIsSubmitting(false);
-            return;
-          }
-          loginError = error;
+        const { data: customerData, error: custErr } = await supabase
+          .from('customers')
+          .select('email')
+          .eq('phone', phone.trim())
+          .maybeSingle();
+        if (!customerData || !customerData.email) {
+          throw new Error('لم يتم العثور على حساب مرتبط بهذا الرقم');
         }
-
-        if (phone.trim()) {
-          const { data: customerData, error: custErr } = await supabase
-            .from('customers')
-            .select('email')
-            .eq('phone', phone.trim())
-            .maybeSingle();
-          if (!customerData || !customerData.email) {
-            throw new Error('لم يتم العثور على حساب مرتبط بهذا الرقم');
-          }
-          userEmail = customerData.email;
-          const { error } = await supabase.auth.signInWithPassword({
-            email: userEmail,
-            password,
+        const userEmail = customerData.email;
+        const { error } = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password,
+        });
+        if (!error) {
+          toast({
+            title: 'تم تسجيل الدخول بنجاح',
           });
-          if (!error) {
-            toast({
-              title: 'تم تسجيل الدخول بنجاح',
-            });
-            navigate('/account');
-            setIsSubmitting(false);
-            return;
-          }
-          loginError = error;
+          navigate('/account');
+          setIsSubmitting(false);
+          return;
         }
-
-        if (loginError) throw loginError;
-        throw new Error('بيانات الدخول غير صحيحة');
+        throw error;
       } catch (error: any) {
         toast({
           title: 'خطأ في تسجيل الدخول',
@@ -320,21 +298,23 @@ const Register = () => {
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
 
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <Mail size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
+            {mode === 'register' && (
+              <div className="mb-4">
+                <div className="flex items-center mb-2">
+                  <Mail size={18} className="ml-2 text-gray-500" />
+                  <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`w-full p-3 border rounded-lg text-right ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                  placeholder="أدخل بريدك الإلكتروني"
+                />
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل بريدك الإلكتروني"
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
+            )}
 
             {mode === 'register' && (
               <div className="mb-4">
@@ -419,4 +399,3 @@ const Register = () => {
 };
 
 export default Register;
-

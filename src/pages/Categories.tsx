@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { 
@@ -23,7 +22,6 @@ const Categories = () => {
   const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
-  // Fetch main categories on initial load
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -39,7 +37,6 @@ const Categories = () => {
     fetchCategories();
   }, []);
 
-  // Fetch subcategories when a main category is selected
   useEffect(() => {
     if (activeCategoryId && activeLevel === 'sub') {
       const fetchSubcategories = async () => {
@@ -57,7 +54,6 @@ const Categories = () => {
     }
   }, [activeCategoryId, activeLevel]);
 
-  // Fetch subsubcategories when a subcategory is selected
   useEffect(() => {
     if (activeSubcategoryId && activeLevel === 'subsub') {
       const fetchSubsubcategories = async () => {
@@ -75,7 +71,6 @@ const Categories = () => {
     }
   }, [activeSubcategoryId, activeLevel]);
 
-  // Get the correct items to display based on current level
   const getDisplayItems = () => {
     switch (activeLevel) {
       case 'main':
@@ -90,7 +85,6 @@ const Categories = () => {
   };
 
   const handleCategoryClick = (id: string) => {
-    // Check if this category has subcategories
     if (activeLevel === 'main') {
       setActiveCategoryId(id);
       setActiveLevel('sub');
@@ -110,7 +104,6 @@ const Categories = () => {
     }
   };
 
-  // Get title based on current level
   const getTitle = () => {
     switch (activeLevel) {
       case 'main':
@@ -127,19 +120,37 @@ const Categories = () => {
   return (
     <MainLayout>
       <div className="py-4">
-        <div className="flex items-center justify-between mb-4">
-          {activeLevel !== 'main' && (
-            <button 
-              onClick={handleBackClick}
-              className="text-primary"
-            >
-              الرجوع للخلف
-            </button>
-          )}
-          <h1 className="text-xl font-bold text-center">
-            {getTitle()}
-          </h1>
-          <div className="w-24"></div> {/* Spacer for alignment */}
+        <div className="flex flex-col items-center mb-4">
+          <div className="flex items-center justify-center mb-2">
+            <div className="bg-green-800 rounded-lg flex items-center justify-center" style={{ width: 48, height: 48 }}>
+              <img
+                src="/lovable-uploads/92e98f46-a146-43ea-9d99-ceef3b90bfd7.png"
+                alt="Logo"
+                className="w-8 h-8"
+              />
+            </div>
+          </div>
+          <div className="w-full max-w-md">
+            <div className="hide-scrollbar">
+              <form
+                className="flex items-center gap-2 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100 relative bg-cover bg-center"
+                style={{ backgroundImage: "" }}
+                onSubmit={e => {e.preventDefault()}}
+              >
+                <img src="/lovable-uploads/92e98f46-a146-43ea-9d99-ceef3b90bfd7.png" className="w-5 h-5" alt="barcode" />
+                <input
+                  type="text"
+                  value=""
+                  placeholder="البحث عن منتجات..."
+                  readOnly
+                  className="flex-1 outline-none text-right text-sm placeholder:text-gray-400 bg-gray-50 cursor-pointer"
+                />
+                <span className="p-2">
+                  <svg viewBox="0 0 24 24" width="20" height="20" className="text-gray-400"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99a1 1 0 0 0 1.32.08l.08-.08a1 1 0 0 0 0-1.42l-4.99-5zm-6 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14z"/></svg>
+                </span>
+              </form>
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -165,7 +176,6 @@ const Categories = () => {
               </div>
             ))}
 
-            {/* Show "No items" message when no subcategories or subsubcategories are found */}
             {(activeLevel !== 'main' && getDisplayItems().length === 0) && (
               <div className="col-span-full flex flex-col items-center justify-center py-10">
                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">

@@ -1,5 +1,3 @@
-
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -116,12 +114,16 @@ html, body, #root {
 
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* Internet Explorer and Edge */
-  scrollbar-width: none;  /* Firefox */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important;  /* IE and Edge */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
 }
 
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+body, html, #root, main, .container, .hide-scrollbar {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
 }
 
 /* Mobile navigation bar */
@@ -158,4 +160,3 @@ html, body, #root {
 [dir="rtl"] .carousel-slide {
   direction: rtl;
 }
-
