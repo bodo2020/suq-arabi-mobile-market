@@ -1,231 +1,140 @@
 
-import React, { useState, useEffect } from 'react';
+// This page implements signup & registration functionality integrated with Supabase Auth and customer data saving
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, User, Phone, MapPin } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-interface LocationData {
-  id: string;
-  name: string;
-}
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [name, setName] = useState('');
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Location states
-  const [governorates, setGovernorates] = useState<LocationData[]>([]);
-  const [cities, setCities] = useState<LocationData[]>([]);
-  const [areas, setAreas] = useState<LocationData[]>([]);
-  const [neighborhoods, setNeighborhoods] = useState<LocationData[]>([]);
-  
-  const [selectedGovernorate, setSelectedGovernorate] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
-  const [selectedArea, setSelectedArea] = useState<string>('');
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
-  
   const [errors, setErrors] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     phone: '',
     email: '',
+    password: '',
+    passwordConfirm: '',
   });
 
-  useEffect(() => {
-    fetchGovernorates();
-  }, []);
-
-  useEffect(() => {
-    if (selectedGovernorate) {
-      fetchCities(selectedGovernorate);
-    }
-  }, [selectedGovernorate]);
-
-  useEffect(() => {
-    if (selectedCity) {
-      fetchAreas(selectedCity);
-    }
-  }, [selectedCity]);
-
-  useEffect(() => {
-    if (selectedArea) {
-      fetchNeighborhoods(selectedArea);
-    }
-  }, [selectedArea]);
-
-  const fetchGovernorates = async () => {
-    const { data, error } = await supabase
-      .from('governorates')
-      .select('*')
-      .eq('active', true);
-    
-    if (error) {
-      console.error('Error fetching governorates:', error);
-      return;
-    }
-    
-    setGovernorates(data);
-  };
-
-  const fetchCities = async (governorateId: string) => {
-    const { data, error } = await supabase
-      .from('cities')
-      .select('*')
-      .eq('governorate_id', governorateId)
-      .eq('active', true);
-    
-    if (error) {
-      console.error('Error fetching cities:', error);
-      return;
-    }
-    
-    setCities(data);
-  };
-
-  const fetchAreas = async (cityId: string) => {
-    const { data, error } = await supabase
-      .from('areas')
-      .select('*')
-      .eq('city_id', cityId)
-      .eq('active', true);
-    
-    if (error) {
-      console.error('Error fetching areas:', error);
-      return;
-    }
-    
-    setAreas(data);
-  };
-
-  const fetchNeighborhoods = async (areaId: string) => {
-    const { data, error } = await supabase
-      .from('neighborhoods')
-      .select('*')
-      .eq('area_id', areaId)
-      .eq('active', true);
-    
-    if (error) {
-      console.error('Error fetching neighborhoods:', error);
-      return;
-    }
-    
-    setNeighborhoods(data);
-  };
-
-  const handleBack = () => {
-    navigate(-1);
-  };
-
   const validate = () => {
+    let valid = true;
     const newErrors = {
-      name: '',
+      firstName: '',
+      lastName: '',
       phone: '',
       email: '',
+      password: '',
+      passwordConfirm: '',
     };
-    let isValid = true;
 
-    if (!name.trim()) {
-      newErrors.name = 'الاسم مطلوب';
-      isValid = false;
+    if (!firstName.trim()) {
+      newErrors.firstName = 'الاسم الأول مطلوب';
+      valid = false;
     }
-
+    if (!lastName.trim()) {
+      newErrors.lastName = 'اسم العائلة مطلوب';
+      valid = false;
+    }
     if (!phone.trim()) {
       newErrors.phone = 'رقم الهاتف مطلوب';
-      isValid = false;
+      valid = false;
     } else if (!/^\d{10,11}$/.test(phone.trim())) {
       newErrors.phone = 'رقم الهاتف غير صحيح';
-      isValid = false;
+      valid = false;
     }
-
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email.trim()) {
+      newErrors.email = 'البريد الإلكتروني مطلوب';
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = 'البريد الإلكتروني غير صحيح';
-      isValid = false;
+      valid = false;
+    }
+    if (password.length < 6) {
+      newErrors.password = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+      valid = false;
+    }
+    if (password !== passwordConfirm) {
+      newErrors.passwordConfirm = 'كلمتا المرور غير متطابقتين';
+      valid = false;
     }
 
     setErrors(newErrors);
-    return isValid;
+    return valid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validate()) {
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
 
     try {
-      // Save to customers table
-      const { data: customerData, error: customerError } = await supabase
-        .from('customers')
-        .insert([
-          {
-            name,
-            phone,
-            email: email || null,
-            address,
-          }
-        ])
-        .select()
-        .single();
+      // Sign up with Supabase auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            phone: phone,
+            address: address,
+          },
+        },
+      });
+      if (error) throw error;
 
-      if (customerError) throw customerError;
-
-      // Save to localStorage for app usage
-      localStorage.setItem('userName', name);
-      localStorage.setItem('userPhone', phone);
-      localStorage.setItem('userEmail', email);
-      if (address) {
-        localStorage.setItem('userAddress', address);
-      }
+      // If signUp does not auto login, you might need to log in manually here
+      // Sign in after signup to establish session for redirect
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
 
       toast({
-        title: "تم التسجيل بنجاح",
-        description: "تم حفظ بياناتك بنجاح",
+        title: 'تم التسجيل بنجاح',
+        description: 'تم إنشاء الحساب وتسجيل الدخول',
       });
 
-      setTimeout(() => {
-        navigate('/account');
-      }, 1000);
-    } catch (error) {
-      console.error('Error saving user data:', error);
+      navigate('/account');
+    } catch (error: any) {
+      console.error('Error during signup:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء حفظ البيانات",
-        variant: "destructive",
+        title: 'خطأ في التسجيل',
+        description: error.message || 'حدث خطأ أثناء التسجيل',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <MainLayout>
       <div className="py-4">
         <div className="flex items-center mb-6">
-          <button
-            onClick={handleBack}
-            className="p-2"
-            aria-label="الرجوع"
-          >
+          <button onClick={handleBack} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">تسجيل البيانات</h1>
-          <div className="w-10"></div>
+          <h1 className="text-xl font-bold flex-1 text-center">تسجيل مستخدم جديد</h1>
+          <div className="w-10" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -233,17 +142,33 @@ const Register = () => {
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <User size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="name" className="font-medium">الاسم</label>
+                <label htmlFor="firstName" className="font-medium">الاسم الأول</label>
               </div>
               <input
+                id="firstName"
                 type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل اسمك"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className={`w-full p-3 border rounded-lg text-right ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="أدخل الاسم الأول"
               />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+            </div>
+
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <User size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="lastName" className="font-medium">اسم العائلة</label>
+              </div>
+              <input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className={`w-full p-3 border rounded-lg text-right ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="أدخل اسم العائلة"
+              />
+              {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
             </div>
 
             <div className="mb-4">
@@ -252,12 +177,12 @@ const Register = () => {
                 <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
               </div>
               <input
-                type="tel"
                 id="phone"
+                type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className={`w-full p-3 border rounded-lg text-right ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل رقم هاتفك"
+                placeholder="أدخل رقم الهاتف"
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
@@ -265,11 +190,11 @@ const Register = () => {
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="email" className="font-medium">البريد الإلكتروني (اختياري)</label>
+                <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
               </div>
               <input
-                type="email"
                 id="email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={`w-full p-3 border rounded-lg text-right ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
@@ -278,103 +203,63 @@ const Register = () => {
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">المحافظة</label>
-                <Select value={selectedGovernorate} onValueChange={setSelectedGovernorate}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="اختر المحافظة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {governorates.map((gov) => (
-                      <SelectItem key={gov.id} value={gov.id}>
-                        {gov.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {selectedGovernorate && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">المدينة</label>
-                  <Select value={selectedCity} onValueChange={setSelectedCity}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="اختر المدينة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cities.map((city) => (
-                        <SelectItem key={city.id} value={city.id}>
-                          {city.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {selectedCity && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">المنطقة</label>
-                  <Select value={selectedArea} onValueChange={setSelectedArea}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="اختر المنطقة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {areas.map((area) => (
-                        <SelectItem key={area.id} value={area.id}>
-                          {area.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {selectedArea && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">الحي</label>
-                  <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="اختر الحي" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {neighborhoods.map((neighborhood) => (
-                        <SelectItem key={neighborhood.id} value={neighborhood.id}>
-                          {neighborhood.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-
-            <div>
+            <div className="mb-4">
               <div className="flex items-center mb-2">
                 <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="address" className="font-medium">تفاصيل العنوان</label>
+                <label htmlFor="address" className="font-medium">العنوان</label>
               </div>
               <textarea
                 id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل تفاصيل عنوانك للتوصيل"
+                placeholder="أدخل عنوانك"
                 rows={3}
               />
+            </div>
+
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <User size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="password" className="font-medium">كلمة المرور</label>
+              </div>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full p-3 border rounded-lg text-right ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="أدخل كلمة المرور"
+              />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            </div>
+
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <User size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="passwordConfirm" className="font-medium">تأكيد كلمة المرور</label>
+              </div>
+              <input
+                id="passwordConfirm"
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                className={`w-full p-3 border rounded-lg text-right ${errors.passwordConfirm ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="أدخل تأكيد كلمة المرور"
+              />
+              {errors.passwordConfirm && <p className="text-red-500 text-sm mt-1">{errors.passwordConfirm}</p>}
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center"
             disabled={isSubmitting}
+            className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center"
           >
             {isSubmitting ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
             ) : (
-              'حفظ البيانات'
+              'تسجيل'
             )}
           </button>
         </form>
