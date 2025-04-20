@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +21,7 @@ import Orders from "./pages/Orders";
 import Search from "./pages/Search";
 import BarcodeScanner from "./pages/BarcodeScanner";
 import EditAccount from "./pages/EditAccount";
+import BannerProducts from "./pages/BannerProducts";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,7 @@ const App = () => (
             <Route path="/search" element={<Search />} />
             <Route path="/barcode-scan" element={<BarcodeScanner />} />
             <Route path="/account/edit" element={<EditAccount />} />
+            <Route path="/banner-products/:id" element={<BannerProducts />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

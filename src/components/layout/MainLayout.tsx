@@ -16,12 +16,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const isMobile = useIsMobile();
   const cartCount = getTotalItems();
 
+  React.useEffect(() => {
+    document.body.dir = "rtl";
+  }, []);
+
   const isActive = (route: string) => {
     return path === route;
   };
 
   return (
-    <div className="pb-16 md:pb-0 min-h-screen bg-gray-50">
+    <div className="pb-16 md:pb-0 min-h-screen bg-gray-50" dir="rtl">
       {/* Main content */}
       <main className="container mx-auto px-4 md:max-w-6xl">
         {!isMobile && (
@@ -66,8 +70,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         )}
         {children}
       </main>
-
-      {/* Bottom Navigation - only shown on mobile */}
       {isMobile && (
         <nav className="bottom-nav">
           <Link 

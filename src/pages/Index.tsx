@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, Search, Barcode, Upload } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
@@ -9,6 +9,7 @@ import Banner from '@/components/ui/Banner';
 import { getCategories, getProducts, getStoreInfo, supabase, MainCategory, Product } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
+
 const Index = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,23 +20,24 @@ const Index = () => {
   const [searchBackground, setSearchBackground] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all required data in parallel
-        const [categoriesData, productsData, storeInfoData, bannersData] = await Promise.all([getCategories(), getProducts(), getStoreInfo(), supabase.from('banners').select('*').eq('active', true).order('position')]);
+        const [categoriesData, productsData, storeInfoData, bannersData] = await Promise.all([
+          getCategories(),
+          getProducts(),
+          getStoreInfo(),
+          supabase.from('banners').select('*').eq('active', true).order('position')
+        ]);
         setCategories(categoriesData);
         setProducts(productsData as Product[]);
         setStoreInfo(storeInfoData);
-        if (bannersData.data) {
-          setBanners(bannersData.data);
-        }
+        if (bannersData.data) setBanners(bannersData.data);
 
-        // Check for saved address
         const savedAddress = localStorage.getItem('userAddress');
-        if (savedAddress) {
-          setUserAddress(savedAddress);
-        }
+        if (savedAddress) setUserAddress(savedAddress);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -44,15 +46,14 @@ const Index = () => {
     };
     fetchData();
   }, []);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       setProcessingImage(true);
       const backgroundUrl = await processImageBackground(file);
-      if (backgroundUrl) {
-        setSearchBackground(backgroundUrl);
-      }
+      if (backgroundUrl) setSearchBackground(backgroundUrl);
     } catch (error) {
       console.error('Error processing image:', error);
     } finally {
@@ -60,29 +61,43 @@ const Index = () => {
     }
   };
 
-  // Calculate how many categories to show based on screen size
-  const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
+  // Go to search page when SearchBar is clicked
+  const handleFocusSearchBar = () => {
+    navigate('/search');
+  };
 
-  // For our featured products, we'll show the first few products
+  const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
   const featuredProducts = products.slice(0, isMobile ? 4 : 10);
-  return <MainLayout>
+
+  return (
+    <MainLayout>
       <div className="py-4">
-        {/* Store Logo and Name */}
         {storeInfo && <div className="flex justify-center mb-4">
             <img src={storeInfo.logo_url} alt={storeInfo.name} className="h-12 object-contain" />
           </div>}
 
-        {/* Search Bar with Background Image */}
+        {/* Search Bar - only at top, not after banner */}
         <div className="relative mb-4">
-          <SearchBar backgroundImage={searchBackground} />
-          
-          {/* Image upload button */}
+          <SearchBar 
+            backgroundImage={searchBackground} 
+            onFocus={handleFocusSearchBar}
+            readOnly // make the input readonly so the user is forced to go to the search page
+          />
           <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
-            
             <input id="bgImageUpload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={processingImage} />
           </div>
         </div>
 
+        {/* عرض البانر فقط بدون شريط البحث تحت البانر */}
+        {banners.length > 0 && <div className="mb-6">
+            <div className="flex overflow-x-auto space-x-2 space-x-reverse pb-2 -mx-4 px-4">
+              {banners.map(banner => <div key={banner.id} className="flex-shrink-0 w-full md:w-1/2">
+                  <Banner banner={banner} />
+                </div>)}
+            </div>
+          </div>}
+
+        {/* باقي الاقسام والمنتجات كما كانت */}
         {/* User Address - only show if address exists */}
         {userAddress && <div className="bg-white rounded-lg shadow-sm p-3 mb-4 flex justify-between items-center">
             <Link to="/account/address" className="text-primary">
@@ -94,15 +109,6 @@ const Index = () => {
                 <span className="text-sm font-semibold line-clamp-1">{userAddress}</span>
               </div>
               
-            </div>
-          </div>}
-
-        {/* Banners Section */}
-        {banners.length > 0 && <div className="mb-6">
-            <div className="flex overflow-x-auto space-x-2 space-x-reverse pb-2 -mx-4 px-4">
-              {banners.map(banner => <div key={banner.id} className="flex-shrink-0 w-full md:w-1/2">
-                  <Banner banner={banner} />
-                </div>)}
             </div>
           </div>}
 
@@ -142,6 +148,7 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </MainLayout>;
+    </MainLayout>
+  );
 };
 export default Index;
