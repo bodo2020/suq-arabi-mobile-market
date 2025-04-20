@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, User, Phone, MapPin, Mail, LogIn, UserPlus } from 'lucide-react';
+import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +13,6 @@ const Register = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -23,7 +22,6 @@ const Register = () => {
     firstName: '',
     lastName: '',
     phone: '',
-    email: '',
     password: '',
     passwordConfirm: '',
   });
@@ -34,7 +32,6 @@ const Register = () => {
       firstName: '',
       lastName: '',
       phone: '',
-      email: '',
       password: '',
       passwordConfirm: '',
     };
@@ -54,13 +51,6 @@ const Register = () => {
       newErrors.phone = 'رقم الهاتف غير صحيح';
       valid = false;
     }
-    if (!email.trim()) {
-      newErrors.email = 'البريد الإلكتروني مطلوب';
-      valid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'البريد الإلكتروني غير صحيح';
-      valid = false;
-    }
     if (password.length < 6) {
       newErrors.password = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
       valid = false;
@@ -77,7 +67,6 @@ const Register = () => {
   const validateLogin = () => {
     let valid = true;
     const newErrors = {
-      email: '',
       phone: '',
       password: '',
       firstName: '',
@@ -105,7 +94,6 @@ const Register = () => {
       firstName: '',
       lastName: '',
       phone: '',
-      email: '',
       password: '',
       passwordConfirm: '',
     });
@@ -115,8 +103,10 @@ const Register = () => {
       setIsSubmitting(true);
 
       try {
+        const randomEmail = `${phone}@example.com`;
+        
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: randomEmail,
           password,
           options: {
             data: {
@@ -124,12 +114,16 @@ const Register = () => {
               last_name: lastName,
               phone: phone,
               address: address,
+              name: `${firstName} ${lastName}`,
             },
           },
         });
         if (error) throw error;
 
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        const { error: signInError } = await supabase.auth.signInWithPassword({ 
+          email: randomEmail, 
+          password 
+        });
         if (signInError) throw signInError;
 
         toast({
@@ -196,14 +190,12 @@ const Register = () => {
       firstName: '',
       lastName: '',
       phone: '',
-      email: '',
       password: '',
       passwordConfirm: '',
     });
     setFirstName('');
     setLastName('');
     setPhone('');
-    setEmail('');
     setAddress('');
     setPassword('');
     setPasswordConfirm('');
@@ -297,24 +289,6 @@ const Register = () => {
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
-
-            {mode === 'register' && (
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <Mail size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full p-3 border rounded-lg text-right ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-                  placeholder="أدخل بريدك الإلكتروني"
-                />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-              </div>
-            )}
 
             {mode === 'register' && (
               <div className="mb-4">

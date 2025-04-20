@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// إضافة نمط hide-scrollbar إلى العنصر الرئيسي
+// Add hide-scrollbar class to main elements to hide scrollbars while allowing scrolling
 document.documentElement.classList.add('hide-scrollbar');
 document.body.classList.add('hide-scrollbar');
 

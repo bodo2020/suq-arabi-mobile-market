@@ -217,3 +217,21 @@ export async function getStoreInfo() {
   if (error) console.error(`Error fetching store info:`, error);
   return data;
 }
+
+// New function to create or update a customer
+export async function createOrUpdateCustomer(customerData: { 
+  user_id?: string;
+  first_name: string;
+  last_name: string;
+  name: string;
+  phone: string;
+  email?: string;
+  address?: string;
+}) {
+  const { data, error } = await supabase
+    .from('customers')
+    .upsert(customerData, { onConflict: 'user_id' });
+  
+  if (error) console.error(`Error creating/updating customer:`, error);
+  return data;
+}
