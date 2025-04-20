@@ -26,35 +26,37 @@ import BannerProducts from "./pages/BannerProducts";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <CartProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/category/:id" element={<CategoryDetail />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/order-success" element={<OrderSuccess />} />
-            <Route path="/account" element={<Account />} />
-            <Route path="/account/register" element={<Register />} />
-            <Route path="/account/address" element={<Address />} />
-            <Route path="/favorites" element={<Favorites />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/barcode-scan" element={<BarcodeScanner />} />
-            <Route path="/account/edit" element={<EditAccount />} />
-            <Route path="/banner-products/:id" element={<BannerProducts />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </CartProvider>
-  </QueryClientProvider>
+  <div className="hide-scrollbar">
+    <QueryClientProvider client={queryClient}>
+      <CartProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/categories" element={<Categories />} />
+              <Route path="/category/:id" element={<CategoryDetail />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-success" element={<OrderSuccess />} />
+              <Route path="/account" element={<Account />} />
+              <Route path="/account/register" element={<Register />} />
+              <Route path="/account/address" element={<Address />} />
+              <Route path="/favorites" element={<Favorites />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/barcode-scan" element={<BarcodeScanner />} />
+              <Route path="/account/edit" element={<EditAccount />} />
+              <Route path="/banner-products/:id" element={<BannerProducts />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </CartProvider>
+    </QueryClientProvider>
+  </div>
 );
 
 export default App;

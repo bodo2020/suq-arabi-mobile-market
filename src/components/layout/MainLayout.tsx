@@ -25,9 +25,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="pb-16 md:pb-0 min-h-screen bg-gray-50" dir="rtl">
+    <div className="pb-16 md:pb-0 min-h-screen bg-gray-50 hide-scrollbar" dir="rtl">
       {/* Main content */}
-      <main className="container mx-auto px-4 md:max-w-6xl">
+      <main className="container mx-auto px-4 md:max-w-6xl hide-scrollbar">
         {!isMobile && (
           <div className="hidden md:flex justify-between items-center py-4 mb-4 border-b">
             <Link to="/" className="text-xl font-bold">ماركت المعداوي</Link>

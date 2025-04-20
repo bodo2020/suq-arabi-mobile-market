@@ -1,4 +1,5 @@
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -74,6 +75,22 @@ html, body, #root {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* ضمان عدم ظهور أشرطة التمرير في جميع أنحاء التطبيق */
+  html, body, #root, div, main {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar, 
+  body::-webkit-scrollbar, 
+  #root::-webkit-scrollbar, 
+  div::-webkit-scrollbar, 
+  main::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 }
 
