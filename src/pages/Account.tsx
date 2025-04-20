@@ -23,6 +23,13 @@ type AuthChangeEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED' | 'PASSWORD_R
 
 type AuthChangeCallback = (event: AuthChangeEvent, session: any) => void;
 
+// Define session data structure to avoid excessive type inference
+type SessionData = {
+  session: {
+    user: UserType | null;
+  } | null;
+};
+
 const Account = () => {
   const [user, setUser] = useState<UserType | null>(null);
   const [profile, setProfile] = useState<ProfileType | null>(null);
@@ -41,15 +48,16 @@ const Account = () => {
     const getUser = async () => {
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
+        // Explicitly type the session data to prevent deep inference
+        const { data }: { data: SessionData } = await supabase.auth.getSession();
+        setUser(data.session?.user || null);
         
-        if (session?.user) {
+        if (data.session?.user) {
           // Get customer profile
           const { data: customerData } = await supabase
             .from('customers')
             .select('*')
-            .eq('user_id', session.user.id)
+            .eq('user_id', data.session.user.id)
             .single();
             
           setProfile(customerData);
