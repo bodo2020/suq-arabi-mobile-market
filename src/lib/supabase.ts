@@ -218,19 +218,25 @@ export async function getStoreInfo() {
   return data;
 }
 
-// New function to create or update a customer
+// Updated function to create or update a customer
 export async function createOrUpdateCustomer(customerData: { 
   user_id?: string;
   first_name: string;
   last_name: string;
-  name: string;
+  name?: string;
   phone: string;
   email?: string;
   address?: string;
 }) {
+  // Ensure name is always set, using first and last name if not provided
+  const dataWithName = {
+    ...customerData,
+    name: customerData.name || `${customerData.first_name} ${customerData.last_name}`.trim(),
+  };
+  
   const { data, error } = await supabase
     .from('customers')
-    .upsert(customerData, { onConflict: 'user_id' });
+    .upsert(dataWithName, { onConflict: 'user_id' });
   
   if (error) console.error(`Error creating/updating customer:`, error);
   return data;
