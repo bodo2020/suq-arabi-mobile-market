@@ -1,9 +1,8 @@
-
 // This page implements signup & registration functionality integrated with Supabase Auth and customer data saving
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, User, Phone, MapPin } from 'lucide-react';
+import { ArrowRight, User, Phone, MapPin, Mail } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -189,7 +188,7 @@ const Register = () => {
 
             <div className="mb-4">
               <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
+                <Mail size={18} className="ml-2 text-gray-500" />
                 <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
               </div>
               <input
