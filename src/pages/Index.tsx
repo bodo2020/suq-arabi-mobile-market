@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Search, Barcode, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -10,7 +9,6 @@ import Banner from '@/components/ui/Banner';
 import { getCategories, getProducts, getStoreInfo, supabase, MainCategory, Product } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
-
 const Index = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -21,18 +19,11 @@ const Index = () => {
   const [searchBackground, setSearchBackground] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
   const isMobile = useIsMobile();
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch all required data in parallel
-        const [categoriesData, productsData, storeInfoData, bannersData] = await Promise.all([
-          getCategories(), 
-          getProducts(), 
-          getStoreInfo(), 
-          supabase.from('banners').select('*').eq('active', true).order('position')
-        ]);
-
+        const [categoriesData, productsData, storeInfoData, bannersData] = await Promise.all([getCategories(), getProducts(), getStoreInfo(), supabase.from('banners').select('*').eq('active', true).order('position')]);
         setCategories(categoriesData);
         setProducts(productsData as Product[]);
         setStoreInfo(storeInfoData);
@@ -53,11 +44,9 @@ const Index = () => {
     };
     fetchData();
   }, []);
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     try {
       setProcessingImage(true);
       const backgroundUrl = await processImageBackground(file);
@@ -76,7 +65,6 @@ const Index = () => {
 
   // For our featured products, we'll show the first few products
   const featuredProducts = products.slice(0, isMobile ? 4 : 10);
-  
   return <MainLayout>
       <div className="py-4">
         {/* Store Logo and Name */}
@@ -90,23 +78,8 @@ const Index = () => {
           
           {/* Image upload button */}
           <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
-            <button 
-              type="button" 
-              onClick={() => document.getElementById('bgImageUpload')?.click()}
-              className="p-2 bg-gray-100 rounded-full"
-              aria-label="إضافة صورة خلفية"
-              disabled={processingImage}
-            >
-              <Upload size={20} className={`text-gray-500 ${processingImage ? 'animate-pulse' : ''}`} />
-            </button>
-            <input 
-              id="bgImageUpload" 
-              type="file" 
-              className="hidden" 
-              accept="image/*" 
-              onChange={handleImageUpload} 
-              disabled={processingImage}
-            />
+            
+            <input id="bgImageUpload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={processingImage} />
           </div>
         </div>
 
@@ -171,5 +144,4 @@ const Index = () => {
       </div>
     </MainLayout>;
 };
-
 export default Index;
