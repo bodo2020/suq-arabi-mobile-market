@@ -1,136 +1,162 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronLeft, User, MapPin, Phone, LogOut, ShoppingBag, Info } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogOut, User, Package, Heart, ChevronLeft, Phone, MapPin } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
-
-interface UserInfo {
-  name: string;
-  phone: string;
-  address: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Account = () => {
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const navigate = useNavigate();
   
   useEffect(() => {
-    // Check localStorage for user info
-    const name = localStorage.getItem('userName');
-    const phone = localStorage.getItem('userPhone');
-    const address = localStorage.getItem('userAddress');
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
     
-    if (name && phone) {
-      setUserInfo({ name, phone, address: address || '' });
-    }
+    const getUser = async () => {
+      setLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
+        
+        if (session?.user) {
+          // Get customer profile
+          const { data: customerData } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+            
+          setProfile(customerData);
+        }
+      } catch (error) {
+        console.error('Error getting user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getUser();
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
   
-  const handleLogout = () => {
-    // Clear user info from localStorage
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userPhone');
-    localStorage.removeItem('userAddress');
-    
-    // Update state
-    setUserInfo(null);
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "تم تسجيل الخروج بنجاح",
+        variant: "default",
+      });
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "حدث خطأ أثناء تسجيل الخروج",
+        variant: "destructive",
+      });
+    }
   };
+  
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+  
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="py-4">
+          <h1 className="text-xl font-bold text-center mb-6">الحساب</h1>
+          
+          <div className="bg-white rounded-lg p-6 mb-4 text-center">
+            <User size={48} className="mx-auto mb-4 text-gray-400" />
+            <h2 className="text-lg font-bold mb-2">أهلاً بك</h2>
+            <p className="text-gray-500 mb-4">سجل الدخول للوصول إلى حسابك وتتبع طلباتك وحفظ منتجاتك المفضلة.</p>
+            
+            <Link to="/account/register" className="block w-full bg-primary text-white py-3 rounded-lg text-center mb-3">
+              تسجيل / دخول
+            </Link>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
   
   return (
     <MainLayout>
       <div className="py-4">
-        <h1 className="text-xl font-bold text-center mb-4">حسابي</h1>
+        <h1 className="text-xl font-bold text-center mb-6">الحساب</h1>
         
-        {userInfo ? (
-          <div className="space-y-4">
-            {/* User Info */}
-            <div className="bg-white rounded-lg p-4 flex items-center">
-              <div className="bg-primary bg-opacity-10 p-3 rounded-full ml-3">
-                <User size={24} className="text-primary" />
-              </div>
-              <div>
-                <h2 className="font-bold">{userInfo.name}</h2>
-                <p className="text-sm text-gray-500">{userInfo.phone}</p>
-              </div>
-              <Link to="/account/edit" className="mr-auto text-primary text-sm">
+        {/* User Info */}
+        <div className="bg-white rounded-lg p-4 mb-4">
+          <div className="flex items-center mb-4">
+            <div className="bg-gray-100 rounded-full p-3 ml-3">
+              <User size={32} className="text-gray-500" />
+            </div>
+            <div>
+              <h2 className="font-bold">{profile?.first_name} {profile?.last_name}</h2>
+              <p className="text-sm text-gray-500">{user.email}</p>
+              {profile?.phone && <p className="text-sm text-gray-500 flex items-center mt-1">
+                <Phone size={14} className="ml-1" />
+                {profile.phone}
+              </p>}
+            </div>
+            <div className="mr-auto">
+              <Link to="/account/edit" className="text-primary text-sm flex items-center">
                 تعديل
-              </Link>
-            </div>
-            
-            {/* User Address */}
-            {userInfo.address && (
-              <div className="bg-white rounded-lg p-4 flex items-start">
-                <div className="bg-primary bg-opacity-10 p-3 rounded-full ml-3 mt-1">
-                  <MapPin size={24} className="text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="font-bold mb-1">عنوان التوصيل</h2>
-                  <p className="text-sm text-gray-500">{userInfo.address}</p>
-                </div>
-                <Link to="/account/address" className="text-primary text-sm">
-                  تعديل
-                </Link>
-              </div>
-            )}
-            
-            {/* Menu Items */}
-            <div className="bg-white rounded-lg overflow-hidden">
-              <Link to="/orders" className="flex items-center justify-between p-4 border-b">
-                <ChevronLeft size={20} className="text-gray-400" />
-                <div className="flex items-center">
-                  <span className="mr-3">طلباتي</span>
-                  <ShoppingBag size={20} className="text-primary" />
-                </div>
-              </Link>
-              
-              <Link to="/about" className="flex items-center justify-between p-4 border-b">
-                <ChevronLeft size={20} className="text-gray-400" />
-                <div className="flex items-center">
-                  <span className="mr-3">عن التطبيق</span>
-                  <Info size={20} className="text-primary" />
-                </div>
-              </Link>
-              
-              <button 
-                onClick={handleLogout}
-                className="flex items-center justify-between p-4 w-full text-right"
-              >
-                <ChevronLeft size={20} className="text-gray-400" />
-                <div className="flex items-center">
-                  <span className="mr-3 text-red-500">تسجيل الخروج</span>
-                  <LogOut size={20} className="text-red-500" />
-                </div>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex flex-col items-center justify-center py-8 bg-white rounded-lg">
-              <div className="bg-primary bg-opacity-10 p-4 rounded-full mb-4">
-                <User size={32} className="text-primary" />
-              </div>
-              <h2 className="text-lg font-bold mb-2">مرحباً بك</h2>
-              <p className="text-sm text-gray-500 mb-6 text-center px-4">
-                قم بتسجيل بياناتك لمتابعة طلباتك وحفظ عناوين التوصيل
-              </p>
-              <Link 
-                to="/account/register" 
-                className="bg-primary text-white px-6 py-2 rounded-lg"
-              >
-                تسجيل البيانات
-              </Link>
-            </div>
-            
-            {/* Help Links */}
-            <div className="bg-white rounded-lg overflow-hidden">
-              <Link to="/about" className="flex items-center justify-between p-4">
-                <ChevronLeft size={20} className="text-gray-400" />
-                <div className="flex items-center">
-                  <span className="mr-3">عن التطبيق</span>
-                  <Info size={20} className="text-primary" />
-                </div>
+                <ChevronLeft size={16} />
               </Link>
             </div>
           </div>
-        )}
+          
+          {profile?.address && (
+            <div className="bg-gray-50 p-3 rounded-lg text-sm">
+              <div className="flex items-start">
+                <MapPin size={16} className="ml-2 mt-0.5 text-gray-500" />
+                <div>
+                  <div className="font-semibold mb-1">عنوان التوصيل</div>
+                  <p className="text-gray-600">{profile.address}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Account Actions */}
+        <div className="bg-white rounded-lg mb-4">
+          <Link to="/orders" className="flex items-center p-4 border-b">
+            <Package size={20} className="ml-3 text-gray-500" />
+            <span>الطلبات</span>
+            <ChevronLeft size={18} className="mr-auto text-gray-400" />
+          </Link>
+          
+          <Link to="/favorites" className="flex items-center p-4 border-b">
+            <Heart size={20} className="ml-3 text-gray-500" />
+            <span>المفضلة</span>
+            <ChevronLeft size={18} className="mr-auto text-gray-400" />
+          </Link>
+          
+          <button 
+            onClick={handleLogout}
+            className="flex items-center p-4 w-full text-right text-red-500"
+          >
+            <LogOut size={20} className="ml-3" />
+            <span>تسجيل الخروج</span>
+          </button>
+        </div>
       </div>
     </MainLayout>
   );

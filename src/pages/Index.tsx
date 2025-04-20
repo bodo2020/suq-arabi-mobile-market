@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -9,6 +10,13 @@ import Banner from '@/components/ui/Banner';
 import { getCategories, getProducts, getStoreInfo, supabase, MainCategory, Product } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
+import { 
+  Carousel, 
+  CarouselContent, 
+  CarouselItem,
+  CarouselNext, 
+  CarouselPrevious
+} from "@/components/ui/carousel";
 
 const Index = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
@@ -19,6 +27,8 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [searchBackground, setSearchBackground] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
+  const [activeBanner, setActiveBanner] = useState(0);
+  const bannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -46,6 +56,21 @@ const Index = () => {
     };
     fetchData();
   }, []);
+
+  // Set up banner auto-rotation
+  useEffect(() => {
+    if (banners.length > 1) {
+      bannerIntervalRef.current = setInterval(() => {
+        setActiveBanner(prev => (prev + 1) % banners.length);
+      }, 5000);
+    }
+    
+    return () => {
+      if (bannerIntervalRef.current) {
+        clearInterval(bannerIntervalRef.current);
+      }
+    };
+  }, [banners.length]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,7 +101,7 @@ const Index = () => {
             <img src={storeInfo.logo_url} alt={storeInfo.name} className="h-12 object-contain" />
           </div>}
 
-        {/* Search Bar - only at top, not after banner */}
+        {/* Search Bar */}
         <div className="relative mb-4">
           <SearchBar 
             backgroundImage={searchBackground} 
@@ -88,16 +113,48 @@ const Index = () => {
           </div>
         </div>
 
-        {/* عرض البانر فقط بدون شريط البحث تحت البانر */}
-        {banners.length > 0 && <div className="mb-6">
-            <div className="flex overflow-x-auto space-x-2 space-x-reverse pb-2 -mx-4 px-4">
-              {banners.map(banner => <div key={banner.id} className="flex-shrink-0 w-full md:w-1/2">
-                  <Banner banner={banner} />
-                </div>)}
-            </div>
-          </div>}
+        {/* Banners with Dot Navigation */}
+        {banners.length > 0 && (
+          <div className="mb-6 relative">
+            <Carousel className="w-full" opts={{ loop: true }} setApi={(api) => {
+              if (api && banners.length > 1) {
+                api.scrollTo(activeBanner);
+              }
+            }}>
+              <CarouselContent>
+                {banners.map((banner, index) => (
+                  <CarouselItem key={banner.id}>
+                    <Banner banner={banner} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              
+              {/* Dot indicators instead of arrows */}
+              {banners.length > 1 && (
+                <div className="flex justify-center mt-2">
+                  {banners.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`w-2 h-2 mx-1 rounded-full ${activeBanner === index ? 'bg-primary' : 'bg-gray-300'}`}
+                      onClick={() => {
+                        setActiveBanner(index);
+                        // Reset the interval timer when user manually changes banner
+                        if (bannerIntervalRef.current) {
+                          clearInterval(bannerIntervalRef.current);
+                          bannerIntervalRef.current = setInterval(() => {
+                            setActiveBanner(prev => (prev + 1) % banners.length);
+                          }, 5000);
+                        }
+                      }}
+                      aria-label={`شريحة ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </Carousel>
+          </div>
+        )}
 
-        {/* باقي الاقسام والمنتجات كما كانت */}
         {/* User Address - only show if address exists */}
         {userAddress && <div className="bg-white rounded-lg shadow-sm p-3 mb-4 flex justify-between items-center">
             <Link to="/account/address" className="text-primary">
@@ -151,4 +208,5 @@ const Index = () => {
     </MainLayout>
   );
 };
+
 export default Index;

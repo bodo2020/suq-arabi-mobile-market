@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Plus, Minus, AlertTriangle, Bell } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/CartContext';
@@ -17,13 +17,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { toast } = useToast();
   const [loadingFavorite, setLoadingFavorite] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
   
   const cartItem = items.find(item => item.product.id === product.id);
   const quantity = cartItem?.quantity || 0;
   const isOutOfStock = product.quantity <= 0;
   
   // Check for authentication status
-  React.useEffect(() => {
+  useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
     });
@@ -38,7 +39,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   }, []);
 
   // Check if product is in favorites
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       const checkFavorite = async () => {
         const { data } = await supabase
@@ -67,6 +68,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         description: "يرجى تسجيل الدخول لإضافة المنتجات إلى المفضلة",
         variant: "destructive",
       });
+      
+      // Navigate to account page after a short delay
+      setTimeout(() => {
+        navigate('/account');
+      }, 1500);
+      
       return;
     }
     
@@ -151,7 +158,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full">
       <button 
-        className="favorite-btn" 
+        className="favorite-btn z-20" 
         onClick={toggleFavorite}
         disabled={loadingFavorite}
         aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}

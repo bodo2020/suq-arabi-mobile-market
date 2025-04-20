@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 
@@ -13,9 +13,10 @@ interface BannerProps {
     products?: string[];
   };
   hideTitle?: boolean;
+  autoRotate?: boolean;
 }
 
-const Banner: React.FC<BannerProps> = ({ banner, hideTitle = true }) => {
+const Banner: React.FC<BannerProps> = ({ banner, hideTitle = true, autoRotate = false }) => {
   const navigate = useNavigate();
 
   const handleClick = () => {

@@ -31,24 +31,24 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {!isMobile && (
           <div className="hidden md:flex justify-between items-center py-4 mb-4 border-b">
             <Link to="/" className="text-xl font-bold">ماركت المعداوي</Link>
-            <div className="flex space-x-8"> {/* Increased space-x from 6 to 8 */}
+            <div className="flex space-x-8 space-x-reverse"> {/* Added space-x-reverse for RTL */}
               <Link 
                 to="/" 
-                className={`flex items-center space-x-2 text-sm ${isActive('/') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
+                className={`flex items-center space-x-2 space-x-reverse text-sm ${isActive('/') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
               >
                 <Home size={20} />
                 <span>الرئيسية</span>
               </Link>
               <Link 
                 to="/categories" 
-                className={`flex items-center space-x-2 text-sm ${isActive('/categories') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
+                className={`flex items-center space-x-2 space-x-reverse text-sm ${isActive('/categories') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
               >
                 <Layers size={20} />
                 <span>الأقسام</span>
               </Link>
               <Link 
                 to="/cart" 
-                className={`flex items-center space-x-2 text-sm relative ${isActive('/cart') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
+                className={`flex items-center space-x-2 space-x-reverse text-sm relative ${isActive('/cart') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
               >
                 <ShoppingCart size={20} />
                 <span>السلة</span>
@@ -60,7 +60,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </Link>
               <Link 
                 to="/account" 
-                className={`flex items-center space-x-2 text-sm ${isActive('/account') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
+                className={`flex items-center space-x-2 space-x-reverse text-sm ${isActive('/account') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
               >
                 <User size={20} />
                 <span>الحساب</span>
@@ -95,7 +95,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <ShoppingCart size={24} />
             <span>السلة</span>
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-1 right-6 md:right-10 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {cartCount}
               </span>
             )}

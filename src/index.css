@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -85,7 +86,7 @@ html, body, #root {
 }
 
 .product-card .favorite-btn {
-  @apply absolute top-2 left-2 z-10 bg-white p-1.5 rounded-full shadow-sm;
+  @apply absolute top-2 right-2 z-10 bg-white p-1.5 rounded-full shadow-sm;
 }
 
 .product-card .add-to-cart-btn.empty {
@@ -105,3 +106,39 @@ html, body, #root {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
 }
+
+/* Mobile navigation bar */
+.bottom-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-white flex justify-around items-center shadow-md h-16 z-50 border-t;
+}
+
+.bottom-nav-item {
+  @apply flex flex-col items-center justify-center py-1 text-gray-500 text-xs w-full;
+}
+
+.bottom-nav-item.active {
+  @apply text-primary;
+}
+
+.bottom-nav-item svg {
+  @apply mb-1;
+}
+
+/* Fix RTL layout issues */
+.embla {
+  direction: ltr;
+}
+
+.embla__slide {
+  direction: rtl;
+}
+
+/* Override RTL for specific components */
+[dir="rtl"] .carousel-container {
+  direction: ltr;
+}
+
+[dir="rtl"] .carousel-slide {
+  direction: rtl;
+}
+

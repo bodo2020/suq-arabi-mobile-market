@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Trash2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,10 +18,22 @@ const Favorites = () => {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
+      
+      // If user logs in, fetch favorites
+      if (session?.user) {
+        fetchFavorites(session.user.id);
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      
+      // If user is logged in, fetch favorites
+      if (session?.user) {
+        fetchFavorites(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
     return () => {
@@ -29,30 +41,14 @@ const Favorites = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      fetchFavorites();
-    } else {
-      // Show a toast if user is not logged in and redirect to login
-      toast({
-        title: "يرجى تسجيل الدخول",
-        description: "تحتاج إلى تسجيل الدخول لعرض المفضلة",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        navigate('/account');
-      }, 1500);
-    }
-  }, [user, navigate, toast]);
-
-  const fetchFavorites = async () => {
+  const fetchFavorites = async (userId: string) => {
     try {
       setLoading(true);
       // First get the favorite product IDs
       const { data: favoritesData, error: favoritesError } = await supabase
         .from('favorites')
         .select('product_id')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
 
       if (favoritesError) {
         throw favoritesError;
@@ -111,6 +107,22 @@ const Favorites = () => {
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
+        ) : !user ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+              <path d="M12 6v2"></path>
+              <path d="M12 16v.01"></path>
+            </svg>
+            <h3 className="text-lg font-medium text-gray-500 mb-1">يرجى تسجيل الدخول</h3>
+            <p className="text-sm text-gray-400 mb-4">تحتاج إلى تسجيل الدخول للوصول إلى المفضلة</p>
+            <button 
+              onClick={() => navigate('/account')}
+              className="bg-primary text-white px-4 py-2 rounded-md"
+            >
+              الذهاب لتسجيل الدخول
+            </button>
+          </div>
         ) : favorites.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {favorites.map((product) => (
@@ -124,6 +136,12 @@ const Favorites = () => {
             </svg>
             <h3 className="text-lg font-medium text-gray-500 mb-1">المفضلة فارغة</h3>
             <p className="text-sm text-gray-400 mb-4">لم تقم بإضافة أي منتجات للمفضلة</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="bg-primary text-white px-4 py-2 rounded-md"
+            >
+              استعرض المنتجات
+            </button>
           </div>
         )}
       </div>
