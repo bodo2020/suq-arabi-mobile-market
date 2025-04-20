@@ -75,10 +75,12 @@ html, body, #root {
     @apply bg-background text-foreground;
   }
 
-  /* ضمان عدم ظهور أشرطة التمرير في جميع أنحاء التطبيق */
+  /* Hide scrollbars but allow scrolling */
   html, body, #root, div, main {
     scrollbar-width: none;
     -ms-overflow-style: none;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
   }
 
   html::-webkit-scrollbar, 
@@ -116,13 +118,17 @@ html, body, #root {
 .hide-scrollbar {
   scrollbar-width: none !important; /* Firefox */
   -ms-overflow-style: none !important;  /* IE and Edge */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none !important; /* Chrome, Safari, Opera */
 }
 
-body, html, #root, main, .container, .hide-scrollbar {
-  overflow: hidden !important;
+body, html, #root, main, .container {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   overscroll-behavior: none !important;
 }
 
