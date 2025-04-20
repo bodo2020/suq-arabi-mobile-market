@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, Mail, KeyRound, Map } from "lucide-react";
@@ -184,6 +183,7 @@ const Register = () => {
       phone: "",
       email: "",
       password: "",
+      location: "",
       server: ""
     });
     setFirstName("");
@@ -192,6 +192,7 @@ const Register = () => {
     setPhone("");
     setPassword("");
     setAddress("");
+    setLocation("");
   };
 
   return (
@@ -331,7 +332,6 @@ const Register = () => {
               <div className="mb-4">
                 <div className="flex items-center mb-2">
                   <MapPin size={18} className="ml-2 text-gray-500" />
-                  {/* UPDATED label here */}
                   <label htmlFor="address" className="font-medium">تفاصيل العنوان (اختياري)</label>
                 </div>
                 <textarea
