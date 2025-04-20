@@ -10,13 +10,15 @@ const BarcodeScanner = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [scanning, setScanning] = useState(false);
+  const [scanner, setScanner] = useState<Html5Qrcode | null>(null);
 
   useEffect(() => {
     const startScanner = () => {
-      const scanner = new Html5Qrcode("barcode-reader");
+      const qrScanner = new Html5Qrcode("barcode-reader");
+      setScanner(qrScanner);
       setScanning(true);
       
-      scanner.start(
+      qrScanner.start(
         { facingMode: "environment" },
         {
           fps: 10,
@@ -25,7 +27,7 @@ const BarcodeScanner = () => {
         (decodedText) => {
           // Success callback
           console.log("Barcode detected:", decodedText);
-          scanner.stop().then(() => {
+          qrScanner.stop().then(() => {
             navigate(`/search?q=${encodeURIComponent(decodedText)}`);
           });
         },
@@ -52,7 +54,6 @@ const BarcodeScanner = () => {
     return () => {
       clearTimeout(timer);
       // Clean up scanner on component unmount
-      const scanner = Html5Qrcode.instance("barcode-reader");
       if (scanner) {
         scanner.stop().catch(err => console.error("Error stopping scanner:", err));
       }

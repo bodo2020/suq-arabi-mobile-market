@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Package } from 'lucide-react';
@@ -24,16 +25,31 @@ const Orders = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'waiting':
         return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
+      case 'ready':
         return 'bg-blue-100 text-blue-800';
-      case 'completed':
+      case 'shipped':
         return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case 'done':
+        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'waiting':
+        return 'قيد الانتظار';
+      case 'ready':
+        return 'قيد التجهيز';
+      case 'shipped':
+        return 'تم الشحن';
+      case 'done':
+        return 'مكتمل';
+      default:
+        return status;
     }
   };
 
@@ -81,10 +97,7 @@ const Orders = () => {
                     </div>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
-                    {order.status === 'pending' && 'قيد الانتظار'}
-                    {order.status === 'processing' && 'قيد التجهيز'}
-                    {order.status === 'completed' && 'مكتمل'}
-                    {order.status === 'cancelled' && 'ملغي'}
+                    {getStatusText(order.status)}
                   </span>
                 </div>
                 <div className="text-sm text-gray-600">

@@ -16,6 +16,7 @@ const Search = () => {
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showScanner, setShowScanner] = useState(false);
+  const [scanner, setScanner] = useState<Html5Qrcode | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -80,9 +81,10 @@ const Search = () => {
     
     // Wait for the DOM to update with the scanner element
     setTimeout(() => {
-      const scanner = new Html5Qrcode("barcode-reader");
+      const qrScanner = new Html5Qrcode("barcode-reader");
+      setScanner(qrScanner);
       
-      scanner.start(
+      qrScanner.start(
         { facingMode: "environment" },
         {
           fps: 10,
@@ -91,7 +93,7 @@ const Search = () => {
         (decodedText) => {
           // Success callback
           console.log("Barcode detected:", decodedText);
-          scanner.stop().then(() => {
+          qrScanner.stop().then(() => {
             setShowScanner(false);
             navigate(`/search?q=${encodeURIComponent(decodedText)}`);
           });
@@ -113,9 +115,11 @@ const Search = () => {
   };
 
   const stopBarcodeScanner = () => {
-    const scanner = Html5Qrcode.instance("barcode-reader");
     if (scanner) {
       scanner.stop().then(() => {
+        setShowScanner(false);
+      }).catch(err => {
+        console.error("Error stopping scanner:", err);
         setShowScanner(false);
       });
     } else {

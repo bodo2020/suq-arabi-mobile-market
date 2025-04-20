@@ -13,6 +13,8 @@ export type Product = {
   offer_price?: number;
   image_urls: string[];
   category_id: string;
+  subcategory_id?: string;
+  subsubcategory_id?: string;
   company_id: string;
   quantity: number;
   created_at: string;
@@ -89,12 +91,12 @@ export type Address = {
 export type Order = {
   id: string;
   user_id?: string;
-  status: string;
+  status: 'waiting' | 'ready' | 'shipped' | 'done';
   total: number;
   shipping_address?: string;
   shipping_cost?: number;
   payment_method?: string;
-  payment_status?: string;
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
   notes?: string;
   items: any;
   created_at: string;
@@ -200,7 +202,7 @@ export async function searchProducts(query: string) {
 export async function submitOrder(order: Omit<Order, 'id' | 'created_at'>) {
   const { data, error } = await supabase
     .from('online_orders')
-    .insert([order]);
+    .insert(order);
   
   if (error) console.error(`Error submitting order:`, error);
   return data;

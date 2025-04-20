@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -163,6 +162,7 @@ const CategoryDetail = () => {
   };
 
   return (
+    
     <MainLayout>
       <div className="py-4">
         {/* Header with back button */}
