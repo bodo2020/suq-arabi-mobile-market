@@ -19,6 +19,10 @@ type ProfileType = {
   address?: string;
 };
 
+type AuthChangeEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED' | 'PASSWORD_RECOVERY';
+
+type AuthChangeCallback = (event: AuthChangeEvent, session: any) => void;
+
 const Account = () => {
   const [user, setUser] = useState<UserType | null>(null);
   const [profile, setProfile] = useState<ProfileType | null>(null);
@@ -27,9 +31,12 @@ const Account = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    // Handle auth state changes without trying to infer complex nested types
+    const handleAuthStateChange: AuthChangeCallback = (event, session) => {
       setUser(session?.user || null);
-    });
+    };
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(handleAuthStateChange);
     
     const getUser = async () => {
       setLoading(true);
