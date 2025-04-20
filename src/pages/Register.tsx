@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, User, Phone, MapPin, Mail, LogIn } from 'lucide-react';
+import { ArrowRight, User, Phone, MapPin, Mail, LogIn, UserPlus } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -114,7 +113,6 @@ const Register = () => {
       setIsSubmitting(true);
 
       try {
-        // Sign up with Supabase auth
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -129,7 +127,6 @@ const Register = () => {
         });
         if (error) throw error;
 
-        // Sign in after signup to establish session for redirect
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
 
@@ -152,11 +149,9 @@ const Register = () => {
       if (!validateLogin()) return;
       setIsSubmitting(true);
 
-      // Try login by email first, if email looks valid
       let loginError = null;
       let userEmail = email;
       try {
-        // If an email is entered, try to login with it
         if (email.trim()) {
           const { error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
@@ -173,9 +168,7 @@ const Register = () => {
           loginError = error;
         }
 
-        // If a phone is entered, try to find user's email by phone
         if (phone.trim()) {
-          // Find email by phone via customer table
           const { data: customerData, error: custErr } = await supabase
             .from('customers')
             .select('email')
@@ -239,9 +232,32 @@ const Register = () => {
 
   return (
     <MainLayout>
-      <div className="py-4">
+      <div className="py-4 px-0 max-w-md mx-auto">
+        <div className="flex justify-center mb-8">
+          <button
+            className={`flex-1 py-2 border-b-2 transition-all flex items-center justify-center gap-2 text-base font-bold 
+              ${mode === 'login' ? 'border-primary text-primary' : 'border-transparent text-gray-400'}`}
+            onClick={() => setMode('login')}
+            type="button"
+          >
+            <LogIn /> تسجيل الدخول
+          </button>
+          <button
+            className={`flex-1 py-2 border-b-2 transition-all flex items-center justify-center gap-2 text-base font-bold 
+              ${mode === 'register' ? 'border-primary text-primary' : 'border-transparent text-gray-400'}`}
+            onClick={() => setMode('register')}
+            type="button"
+          >
+            <UserPlus /> إنشاء حساب
+          </button>
+        </div>
+
         <div className="flex items-center mb-6">
-          <button onClick={handleBack} className="p-2" aria-label="الرجوع">
+          <button
+            onClick={handleBack}
+            className="p-2"
+            aria-label="الرجوع"
+          >
             <ArrowRight size={24} />
           </button>
           <h1 className="text-xl font-bold flex-1 text-center">
@@ -269,7 +285,6 @@ const Register = () => {
                   />
                   {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                 </div>
-
                 <div className="mb-4">
                   <div className="flex items-center mb-2">
                     <User size={18} className="ml-2 text-gray-500" />
@@ -403,4 +418,3 @@ const Register = () => {
 };
 
 export default Register;
-
