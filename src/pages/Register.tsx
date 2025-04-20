@@ -22,6 +22,8 @@ const Register = () => {
   const [cities, setCities] = useState<{ id: string; name: string; governorate_id: string }[]>([]);
   const [selectedArea, setSelectedArea] = useState('');
   const [areas, setAreas] = useState<{ id: string; name: string; city_id: string }[]>([]);
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState('');
+  const [neighborhoods, setNeighborhoods] = useState<{ id: string; name: string; area_id: string }[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({
@@ -99,6 +101,31 @@ const Register = () => {
     fetchAreas();
     setSelectedArea('');
   }, [selectedCity, cities]);
+
+  useEffect(() => {
+    if (!selectedArea) {
+      setNeighborhoods([]);
+      setSelectedNeighborhood('');
+      return;
+    }
+    const fetchNeighborhoods = async () => {
+      const areaObj = areas.find(area => area.name === selectedArea);
+      if (!areaObj) {
+        setNeighborhoods([]);
+        setSelectedNeighborhood('');
+        return;
+      }
+      const { data, error } = await supabase
+        .from('neighborhoods')
+        .select('id, name, area_id')
+        .eq('area_id', areaObj.id);
+      if (!error && data) {
+        setNeighborhoods(data);
+      }
+    };
+    fetchNeighborhoods();
+    setSelectedNeighborhood('');
+  }, [selectedArea, areas]);
 
   const validateRegister = () => {
     let valid = true;
@@ -191,6 +218,7 @@ const Register = () => {
               governorate: selectedGovernorate,
               city: selectedCity,
               area: selectedArea,
+              neighborhood: selectedNeighborhood,
               name: `${firstName} ${lastName}`,
             },
           },
@@ -398,6 +426,24 @@ const Register = () => {
                     <option value="">اختر المنطقة</option>
                     {areas.map(area => (
                       <option key={area.id} value={area.name}>{area.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <label htmlFor="neighborhood" className="font-medium">الحي</label>
+                  </div>
+                  <select
+                    id="neighborhood"
+                    value={selectedNeighborhood}
+                    onChange={e => setSelectedNeighborhood(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                    disabled={!selectedArea || neighborhoods.length === 0}
+                    required
+                  >
+                    <option value="">اختر الحي</option>
+                    {neighborhoods.map(neigh => (
+                      <option key={neigh.id} value={neigh.name}>{neigh.name}</option>
                     ))}
                   </select>
                 </div>
