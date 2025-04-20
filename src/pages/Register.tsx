@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, User, Phone, MapPin, Mail, LogIn, UserPlus } from 'lucide-react';
@@ -232,7 +233,7 @@ const Register = () => {
 
   return (
     <MainLayout>
-      <div className="py-4 px-0 max-w-md mx-auto">
+      <div className="py-4 px-0 max-w-md mx-auto hide-scrollbar">
         <div className="flex justify-center mb-8">
           <button
             className={`flex-1 py-2 border-b-2 transition-all flex items-center justify-center gap-2 text-base font-bold 
@@ -418,3 +419,4 @@ const Register = () => {
 };
 
 export default Register;
+
