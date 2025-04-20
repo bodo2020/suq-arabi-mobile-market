@@ -208,6 +208,7 @@ const Register = () => {
         const randomEmail = `${phone}@example.com`;
         const fullName = `${firstName} ${lastName}`.trim();
         
+        // First, create the user in Supabase Auth with proper metadata
         const { data, error } = await supabase.auth.signUp({
           email: randomEmail,
           password,
@@ -221,31 +222,40 @@ const Register = () => {
               city: selectedCity,
               area: selectedArea,
               neighborhood: selectedNeighborhood,
-              name: fullName, // Ensure name is always set and not empty
+              name: fullName, // Make sure name is explicitly set
             },
           },
         });
+        
         if (error) throw error;
+        
+        if (!data.user) {
+          throw new Error('User registration failed');
+        }
 
-        // Directly insert into customers table to ensure data consistency
-        const { error: customersError } = await supabase
+        // Then insert the customer record with the same data
+        const customerData = {
+          user_id: data.user.id,
+          first_name: firstName,
+          last_name: lastName,
+          email: randomEmail,
+          phone: phone,
+          address: address,
+          name: fullName, // Ensure name is properly set here as well
+        };
+
+        const { error: customerError } = await supabase
           .from('customers')
-          .insert({
-            user_id: data.user?.id,
-            first_name: firstName,
-            last_name: lastName,
-            email: randomEmail,
-            phone: phone,
-            address: address,
-            name: fullName, // Ensure name is explicitly set here as well
-          });
+          .insert([customerData]);
 
-        if (customersError) throw customersError;
+        if (customerError) throw customerError;
 
+        // Once everything is successful, sign in the user
         const { error: signInError } = await supabase.auth.signInWithPassword({ 
           email: randomEmail, 
           password 
         });
+        
         if (signInError) throw signInError;
 
         toast({
@@ -255,6 +265,7 @@ const Register = () => {
 
         navigate('/account');
       } catch (error: any) {
+        console.error('Registration error:', error);
         toast({
           title: 'خطأ في التسجيل',
           description: error.message || 'حدث خطأ أثناء التسجيل',
