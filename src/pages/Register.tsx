@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus } from 'lucide-react';
@@ -205,6 +206,7 @@ const Register = () => {
 
       try {
         const randomEmail = `${phone}@example.com`;
+        const fullName = `${firstName} ${lastName}`.trim();
         
         const { data, error } = await supabase.auth.signUp({
           email: randomEmail,
@@ -219,11 +221,26 @@ const Register = () => {
               city: selectedCity,
               area: selectedArea,
               neighborhood: selectedNeighborhood,
-              name: `${firstName} ${lastName}`,
+              name: fullName, // Ensure name is always set and not empty
             },
           },
         });
         if (error) throw error;
+
+        // Directly insert into customers table to ensure data consistency
+        const { error: customersError } = await supabase
+          .from('customers')
+          .insert({
+            user_id: data.user?.id,
+            first_name: firstName,
+            last_name: lastName,
+            email: randomEmail,
+            phone: phone,
+            address: address,
+            name: fullName, // Ensure name is explicitly set here as well
+          });
+
+        if (customersError) throw customersError;
 
         const { error: signInError } = await supabase.auth.signInWithPassword({ 
           email: randomEmail, 
