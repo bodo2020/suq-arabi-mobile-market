@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, Mail, KeyRound } from "lucide-react";
+import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, Mail, KeyRound, Map } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [location, setLocation] = useState(""); // new required location
   const [address, setAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({
@@ -24,6 +25,7 @@ const Register = () => {
     phone: "",
     email: "",
     password: "",
+    location: "",
     server: ""
   });
 
@@ -36,6 +38,7 @@ const Register = () => {
       phone: "",
       email: "",
       password: "",
+      location: "",
       server: ""
     };
     if (!firstName.trim()) {
@@ -44,6 +47,10 @@ const Register = () => {
     }
     if (!lastName.trim()) {
       newErrors.lastName = "اسم العائلة مطلوب";
+      valid = false;
+    }
+    if (!location.trim()) {
+      newErrors.location = "الموقع مطلوب";
       valid = false;
     }
     if (!email.trim() || !/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/.test(email.trim())) {
@@ -71,6 +78,7 @@ const Register = () => {
       phone: "",
       email: "",
       password: "",
+      location: "",
       server: ""
     };
     if (!email.trim() || !/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/.test(email.trim())) {
@@ -102,7 +110,8 @@ const Register = () => {
             last_name: lastName,
             phone: phone.trim(),
             name: `${firstName} ${lastName}`.trim(),
-            address
+            address,
+            location // PASS LOCATION TO SUPABASE
           }
         }
       });
@@ -112,7 +121,6 @@ const Register = () => {
         title: "تم التسجيل بنجاح",
         description: "تم إرسال بريد التفعيل. يرجى تفعيل بريدك الإلكتروني.",
       });
-      // Optionally navigate to login
       setMode("login");
     } catch (err: any) {
       setErrors((prev) => ({
@@ -271,6 +279,21 @@ const Register = () => {
                   />
                   {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                 </div>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <Map size={18} className="ml-2 text-gray-500" />
+                    <label htmlFor="location" className="font-medium">الموقع <span className="text-red-500">*</span></label>
+                  </div>
+                  <input
+                    id="location"
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className={`w-full p-3 border rounded-lg text-right ${errors.location ? "border-red-500" : "border-gray-300"}`}
+                    placeholder="مثال: مدينة نصر، القاهرة"
+                  />
+                  {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
+                </div>
               </>
             )}
             <div className="mb-4">
@@ -308,14 +331,15 @@ const Register = () => {
               <div className="mb-4">
                 <div className="flex items-center mb-2">
                   <MapPin size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="address" className="font-medium">العنوان (اختياري)</label>
+                  {/* UPDATED label here */}
+                  <label htmlFor="address" className="font-medium">تفاصيل العنوان (اختياري)</label>
                 </div>
                 <textarea
                   id="address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                  placeholder="أدخل عنوانك"
+                  placeholder="اكتب تفاصيل عنوانك هنا"
                   rows={3}
                 />
               </div>
