@@ -18,6 +18,10 @@ const Register = () => {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [selectedGovernorate, setSelectedGovernorate] = useState('');
   const [governorates, setGovernorates] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCity, setSelectedCity] = useState('');
+  const [cities, setCities] = useState<{ id: string; name: string; governorate_id: string }[]>([]);
+  const [selectedArea, setSelectedArea] = useState('');
+  const [areas, setAreas] = useState<{ id: string; name: string; city_id: string }[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({
@@ -39,6 +43,62 @@ const Register = () => {
     };
     fetchGovernorates();
   }, []);
+
+  useEffect(() => {
+    if (!selectedGovernorate) {
+      setCities([]);
+      setSelectedCity('');
+      setAreas([]);
+      setSelectedArea('');
+      return;
+    }
+    const fetchCities = async () => {
+      const govObj = governorates.find(gov => gov.name === selectedGovernorate);
+      if (!govObj) {
+        setCities([]);
+        setSelectedCity('');
+        setAreas([]);
+        setSelectedArea('');
+        return;
+      }
+      const { data, error } = await supabase
+        .from('cities')
+        .select('id, name, governorate_id')
+        .eq('governorate_id', govObj.id);
+      if (!error && data) {
+        setCities(data);
+      }
+    };
+    fetchCities();
+    setSelectedCity('');
+    setAreas([]);
+    setSelectedArea('');
+  }, [selectedGovernorate, governorates]);
+
+  useEffect(() => {
+    if (!selectedCity) {
+      setAreas([]);
+      setSelectedArea('');
+      return;
+    }
+    const fetchAreas = async () => {
+      const cityObj = cities.find(city => city.name === selectedCity);
+      if (!cityObj) {
+        setAreas([]);
+        setSelectedArea('');
+        return;
+      }
+      const { data, error } = await supabase
+        .from('areas')
+        .select('id, name, city_id')
+        .eq('city_id', cityObj.id);
+      if (!error && data) {
+        setAreas(data);
+      }
+    };
+    fetchAreas();
+    setSelectedArea('');
+  }, [selectedCity, cities]);
 
   const validateRegister = () => {
     let valid = true;
@@ -129,6 +189,8 @@ const Register = () => {
               phone: phone,
               address: address,
               governorate: selectedGovernorate,
+              city: selectedCity,
+              area: selectedArea,
               name: `${firstName} ${lastName}`,
             },
           },
@@ -300,6 +362,42 @@ const Register = () => {
                     <option value="">اختر المحافظة</option>
                     {governorates.map(gov => (
                       <option key={gov.id} value={gov.name}>{gov.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <label htmlFor="city" className="font-medium">المدينة</label>
+                  </div>
+                  <select
+                    id="city"
+                    value={selectedCity}
+                    onChange={e => setSelectedCity(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                    disabled={!selectedGovernorate || cities.length === 0}
+                    required
+                  >
+                    <option value="">اختر المدينة</option>
+                    {cities.map(city => (
+                      <option key={city.id} value={city.name}>{city.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <label htmlFor="area" className="font-medium">المنطقة</label>
+                  </div>
+                  <select
+                    id="area"
+                    value={selectedArea}
+                    onChange={e => setSelectedArea(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                    disabled={!selectedCity || areas.length === 0}
+                    required
+                  >
+                    <option value="">اختر المنطقة</option>
+                    {areas.map(area => (
+                      <option key={area.id} value={area.name}>{area.name}</option>
                     ))}
                   </select>
                 </div>
