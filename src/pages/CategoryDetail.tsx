@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -30,6 +31,11 @@ const CategoryDetail = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryType, setCategoryType] = useState<'main' | 'sub' | 'subsub'>('main');
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [subsubcategories, setSubsubcategories] = useState<Subsubcategory[]>([]);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedSubsubcategory, setSelectedSubsubcategory] = useState<string | null>(null);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,6 +60,16 @@ const CategoryDetail = () => {
             description: categoryData.description
           });
           setCategoryType('main');
+          
+          // Get subcategories for this main category
+          const categorySubcategories = subcategoriesData.filter(subcat => subcat.category_id === id);
+          setSubcategories(categorySubcategories);
+          
+          // Fetch all products for this category
+          const productsData = await getProducts(id);
+          setAllProducts(productsData as Product[]);
+          setProducts(productsData as Product[]);
+          
         } else {
           // Check if it's a subcategory
           const subcategoryData = subcategoriesData.find(subcat => subcat.id === id);
@@ -65,6 +81,18 @@ const CategoryDetail = () => {
               description: subcategoryData.description
             });
             setCategoryType('sub');
+            
+            // Get subsubcategories for this subcategory
+            const subcategorySubsubcategories = subsubcategoriesData.filter(
+              subsubcat => subsubcat.subcategory_id === id
+            );
+            setSubsubcategories(subcategorySubsubcategories);
+            
+            // Fetch all products for this subcategory
+            const productsData = await getProducts(id);
+            setAllProducts(productsData as Product[]);
+            setProducts(productsData as Product[]);
+            
           } else {
             // Check if it's a subsubcategory
             const subsubcategoryData = subsubcategoriesData.find(subsubcat => subsubcat.id === id);
@@ -76,15 +104,16 @@ const CategoryDetail = () => {
                 description: subsubcategoryData.description
               });
               setCategoryType('subsub');
+              
+              // Fetch all products for this subsubcategory
+              const productsData = await getProducts(id);
+              setAllProducts(productsData as Product[]);
+              setProducts(productsData as Product[]);
             } else {
               throw new Error('Category not found');
             }
           }
         }
-        
-        // Fetch products for this category ID
-        const productsData = await getProducts(id);
-        setProducts(productsData as Product[]);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -97,6 +126,40 @@ const CategoryDetail = () => {
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleSubcategorySelect = (subcatId: string | null) => {
+    setSelectedSubcategory(subcatId);
+    setSelectedSubsubcategory(null);
+    
+    if (!subcatId) {
+      // "All Products" was selected
+      setProducts(allProducts);
+    } else {
+      // Filter products by subcategory
+      const filtered = allProducts.filter(product => product.subcategory_id === subcatId);
+      setProducts(filtered);
+    }
+  };
+
+  const handleSubsubcategorySelect = (subsubcatId: string | null) => {
+    setSelectedSubsubcategory(subsubcatId);
+    
+    if (!subsubcatId) {
+      // If "All Products" was selected in subsubcategory filter
+      if (selectedSubcategory) {
+        // Still filter by the selected subcategory
+        const filtered = allProducts.filter(product => product.subcategory_id === selectedSubcategory);
+        setProducts(filtered);
+      } else {
+        // Show all products
+        setProducts(allProducts);
+      }
+    } else {
+      // Filter products by subsubcategory
+      const filtered = allProducts.filter(product => product.subsubcategory_id === subsubcatId);
+      setProducts(filtered);
+    }
   };
 
   return (
@@ -116,6 +179,68 @@ const CategoryDetail = () => {
           </h1>
           <div className="w-10"></div> {/* Spacer for alignment */}
         </div>
+
+        {/* Subcategories as horizontal ships/chips */}
+        {!loading && subcategories.length > 0 && (
+          <div className="mb-4 overflow-x-auto hide-scrollbar">
+            <div className="flex space-x-2 space-x-reverse pb-2">
+              <button
+                onClick={() => handleSubcategorySelect(null)}
+                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                  selectedSubcategory === null 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                كل المنتجات
+              </button>
+              {subcategories.map(subcat => (
+                <button
+                  key={subcat.id}
+                  onClick={() => handleSubcategorySelect(subcat.id)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                    selectedSubcategory === subcat.id 
+                      ? 'bg-primary text-white' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {subcat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Subsubcategories as horizontal ships/chips */}
+        {!loading && (categoryType === 'sub' || selectedSubcategory) && subsubcategories.length > 0 && (
+          <div className="mb-4 overflow-x-auto hide-scrollbar">
+            <div className="flex space-x-2 space-x-reverse pb-2">
+              <button
+                onClick={() => handleSubsubcategorySelect(null)}
+                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                  selectedSubsubcategory === null 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                كل المنتجات
+              </button>
+              {subsubcategories.map(subsubcat => (
+                <button
+                  key={subsubcat.id}
+                  onClick={() => handleSubsubcategorySelect(subsubcat.id)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                    selectedSubsubcategory === subsubcat.id 
+                      ? 'bg-primary text-white' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {subsubcat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center h-40">

@@ -9,6 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      areas: {
+        Row: {
+          active: boolean | null
+          city_id: string
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          city_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          city_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "areas_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banners: {
         Row: {
           active: boolean | null
@@ -59,13 +94,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "banners_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "banners_company_id_fkey"
             columns: ["company_id"]
@@ -134,6 +162,7 @@ export type Database = {
           id: string
           notes: string | null
           opening_balance: number | null
+          register_type: string
           updated_at: string | null
           verified_by: string | null
         }
@@ -146,6 +175,7 @@ export type Database = {
           id?: string
           notes?: string | null
           opening_balance?: number | null
+          register_type?: string
           updated_at?: string | null
           verified_by?: string | null
         }
@@ -158,6 +188,7 @@ export type Database = {
           id?: string
           notes?: string | null
           opening_balance?: number | null
+          register_type?: string
           updated_at?: string | null
           verified_by?: string | null
         }
@@ -178,43 +209,73 @@ export type Database = {
           },
         ]
       }
-      categories: {
+      cash_transactions: {
         Row: {
+          amount: number
+          balance_after: number
           created_at: string | null
-          description: string | null
+          created_by: string | null
           id: string
-          image_url: string | null
-          level: string
+          notes: string | null
+          register_type: string
+          transaction_date: string
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          register_type: string
+          transaction_date?: string
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          register_type?: string
+          transaction_date?: string
+          transaction_type?: string
+        }
+        Relationships: []
+      }
+      cities: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          governorate_id: string
+          id: string
           name: string
-          parent_id: string | null
           updated_at: string | null
         }
         Insert: {
+          active?: boolean | null
           created_at?: string | null
-          description?: string | null
+          governorate_id: string
           id?: string
-          image_url?: string | null
-          level: string
           name: string
-          parent_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          active?: boolean | null
           created_at?: string | null
-          description?: string | null
+          governorate_id?: string
           id?: string
-          image_url?: string | null
-          level?: string
           name?: string
-          parent_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "categories_parent_id_fkey"
-            columns: ["parent_id"]
+            foreignKeyName: "cities_governorate_id_fkey"
+            columns: ["governorate_id"]
             isOneToOne: false
-            referencedRelation: "categories"
+            referencedRelation: "governorates"
             referencedColumns: ["id"]
           },
         ]
@@ -288,66 +349,49 @@ export type Database = {
         }
         Relationships: []
       }
-      delivery_locations: {
+      delivery_type_pricing: {
         Row: {
-          active: boolean | null
-          area: string | null
-          city: string | null
           created_at: string | null
+          delivery_location_id: string | null
+          delivery_type_id: string | null
           estimated_time: string | null
-          governorate: string | null
           id: string
-          name: string
-          neighborhood: string | null
-          notes: string | null
           price: number
-          provider_id: string | null
           updated_at: string | null
         }
         Insert: {
-          active?: boolean | null
-          area?: string | null
-          city?: string | null
           created_at?: string | null
+          delivery_location_id?: string | null
+          delivery_type_id?: string | null
           estimated_time?: string | null
-          governorate?: string | null
           id?: string
-          name: string
-          neighborhood?: string | null
-          notes?: string | null
           price?: number
-          provider_id?: string | null
           updated_at?: string | null
         }
         Update: {
-          active?: boolean | null
-          area?: string | null
-          city?: string | null
           created_at?: string | null
+          delivery_location_id?: string | null
+          delivery_type_id?: string | null
           estimated_time?: string | null
-          governorate?: string | null
           id?: string
-          name?: string
-          neighborhood?: string | null
-          notes?: string | null
           price?: number
-          provider_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "delivery_locations_provider_id_fkey"
-            columns: ["provider_id"]
+            foreignKeyName: "delivery_type_pricing_delivery_type_id_fkey"
+            columns: ["delivery_type_id"]
             isOneToOne: false
-            referencedRelation: "delivery_providers"
+            referencedRelation: "delivery_types"
             referencedColumns: ["id"]
           },
         ]
       }
-      delivery_providers: {
+      delivery_types: {
         Row: {
           active: boolean | null
           created_at: string | null
+          description: string | null
           id: string
           name: string
           updated_at: string | null
@@ -355,6 +399,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           created_at?: string | null
+          description?: string | null
           id?: string
           name: string
           updated_at?: string | null
@@ -362,6 +407,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           created_at?: string | null
+          description?: string | null
           id?: string
           name?: string
           updated_at?: string | null
@@ -437,6 +483,89 @@ export type Database = {
           },
         ]
       }
+      governorates: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          name: string
+          provider_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name: string
+          provider_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          provider_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governorates_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_settings: {
+        Row: {
+          auto_print: boolean | null
+          auto_send_email: boolean | null
+          created_at: string | null
+          footer_text: string | null
+          id: string
+          invoice_prefix: string | null
+          next_invoice_number: number | null
+          show_contact: boolean | null
+          show_logo: boolean | null
+          show_tax_id: boolean | null
+          tax_id: string | null
+          terms_and_conditions: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_print?: boolean | null
+          auto_send_email?: boolean | null
+          created_at?: string | null
+          footer_text?: string | null
+          id?: string
+          invoice_prefix?: string | null
+          next_invoice_number?: number | null
+          show_contact?: boolean | null
+          show_logo?: boolean | null
+          show_tax_id?: boolean | null
+          tax_id?: string | null
+          terms_and_conditions?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_print?: boolean | null
+          auto_send_email?: boolean | null
+          created_at?: string | null
+          footer_text?: string | null
+          id?: string
+          invoice_prefix?: string | null
+          next_invoice_number?: number | null
+          show_contact?: boolean | null
+          show_logo?: boolean | null
+          show_tax_id?: boolean | null
+          tax_id?: string | null
+          terms_and_conditions?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       main_categories: {
         Row: {
           created_at: string | null
@@ -444,6 +573,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          product_count: number | null
           updated_at: string | null
         }
         Insert: {
@@ -452,6 +582,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          product_count?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -460,23 +591,66 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          product_count?: number | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      neighborhoods: {
+        Row: {
+          active: boolean | null
+          area_id: string
+          created_at: string | null
+          estimated_time: string | null
+          id: string
+          name: string
+          price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          area_id: string
+          created_at?: string | null
+          estimated_time?: string | null
+          id?: string
+          name: string
+          price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          area_id?: string
+          created_at?: string | null
+          estimated_time?: string | null
+          id?: string
+          name?: string
+          price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neighborhoods_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       online_orders: {
         Row: {
           created_at: string | null
           customer_id: string | null
           delivery_location_id: string | null
+          delivery_person: string | null
           id: string
           items: Json
           notes: string | null
           payment_method: string | null
-          payment_status: string | null
+          payment_status: Database["public"]["Enums"]["order_payment_status"]
           shipping_address: string | null
           shipping_cost: number | null
-          status: string
+          status: Database["public"]["Enums"]["order_status"]
           total: number
           tracking_number: string | null
           updated_at: string | null
@@ -485,14 +659,15 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           delivery_location_id?: string | null
+          delivery_person?: string | null
           id?: string
           items: Json
           notes?: string | null
           payment_method?: string | null
-          payment_status?: string | null
+          payment_status?: Database["public"]["Enums"]["order_payment_status"]
           shipping_address?: string | null
           shipping_cost?: number | null
-          status?: string
+          status?: Database["public"]["Enums"]["order_status"]
           total: number
           tracking_number?: string | null
           updated_at?: string | null
@@ -501,14 +676,15 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           delivery_location_id?: string | null
+          delivery_person?: string | null
           id?: string
           items?: Json
           notes?: string | null
           payment_method?: string | null
-          payment_status?: string | null
+          payment_status?: Database["public"]["Enums"]["order_payment_status"]
           shipping_address?: string | null
           shipping_cost?: number | null
-          status?: string
+          status?: Database["public"]["Enums"]["order_status"]
           total?: number
           tracking_number?: string | null
           updated_at?: string | null
@@ -521,14 +697,52 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "online_orders_delivery_location_id_fkey"
-            columns: ["delivery_location_id"]
-            isOneToOne: false
-            referencedRelation: "delivery_locations"
-            referencedColumns: ["id"]
-          },
         ]
+      }
+      payment_settings: {
+        Row: {
+          account_number: string | null
+          auto_apply_fees: boolean
+          bank_name: string | null
+          card_processing_fee: number | null
+          created_at: string | null
+          e_wallet_name: string | null
+          e_wallet_processing_fee: number | null
+          enable_card: boolean
+          enable_cash: boolean
+          enable_e_wallet: boolean
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          auto_apply_fees?: boolean
+          bank_name?: string | null
+          card_processing_fee?: number | null
+          created_at?: string | null
+          e_wallet_name?: string | null
+          e_wallet_processing_fee?: number | null
+          enable_card?: boolean
+          enable_cash?: boolean
+          enable_e_wallet?: boolean
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          auto_apply_fees?: boolean
+          bank_name?: string | null
+          card_processing_fee?: number | null
+          created_at?: string | null
+          e_wallet_name?: string | null
+          e_wallet_processing_fee?: number | null
+          enable_card?: boolean
+          enable_cash?: boolean
+          enable_e_wallet?: boolean
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       products: {
         Row: {
@@ -613,13 +827,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_product_category"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fk_product_company"
             columns: ["company_id"]
@@ -758,6 +965,47 @@ export type Database = {
           },
         ]
       }
+      register_transfers: {
+        Row: {
+          amount: number
+          created_at: string | null
+          created_by: string | null
+          date: string
+          from_register: string
+          id: string
+          notes: string | null
+          to_register: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          from_register: string
+          id?: string
+          notes?: string | null
+          to_register: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          from_register?: string
+          id?: string
+          notes?: string | null
+          to_register?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "register_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales: {
         Row: {
           card_amount: number | null
@@ -860,6 +1108,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      special_offers: {
+        Row: {
+          active: boolean | null
+          code: string | null
+          created_at: string | null
+          description: string | null
+          discount_type: string | null
+          discount_value: number | null
+          expiry_date: string | null
+          id: string
+          max_discount: number | null
+          min_order_amount: number | null
+          name: string
+          offer_type: string
+          updated_at: string | null
+          usage_limit: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          expiry_date?: string | null
+          id?: string
+          max_discount?: number | null
+          min_order_amount?: number | null
+          name: string
+          offer_type: string
+          updated_at?: string | null
+          usage_limit?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          expiry_date?: string | null
+          id?: string
+          max_discount?: number | null
+          min_order_amount?: number | null
+          name?: string
+          offer_type?: string
+          updated_at?: string | null
+          usage_limit?: number | null
+        }
+        Relationships: []
       }
       store_settings: {
         Row: {
@@ -1065,6 +1364,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_cash_transaction: {
+        Args: {
+          p_amount: number
+          p_transaction_type: string
+          p_register_type: string
+          p_notes: string
+        }
+        Returns: number
+      }
       create_bucket_if_not_exists: {
         Args: { bucket_name: string }
         Returns: undefined
@@ -1079,7 +1387,9 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      order_payment_status: "pending" | "paid" | "failed" | "refunded"
+      order_status: "waiting" | "ready" | "shipped" | "done"
+      register_type: "store" | "online"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1194,6 +1504,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_payment_status: ["pending", "paid", "failed", "refunded"],
+      order_status: ["waiting", "ready", "shipped", "done"],
+      register_type: ["store", "online"],
+    },
   },
 } as const

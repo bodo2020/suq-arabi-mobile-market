@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +18,8 @@ import OrderSuccess from "./pages/OrderSuccess";
 import NotFound from "./pages/NotFound";
 import Favorites from "./pages/Favorites";
 import Orders from "./pages/Orders";
+import Search from "./pages/Search";
+import BarcodeScanner from "./pages/BarcodeScanner";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +43,8 @@ const App = () => (
             <Route path="/account/address" element={<Address />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/barcode-scan" element={<BarcodeScanner />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

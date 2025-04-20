@@ -6,12 +6,14 @@ import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 const Favorites = () => {
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
@@ -31,10 +33,17 @@ const Favorites = () => {
     if (user) {
       fetchFavorites();
     } else {
-      // Redirect to login if not authenticated
-      navigate('/account');
+      // Show a toast if user is not logged in and redirect to login
+      toast({
+        title: "يرجى تسجيل الدخول",
+        description: "تحتاج إلى تسجيل الدخول لعرض المفضلة",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        navigate('/account');
+      }, 1500);
     }
-  }, [user, navigate]);
+  }, [user, navigate, toast]);
 
   const fetchFavorites = async () => {
     try {
@@ -68,6 +77,11 @@ const Favorites = () => {
       }
     } catch (error) {
       console.error('Error fetching favorites:', error);
+      toast({
+        title: "حدث خطأ",
+        description: "لم نتمكن من تحميل المفضلة",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

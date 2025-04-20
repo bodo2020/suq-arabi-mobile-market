@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Barcode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { processImageBackground } from '@/utils/imageUtils';
@@ -7,14 +7,23 @@ import { processImageBackground } from '@/utils/imageUtils';
 interface SearchBarProps {
   placeholder?: string;
   backgroundImage?: string;
+  initialQuery?: string;
+  onBarcodeClick?: () => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
   placeholder = "البحث عن منتجات...", 
-  backgroundImage 
+  backgroundImage,
+  initialQuery = '',
+  onBarcodeClick
 }) => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const navigate = useNavigate();
+  
+  // Update query when initialQuery changes
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +33,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   const handleBarcodeClick = () => {
-    // For now, we'll show an alert
-    alert("سيتم تفعيل الباركود قريباً");
+    if (onBarcodeClick) {
+      onBarcodeClick();
+    } else {
+      // Default behavior if no custom handler is provided
+      navigate('/barcode-scan');
+    }
   };
 
   return (
