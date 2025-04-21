@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, User, Phone, MapPin } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import LocationPicker from "@/components/ui/LocationPicker";
 
 const EditAccount = () => {
   const navigate = useNavigate();
@@ -15,6 +15,7 @@ const EditAccount = () => {
   const [address, setAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [location, setLocation] = useState<{government?: string; city?: string; area?: string; neighborhood?: string}>({});
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -32,6 +33,13 @@ const EditAccount = () => {
           setEmail(data.email || '');
           setAddress(data.address || '');
           setCustomerId(data.id);
+
+          setLocation({
+            government: data.governorate || '',
+            city: data.city || '',
+            area: data.area || '',
+            neighborhood: data.neighborhood || '',
+          });
         }
       } else {
         navigate('/account/register');
@@ -146,16 +154,20 @@ const EditAccount = () => {
             </div>
 
             <div>
+              <LocationPicker value={location} onChange={setLocation} />
+            </div>
+
+            <div>
               <div className="flex items-center mb-2">
                 <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="address" className="font-medium">العنوان</label>
+                <label htmlFor="address" className="font-medium">تفاصيل العنوان</label>
               </div>
               <textarea
                 id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل عنوانك"
+                placeholder="أدخل تفاصيل عنوانك"
                 rows={3}
               />
             </div>

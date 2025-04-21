@@ -4,6 +4,9 @@ import { MainCategory, Subcategory, Subsubcategory, getCategories, getSubcategor
 import { Link } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChevronLeft } from 'lucide-react';
+import SearchBar from '@/components/ui/SearchBar';
+import { useNavigate } from 'react-router-dom';
+
 const Categories = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -13,6 +16,10 @@ const Categories = () => {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+
+  const [storeInfo, setStoreInfo] = useState<any>(null);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -26,6 +33,20 @@ const Categories = () => {
     };
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    async function fetchStoreInfo() {
+      try {
+        const { getStoreInfo } = await import('@/lib/supabase');
+        const data = await getStoreInfo();
+        setStoreInfo(data);
+      } catch (e) {
+        setStoreInfo(null);
+      }
+    }
+    fetchStoreInfo();
+  }, []);
+
   useEffect(() => {
     if (activeCategoryId && activeLevel === 'sub') {
       const fetchSubcategories = async () => {
@@ -42,6 +63,7 @@ const Categories = () => {
       fetchSubcategories();
     }
   }, [activeCategoryId, activeLevel]);
+
   useEffect(() => {
     if (activeSubcategoryId && activeLevel === 'subsub') {
       const fetchSubsubcategories = async () => {
@@ -58,6 +80,7 @@ const Categories = () => {
       fetchSubsubcategories();
     }
   }, [activeSubcategoryId, activeLevel]);
+
   const getDisplayItems = () => {
     switch (activeLevel) {
       case 'main':
@@ -70,6 +93,7 @@ const Categories = () => {
         return [];
     }
   };
+
   const handleCategoryClick = (id: string) => {
     if (activeLevel === 'main') {
       setActiveCategoryId(id);
@@ -79,6 +103,7 @@ const Categories = () => {
       setActiveLevel('subsub');
     }
   };
+
   const handleBackClick = () => {
     if (activeLevel === 'subsub') {
       setActiveLevel('sub');
@@ -88,6 +113,7 @@ const Categories = () => {
       setActiveCategoryId(null);
     }
   };
+
   const getTitle = () => {
     switch (activeLevel) {
       case 'main':
@@ -100,14 +126,33 @@ const Categories = () => {
         return 'الأقسام';
     }
   };
+
   return <MainLayout>
       <div className="py-4">
-        
+        {storeInfo && <div className="flex justify-center mb-4">
+            <img src={storeInfo.logo_url} alt={storeInfo.name} className="h-12 object-contain" />
+        </div>}
+        <div className="relative mb-4">
+          <SearchBar
+            onFocus={()=>navigate('/search')}
+            readOnly
+          />
+        </div>
 
-        {loading ? <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div> : <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-            {getDisplayItems().map(item => <div key={item.id} className="flex flex-col items-center cursor-pointer" onClick={() => handleCategoryClick(item.id)}>
+        {loading ? 
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+            {[...Array(6)].map((_,i)=>(
+              <div key={i} className="flex flex-col items-center">
+                <div className="h-20 w-20 md:h-24 md:w-24 rounded-lg mb-2">
+                  <div className="animate-pulse bg-gray-200 h-full w-full rounded-lg"></div>
+                </div>
+                <div className="w-16 h-3 animate-pulse bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        : 
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+          {getDisplayItems().map(item => <div key={item.id} className="flex flex-col items-center cursor-pointer" onClick={() => handleCategoryClick(item.id)}>
                 <div className="h-20 w-20 md:h-24 md:w-24 rounded-lg flex items-center justify-center mb-2">
                   <img src={item.image_url} alt={item.name} className="h-20 w-20 md:h-24 md:w-24 object-contain" />
                 </div>
@@ -128,4 +173,5 @@ const Categories = () => {
       </div>
     </MainLayout>;
 };
+
 export default Categories;
