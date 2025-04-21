@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, Mail, KeyRound, Map } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
@@ -15,21 +15,9 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [location, setLocation] = useState(""); // new required location
   const [address, setAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Add state for location hierarchy
-  const [governorates, setGovernorates] = useState<any[]>([]);
-  const [cities, setCities] = useState<any[]>([]);
-  const [areas, setAreas] = useState<any[]>([]);
-  const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
-
-  const [selectedGovernorate, setSelectedGovernorate] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
-  const [selectedArea, setSelectedArea] = useState("");
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
-  const [location, setLocation] = useState(""); // new required location
-
-  // Fix initialization of error states (location field)
   const [errors, setErrors] = useState({
     firstName: "",
     lastName: "",
@@ -39,72 +27,6 @@ const Register = () => {
     location: "",
     server: ""
   });
-
-  // Fetch governorates on mount
-  useEffect(() => {
-    supabase.from("governorates").select("*").then(({ data }) => {
-      setGovernorates(data || []);
-    });
-  }, []);
-
-  // Fetch cities when governorate selected
-  useEffect(() => {
-    if (selectedGovernorate) {
-      supabase
-        .from("cities")
-        .select("*")
-        .eq("governorate_id", selectedGovernorate)
-        .then(({ data }) => setCities(data || []));
-    } else {
-      setCities([]);
-    }
-    setSelectedCity("");
-    setSelectedArea("");
-    setSelectedNeighborhood("");
-    setAreas([]);
-    setNeighborhoods([]);
-  }, [selectedGovernorate]);
-
-  // Fetch areas when city selected
-  useEffect(() => {
-    if (selectedCity) {
-      supabase
-        .from("areas")
-        .select("*")
-        .eq("city_id", selectedCity)
-        .then(({ data }) => setAreas(data || []));
-    } else {
-      setAreas([]);
-    }
-    setSelectedArea("");
-    setSelectedNeighborhood("");
-    setNeighborhoods([]);
-  }, [selectedCity]);
-
-  // Fetch neighborhoods when area selected
-  useEffect(() => {
-    if (selectedArea) {
-      supabase
-        .from("neighborhoods")
-        .select("*")
-        .eq("area_id", selectedArea)
-        .then(({ data }) => setNeighborhoods(data || []));
-    } else {
-      setNeighborhoods([]);
-    }
-    setSelectedNeighborhood("");
-  }, [selectedArea]);
-
-  // The value to store as location for Supabase (concatenated chain)
-  useEffect(() => {
-    let loc = "";
-    const gov = governorates.find((g) => g.id === selectedGovernorate)?.name;
-    const city = cities.find((c) => c.id === selectedCity)?.name;
-    const area = areas.find((a) => a.id === selectedArea)?.name;
-    const hood = neighborhoods.find((n) => n.id === selectedNeighborhood)?.name;
-    loc = [gov, city, area, hood].filter(Boolean).join(" > ");
-    setLocation(loc);
-  }, [selectedGovernorate, selectedCity, selectedArea, selectedNeighborhood]);
 
   // Validation functions
   const validateRegister = () => {
@@ -126,9 +48,8 @@ const Register = () => {
       newErrors.lastName = "اسم العائلة مطلوب";
       valid = false;
     }
-    // Require that a location is fully selected (at least up to area)
-    if (!selectedGovernorate || !selectedCity || !selectedArea) {
-      newErrors.location = "الموقع مطلوب (يجب اختيار المحافظة، المدينة، والمنطقة)";
+    if (!location.trim()) {
+      newErrors.location = "الموقع مطلوب";
       valid = false;
     }
     if (!email.trim() || !/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/.test(email.trim())) {
@@ -139,6 +60,7 @@ const Register = () => {
       newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف أو أكثر";
       valid = false;
     }
+    // Egyptian phone numbers: 01xxxxxxxxx
     if (!/^01\d{9}$/.test(phone.trim())) {
       newErrors.phone = "رقم الهاتف غير صحيح (يجب أن يكون مصريا من 11 رقم)";
       valid = false;
@@ -271,10 +193,6 @@ const Register = () => {
     setPassword("");
     setAddress("");
     setLocation("");
-    setSelectedGovernorate("");
-    setSelectedCity("");
-    setSelectedArea("");
-    setSelectedNeighborhood("");
   };
 
   return (
@@ -315,114 +233,70 @@ const Register = () => {
 
         <form onSubmit={mode === "register" ? handleRegister : handleLogin} className="space-y-4">
           <div className="bg-white rounded-lg p-4">
-          {mode === "register" && (
-            <>
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <User size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="firstName" className="font-medium">الاسم الأول</label>
+            {mode === "register" && (
+              <>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <User size={18} className="ml-2 text-gray-500" />
+                    <label htmlFor="firstName" className="font-medium">الاسم الأول</label>
+                  </div>
+                  <input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className={`w-full p-3 border rounded-lg text-right ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
+                    placeholder="أدخل الاسم الأول"
+                  />
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                 </div>
-                <input
-                  id="firstName"
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className={`w-full p-3 border rounded-lg text-right ${errors.firstName ? "border-red-500" : "border-gray-300"}`}
-                  placeholder="أدخل الاسم الأول"
-                />
-                {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
-              </div>
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <User size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="lastName" className="font-medium">اسم العائلة</label>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <User size={18} className="ml-2 text-gray-500" />
+                    <label htmlFor="lastName" className="font-medium">اسم العائلة</label>
+                  </div>
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className={`w-full p-3 border rounded-lg text-right ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
+                    placeholder="أدخل اسم العائلة"
+                  />
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
                 </div>
-                <input
-                  id="lastName"
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className={`w-full p-3 border rounded-lg text-right ${errors.lastName ? "border-red-500" : "border-gray-300"}`}
-                  placeholder="أدخل اسم العائلة"
-                />
-                {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
-              </div>
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <Phone size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <Phone size={18} className="ml-2 text-gray-500" />
+                    <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
+                  </div>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className={`w-full p-3 border rounded-lg text-right ${errors.phone ? "border-red-500" : "border-gray-300"}`}
+                    placeholder="01xxxxxxxxx"
+                  />
+                  {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                 </div>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className={`w-full p-3 border rounded-lg text-right ${errors.phone ? "border-red-500" : "border-gray-300"}`}
-                  placeholder="01xxxxxxxxx"
-                />
-                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-              </div>
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <Map size={18} className="ml-2 text-gray-500" />
-                  <label className="font-medium">
-                    الموقع <span className="text-red-500">*</span>
-                  </label>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <Map size={18} className="ml-2 text-gray-500" />
+                    <label htmlFor="location" className="font-medium">الموقع <span className="text-red-500">*</span></label>
+                  </div>
+                  <input
+                    id="location"
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className={`w-full p-3 border rounded-lg text-right ${errors.location ? "border-red-500" : "border-gray-300"}`}
+                    placeholder="مثال: مدينة نصر، القاهرة"
+                  />
+                  {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
                 </div>
-                {/* Governorate select */}
-                <select
-                  className={`w-full p-3 border rounded-lg text-right mb-2 ${errors.location ? "border-red-500" : "border-gray-300"}`}
-                  value={selectedGovernorate}
-                  onChange={e => setSelectedGovernorate(e.target.value)}
-                  required
-                >
-                  <option value="">اختر المحافظة</option>
-                  {governorates.map(g => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-                {/* City select */}
-                <select
-                  className={`w-full p-3 border rounded-lg text-right mb-2 ${errors.location ? "border-red-500" : "border-gray-300"}`}
-                  value={selectedCity}
-                  onChange={e => setSelectedCity(e.target.value)}
-                  required
-                  disabled={!selectedGovernorate}
-                >
-                  <option value="">اختر المدينة</option>
-                  {cities.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                {/* Area select */}
-                <select
-                  className={`w-full p-3 border rounded-lg text-right mb-2 ${errors.location ? "border-red-500" : "border-gray-300"}`}
-                  value={selectedArea}
-                  onChange={e => setSelectedArea(e.target.value)}
-                  required
-                  disabled={!selectedCity}
-                >
-                  <option value="">اختر المنطقة</option>
-                  {areas.map(a => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-                </select>
-                {/* Neighborhood select (optional) */}
-                <select
-                  className="w-full p-3 border rounded-lg text-right mb-2 border-gray-300"
-                  value={selectedNeighborhood}
-                  onChange={e => setSelectedNeighborhood(e.target.value)}
-                  disabled={!selectedArea || neighborhoods.length === 0}
-                >
-                  <option value="">(اختياري) اختر الحي</option>
-                  {neighborhoods.map(n => (
-                    <option key={n.id} value={n.id}>{n.name}</option>
-                  ))}
-                </select>
-                {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
-              </div>
-            </>
-          )}
+              </>
+            )}
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <Mail size={18} className="ml-2 text-gray-500" />
@@ -458,12 +332,12 @@ const Register = () => {
               <div className="mb-4">
                 <div className="flex items-center mb-2">
                   <MapPin size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="address" className="font-medium">address details</label>
+                  <label htmlFor="address" className="font-medium">تفاصيل العنوان (اختياري)</label>
                 </div>
                 <textarea
                   id="address"
                   value={address}
-                  onChange={e => setAddress(e.target.value)}
+                  onChange={(e) => setAddress(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg text-right"
                   placeholder="اكتب تفاصيل عنوانك هنا"
                   rows={3}
