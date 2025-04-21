@@ -35,7 +35,7 @@ const EditAccount = () => {
       const phone = localStorage.getItem('userPhone');
       if (phone) {
         const { data, error } = await supabase
-          .from<CustomerData>('customers')
+          .from('customers')
           .select('*')
           .eq('phone', phone)
           .single();
@@ -215,4 +215,3 @@ const EditAccount = () => {
 };
 
 export default EditAccount;
-
