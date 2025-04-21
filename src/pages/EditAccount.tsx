@@ -7,6 +7,18 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
 
+interface CustomerData {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  governorate_id?: string | null;
+  city_id?: string | null;
+  area_id?: string | null;
+  neighborhood_id?: string | null;
+}
+
 const EditAccount = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -23,7 +35,7 @@ const EditAccount = () => {
       const phone = localStorage.getItem('userPhone');
       if (phone) {
         const { data, error } = await supabase
-          .from('customers')
+          .from<CustomerData>('customers')
           .select('*')
           .eq('phone', phone)
           .single();
@@ -35,14 +47,15 @@ const EditAccount = () => {
           setAddress(data.address || '');
           setCustomerId(data.id);
 
-          // Initialize location state with existing values or empty strings
-          // Handle the case where these properties might not exist
           setLocation({
             government: data.governorate_id || '',
             city: data.city_id || '',
             area: data.area_id || '',
             neighborhood: data.neighborhood_id || '',
           });
+        }
+        if (error) {
+          console.error('Error loading user data:', error);
         }
       } else {
         navigate('/account/register');
@@ -70,11 +83,10 @@ const EditAccount = () => {
           phone,
           email: email || null,
           address,
-          // Update with the location field values
           governorate_id: location.government || null,
           city_id: location.city || null,
           area_id: location.area || null,
-          neighborhood_id: location.neighborhood || null
+          neighborhood_id: location.neighborhood || null,
         })
         .eq('id', customerId);
 
@@ -203,3 +215,4 @@ const EditAccount = () => {
 };
 
 export default EditAccount;
+

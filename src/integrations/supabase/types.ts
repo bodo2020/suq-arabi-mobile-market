@@ -319,12 +319,16 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          area_id: string | null
+          city_id: string | null
           created_at: string
           email: string | null
           first_name: string | null
+          governorate_id: string | null
           id: string
           last_name: string | null
           name: string
+          neighborhood_id: string | null
           notes: string | null
           phone: string | null
           updated_at: string
@@ -332,12 +336,16 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          area_id?: string | null
+          city_id?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
+          governorate_id?: string | null
           id?: string
           last_name?: string | null
           name: string
+          neighborhood_id?: string | null
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -345,12 +353,16 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          area_id?: string | null
+          city_id?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
+          governorate_id?: string | null
           id?: string
           last_name?: string | null
           name?: string
+          neighborhood_id?: string | null
           notes?: string | null
           phone?: string | null
           updated_at?: string
