@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, User, Phone, MapPin } from 'lucide-react';
+import { ArrowRight, User, Phone, MapPin, Plus } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +29,10 @@ const EditAccount = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [location, setLocation] = useState<{government?: string; city?: string; area?: string; neighborhood?: string}>({});
+  // New address state
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [newAddress, setNewAddress] = useState('');
+  const [newLocation, setNewLocation] = useState<{government?: string; city?: string; area?: string; neighborhood?: string}>({});
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -115,6 +119,49 @@ const EditAccount = () => {
     }
   };
 
+  // Handle adding a new address (for now, set as current address)
+  const handleNewAddressSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      if (!customerId) throw new Error('No customer ID found');
+
+      const { error } = await supabase
+        .from('customers')
+        .update({
+          address: newAddress,
+          governorate_id: newLocation.government || null,
+          city_id: newLocation.city || null,
+          area_id: newLocation.area || null,
+          neighborhood_id: newLocation.neighborhood || null,
+        })
+        .eq('id', customerId);
+
+      if (error) throw error;
+
+      setAddress(newAddress);
+      setLocation(newLocation);
+      localStorage.setItem('userAddress', newAddress);
+
+      toast({
+        title: "تم إضافة عنوان جديد",
+        description: "تم تعيين العنوان الجديد كعنوان افتراضي لك.",
+      });
+
+      setShowNewAddressForm(false);
+    } catch (error) {
+      console.error('Error updating user data:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة العنوان",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="py-4">
@@ -125,6 +172,75 @@ const EditAccount = () => {
           <h1 className="text-xl font-bold flex-1 text-center">تعديل البيانات</h1>
           <div className="w-10"></div>
         </div>
+        {/* Show current address */}
+        {address && (
+          <div className="bg-white rounded-lg p-4 mb-3 border border-primary/30">
+            <div className="flex items-center mb-1 text-primary font-semibold">
+              <MapPin size={18} className="ml-2" />
+              العنوان الحالي
+            </div>
+            <div className="text-gray-700 text-right">{address}</div>
+            <div className="mt-2">
+              <button
+                type="button"
+                className="text-sm text-primary flex items-center"
+                onClick={() => setShowNewAddressForm(!showNewAddressForm)}
+              >
+                <Plus size={16} className="ml-1" />
+                إضافة عنوان جديد
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* New Address Form */}
+        {showNewAddressForm && (
+          <form onSubmit={handleNewAddressSubmit} className="bg-white border border-primary/20 rounded-lg p-4 mb-4 space-y-3">
+            <div>
+              <div className="flex items-center mb-2">
+                <MapPin size={18} className="ml-2 text-gray-500" />
+                <label className="font-medium">الموقع</label>
+              </div>
+              <LocationPicker value={newLocation} onChange={setNewLocation} />
+            </div>
+            <div>
+              <div className="flex items-center mb-2">
+                <MapPin size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="newAddress" className="font-medium">تفاصيل العنوان</label>
+              </div>
+              <textarea
+                id="newAddress"
+                value={newAddress}
+                onChange={(e) => setNewAddress(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                placeholder="أدخل تفاصيل عنوانك الجديد"
+                rows={3}
+                required
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="mr-2 text-gray-500"
+                onClick={() => setShowNewAddressForm(false)}
+                disabled={isSubmitting}
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                className="bg-primary text-white py-2 px-5 rounded-lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white inline-block"></div>
+                ) : (
+                  'حفظ العنوان الجديد'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-lg p-4">
@@ -142,7 +258,6 @@ const EditAccount = () => {
                 placeholder="أدخل اسمك"
               />
             </div>
-
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <Phone size={18} className="ml-2 text-gray-500" />
@@ -157,7 +272,6 @@ const EditAccount = () => {
                 placeholder="أدخل رقم هاتفك"
               />
             </div>
-
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <MapPin size={18} className="ml-2 text-gray-500" />
@@ -172,15 +286,13 @@ const EditAccount = () => {
                 placeholder="أدخل بريدك الإلكتروني"
               />
             </div>
-
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <MapPin size={18} className="ml-2 text-gray-500" />
-                <label className="font-medium">العنوان</label>
+                <label className="font-medium">الموقع</label>
               </div>
               <LocationPicker value={location} onChange={setLocation} />
             </div>
-
             <div>
               <div className="flex items-center mb-2">
                 <MapPin size={18} className="ml-2 text-gray-500" />
@@ -196,7 +308,6 @@ const EditAccount = () => {
               />
             </div>
           </div>
-
           <button
             type="submit"
             className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center"
@@ -215,3 +326,4 @@ const EditAccount = () => {
 };
 
 export default EditAccount;
+
