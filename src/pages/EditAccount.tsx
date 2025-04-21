@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, User, Phone, MapPin } from 'lucide-react';
@@ -34,11 +35,13 @@ const EditAccount = () => {
           setAddress(data.address || '');
           setCustomerId(data.id);
 
+          // Initialize location state with existing values or empty strings
+          // Handle the case where these properties might not exist
           setLocation({
-            government: data.governorate || '',
-            city: data.city || '',
-            area: data.area || '',
-            neighborhood: data.neighborhood || '',
+            government: data.governorate_id || '',
+            city: data.city_id || '',
+            area: data.area_id || '',
+            neighborhood: data.neighborhood_id || '',
           });
         }
       } else {
@@ -67,6 +70,11 @@ const EditAccount = () => {
           phone,
           email: email || null,
           address,
+          // Update with the location field values
+          governorate_id: location.government || null,
+          city_id: location.city || null,
+          area_id: location.area || null,
+          neighborhood_id: location.neighborhood || null
         })
         .eq('id', customerId);
 
@@ -153,7 +161,11 @@ const EditAccount = () => {
               />
             </div>
 
-            <div>
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <MapPin size={18} className="ml-2 text-gray-500" />
+                <label className="font-medium">العنوان</label>
+              </div>
               <LocationPicker value={location} onChange={setLocation} />
             </div>
 
