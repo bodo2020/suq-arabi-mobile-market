@@ -122,16 +122,16 @@ const Cart = () => {
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
               <div className="flex justify-between py-2 border-b">
-                <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
                 <span>المجموع</span>
+                <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
               </div>
               <div className="flex justify-between py-2 border-b">
-                <span className="font-bold">0.00 ج.م</span>
                 <span>التوصيل</span>
+                <span className="font-bold">0.00 ج.م</span>
               </div>
               <div className="flex justify-between py-2 mt-2">
-                <span className="font-bold text-lg">{getTotalPrice().toFixed(2)} ج.م</span>
                 <span className="font-bold">الإجمالي</span>
+                <span className="font-bold text-lg">{getTotalPrice().toFixed(2)} ج.م</span>
               </div>
             </div>
 

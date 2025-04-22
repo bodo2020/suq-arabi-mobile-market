@@ -9,9 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   product: Product;
+  hideIfUnavailable?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = false }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const { items, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
@@ -23,14 +24,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const quantity = cartItem?.quantity || 0;
   const isOutOfStock = product.quantity <= 0;
   
+  // If we should hide unavailable products and this one is out of stock, don't render
+  if (hideIfUnavailable && isOutOfStock) {
+    return null;
+  }
+  
   // Check for authentication status
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
+      // If user signs in or out, refresh favorite status
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        checkFavoriteStatus(session?.user || null);
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      checkFavoriteStatus(session?.user || null);
     });
 
     return () => {
@@ -39,92 +50,119 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   }, []);
 
   // Check if product is in favorites
-  useEffect(() => {
-    const checkFavoriteStatus = async () => {
-      if (!user) {
+  const checkFavoriteStatus = async (currentUser: any = user) => {
+    if (!currentUser) {
+      // Check localStorage for guest favorites
+      try {
+        const savedFavorites = localStorage.getItem('favorites');
+        if (savedFavorites) {
+          const favorites = JSON.parse(savedFavorites);
+          setIsFavorite(favorites.includes(product.id));
+        } else {
+          setIsFavorite(false);
+        }
+      } catch (error) {
+        console.error('Error parsing favorites from localStorage:', error);
         setIsFavorite(false);
+      }
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('product_id', product.id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error checking favorite status:', error);
         return;
       }
       
-      try {
-        const { data, error } = await supabase
-          .from('favorites')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('product_id', product.id)
-          .maybeSingle();
-        
-        if (error) {
-          console.error('Error checking favorite status:', error);
-          return;
-        }
-        
-        setIsFavorite(!!data);
-      } catch (error) {
-        console.error('Error in favorite check:', error);
-      }
-    };
-    
-    checkFavoriteStatus();
-  }, [user, product.id]);
+      setIsFavorite(!!data);
+    } catch (error) {
+      console.error('Error in favorite check:', error);
+    }
+  };
   
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!user) {
-      toast({
-        title: "مطلوب تسجيل الدخول",
-        description: "يرجى تسجيل الدخول لإضافة المنتجات إلى المفضلة",
-        variant: "destructive",
-      });
-      
-      // Navigate to account page after a short delay
-      setTimeout(() => {
-        navigate('/account');
-      }, 1500);
-      
-      return;
-    }
-    
     setLoadingFavorite(true);
     
     try {
-      if (isFavorite) {
-        // Remove from favorites
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', product.id);
+      if (user) {
+        // User is logged in, use Supabase
+        if (isFavorite) {
+          // Remove from favorites
+          const { error } = await supabase
+            .from('favorites')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('product_id', product.id);
+            
+          if (error) {
+            throw error;
+          }
           
-        if (error) {
-          throw error;
-        }
-        
-        setIsFavorite(false);
-        toast({
-          title: "تمت إزالة المنتج من المفضلة",
-          variant: "default",
-        });
-      } else {
-        // Add to favorites
-        const { error } = await supabase
-          .from('favorites')
-          .insert({
-            user_id: user.id,
-            product_id: product.id
+          setIsFavorite(false);
+          toast({
+            title: "تمت إزالة المنتج من المفضلة",
+            variant: "default",
           });
+        } else {
+          // Add to favorites
+          const { error } = await supabase
+            .from('favorites')
+            .insert({
+              user_id: user.id,
+              product_id: product.id
+            });
+            
+          if (error) {
+            throw error;
+          }
           
-        if (error) {
-          throw error;
+          setIsFavorite(true);
+          toast({
+            title: "تمت إضافة المنتج إلى المفضلة",
+            variant: "default",
+          });
+        }
+      } else {
+        // User is not logged in, use localStorage
+        let favorites = [];
+        try {
+          const savedFavorites = localStorage.getItem('favorites');
+          if (savedFavorites) {
+            favorites = JSON.parse(savedFavorites);
+          }
+        } catch (error) {
+          console.error('Error parsing favorites from localStorage:', error);
         }
         
-        setIsFavorite(true);
-        toast({
-          title: "تمت إضافة المنتج إلى المفضلة",
-          variant: "default",
-        });
+        if (isFavorite) {
+          // Remove from favorites
+          favorites = favorites.filter(id => id !== product.id);
+          localStorage.setItem('favorites', JSON.stringify(favorites));
+          setIsFavorite(false);
+          toast({
+            title: "تمت إزالة المنتج من المفضلة",
+            variant: "default",
+          });
+        } else {
+          // Add to favorites
+          favorites.push(product.id);
+          localStorage.setItem('favorites', JSON.stringify(favorites));
+          setIsFavorite(true);
+          toast({
+            title: "تمت إضافة المنتج إلى المفضلة",
+            variant: "default",
+          });
+        }
       }
     } catch (error) {
       console.error('Error updating favorites:', error);
@@ -188,10 +226,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <img 
           src={productImage} 
           alt={product.name} 
-          className="absolute top-0 left-0 w-full h-full object-contain"
+          className="absolute top-0 right-0 w-full h-full object-contain"
         />
         {isOutOfStock && (
-          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black/30 rounded">
+          <div className="absolute top-0 right-0 w-full h-full flex items-center justify-center bg-black/30 rounded">
             <div className="bg-white p-2 rounded text-red-500 text-sm font-semibold flex items-center">
               <AlertTriangle size={14} className="ml-1" />
               غير متوفر
@@ -211,7 +249,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <span className="font-bold text-primary">{product.offer_price} ج.م</span>
               </>
             ) : (
-              <span className="font-bold">{product.price} ج.م</span>
+              <span className="font-bold text-left flex-grow-0">{product.price} ج.م</span>
             )}
           </div>
           

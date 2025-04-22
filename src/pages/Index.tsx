@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -99,7 +98,9 @@ const Index = () => {
   };
 
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
-  const featuredProducts = products.slice(0, isMobile ? 4 : 10);
+  
+  const availableProducts = products.filter(product => product.quantity > 0);
+  const featuredProducts = availableProducts.slice(0, isMobile ? 4 : 10);
 
   if (loading) {
     return (
@@ -135,7 +136,6 @@ const Index = () => {
     )
   }
 
-  //--- Popup content for location change ---
   const handleChangeLocation = () => {
     setPopoverOpen(false);
     navigate('/account/address');
@@ -159,13 +159,11 @@ const Index = () => {
           </div>
         </div>
 
-        {/* تحديد الموقع: كلمه توصيل الى + اسم العنوان مع زر popover للتغيير  */}
         <div className="flex items-center gap-2 mb-4 px-1">
           <span className="flex items-center text-gray-600 text-sm font-semibold">
             <MapPin size={20} className="ml-1 text-primary" /> 
             توصيل إلى
           </span>
-          {/* إظهار العنوان الرئيسي فقط - بدون كلمة منطقة أو حي */}
           <span className="text-sm font-bold truncate max-w-xs">
             {userLocation?.area || ''}{userLocation?.area && userLocation?.neighborhood && '، '}
             {userLocation?.neighborhood || ''}
@@ -173,7 +171,7 @@ const Index = () => {
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
               <button
-                className="text-primary underline text-xs ml-3"
+                className="text-primary underline text-xs mr-auto"
                 type="button"
                 aria-label="تغيير الموقع"
               >
@@ -193,9 +191,6 @@ const Index = () => {
             </PopoverContent>
           </Popover>
         </div>
-
-        {/* حذف تفاصيل العنوان - لا نعرض تفاصيل العنوان الفرعية أو مكون LocationDisplay */}
-        {/* مكان الكود المحذوف: <LocationDisplay ... /> */}
 
         {banners.length > 0 && (
           <div className="mb-6 relative">
@@ -238,11 +233,11 @@ const Index = () => {
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-bold">الأقسام</h2>
             <Link to="/categories" className="flex items-center text-primary text-sm">
               عرض الكل
               <ChevronLeft size={16} />
             </Link>
-            <h2 className="text-lg font-bold">الأقسام</h2>
           </div>
           
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
@@ -258,15 +253,22 @@ const Index = () => {
         
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-bold">منتجات مميزة</h2>
             <Link to="/products" className="flex items-center text-primary text-sm">
               عرض الكل
               <ChevronLeft size={16} />
             </Link>
-            <h2 className="text-lg font-bold">منتجات مميزة</h2>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {featuredProducts.map(product => <ProductCard key={product.id} product={product} />)}
+            {featuredProducts.map(product => 
+              <ProductCard key={product.id} product={product} hideIfUnavailable={true} />
+            )}
+            {featuredProducts.length === 0 && (
+              <div className="col-span-full py-8 text-center">
+                <p className="text-gray-500">لا توجد منتجات متوفرة حالياً</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
