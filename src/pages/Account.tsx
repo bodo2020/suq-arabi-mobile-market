@@ -1,80 +1,79 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, User, Package, Heart, ChevronLeft, Phone, MapPin } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-
-type CustomerType = {
-  user_id?: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  phone?: string | null;
-  address?: string | null;
-  email?: string | null;
-  name?: string | null;
-};
+import { Address } from '@/lib/supabase';
 
 const Account = () => {
   const [user, setUser] = useState(supabase.auth.getUser() as any | null);
-  const [customer, setCustomer] = useState<CustomerType | null>(null);
+  const [customer, setCustomer] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userArea, setUserArea] = useState<string | null>(null);
-  const [userNeighborhood, setUserNeighborhood] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth listener to update user state
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      // When user changes, reload customer info
-      if (session?.user) {
-        loadCustomer(session.user.id);
-      } else {
-        setCustomer(null);
-        setLoading(false);
-      }
-    });
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Fetch customer details
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
 
-    const loadCustomer = async (userId: string) => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-      if (error) {
-        console.error('Error fetching customer', error);
-        setCustomer(null);
+        // Fetch user addresses
+        const { data: addressesData, error: addressesError } = await supabase
+          .from('customer_addresses')
+          .select(`
+            *,
+            governorates(name),
+            cities(name),
+            areas(name),
+            neighborhoods(name)
+          `)
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false });
+
+        if (customerError) {
+          console.error('Error fetching customer:', customerError);
+        }
+
+        if (addressesError) {
+          console.error('Error fetching addresses:', addressesError);
+        }
+
+        const enhancedAddresses = (addressesData || []).map(addr => ({
+          ...addr,
+          governorate_name: addr.governorates?.name,
+          city_name: addr.cities?.name,
+          area_name: addr.areas?.name,
+          neighborhood_name: addr.neighborhoods?.name
+        }));
+
+        setCustomer(customerData);
+        setAddresses(enhancedAddresses);
+
+        // Update localStorage with default address
+        const defaultAddress = enhancedAddresses.find(a => a.is_default);
+        if (defaultAddress) {
+          localStorage.setItem('userArea', defaultAddress.area_name || '');
+          localStorage.setItem('userNeighborhood', defaultAddress.neighborhood_name || '');
+          localStorage.setItem('userAddress', defaultAddress.address || '');
+        }
       } else {
-        setCustomer(data);
+        navigate('/account/register');
       }
+
       setLoading(false);
     };
 
-    // Load initial session and customer data
-    supabase.auth.getSession().then(({ data }) => {
-      const sessionUser = data.session?.user ?? null;
-      setUser(sessionUser);
-      if (sessionUser) {
-        loadCustomer(sessionUser.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Load location data from localStorage
-    const area = localStorage.getItem('userArea');
-    const neighborhood = localStorage.getItem('userNeighborhood');
-    if (area) setUserArea(area);
-    if (neighborhood) setUserNeighborhood(neighborhood);
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+    fetchData();
+  }, [navigate]);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -150,18 +149,21 @@ const Account = () => {
             </div>
           </div>
 
-          {/* Show address with area and neighborhood */}
-          {(userArea || userNeighborhood) && (
-            <div className="bg-gray-50 p-3 rounded-lg text-sm">
+          {addresses.length > 0 && (
+            <div className="bg-gray-50 p-3 rounded-lg text-sm mt-4">
               <div className="flex items-start">
                 <MapPin size={16} className="ml-2 mt-0.5 text-gray-500" />
                 <div>
                   <div className="font-semibold mb-1">عنوان التوصيل</div>
-                  <p className="text-gray-600">
-                    {userNeighborhood && `حي ${userNeighborhood}`}
-                    {userArea && userNeighborhood && '، '}
-                    {userArea && `منطقة ${userArea}`}
-                  </p>
+                  {addresses.map(addr => (
+                    <div key={addr.id} className="text-gray-600 mb-2">
+                      {addr.is_default && (
+                        <span className="text-primary text-xs ml-2">افتراضي</span>
+                      )}
+                      {addr.neighborhood_name && `حي ${addr.neighborhood_name}`}
+                      {addr.area_name && `, منطقة ${addr.area_name}`}
+                    </div>
+                  ))}
                   <Link to="/account/addresses" className="text-primary text-xs mt-2 block">
                     إدارة العناوين
                   </Link>

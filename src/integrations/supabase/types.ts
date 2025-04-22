@@ -316,6 +316,74 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_addresses: {
+        Row: {
+          address: string
+          area_id: string | null
+          city_id: string | null
+          created_at: string | null
+          governorate_id: string | null
+          id: string
+          is_default: boolean | null
+          neighborhood_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          area_id?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          governorate_id?: string | null
+          id?: string
+          is_default?: boolean | null
+          neighborhood_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          area_id?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          governorate_id?: string | null
+          id?: string
+          is_default?: boolean | null
+          neighborhood_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_addresses_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_addresses_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_addresses_governorate_id_fkey"
+            columns: ["governorate_id"]
+            isOneToOne: false
+            referencedRelation: "governorates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_addresses_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null

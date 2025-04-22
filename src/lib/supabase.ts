@@ -85,7 +85,15 @@ export type Address = {
   id: string;
   user_id: string;
   address: string;
+  governorate_id?: string | null;
+  city_id?: string | null;
+  area_id?: string | null;
+  neighborhood_id?: string | null;
   is_default: boolean;
+  governorate_name?: string;
+  city_name?: string;
+  area_name?: string;
+  neighborhood_name?: string;
 };
 
 export type Order = {
