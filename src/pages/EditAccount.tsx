@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, User, Phone, MapPin, Plus, Lock } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowRight, User, Phone, MapPin, Plus, Lock, ChevronLeft } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
