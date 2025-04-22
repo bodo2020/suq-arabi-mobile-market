@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product } from '@/lib/supabase';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 type CartContextType = {
   items: CartItem[];
@@ -25,7 +27,10 @@ export const useCart = () => {
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
+  // Auth state changes listener
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
@@ -40,23 +45,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Load cart items based on user status
   useEffect(() => {
-    if (user) {
-      const fetchCartItems = async () => {
-        const { data, error } = await supabase
-          .from('cart_items')
-          .select('*, product_id')
-          .eq('user_id', user.id);
+    const fetchCartItems = async () => {
+      setIsLoading(true);
+      try {
+        if (user) {
+          // If user is logged in, fetch from Supabase
+          const { data, error } = await supabase
+            .from('cart_items')
+            .select('*, product_id')
+            .eq('user_id', user.id);
 
-        if (error) {
-          console.error('Error fetching cart items:', error);
-          return;
-        }
+          if (error) {
+            console.error('Error fetching cart items:', error);
+            toast({
+              title: "خطأ في تحميل السلة",
+              description: "حدث خطأ أثناء تحميل عناصر السلة",
+              variant: "destructive",
+            });
+            return;
+          }
 
-        if (data) {
-          const productIds = data.map(item => item.product_id);
+          if (data && data.length > 0) {
+            const productIds = data.map(item => item.product_id);
 
-          if (productIds.length > 0) {
             const { data: productsData, error: productsError } = await supabase
               .from('products')
               .select('*')
@@ -80,47 +93,77 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             setItems([]);
           }
+        } else {
+          // If user is not logged in, load from localStorage
+          const savedCart = localStorage.getItem('cart');
+          if (savedCart) {
+            try {
+              setItems(JSON.parse(savedCart));
+            } catch (error) {
+              console.error('Failed to parse cart from localStorage:', error);
+              localStorage.removeItem('cart');
+              setItems([]);
+            }
+          } else {
+            setItems([]);
+          }
         }
-      };
-
-      fetchCartItems();
-    } else {
-      const savedCart = localStorage.getItem('cart');
-      if (savedCart) {
-        try {
-          setItems(JSON.parse(savedCart));
-        } catch (error) {
-          console.error('Failed to parse cart from localStorage:', error);
-        }
-      } else {
-        setItems([]);
+      } catch (error) {
+        console.error('Error in cart loading:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, [user]);
+    };
 
+    fetchCartItems();
+  }, [user, toast]);
+
+  // Sync cart with localStorage (for non-logged in users) or Supabase (for logged in users)
   useEffect(() => {
-    if (!user) {
-      localStorage.setItem('cart', JSON.stringify(items));
-    } else {
-      const syncCartToSupabase = async () => {
-        await supabase
-          .from('cart_items')
-          .delete()
-          .eq('user_id', user.id);
-        if (items.length > 0) {
-          const cartItemsToInsert = items.map(item => ({
-            user_id: user.id,
-            product_id: item.product.id,
-            quantity: item.quantity
-          }));
-          await supabase
+    if (isLoading) return;
+
+    const syncCart = async () => {
+      if (!user) {
+        // For non-logged in users, save to localStorage
+        localStorage.setItem('cart', JSON.stringify(items));
+      } else {
+        // For logged in users, sync with Supabase
+        try {
+          // Delete existing cart items for this user
+          const { error: deleteError } = await supabase
             .from('cart_items')
-            .insert(cartItemsToInsert);
+            .delete()
+            .eq('user_id', user.id);
+
+          if (deleteError) {
+            console.error('Error clearing cart items:', deleteError);
+            return;
+          }
+
+          if (items.length > 0) {
+            // Insert new cart items
+            const cartItemsToInsert = items.map(item => ({
+              user_id: user.id,
+              product_id: item.product.id,
+              quantity: item.quantity
+            }));
+
+            const { error: insertError } = await supabase
+              .from('cart_items')
+              .insert(cartItemsToInsert);
+
+            if (insertError) {
+              console.error('Error inserting cart items:', insertError);
+            }
+          }
+        } catch (error) {
+          console.error('Error syncing cart with Supabase:', error);
         }
-      };
-      syncCartToSupabase();
-    }
-  }, [items, user]);
+      }
+    };
+
+    syncCart();
+  }, [items, user, isLoading]);
 
   const addToCart = (product: Product) => {
     setItems(currentItems => {

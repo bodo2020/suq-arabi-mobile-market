@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -93,8 +94,21 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			textAlign: {
+				start: 'start',
+				end: 'end',
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		function({ addBase }) {
+			addBase({
+				'html': { 
+					direction: 'rtl',
+				}
+			})
+		}
+	],
 } satisfies Config;

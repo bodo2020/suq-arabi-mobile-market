@@ -40,22 +40,32 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   // Check if product is in favorites
   useEffect(() => {
-    if (user) {
-      const checkFavorite = async () => {
-        const { data } = await supabase
+    const checkFavoriteStatus = async () => {
+      if (!user) {
+        setIsFavorite(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
           .from('favorites')
           .select('*')
           .eq('user_id', user.id)
           .eq('product_id', product.id)
-          .single();
+          .maybeSingle();
         
-        if (data) {
-          setIsFavorite(true);
+        if (error) {
+          console.error('Error checking favorite status:', error);
+          return;
         }
-      };
-      
-      checkFavorite();
-    }
+        
+        setIsFavorite(!!data);
+      } catch (error) {
+        console.error('Error in favorite check:', error);
+      }
+    };
+    
+    checkFavoriteStatus();
   }, [user, product.id]);
   
   const toggleFavorite = async (e: React.MouseEvent) => {
@@ -82,12 +92,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     try {
       if (isFavorite) {
         // Remove from favorites
-        await supabase
+        const { error } = await supabase
           .from('favorites')
           .delete()
           .eq('user_id', user.id)
           .eq('product_id', product.id);
           
+        if (error) {
+          throw error;
+        }
+        
         setIsFavorite(false);
         toast({
           title: "تمت إزالة المنتج من المفضلة",
@@ -95,13 +109,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         });
       } else {
         // Add to favorites
-        await supabase
+        const { error } = await supabase
           .from('favorites')
           .insert({
             user_id: user.id,
             product_id: product.id
           });
           
+        if (error) {
+          throw error;
+        }
+        
         setIsFavorite(true);
         toast({
           title: "تمت إضافة المنتج إلى المفضلة",
