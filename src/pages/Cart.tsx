@@ -3,7 +3,7 @@ import React from 'react';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 
 const Cart = () => {

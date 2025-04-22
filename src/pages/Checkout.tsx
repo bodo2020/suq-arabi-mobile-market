@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/contexts/useCart';
 import { submitOrder } from '@/lib/supabase';
 import { toast } from 'sonner';
 

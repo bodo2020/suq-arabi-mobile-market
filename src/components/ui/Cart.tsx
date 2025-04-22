@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/contexts/useCart';
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
@@ -28,7 +27,6 @@ const Cart = () => {
     removeFromCart(productId);
   };
 
-  // Get the image of a product, handling the new image_urls array
   const getProductImage = (item) => {
     return item.product.image_urls && item.product.image_urls.length > 0 
       ? item.product.image_urls[0] 
@@ -120,7 +118,6 @@ const Cart = () => {
               ))}
             </div>
 
-            {/* Summary */}
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
               <div className="flex justify-between py-2 border-b">
@@ -137,7 +134,6 @@ const Cart = () => {
               </div>
             </div>
 
-            {/* Checkout button */}
             <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
               متابعة الطلب
             </Link>

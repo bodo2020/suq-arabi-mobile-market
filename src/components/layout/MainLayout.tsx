@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Layers, ShoppingCart, User } from 'lucide-react';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/contexts/useCart';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MainLayoutProps {
