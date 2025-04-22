@@ -13,6 +13,7 @@ import Cart from "./pages/Cart";
 import Account from "./pages/Account";
 import Register from "./pages/Register";
 import Address from "./pages/Address";
+import AddressManager from "./pages/AddressManager";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import NotFound from "./pages/NotFound";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/account" element={<Account />} />
               <Route path="/account/register" element={<Register />} />
               <Route path="/account/address" element={<Address />} />
+              <Route path="/account/addresses" element={<AddressManager />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/search" element={<Search />} />

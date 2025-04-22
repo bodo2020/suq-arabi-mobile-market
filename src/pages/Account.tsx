@@ -13,12 +13,15 @@ type CustomerType = {
   phone?: string | null;
   address?: string | null;
   email?: string | null;
+  name?: string | null;
 };
 
 const Account = () => {
   const [user, setUser] = useState(supabase.auth.getUser() as any | null);
   const [customer, setCustomer] = useState<CustomerType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userArea, setUserArea] = useState<string | null>(null);
+  const [userNeighborhood, setUserNeighborhood] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -61,6 +64,12 @@ const Account = () => {
         setLoading(false);
       }
     });
+
+    // Load location data from localStorage
+    const area = localStorage.getItem('userArea');
+    const neighborhood = localStorage.getItem('userNeighborhood');
+    if (area) setUserArea(area);
+    if (neighborhood) setUserNeighborhood(neighborhood);
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -126,7 +135,7 @@ const Account = () => {
               <User size={32} className="text-gray-500" />
             </div>
             <div>
-              <h2 className="font-bold">{customer?.first_name ?? ''} {customer?.last_name ?? ''}</h2>
+              <h2 className="font-bold">{customer?.name || customer?.first_name && customer?.last_name ? `${customer.first_name} ${customer.last_name}` : ''}</h2>
               <p className="text-sm text-gray-500">{customer?.email ?? user.email}</p>
               {customer?.phone && <p className="text-sm text-gray-500 flex items-center mt-1">
                 <Phone size={14} className="ml-1" />
@@ -141,13 +150,21 @@ const Account = () => {
             </div>
           </div>
 
-          {customer?.address && (
+          {/* Show address with area and neighborhood */}
+          {(userArea || userNeighborhood) && (
             <div className="bg-gray-50 p-3 rounded-lg text-sm">
               <div className="flex items-start">
                 <MapPin size={16} className="ml-2 mt-0.5 text-gray-500" />
                 <div>
                   <div className="font-semibold mb-1">عنوان التوصيل</div>
-                  <p className="text-gray-600">{customer.address}</p>
+                  <p className="text-gray-600">
+                    {userNeighborhood && `حي ${userNeighborhood}`}
+                    {userArea && userNeighborhood && '، '}
+                    {userArea && `منطقة ${userArea}`}
+                  </p>
+                  <Link to="/account/addresses" className="text-primary text-xs mt-2 block">
+                    إدارة العناوين
+                  </Link>
                 </div>
               </div>
             </div>
@@ -165,6 +182,12 @@ const Account = () => {
           <Link to="/favorites" className="flex items-center p-4 border-b">
             <Heart size={20} className="ml-3 text-gray-500" />
             <span>المفضلة</span>
+            <ChevronLeft size={18} className="mr-auto text-gray-400" />
+          </Link>
+
+          <Link to="/account/addresses" className="flex items-center p-4 border-b">
+            <MapPin size={20} className="ml-3 text-gray-500" />
+            <span>عناوين التوصيل</span>
             <ChevronLeft size={18} className="mr-auto text-gray-400" />
           </Link>
 

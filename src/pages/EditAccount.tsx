@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, User, Phone, MapPin, Plus } from 'lucide-react';
+import { ArrowRight, User, Phone, MapPin, Plus, Lock } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
@@ -12,11 +12,6 @@ interface CustomerData {
   name: string;
   phone: string | null;
   email: string | null;
-  address: string | null;
-  governorate_id?: string | null;
-  city_id?: string | null;
-  area_id?: string | null;
-  neighborhood_id?: string | null;
 }
 
 const EditAccount = () => {
@@ -25,40 +20,31 @@ const EditAccount = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
-  const [location, setLocation] = useState<{government?: string; city?: string; area?: string; neighborhood?: string}>({});
-  // New address state
-  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
-  const [newAddress, setNewAddress] = useState('');
-  const [newLocation, setNewLocation] = useState<{government?: string; city?: string; area?: string; neighborhood?: string}>({});
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const loadUserData = async () => {
-      const phone = localStorage.getItem('userPhone');
-      if (phone) {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        setUser(user);
+        
         const { data, error } = await supabase
           .from('customers')
           .select('*')
-          .eq('phone', phone)
+          .eq('user_id', user.id)
           .single();
 
         if (data) {
           setName(data.name || '');
           setPhone(data.phone || '');
-          setEmail(data.email || '');
-          setAddress(data.address || '');
+          setEmail(data.email || user.email || '');
           setCustomerId(data.id);
-
-          setLocation({
-            government: data.governorate_id || '',
-            city: data.city_id || '',
-            area: data.area_id || '',
-            neighborhood: data.neighborhood_id || '',
-          });
-        }
-        if (error) {
+        } else if (error) {
           console.error('Error loading user data:', error);
         }
       } else {
@@ -80,26 +66,44 @@ const EditAccount = () => {
     try {
       if (!customerId) throw new Error('No customer ID found');
 
-      const { error } = await supabase
+      // Update customer data
+      const { error: customerError } = await supabase
         .from('customers')
         .update({
           name,
           phone,
           email: email || null,
-          address,
-          governorate_id: location.government || null,
-          city_id: location.city || null,
-          area_id: location.area || null,
-          neighborhood_id: location.neighborhood || null,
         })
         .eq('id', customerId);
 
-      if (error) throw error;
+      if (customerError) throw customerError;
+
+      // Update password if provided
+      if (password && password === confirmPassword && user) {
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: password
+        });
+
+        if (passwordError) {
+          toast({
+            title: "خطأ في تحديث كلمة المرور",
+            description: passwordError.message,
+            variant: "destructive",
+          });
+        }
+      } else if (password && password !== confirmPassword) {
+        toast({
+          title: "خطأ",
+          description: "كلمة المرور وتأكيدها غير متطابقين",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
 
       localStorage.setItem('userName', name);
       localStorage.setItem('userPhone', phone);
       localStorage.setItem('userEmail', email);
-      localStorage.setItem('userAddress', address);
 
       toast({
         title: "تم التحديث بنجاح",
@@ -119,49 +123,6 @@ const EditAccount = () => {
     }
   };
 
-  // Handle adding a new address (for now, set as current address)
-  const handleNewAddressSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      if (!customerId) throw new Error('No customer ID found');
-
-      const { error } = await supabase
-        .from('customers')
-        .update({
-          address: newAddress,
-          governorate_id: newLocation.government || null,
-          city_id: newLocation.city || null,
-          area_id: newLocation.area || null,
-          neighborhood_id: newLocation.neighborhood || null,
-        })
-        .eq('id', customerId);
-
-      if (error) throw error;
-
-      setAddress(newAddress);
-      setLocation(newLocation);
-      localStorage.setItem('userAddress', newAddress);
-
-      toast({
-        title: "تم إضافة عنوان جديد",
-        description: "تم تعيين العنوان الجديد كعنوان افتراضي لك.",
-      });
-
-      setShowNewAddressForm(false);
-    } catch (error) {
-      console.error('Error updating user data:', error);
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إضافة العنوان",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <MainLayout>
       <div className="py-4">
@@ -169,78 +130,19 @@ const EditAccount = () => {
           <button onClick={handleBack} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">تعديل البيانات</h1>
+          <h1 className="text-xl font-bold flex-1 text-center">تعديل البيانات الشخصية</h1>
           <div className="w-10"></div>
         </div>
-        {/* Show current address */}
-        {address && (
-          <div className="bg-white rounded-lg p-4 mb-3 border border-primary/30">
-            <div className="flex items-center mb-1 text-primary font-semibold">
-              <MapPin size={18} className="ml-2" />
-              العنوان الحالي
-            </div>
-            <div className="text-gray-700 text-right">{address}</div>
-            <div className="mt-2">
-              <button
-                type="button"
-                className="text-sm text-primary flex items-center"
-                onClick={() => setShowNewAddressForm(!showNewAddressForm)}
-              >
-                <Plus size={16} className="ml-1" />
-                إضافة عنوان جديد
-              </button>
-            </div>
+        
+        <div className="bg-white rounded-lg p-4 mb-4">
+          <div className="flex justify-between items-center mb-3">
+            <Link to="/account/address" className="text-primary text-sm flex items-center">
+              إدارة العناوين
+              <ChevronLeft size={16} />
+            </Link>
+            <h2 className="font-bold">بيانات الحساب</h2>
           </div>
-        )}
-
-        {/* New Address Form */}
-        {showNewAddressForm && (
-          <form onSubmit={handleNewAddressSubmit} className="bg-white border border-primary/20 rounded-lg p-4 mb-4 space-y-3">
-            <div>
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label className="font-medium">الموقع</label>
-              </div>
-              <LocationPicker value={newLocation} onChange={setNewLocation} />
-            </div>
-            <div>
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="newAddress" className="font-medium">تفاصيل العنوان</label>
-              </div>
-              <textarea
-                id="newAddress"
-                value={newAddress}
-                onChange={(e) => setNewAddress(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل تفاصيل عنوانك الجديد"
-                rows={3}
-                required
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="mr-2 text-gray-500"
-                onClick={() => setShowNewAddressForm(false)}
-                disabled={isSubmitting}
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                className="bg-primary text-white py-2 px-5 rounded-lg"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white inline-block"></div>
-                ) : (
-                  'حفظ العنوان الجديد'
-                )}
-              </button>
-            </div>
-          </form>
-        )}
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-lg p-4">
@@ -288,23 +190,30 @@ const EditAccount = () => {
             </div>
             <div className="mb-4">
               <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label className="font-medium">الموقع</label>
+                <Lock size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="password" className="font-medium">تغيير كلمة المرور (اختياري)</label>
               </div>
-              <LocationPicker value={location} onChange={setLocation} />
-            </div>
-            <div>
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="address" className="font-medium">تفاصيل العنوان</label>
-              </div>
-              <textarea
-                id="address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل تفاصيل عنوانك"
-                rows={3}
+                placeholder="كلمة المرور الجديدة"
+              />
+            </div>
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <Lock size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="confirmPassword" className="font-medium">تأكيد كلمة المرور</label>
+              </div>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                placeholder="أدخل كلمة المرور مرة أخرى"
               />
             </div>
           </div>
@@ -326,4 +235,3 @@ const EditAccount = () => {
 };
 
 export default EditAccount;
-
