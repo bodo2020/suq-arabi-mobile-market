@@ -26,7 +26,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [items, setItems] = useState<CartItem[]>([]);
   const [user, setUser] = useState<any>(null);
 
-  // Check for user authentication
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
@@ -41,10 +40,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Load from localStorage on mount and whenever user becomes guest
   useEffect(() => {
     if (user) {
-      // If user is logged in, fetch cart from Supabase
       const fetchCartItems = async () => {
         const { data, error } = await supabase
           .from('cart_items')
@@ -57,9 +54,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (data) {
-          // Need to fetch products based on product_ids
           const productIds = data.map(item => item.product_id);
-          
+
           if (productIds.length > 0) {
             const { data: productsData, error: productsError } = await supabase
               .from('products')
@@ -89,7 +85,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       fetchCartItems();
     } else {
-      // Always load cart from localStorage for guests
       const savedCart = localStorage.getItem('cart');
       if (savedCart) {
         try {
@@ -98,38 +93,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Failed to parse cart from localStorage:', error);
         }
       } else {
-        setItems([]); // In case nothing is there
+        setItems([]);
       }
     }
   }, [user]);
 
-  // Save cart to localStorage whenever it changes for guests
   useEffect(() => {
     if (!user) {
       localStorage.setItem('cart', JSON.stringify(items));
     } else {
-      // If user is logged in, sync cart to Supabase (but don't block UI)
       const syncCartToSupabase = async () => {
-        // First delete user's current cart items
         await supabase
           .from('cart_items')
           .delete()
           .eq('user_id', user.id);
-
-        // Then insert new cart items
         if (items.length > 0) {
           const cartItemsToInsert = items.map(item => ({
             user_id: user.id,
             product_id: item.product.id,
             quantity: item.quantity
           }));
-
           await supabase
             .from('cart_items')
             .insert(cartItemsToInsert);
         }
       };
-
       syncCartToSupabase();
     }
   }, [items, user]);
@@ -137,7 +125,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addToCart = (product: Product) => {
     setItems(currentItems => {
       const existingItemIndex = currentItems.findIndex(item => item.product.id === product.id);
-      
+
       if (existingItemIndex > -1) {
         const updatedItems = [...currentItems];
         updatedItems[existingItemIndex] = {
@@ -152,7 +140,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removeFromCart = (productId: string) => {
-    setItems(currentItems => 
+    setItems(currentItems =>
       currentItems.filter(item => item.product.id !== productId)
     );
   };
@@ -163,8 +151,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    setItems(currentItems => 
-      currentItems.map(item => 
+    setItems(currentItems =>
+      currentItems.map(item =>
         item.product.id === productId ? { ...item, quantity } : item
       )
     );

@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, MapPin, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
@@ -9,15 +10,16 @@ import Banner from '@/components/ui/Banner';
 import { getCategories, getProducts, getStoreInfo, supabase, MainCategory, Product } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
-import { 
-  Carousel, 
-  CarouselContent, 
+import {
+  Carousel,
+  CarouselContent,
   CarouselItem,
-  CarouselNext, 
+  CarouselNext,
   CarouselPrevious
 } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import LocationDisplay from "@/components/ui/LocationDisplay";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 const Index = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
@@ -25,7 +27,7 @@ const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<{area?: string; neighborhood?: string;} | null>(null);
+  const [userLocation, setUserLocation] = useState<{ area?: string; neighborhood?: string; } | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchBackground, setSearchBackground] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
@@ -33,6 +35,7 @@ const Index = () => {
   const bannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,7 +56,7 @@ const Index = () => {
 
         const area = localStorage.getItem('userArea');
         const neighborhood = localStorage.getItem('userNeighborhood');
-        if (area || neighborhood) setUserLocation({area, neighborhood});
+        if (area || neighborhood) setUserLocation({ area, neighborhood });
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -69,7 +72,7 @@ const Index = () => {
         setActiveBanner(prev => (prev + 1) % banners.length);
       }, 5000);
     }
-    
+
     return () => {
       if (bannerIntervalRef.current) {
         clearInterval(bannerIntervalRef.current);
@@ -132,16 +135,22 @@ const Index = () => {
     )
   }
 
+  //--- Popup content for location change ---
+  const handleChangeLocation = () => {
+    setPopoverOpen(false);
+    navigate('/account/address');
+  };
+
   return (
     <MainLayout>
       <div className="py-4">
         {storeInfo && <div className="flex justify-center mb-4">
-            <img src={storeInfo.logo_url} alt={storeInfo.name} className="h-12 object-contain" />
-          </div>}
+          <img src={storeInfo.logo_url} alt={storeInfo.name} className="h-12 object-contain" />
+        </div>}
 
         <div className="relative mb-2">
-          <SearchBar 
-            backgroundImage={searchBackground} 
+          <SearchBar
+            backgroundImage={searchBackground}
             onFocus={handleFocusSearchBar}
             readOnly
           />
@@ -150,8 +159,43 @@ const Index = () => {
           </div>
         </div>
 
-        {/* العنوان مباشرة بعد البحث */}
-        <LocationDisplay area={userLocation?.area} neighborhood={userLocation?.neighborhood} />
+        {/* تحديد الموقع: كلمه توصيل الى + اسم العنوان مع زر popover للتغيير  */}
+        <div className="flex items-center gap-2 mb-4 px-1">
+          <span className="flex items-center text-gray-600 text-sm font-semibold">
+            <MapPin size={20} className="ml-1 text-primary" /> 
+            توصيل إلى
+          </span>
+          {/* إظهار العنوان الرئيسي فقط - بدون كلمة منطقة أو حي */}
+          <span className="text-sm font-bold truncate max-w-xs">
+            {userLocation?.area || ''}{userLocation?.area && userLocation?.neighborhood && '، '}
+            {userLocation?.neighborhood || ''}
+          </span>
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className="text-primary underline text-xs ml-3"
+                type="button"
+                aria-label="تغيير الموقع"
+              >
+                تغيير الموقع
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="max-w-xs">
+              <div className="flex flex-col items-start">
+                <span className="mb-2 text-sm">حدد موقع التوصيل الخاص بك</span>
+                <button
+                  onClick={handleChangeLocation}
+                  className="w-full text-sm text-primary p-2 rounded bg-gray-100 hover:bg-primary/10 mb-1"
+                >
+                  الذهاب للعناوين
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* حذف تفاصيل العنوان - لا نعرض تفاصيل العنوان الفرعية أو مكون LocationDisplay */}
+        {/* مكان الكود المحذوف: <LocationDisplay ... /> */}
 
         {banners.length > 0 && (
           <div className="mb-6 relative">
