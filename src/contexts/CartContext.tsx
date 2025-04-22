@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product } from '@/lib/supabase';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +41,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Load cart from localStorage or Supabase on mount
+  // Load from localStorage on mount and whenever user becomes guest
   useEffect(() => {
     if (user) {
       // If user is logged in, fetch cart from Supabase
@@ -90,7 +89,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       fetchCartItems();
     } else {
-      // If user is not logged in, load from localStorage
+      // Always load cart from localStorage for guests
       const savedCart = localStorage.getItem('cart');
       if (savedCart) {
         try {
@@ -98,13 +97,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
           console.error('Failed to parse cart from localStorage:', error);
         }
+      } else {
+        setItems([]); // In case nothing is there
       }
     }
   }, [user]);
 
-  // Save cart to localStorage or Supabase whenever it changes
+  // Save cart to localStorage whenever it changes for guests
   useEffect(() => {
-    if (user) {
+    if (!user) {
+      localStorage.setItem('cart', JSON.stringify(items));
+    } else {
       // If user is logged in, sync cart to Supabase (but don't block UI)
       const syncCartToSupabase = async () => {
         // First delete user's current cart items
@@ -128,9 +131,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       syncCartToSupabase();
-    } else {
-      // If user is not logged in, save to localStorage
-      localStorage.setItem('cart', JSON.stringify(items));
     }
   }, [items, user]);
 

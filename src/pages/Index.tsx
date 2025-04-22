@@ -139,7 +139,7 @@ const Index = () => {
             <img src={storeInfo.logo_url} alt={storeInfo.name} className="h-12 object-contain" />
           </div>}
 
-        <div className="relative mb-4">
+        <div className="relative mb-2">
           <SearchBar 
             backgroundImage={searchBackground} 
             onFocus={handleFocusSearchBar}
@@ -149,6 +149,9 @@ const Index = () => {
             <input id="bgImageUpload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={processingImage} />
           </div>
         </div>
+
+        {/* العنوان مباشرة بعد البحث */}
+        <LocationDisplay area={userLocation?.area} neighborhood={userLocation?.neighborhood} />
 
         {banners.length > 0 && (
           <div className="mb-6 relative">
@@ -188,20 +191,6 @@ const Index = () => {
             </Carousel>
           </div>
         )}
-
-        {userAddress && <div className="bg-white rounded-lg shadow-sm p-3 mb-4 flex justify-between items-center">
-            <Link to="/account/address" className="text-primary">
-              تغيير
-            </Link>
-            <div className="flex items-center">
-              <div className="flex flex-col items-end mr-2">
-                <span className="text-sm text-gray-500">التوصيل إلى</span>
-                <span className="text-sm font-semibold line-clamp-1">{userAddress}</span>
-              </div>
-            </div>
-          </div>}
-
-        <LocationDisplay area={userLocation?.area} neighborhood={userLocation?.neighborhood} />
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
