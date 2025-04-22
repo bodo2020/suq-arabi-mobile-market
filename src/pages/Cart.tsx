@@ -4,9 +4,11 @@ import { Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
+  const { toast } = useToast();
 
   const handleIncreaseQuantity = (productId: string) => {
     const item = items.find(item => item.product.id === productId);
@@ -21,11 +23,19 @@ const Cart = () => {
       updateQuantity(productId, item.quantity - 1);
     } else {
       removeFromCart(productId);
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف المنتج من السلة",
+      });
     }
   };
 
   const handleRemoveItem = (productId: string) => {
     removeFromCart(productId);
+    toast({
+      title: "تم الحذف",
+      description: "تم حذف المنتج من السلة",
+    });
   };
 
   // Get the image of a product, handling the new image_urls array

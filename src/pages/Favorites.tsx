@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -16,15 +17,22 @@ const Favorites = () => {
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
+      console.log('Auth state changed in favorites:', event, session?.user?.id);
       
-      // If user logs in, fetch favorites
-      if (session?.user) {
-        fetchFavorites(session.user.id);
+      if (event === 'SIGNED_IN') {
+        setUser(session?.user);
+        // Explicitly fetch favorites when user signs in
+        if (session?.user) {
+          fetchFavorites(session.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setFavorites([]);
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check in favorites:', session?.user?.id);
       setUser(session?.user || null);
       
       // If user is logged in, fetch favorites
@@ -43,6 +51,8 @@ const Favorites = () => {
   const fetchFavorites = async (userId: string) => {
     try {
       setLoading(true);
+      console.log('Fetching favorites for user:', userId);
+      
       // First get the favorite product IDs
       const { data: favoritesData, error: favoritesError } = await supabase
         .from('favorites')
@@ -50,8 +60,11 @@ const Favorites = () => {
         .eq('user_id', userId);
 
       if (favoritesError) {
+        console.error('Error fetching favorites:', favoritesError);
         throw favoritesError;
       }
+
+      console.log('Retrieved favorites data:', favoritesData?.length || 0);
 
       if (favoritesData && favoritesData.length > 0) {
         // Get the product details for each favorite
@@ -63,15 +76,17 @@ const Favorites = () => {
           .in('id', productIds);
 
         if (productsError) {
+          console.error('Error fetching products for favorites:', productsError);
           throw productsError;
         }
 
+        console.log('Retrieved products for favorites:', productsData?.length || 0);
         setFavorites(productsData as Product[]);
       } else {
         setFavorites([]);
       }
     } catch (error) {
-      console.error('Error fetching favorites:', error);
+      console.error('Error in fetchFavorites:', error);
       toast({
         title: "حدث خطأ",
         description: "لم نتمكن من تحميل المفضلة",

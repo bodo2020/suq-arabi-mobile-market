@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Plus, Minus, AlertTriangle, Bell } from 'lucide-react';
@@ -24,16 +23,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const quantity = cartItem?.quantity || 0;
   const isOutOfStock = product.quantity <= 0;
   
-  // If we should hide unavailable products and this one is out of stock, don't render
   if (hideIfUnavailable && isOutOfStock) {
     return null;
   }
   
-  // Check for authentication status
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
-      // If user signs in or out, refresh favorite status
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         checkFavoriteStatus(session?.user || null);
       }
@@ -49,10 +45,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     };
   }, []);
 
-  // Check if product is in favorites
   const checkFavoriteStatus = async (currentUser: any = user) => {
     if (!currentUser) {
-      // Check localStorage for guest favorites
       try {
         const savedFavorites = localStorage.getItem('favorites');
         if (savedFavorites) {
@@ -95,9 +89,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     
     try {
       if (user) {
-        // User is logged in, use Supabase
         if (isFavorite) {
-          // Remove from favorites
           const { error } = await supabase
             .from('favorites')
             .delete()
@@ -114,7 +106,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
             variant: "default",
           });
         } else {
-          // Add to favorites
           const { error } = await supabase
             .from('favorites')
             .insert({
@@ -133,7 +124,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           });
         }
       } else {
-        // User is not logged in, use localStorage
         let favorites = [];
         try {
           const savedFavorites = localStorage.getItem('favorites');
@@ -145,7 +135,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
         }
         
         if (isFavorite) {
-          // Remove from favorites
           favorites = favorites.filter(id => id !== product.id);
           localStorage.setItem('favorites', JSON.stringify(favorites));
           setIsFavorite(false);
@@ -154,7 +143,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
             variant: "default",
           });
         } else {
-          // Add to favorites
           favorites.push(product.id);
           localStorage.setItem('favorites', JSON.stringify(favorites));
           setIsFavorite(true);
@@ -206,7 +194,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     });
   };
 
-  // Use the first image from image_urls array, or a placeholder
   const productImage = product.image_urls && product.image_urls.length > 0 
     ? product.image_urls[0] 
     : '/placeholder.svg';

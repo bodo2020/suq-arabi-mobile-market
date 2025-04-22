@@ -29,23 +29,27 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [needsSync, setNeedsSync] = useState(false);
   const { toast } = useToast();
 
   // Auth state changes listener
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
-      setUser(session?.user || null);
       
-      // Reset loading state when auth changes to trigger cart reload
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        setIsLoading(true);
+      if (event === 'SIGNED_IN') {
+        setUser(session?.user || null);
+        setIsLoading(true); // Trigger cart reload when user signs in
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsLoading(true); // Also reload when user signs out
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.id);
       setUser(session?.user || null);
+      setIsLoading(true); // Initialize loading
     });
 
     return () => {
@@ -75,7 +79,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
               description: "حدث خطأ أثناء تحميل عناصر السلة",
               variant: "destructive",
             });
-            setItems([]);
             setIsLoading(false);
             setIsInitialized(true);
             return;
@@ -91,7 +94,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (productsError) {
               console.error('Error fetching products:', productsError);
-              setItems([]);
               setIsLoading(false);
               setIsInitialized(true);
               return;
@@ -119,6 +121,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (localItems.length > 0) {
                   console.log('Migrating local cart to user account:', localItems.length);
                   setItems(localItems);
+                  setNeedsSync(true); // Mark for immediate sync to Supabase
                 } else {
                   setItems([]);
                 }
@@ -161,7 +164,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync cart with localStorage (for non-logged in users) or Supabase (for logged in users)
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized && !needsSync) return;
     
     const syncCart = async () => {
       console.log('Syncing cart, user:', user?.id, 'items:', items.length);
@@ -199,8 +202,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (insertError) {
             console.error('Error inserting cart items:', insertError);
+            toast({
+              title: "خطأ في حفظ السلة",
+              description: "حدث خطأ أثناء حفظ عناصر السلة",
+              variant: "destructive",
+            });
           } else {
             console.log('Cart synced successfully with Supabase');
+            if (needsSync) {
+              setNeedsSync(false);
+            }
           }
         } else {
           console.log('No items to sync with Supabase');
@@ -211,7 +222,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     syncCart();
-  }, [items, user, isInitialized]);
+  }, [items, user, isInitialized, needsSync]);
 
   const addToCart = (product: Product) => {
     setItems(currentItems => {
