@@ -222,7 +222,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     syncCart();
-  }, [items, user, isInitialized, needsSync]);
+  }, [items, user, isInitialized, needsSync, toast]);
 
   const addToCart = (product: Product) => {
     setItems(currentItems => {
