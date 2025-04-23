@@ -17,10 +17,9 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, onClick, isActive
     }
   };
 
-  // كبر المربع، وأضف إمكانية تمييز العنصر النشط
   return (
     <Link 
-      to={onClick ? "#" : `/category/${category.id}`} 
+      to={`/category/${category.id}`}
       onClick={handleClick}
       className={
         `category-item flex flex-col items-center relative group

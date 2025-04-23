@@ -1,8 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
+import CategoryItem from '@/components/ui/CategoryItem';
 import { 
   MainCategory,
   Subcategory, 
@@ -14,7 +16,6 @@ import {
   getSubsubcategories
 } from '@/lib/supabase';
 
-// Create a common interface that can represent any type of category
 interface CategoryInfo {
   id: string;
   name: string;
@@ -35,6 +36,7 @@ const CategoryDetail = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [selectedSubsubcategory, setSelectedSubsubcategory] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [mainCategoryName, setMainCategoryName] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,7 +44,6 @@ const CategoryDetail = () => {
         if (!id) return;
         setLoading(true);
         
-        // Try to find the category in each level
         const [categoriesData, subcategoriesData, subsubcategoriesData] = await Promise.all([
           getCategories(),
           getSubcategories(),
@@ -58,6 +59,7 @@ const CategoryDetail = () => {
             image_url: categoryData.image_url,
             description: categoryData.description
           });
+          setMainCategoryName(categoryData.name);
           setCategoryType('main');
           
           // Get subcategories for this main category
@@ -80,6 +82,12 @@ const CategoryDetail = () => {
               description: subcategoryData.description
             });
             setCategoryType('sub');
+            
+            // Find main category name
+            const mainCat = categoriesData.find(cat => cat.id === subcategoryData.category_id);
+            if (mainCat) {
+              setMainCategoryName(mainCat.name);
+            }
             
             // Get subsubcategories for this subcategory
             const subcategorySubsubcategories = subsubcategoriesData.filter(
@@ -104,12 +112,19 @@ const CategoryDetail = () => {
               });
               setCategoryType('subsub');
               
+              // Find subcategory to get main category name
+              const subcat = subcategoriesData.find(sc => sc.id === subsubcategoryData.subcategory_id);
+              if (subcat) {
+                const mainCat = categoriesData.find(cat => cat.id === subcat.category_id);
+                if (mainCat) {
+                  setMainCategoryName(mainCat.name);
+                }
+              }
+              
               // Fetch all products for this subsubcategory
               const productsData = await getProducts(id);
               setAllProducts(productsData as Product[]);
               setProducts(productsData as Product[]);
-            } else {
-              throw new Error('Category not found');
             }
           }
         }
@@ -162,7 +177,6 @@ const CategoryDetail = () => {
   };
 
   return (
-    
     <MainLayout>
       <div className="py-4">
         {/* Header with back button */}
@@ -177,42 +191,24 @@ const CategoryDetail = () => {
           <h1 className="text-xl font-bold flex-1 text-center">
             {loading ? 'جاري التحميل...' : categoryInfo?.name}
           </h1>
-          <div className="w-10"></div> {/* Spacer for alignment */}
+          <div className="w-10"></div>
         </div>
 
-        {/* Subcategories as horizontal ships/chips */}
-        {!loading && subcategories.length > 0 && (
-          <div className="mb-4 overflow-x-auto hide-scrollbar">
-            <div className="flex space-x-2 space-x-reverse pb-2">
-              <button
-                onClick={() => handleSubcategorySelect(null)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
-                  selectedSubcategory === null 
-                    ? 'bg-primary text-white' 
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                كل المنتجات
-              </button>
-              {subcategories.map(subcat => (
-                <button
-                  key={subcat.id}
-                  onClick={() => handleSubcategorySelect(subcat.id)}
-                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
-                    selectedSubcategory === subcat.id 
-                      ? 'bg-primary text-white' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {subcat.name}
-                </button>
-              ))}
-            </div>
+        {/* Show subcategories as grid if main category */}
+        {!loading && categoryType === 'main' && (
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+            {subcategories.map(subcat => (
+              <CategoryItem
+                key={subcat.id}
+                category={subcat}
+                onClick={() => navigate(`/category/${subcat.id}`)}
+              />
+            ))}
           </div>
         )}
 
-        {/* Subsubcategories as horizontal ships/chips */}
-        {!loading && (categoryType === 'sub' || selectedSubcategory) && subsubcategories.length > 0 && (
+        {/* Subsubcategories as chips */}
+        {!loading && categoryType === 'sub' && subsubcategories.length > 0 && (
           <div className="mb-4 overflow-x-auto hide-scrollbar">
             <div className="flex space-x-2 space-x-reverse pb-2">
               <button
@@ -223,7 +219,7 @@ const CategoryDetail = () => {
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
-                كل المنتجات
+                جميع المنتجات
               </button>
               {subsubcategories.map(subsubcat => (
                 <button
@@ -235,13 +231,14 @@ const CategoryDetail = () => {
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  {subsubcat.name}
+                  {mainCategoryName}
                 </button>
               ))}
             </div>
           </div>
         )}
 
+        {/* Products Grid */}
         {loading ? (
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
