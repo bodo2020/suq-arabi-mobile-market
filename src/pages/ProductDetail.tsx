@@ -18,6 +18,8 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [subsubcategories, setSubsubcategories] = useState<any[]>([]);
+  const [selectedSubsubcategory, setSelectedSubsubcategory] = useState<string | null>(null);
 
   const cartItem = items.find(item => item.product.id === product?.id);
   const quantity = cartItem?.quantity || 0;
@@ -27,18 +29,21 @@ const ProductDetail = () => {
       try {
         if (!id) return;
         const productData = await getProductById(id);
-        if (!productData) {
-          throw new Error('Product not found');
-        }
+        if (!productData) throw new Error('Product not found');
         setProduct(productData as Product);
 
         const [companyData, relatedProductsData] = await Promise.all([
           getCompanyById(productData.company_id), 
           getRelatedProducts(id, productData.category_id)
         ]);
-        
         setCompany(companyData as Company);
         setRelatedProducts(relatedProductsData as Product[]);
+
+        if (productData.subcategory_id) {
+          const { getSubsubcategories } = await import('@/lib/supabase');
+          const subsubs = await getSubsubcategories(productData.subcategory_id);
+          setSubsubcategories(subsubs);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -73,6 +78,10 @@ const ProductDetail = () => {
   const getProductImage = (product: Product) => {
     return product.image_urls && product.image_urls.length > 0 ? product.image_urls[0] : '/placeholder.svg';
   };
+
+  const filteredRelatedProducts = selectedSubsubcategory
+    ? relatedProducts.filter(p => p.subsubcategory_id === selectedSubsubcategory)
+    : relatedProducts;
 
   if (loading) {
     return (
@@ -130,38 +139,65 @@ const ProductDetail = () => {
 
         <div className="bg-white rounded-lg p-4 mb-4">
           <h2 className="text-xl font-bold mb-2">{product.name}</h2>
-          
+
+          {company && (
+            <div className="mb-4 flex items-center justify-between">
+              <button
+                onClick={() => navigate(`/company/${company.id}`)}
+                className="text-primary underline text-base font-bold hover:text-primary/70 transition"
+                aria-label={`عرض منتجات ${company.name}`}
+              >
+                {company.name}
+              </button>
+              <img src={company.logo_url} alt={company.name} className="w-10 h-10 object-contain ml-2" />
+            </div>
+          )}
+
+          <div className="mb-4">
+            <h3 className="text-md font-semibold mb-2">الوصف</h3>
+            <p className="text-sm text-gray-600">{product.description}</p>
+          </div>
           <div className="mb-4">
             {product.offer_price ? (
               <div className="flex items-center">
                 <span className="text-lg font-bold text-primary ml-2">
                   {product.offer_price} ج.م
                 </span>
-                <span className="text-sm line-through text-gray-500">
-                  {product.price} ج.م
-                </span>
+                <span className="text-sm line-through text-gray-500">{product.price} ج.م</span>
               </div>
             ) : (
-              <span className="text-lg font-bold">
-                {product.price} ج.م
-              </span>
+              <span className="text-lg font-bold">{product.price} ج.م</span>
             )}
           </div>
-          
-          {company && (
-            <Link to={`/company/${company.id}`} className="flex items-center bg-gray-50 p-3 rounded-lg mb-4">
-              <div className="mr-auto flex items-center">
-                <span className="text-sm font-medium">{company.name}</span>
-                <img src={company.logo_url} alt={company.name} className="w-10 h-10 object-contain ml-2" />
-              </div>
-            </Link>
+
+          {subsubcategories && subsubcategories.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedSubsubcategory(null)}
+                className={`px-4 py-1 rounded-full text-sm ${
+                  selectedSubsubcategory === null 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                كل المنتجات
+              </button>
+              {subsubcategories.map((subsub: any) => (
+                <button
+                  key={subsub.id}
+                  onClick={() => setSelectedSubsubcategory(subsub.id)}
+                  className={`px-4 py-1 rounded-full text-sm ${
+                    selectedSubsubcategory === subsub.id 
+                      ? 'bg-primary text-white' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {subsub.name}
+                </button>
+              ))}
+            </div>
           )}
-          
-          <div className="mb-4">
-            <h3 className="text-md font-semibold mb-2">الوصف</h3>
-            <p className="text-sm text-gray-600">{product.description}</p>
-          </div>
-          
+
           <div className="mt-6">
             {quantity === 0 ? (
               <button 
@@ -185,11 +221,11 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {relatedProducts.length > 0 && (
+        {filteredRelatedProducts.length > 0 && (
           <div className="mb-6">
             <h3 className="text-lg font-bold mb-3 text-right">منتجات مشابهة</h3>
             <div className="grid grid-cols-2 gap-3">
-              {relatedProducts.map(product => (
+              {filteredRelatedProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
