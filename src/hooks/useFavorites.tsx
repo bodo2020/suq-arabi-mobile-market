@@ -17,11 +17,17 @@ export function useFavorites() {
         setUser(session.user);
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
-        loadFavorites(session.user.id);
+        if (customerId) {
+          loadFavorites(session.user.id);
+        } else {
+          setIsLoading(false);
+          console.log('No customer profile found for user. Unable to load favorites.');
+        }
       } else {
         setUser(null);
         setCustomerId(null);
         setFavorites({});
+        setIsLoading(false);
       }
     });
 
@@ -30,7 +36,12 @@ export function useFavorites() {
         setUser(session.user);
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
-        loadFavorites(session.user.id);
+        if (customerId) {
+          loadFavorites(session.user.id);
+        } else {
+          setIsLoading(false);
+          console.log('No customer profile found for user. Unable to load favorites.');
+        }
       } else {
         setIsLoading(false);
       }
@@ -66,6 +77,7 @@ export function useFavorites() {
     try {
       setIsLoading(true);
       
+      console.log('Fetching favorites for user:', userId);
       const { data, error } = await supabase
         .from('favorites')
         .select('product_id')
@@ -73,11 +85,13 @@ export function useFavorites() {
 
       if (error) {
         console.error('Error loading favorites:', error);
+        setIsLoading(false);
         return;
       }
 
       const favMap: Record<string, boolean> = {};
       if (data) {
+        console.log('Retrieved favorites data:', data.length);
         data.forEach(item => {
           favMap[item.product_id] = true;
         });
@@ -105,7 +119,7 @@ export function useFavorites() {
       return;
     }
 
-    // First, ensure the customer record exists
+    // Check if customer profile exists
     if (!customerId) {
       toast({
         title: "خطأ في الملف الشخصي",
@@ -132,7 +146,10 @@ export function useFavorites() {
           .eq('user_id', user.id)
           .eq('product_id', productId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error removing from favorites:', error);
+          throw error;
+        }
         
         toast({
           title: "تمت الإزالة",

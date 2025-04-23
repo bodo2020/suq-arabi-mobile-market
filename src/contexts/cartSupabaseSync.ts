@@ -46,6 +46,15 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
       if (user) {
         const customerId = await getCustomerId(user.id);
         customerIdRef.current = customerId;
+        
+        if (!customerId) {
+          console.log('No customer profile found for user. Items will be stored in localStorage only.');
+          toast({
+            title: "تنبيه",
+            description: "لم نتمكن من ربط حسابك بملف تعريف العميل. ستُحفظ العناصر محليًا فقط.",
+            variant: "destructive",
+          });
+        }
       } else {
         customerIdRef.current = null;
       }
@@ -84,7 +93,7 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
     let user: any;
     supabase.auth.getSession().then(({ data: { session } }) => {
       user = session?.user || null;
-      syncCartPersistence(user, items, toast).then(() => {
+      syncCartPersistence(user, items, toast, customerIdRef.current).then(() => {
         if (needsSyncRef.current) needsSyncRef.current = false;
       });
     });
@@ -107,7 +116,18 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
           description: "حدث خطأ أثناء تحميل عناصر السلة",
           variant: "destructive",
         });
-        setItems([]);
+        // Fallback to localStorage
+        const savedCart = localStorage.getItem('cart');
+        if (savedCart) {
+          try {
+            setItems(JSON.parse(savedCart));
+          } catch {
+            localStorage.removeItem('cart');
+            setItems([]);
+          }
+        } else {
+          setItems([]);
+        }
         return;
       }
 
@@ -175,33 +195,16 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
   }
 }
 
-async function syncCartPersistence(user: any, items: CartItem[], toast: any) {
-  if (!user) {
-    // Not logged in, store in localStorage
-    localStorage.setItem('cart', JSON.stringify(items));
+async function syncCartPersistence(user: any, items: CartItem[], toast: any, customerId: string | null) {
+  // Always store in localStorage as a fallback
+  localStorage.setItem('cart', JSON.stringify(items));
+  
+  // If not logged in or no customer profile, just use localStorage
+  if (!user || !customerId) {
     return;
   }
   
   try {
-    // Check if customer exists first
-    const { data: customerData, error: customerError } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-      
-    if (customerError) {
-      console.error('Error checking customer:', customerError);
-      if (customerError.code !== 'PGRST116') { // Not found error
-        toast && toast({
-          title: "خطأ في حفظ السلة",
-          description: "لم نتمكن من العثور على بيانات العميل",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
     // Clear old cart
     const { error: deleteError } = await supabase
       .from('cart_items')
@@ -210,6 +213,11 @@ async function syncCartPersistence(user: any, items: CartItem[], toast: any) {
 
     if (deleteError) {
       console.error('Error clearing cart items:', deleteError);
+      toast && toast({
+        title: "خطأ في حفظ السلة",
+        description: "حدث خطأ أثناء حذف العناصر القديمة",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -228,12 +236,19 @@ async function syncCartPersistence(user: any, items: CartItem[], toast: any) {
         console.error('Error inserting cart items:', insertError);
         toast && toast({
           title: "خطأ في حفظ السلة",
-          description: "حدث خطأ أثناء حفظ عناصر السلة",
+          description: "تعذر حفظ العناصر في قاعدة البيانات، تم الحفظ محليًا فقط",
           variant: "destructive",
         });
+      } else {
+        console.log('Cart items successfully synced to Supabase');
       }
     }
   } catch (error) {
     console.error('Error in syncCartPersistence:', error);
+    toast && toast({
+      title: "خطأ في حفظ السلة",
+      description: "حدث خطأ غير متوقع أثناء حفظ السلة",
+      variant: "destructive",
+    });
   }
 }
