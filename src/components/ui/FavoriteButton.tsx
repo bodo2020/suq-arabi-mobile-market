@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, HeartOff } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { cn } from '@/lib/utils';
 
@@ -8,17 +8,15 @@ interface FavoriteButtonProps {
   productId: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'filled' | 'outline';
 }
 
-const FavoriteButton: React.FC<FavoriteButtonProps> = ({ 
-  productId, 
+const FavoriteButton: React.FC<FavoriteButtonProps> = ({
+  productId,
   className,
   size = 'md',
-  variant = 'filled'
 }) => {
   const { isFavorite, toggleFavorite, isLoading } = useFavorites();
-  
+
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -26,37 +24,46 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   };
 
   if (isLoading) {
-    return null;
+    return (
+      <button
+        type="button"
+        className={cn(
+          'rounded-full bg-white animate-pulse',
+          size === 'sm' && 'p-1',
+          size === 'md' && 'p-1.5',
+          size === 'lg' && 'p-2',
+          className
+        )}
+        disabled
+        aria-label="جارٍ التحميل"
+      >
+        <Heart className="text-gray-300" size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} />
+      </button>
+    );
   }
 
-  const isFav = isFavorite(productId);
-  
-  const sizeMap = {
-    sm: { button: 'p-1', icon: 16 },
-    md: { button: 'p-1.5', icon: 18 },
-    lg: { button: 'p-2', icon: 22 }
-  };
-  
-  const variantClass = variant === 'filled' 
-    ? 'bg-white shadow-sm hover:bg-gray-50' 
-    : 'bg-transparent hover:bg-gray-50/20';
+  const fav = isFavorite(productId);
 
   return (
     <button
+      type="button"
       onClick={handleClick}
+      aria-label={fav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
       className={cn(
-        `rounded-full transition-all duration-300 ${sizeMap[size].button} ${variantClass}`,
-        isFav && variant === 'filled' ? 'bg-red-50 hover:bg-red-100' : '',
+        "rounded-full transition-all duration-300 shadow-md border border-gray-100 bg-white hover:shadow-lg group",
+        size === "sm" && "p-1",
+        size === "md" && "p-1.5",
+        size === "lg" && "p-2",
+        fav && "ring-2 ring-primary ring-offset-2",
         className
       )}
-      aria-label={isFav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
     >
-      <Heart 
-        size={sizeMap[size].icon} 
+      <Heart
+        size={size === "sm" ? 16 : size === "lg" ? 24 : 20}
         className={cn(
           "transition-all duration-300",
-          isFav ? "fill-red-500 text-red-500" : "text-gray-500"
-        )} 
+          fav ? "fill-primary text-primary" : "text-gray-400 group-hover:text-primary"
+        )}
       />
     </button>
   );
