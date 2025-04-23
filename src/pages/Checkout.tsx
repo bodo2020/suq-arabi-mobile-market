@@ -1,11 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, User, Phone, Check } from 'lucide-react';
+import { ArrowRight, MapPin, User, Phone, Check, Gift } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
 import { submitOrder } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { applyCoupon, getApplicableOffers } from '@/utils/offerUtils';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -20,12 +23,12 @@ const Checkout = () => {
     phone: '',
     address: '',
   });
-
-  const getProductImage = (item) => {
-    return item.product.image_urls && item.product.image_urls.length > 0 
-      ? item.product.image_urls[0] 
-      : '/placeholder.svg';
-  };
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedOffer, setAppliedOffer] = useState<any>(null);
+  const [discount, setDiscount] = useState(0);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [availableOffers, setAvailableOffers] = useState<any[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
 
   useEffect(() => {
     if (items.length === 0) {
@@ -40,7 +43,14 @@ const Checkout = () => {
     if (savedName) setName(savedName);
     if (savedPhone) setPhone(savedPhone);
     if (savedAddress) setAddress(savedAddress);
-  }, [items.length, navigate]);
+
+    // Load applicable offers
+    const loadOffers = async () => {
+      const offers = await getApplicableOffers(getTotalPrice());
+      setAvailableOffers(offers);
+    };
+    loadOffers();
+  }, [items.length, navigate, getTotalPrice]);
 
   const handleBack = () => {
     navigate(-1);
@@ -76,12 +86,25 @@ const Checkout = () => {
     return isValid;
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode) return;
+    
+    setIsApplyingCoupon(true);
+    try {
+      const { offer, discount } = await applyCoupon(couponCode, getTotalPrice());
+      setAppliedOffer(offer);
+      setDiscount(discount);
+      toast.success('تم تطبيق كود الخصم بنجاح');
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
 
@@ -97,21 +120,26 @@ const Checkout = () => {
           price: item.product.offer_price || item.product.price,
           name: item.product.name,
         })),
-        total: getTotalPrice(),
+        total: getTotalPrice() - discount,
         shipping_address: address,
         shipping_cost: 0,
-        payment_method: 'cash_on_delivery',
-        payment_status: "pending" as "pending" | "paid" | "failed" | "refunded",
-        status: "waiting" as "waiting" | "ready" | "shipped" | "done",
-        notes: `Customer Name: ${name}\nPhone: ${phone}`,
+        payment_method: paymentMethod,
+        payment_status: "pending" as const,
+        status: "waiting" as const,
+        notes: `Customer Name: ${name}\nPhone: ${phone}${appliedOffer ? `\nApplied Offer: ${appliedOffer.name}` : ''}`,
       };
 
       await submitOrder(orderData);
       
-      clearCart();
+      if (appliedOffer) {
+        await supabase.from('coupon_usage').insert({
+          offer_id: appliedOffer.id,
+          user_id: null, // Add user_id if authenticated
+        });
+      }
       
+      clearCart();
       toast.success('تم تأكيد طلبك بنجاح');
-
       navigate('/order-success');
     } catch (error) {
       console.error('Error submitting order:', error);
@@ -121,13 +149,19 @@ const Checkout = () => {
     }
   };
 
+  const getProductImage = (item) => {
+    return item.product.image_urls && item.product.image_urls.length > 0 
+      ? item.product.image_urls[0] 
+      : '/placeholder.svg';
+  };
+
   const subtotal = getTotalPrice();
   const deliveryFee = 0;
-  const total = subtotal + deliveryFee;
+  const total = subtotal + deliveryFee - discount;
 
   return (
     <MainLayout>
-      <div className="py-4 pb-24">
+      <div className="py-4 pb-24" dir="rtl">
         <div className="flex items-center mb-6">
           <button
             onClick={handleBack}
@@ -143,7 +177,7 @@ const Checkout = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-lg p-4">
             <h2 className="font-bold text-lg mb-4">معلومات التوصيل</h2>
-
+            
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <User size={18} className="ml-2 text-gray-500" />
@@ -154,7 +188,7 @@ const Checkout = () => {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full p-3 border rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="أدخل اسمك"
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -170,7 +204,7 @@ const Checkout = () => {
                 id="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full p-3 border rounded-lg ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="أدخل رقم هاتفك"
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
@@ -185,12 +219,54 @@ const Checkout = () => {
                 id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full p-3 border rounded-lg ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="أدخل عنوانك للتوصيل"
                 rows={3}
               />
               {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
             </div>
+          </div>
+
+          {availableOffers.length > 0 && (
+            <div className="bg-white rounded-lg p-4">
+              <h2 className="font-bold text-lg mb-4">العروض المتاحة</h2>
+              <div className="space-y-3">
+                {availableOffers.map(offer => (
+                  <div key={offer.id} className="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <Gift size={18} className="ml-2 text-primary" />
+                    <div>
+                      <p className="font-medium">{offer.name}</p>
+                      <p className="text-sm text-gray-600">{offer.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg p-4">
+            <h2 className="font-bold text-lg mb-4">كود الخصم</h2>
+            <div className="flex gap-2">
+              <Input
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder="أدخل كود الخصم"
+                className="text-right"
+              />
+              <Button 
+                onClick={handleApplyCoupon}
+                disabled={isApplyingCoupon || !couponCode}
+                variant="secondary"
+              >
+                تطبيق
+              </Button>
+            </div>
+            {appliedOffer && (
+              <div className="mt-2 text-primary flex items-center">
+                <Check size={16} className="ml-1" />
+                <span>تم تطبيق كود الخصم</span>
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-lg p-4">
@@ -203,23 +279,29 @@ const Checkout = () => {
                     <span className="text-gray-500 ml-1">{item.quantity} ×</span>
                     <span className="font-medium">{item.product.name}</span>
                   </div>
-                  <span>{((item.product.offer_price || item.product.price) * item.quantity).toFixed(2)} ر.س</span>
+                  <span>{((item.product.offer_price || item.product.price) * item.quantity).toFixed(2)} ج.م</span>
                 </div>
               ))}
             </div>
             
             <div className="border-t pt-3 space-y-2">
               <div className="flex justify-between">
-                <span className="font-medium">{subtotal.toFixed(2)} ر.س</span>
                 <span className="text-gray-600">المجموع</span>
+                <span className="font-medium">{subtotal.toFixed(2)} ج.م</span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-primary">
+                  <span>الخصم</span>
+                  <span className="font-medium">- {discount.toFixed(2)} ج.م</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span className="font-medium">{deliveryFee.toFixed(2)} ر.س</span>
                 <span className="text-gray-600">رسوم التوصيل</span>
+                <span className="font-medium">{deliveryFee.toFixed(2)} ج.م</span>
               </div>
               <div className="flex justify-between pt-2 border-t">
-                <span className="font-bold text-lg">{total.toFixed(2)} ر.س</span>
                 <span className="font-bold">الإجمالي</span>
+                <span className="font-bold text-lg">{total.toFixed(2)} ج.م</span>
               </div>
             </div>
           </div>
@@ -253,7 +335,7 @@ const Checkout = () => {
               ) : (
                 <>
                   <span>تأكيد الطلب</span>
-                  <span className="mr-2">{total.toFixed(2)} ر.س</span>
+                  <span className="mr-2">{total.toFixed(2)} ج.م</span>
                 </>
               )}
             </button>
