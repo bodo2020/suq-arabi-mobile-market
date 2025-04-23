@@ -36,6 +36,7 @@ const Checkout = () => {
   const [deliveryTypes, setDeliveryTypes] = useState<any[]>([]);
   const [selectedDeliveryType, setSelectedDeliveryType] = useState('');
   const [deliveryPrice, setDeliveryPrice] = useState(0);
+  const [deliveryPrices, setDeliveryPrices] = useState<{[key: string]: number}>({});
 
   useEffect(() => {
     if (items.length === 0) {
@@ -106,16 +107,30 @@ const Checkout = () => {
     loadDeliveryTypes();
   }, [items.length, navigate, getTotalPrice]);
 
-  // Separate useEffect for updating delivery price when selectedDeliveryType or address changes
+  // Separate useEffect for updating delivery prices for all delivery types
   useEffect(() => {
-    const updateDeliveryPrice = async () => {
-      if (selectedDeliveryType && address?.neighborhood_id) {
-        const price = await getDeliveryPrice(selectedDeliveryType, address.neighborhood_id);
-        setDeliveryPrice(price);
+    const updateDeliveryPrices = async () => {
+      if (address?.neighborhood_id) {
+        const newDeliveryPrices: {[key: string]: number} = {};
+        
+        for (const type of deliveryTypes) {
+          const price = await getDeliveryPrice(type.id, address.neighborhood_id);
+          newDeliveryPrices[type.id] = price;
+        }
+        
+        setDeliveryPrices(newDeliveryPrices);
+        
+        // Update the currently selected delivery price
+        if (selectedDeliveryType) {
+          setDeliveryPrice(newDeliveryPrices[selectedDeliveryType] || 0);
+        }
       }
     };
-    updateDeliveryPrice();
-  }, [selectedDeliveryType, address]);
+    
+    if (deliveryTypes.length > 0 && address?.neighborhood_id) {
+      updateDeliveryPrices();
+    }
+  }, [deliveryTypes, address, selectedDeliveryType]);
 
   const handleBack = () => {
     navigate(-1);
@@ -229,6 +244,7 @@ const Checkout = () => {
   // Function to handle delivery type selection
   const handleDeliveryTypeChange = (deliveryTypeId: string) => {
     setSelectedDeliveryType(deliveryTypeId);
+    setDeliveryPrice(deliveryPrices[deliveryTypeId] || 0);
   };
 
   return (
@@ -302,7 +318,7 @@ const Checkout = () => {
             <DeliveryTypeSelector
               options={deliveryTypes.map(type => ({
                 ...type,
-                price: deliveryPrice
+                price: deliveryPrices[type.id] || 0
               }))}
               selectedId={selectedDeliveryType}
               onSelect={handleDeliveryTypeChange}
