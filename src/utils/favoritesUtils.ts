@@ -1,9 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-export const toggleFavorite = async (productId: string, userId: string | undefined) => {
-  if (!userId) {
+export const toggleFavorite = async (productId: string, customerId: string | undefined) => {
+  if (!customerId) {
     toast({
       title: "لم يتم تسجيل الدخول",
       description: "يرجى تسجيل الدخول لإضافة المنتجات إلى المفضلة",
@@ -13,11 +12,11 @@ export const toggleFavorite = async (productId: string, userId: string | undefin
   }
 
   try {
-    // Check if product is already in favorites
+    // Check if product is already in favorites for customer
     const { data: existingFavorite, error: checkError } = await supabase
       .from('favorites')
       .select('*')
-      .eq('user_id', userId)
+      .eq('customer_id', customerId)
       .eq('product_id', productId)
       .single();
 
@@ -31,7 +30,7 @@ export const toggleFavorite = async (productId: string, userId: string | undefin
       const { error: deleteError } = await supabase
         .from('favorites')
         .delete()
-        .eq('user_id', userId)
+        .eq('customer_id', customerId)
         .eq('product_id', productId);
 
       if (deleteError) {
@@ -49,7 +48,7 @@ export const toggleFavorite = async (productId: string, userId: string | undefin
       const { error: insertError } = await supabase
         .from('favorites')
         .insert({
-          user_id: userId,
+          customer_id: customerId,
           product_id: productId
         });
 
@@ -75,16 +74,16 @@ export const toggleFavorite = async (productId: string, userId: string | undefin
   }
 };
 
-export const checkIsFavorite = async (productId: string, userId: string | undefined) => {
-  if (!userId) return false;
+export const checkIsFavorite = async (productId: string, customerId: string | undefined) => {
+  if (!customerId) return false;
 
   try {
     const { data, error } = await supabase
       .from('favorites')
       .select('id')
-      .eq('user_id', userId)
+      .eq('customer_id', customerId)
       .eq('product_id', productId)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error checking favorite status:', error);

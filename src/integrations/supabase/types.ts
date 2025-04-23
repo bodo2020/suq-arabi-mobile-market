@@ -113,29 +113,39 @@ export type Database = {
       cart_items: {
         Row: {
           created_at: string | null
+          customer_id: string | null
           id: string
           product_id: string
           quantity: number
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
+          customer_id?: string | null
           id?: string
           product_id: string
           quantity?: number
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
+          customer_id?: string | null
           id?: string
           product_id?: string
           quantity?: number
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cart_items_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cart_items_product_id_fkey"
             columns: ["product_id"]
@@ -539,23 +549,33 @@ export type Database = {
       favorites: {
         Row: {
           created_at: string | null
+          customer_id: string | null
           id: string
           product_id: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
+          customer_id?: string | null
           id?: string
           product_id: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
+          customer_id?: string | null
           id?: string
           product_id?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "favorites_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "favorites_product_id_fkey"
             columns: ["product_id"]
@@ -1478,6 +1498,10 @@ export type Database = {
         Returns: undefined
       }
       get_admin_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_customer_id_from_user: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

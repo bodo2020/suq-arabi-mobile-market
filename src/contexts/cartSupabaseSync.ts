@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CartItem } from '@/lib/supabase';
@@ -10,7 +9,6 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
   const needsSyncRef = useRef(false);
   const customerIdRef = useRef<string | null>(null);
 
-  // User authentication hooks and state
   useEffect(() => {
     let user: any = null;
     let isLoading = true;
@@ -18,18 +16,17 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
 
     async function checkCustomerId(userId: string): Promise<string | null> {
       try {
-        // Check if the user has a customer record
         const { data: customerData, error: customerError } = await supabase
           .from('customers')
           .select('id')
           .eq('user_id', userId)
           .single();
-            
+
         if (customerError) {
           console.error('Error checking customer record:', customerError);
           return null;
         }
-        
+
         return customerData?.id || null;
       } catch (error) {
         console.error('Exception checking customer record:', error);
@@ -40,11 +37,11 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     async function updateCartForUser(sessionUser: any) {
       user = sessionUser;
       isLoading = true;
-      
+
       if (user) {
         const customerId = await checkCustomerId(user.id);
         customerIdRef.current = customerId;
-        
+
         if (!customerId) {
           console.log('No customer record found. Items will be stored in localStorage only.');
           toast({
@@ -56,14 +53,13 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
       } else {
         customerIdRef.current = null;
       }
-      
-      fetchCartItems(user, setItems).finally(() => { 
-        isLoading = false; 
-        isInitializedRef.current = true; 
+
+      fetchCartItems(user, customerIdRef.current, setItems).finally(() => {
+        isLoading = false;
+        isInitializedRef.current = true;
       });
     }
 
-    // Auth change logic
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
         updateCartForUser(session?.user || null);
@@ -73,7 +69,6 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     });
     authListener = listener;
 
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       updateCartForUser(session?.user || null);
     });
@@ -85,7 +80,6 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
 
   // Sync cart to persistence (Supabase/localStorage)
   useEffect(() => {
-    // Only sync if initialized and not in initial SSR/hydration
     if (!isInitializedRef.current && !needsSyncRef.current) return;
 
     let user: any;
@@ -97,17 +91,17 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     });
   }, [items]);
 
-  return null; // This hook doesn't render anything
+  return null;
 }
 
-async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
-  if (user) {
+async function fetchCartItems(user: any, customerId: string | null, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
+  if (user && customerId) {
     try {
       // Fetch from Supabase
       const { data: cartData, error: cartError } = await supabase
         .from('cart_items')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('customer_id', customerId);
 
       if (cartError) {
         console.error('Error fetching cart items:', cartError);
@@ -163,7 +157,6 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
             const localItems = JSON.parse(savedCart);
             if (localItems.length > 0) {
               setItems(localItems);
-              // Mark for sync (via the effect)
             } else {
               setItems([]);
             }
@@ -180,7 +173,7 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
       setItems([]);
     }
   } else {
-    // Not logged in; get from localStorage
+    // Not logged in or no customer record; get from localStorage
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
       try {
@@ -196,32 +189,18 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
 }
 
 async function syncCartPersistence(user: any, items: CartItem[], customerId: string | null) {
-  // Always store in localStorage as a fallback
   localStorage.setItem('cart', JSON.stringify(items));
-  
-  // If not logged in or no customer record exists, just use localStorage
+
   if (!user || !customerId) {
     return;
   }
-  
+
   try {
-    // Check if the user has a customer record
-    if (!customerId) {
-      // If no customer record, don't try to sync with Supabase
-      console.log('No customer record found, skipping Supabase sync');
-      toast({
-        title: "تعذر حفظ السلة",
-        description: "لا يمكن حفظ السلة في قاعدة البيانات، تم الحفظ محليًا فقط",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     // Clear old cart
     const { error: deleteError } = await supabase
       .from('cart_items')
       .delete()
-      .eq('user_id', user.id);
+      .eq('customer_id', customerId);
 
     if (deleteError) {
       console.error('Error clearing cart items:', deleteError);
@@ -232,18 +211,18 @@ async function syncCartPersistence(user: any, items: CartItem[], customerId: str
       });
       return;
     }
-    
+
     if (items.length > 0) {
       const cartItemsToInsert = items.map(item => ({
-        user_id: user.id,
+        customer_id: customerId,
         product_id: item.product.id,
         quantity: item.quantity
       }));
-      
+
       const { error: insertError } = await supabase
         .from('cart_items')
         .insert(cartItemsToInsert);
-        
+
       if (insertError) {
         console.error('Error inserting cart items:', insertError);
         toast({
