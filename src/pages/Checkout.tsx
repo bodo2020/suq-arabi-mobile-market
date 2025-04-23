@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check, Gift } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
-import { submitOrder } from '@/lib/supabase';
+import { submitOrder, supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { applyCoupon, getApplicableOffers } from '@/utils/offerUtils';
 import { Input } from '@/components/ui/input';
