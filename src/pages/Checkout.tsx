@@ -48,16 +48,23 @@ const Checkout = () => {
     
     if (savedName) setName(savedName);
     if (savedPhone) setPhone(savedPhone);
-    if (savedAddress) setAddress(savedAddress ? JSON.parse(savedAddress) : null);
+    
+    if (savedAddress) {
+      try {
+        const parsedAddress = JSON.parse(savedAddress);
+        setAddress(parsedAddress);
+      } catch (error) {
+        console.error('Error parsing saved address:', error);
+        setAddress(null);
+      }
+    }
 
-    // Load applicable offers
     const loadOffers = async () => {
       const offers = await getApplicableOffers(getTotalPrice());
       setAvailableOffers(offers);
     };
     loadOffers();
 
-    // Load delivery types
     const loadDeliveryTypes = async () => {
       const types = await getDeliveryTypes();
       setDeliveryTypes(types);
@@ -68,7 +75,6 @@ const Checkout = () => {
     loadDeliveryTypes();
   }, [items.length, navigate, getTotalPrice]);
 
-  // Update delivery price when delivery type or address changes
   useEffect(() => {
     const updateDeliveryPrice = async () => {
       if (selectedDeliveryType && address?.neighborhood_id) {
@@ -142,7 +148,9 @@ const Checkout = () => {
     try {
       localStorage.setItem('userName', name);
       localStorage.setItem('userPhone', phone);
-      localStorage.setItem('userAddress', JSON.stringify(address));
+      if (address) {
+        localStorage.setItem('userAddress', JSON.stringify(address));
+      }
 
       const orderData = {
         items: items.map(item => ({
@@ -251,7 +259,6 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Add Delivery Type Selection */}
           <div className="bg-white rounded-lg p-4">
             <DeliveryTypeSelector
               options={deliveryTypes.map(type => ({
