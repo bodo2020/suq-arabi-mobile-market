@@ -6,23 +6,30 @@ import { useToast } from '@/hooks/use-toast';
 export function useFavorites() {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [user, setUser] = useState<any>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Load user, customer ID, and favorites
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
+        const customerId = await getCustomerId(session.user.id);
+        setCustomerId(customerId);
         loadFavorites(session.user.id);
       } else {
         setUser(null);
+        setCustomerId(null);
         setFavorites({});
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
+        setUser(session.user);
+        const customerId = await getCustomerId(session.user.id);
+        setCustomerId(customerId);
         loadFavorites(session.user.id);
       } else {
         setIsLoading(false);
@@ -33,6 +40,27 @@ export function useFavorites() {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  // Helper function to get customer ID from user ID
+  const getCustomerId = async (userId: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching customer ID:', error);
+        return null;
+      }
+
+      return data?.id || null;
+    } catch (error) {
+      console.error('Exception in getCustomerId:', error);
+      return null;
+    }
+  };
 
   const loadFavorites = async (userId: string) => {
     try {
@@ -72,6 +100,16 @@ export function useFavorites() {
       toast({
         title: "تسجيل الدخول مطلوب",
         description: "الرجاء تسجيل الدخول لإضافة منتجات للمفضلة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // First, ensure the customer record exists
+    if (!customerId) {
+      toast({
+        title: "خطأ في الملف الشخصي",
+        description: "لم نتمكن من العثور على بيانات العميل الخاصة بك",
         variant: "destructive",
       });
       return;
@@ -140,6 +178,7 @@ export function useFavorites() {
     isLoading,
     isFavorite,
     toggleFavorite,
-    user
+    user,
+    customerId,
   };
 }

@@ -11,6 +11,7 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
   const { toast } = useToast();
   const isInitializedRef = useRef(false);
   const needsSyncRef = useRef(false);
+  const customerIdRef = useRef<string | null>(null);
 
   // User authentication hooks and state
   useEffect(() => {
@@ -18,10 +19,41 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
     let isLoading = true;
     let authListener: any = null;
 
-    function updateCartForUser(sessionUser: any) {
+    async function getCustomerId(userId: string): Promise<string | null> {
+      try {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching customer ID:', error);
+          return null;
+        }
+
+        return data?.id || null;
+      } catch (error) {
+        console.error('Exception in getCustomerId:', error);
+        return null;
+      }
+    }
+
+    async function updateCartForUser(sessionUser: any) {
       user = sessionUser;
       isLoading = true;
-      fetchCartItems(user, setItems, toast).finally(() => { isLoading = false; isInitializedRef.current = true; })
+      
+      if (user) {
+        const customerId = await getCustomerId(user.id);
+        customerIdRef.current = customerId;
+      } else {
+        customerIdRef.current = null;
+      }
+      
+      fetchCartItems(user, setItems, toast).finally(() => { 
+        isLoading = false; 
+        isInitializedRef.current = true; 
+      });
     }
 
     // Auth change logic
@@ -151,6 +183,25 @@ async function syncCartPersistence(user: any, items: CartItem[], toast: any) {
   }
   
   try {
+    // Check if customer exists first
+    const { data: customerData, error: customerError } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+      
+    if (customerError) {
+      console.error('Error checking customer:', customerError);
+      if (customerError.code !== 'PGRST116') { // Not found error
+        toast && toast({
+          title: "خطأ في حفظ السلة",
+          description: "لم نتمكن من العثور على بيانات العميل",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     // Clear old cart
     const { error: deleteError } = await supabase
       .from('cart_items')
