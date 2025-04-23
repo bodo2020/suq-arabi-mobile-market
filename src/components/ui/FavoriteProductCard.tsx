@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
@@ -58,11 +57,6 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
 
   return (
     <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale">
-      {/* Only ONE favorite button in the upper right corner (not two) */}
-      <div className="absolute top-2 right-2 z-20">
-        <FavoriteButton productId={product.id} size="md" />
-      </div>
-
       <div className="relative pt-[100%] mb-3">
         <img
           src={productImage}
@@ -97,7 +91,6 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
                 <span className="font-bold">{product.price} ج.م</span>
               )}
             </div>
-            {/* Removed second favorite button from the lower card */}
           </div>
           {isOutOfStock ? (
             <button

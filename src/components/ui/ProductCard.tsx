@@ -70,7 +70,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
 
   return (
     <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale group relative">
-      {/* Only ONE floating favorite button */}
+      {/* زر المفضلة كأيقونة فقط بلا إطار أو خلفية */}
       <div className="absolute top-2 right-2 z-20">
         <FavoriteButton 
           productId={product.id} 
