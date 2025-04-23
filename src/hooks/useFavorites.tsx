@@ -109,7 +109,10 @@ export function useFavorites() {
             product_id: productId
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error adding to favorites:', error);
+          throw error;
+        }
         
         toast({
           title: "تمت الإضافة",
