@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check, Gift } from 'lucide-react';
@@ -10,6 +9,9 @@ import { applyCoupon, getApplicableOffers } from '@/utils/offerUtils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
+import { getDeliveryTypes, getDeliveryPrice } from '@/utils/deliveryUtils';
+import LocationPicker from '@/components/ui/LocationPicker';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -17,7 +19,7 @@ const Checkout = () => {
   
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({
     name: '',
@@ -30,6 +32,9 @@ const Checkout = () => {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [availableOffers, setAvailableOffers] = useState<any[]>([]);
   const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
+  const [deliveryTypes, setDeliveryTypes] = useState<any[]>([]);
+  const [selectedDeliveryType, setSelectedDeliveryType] = useState('');
+  const [deliveryPrice, setDeliveryPrice] = useState(0);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -43,7 +48,7 @@ const Checkout = () => {
     
     if (savedName) setName(savedName);
     if (savedPhone) setPhone(savedPhone);
-    if (savedAddress) setAddress(savedAddress);
+    if (savedAddress) setAddress(savedAddress ? JSON.parse(savedAddress) : null);
 
     // Load applicable offers
     const loadOffers = async () => {
@@ -51,7 +56,28 @@ const Checkout = () => {
       setAvailableOffers(offers);
     };
     loadOffers();
+
+    // Load delivery types
+    const loadDeliveryTypes = async () => {
+      const types = await getDeliveryTypes();
+      setDeliveryTypes(types);
+      if (types.length > 0) {
+        setSelectedDeliveryType(types[0].id);
+      }
+    };
+    loadDeliveryTypes();
   }, [items.length, navigate, getTotalPrice]);
+
+  // Update delivery price when delivery type or address changes
+  useEffect(() => {
+    const updateDeliveryPrice = async () => {
+      if (selectedDeliveryType && address?.neighborhood_id) {
+        const price = await getDeliveryPrice(selectedDeliveryType, address.neighborhood_id);
+        setDeliveryPrice(price);
+      }
+    };
+    updateDeliveryPrice();
+  }, [selectedDeliveryType, address]);
 
   const handleBack = () => {
     navigate(-1);
@@ -78,7 +104,7 @@ const Checkout = () => {
       isValid = false;
     }
 
-    if (!address.trim()) {
+    if (!address) {
       newErrors.address = 'العنوان مطلوب';
       isValid = false;
     }
@@ -106,13 +132,17 @@ const Checkout = () => {
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    if (!selectedDeliveryType) {
+      toast.error('يرجى اختيار طريقة التوصيل');
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
       localStorage.setItem('userName', name);
       localStorage.setItem('userPhone', phone);
-      localStorage.setItem('userAddress', address);
+      localStorage.setItem('userAddress', JSON.stringify(address));
 
       const orderData = {
         items: items.map(item => ({
@@ -121,9 +151,9 @@ const Checkout = () => {
           price: item.product.offer_price || item.product.price,
           name: item.product.name,
         })),
-        total: getTotalPrice() - discount,
+        total: getTotalPrice() - discount + deliveryPrice,
         shipping_address: address,
-        shipping_cost: 0,
+        shipping_cost: deliveryPrice,
         payment_method: paymentMethod,
         payment_status: "pending" as const,
         status: "waiting" as const,
@@ -158,7 +188,7 @@ const Checkout = () => {
 
   const subtotal = getTotalPrice();
   const deliveryFee = 0;
-  const total = subtotal + deliveryFee - discount;
+  const total = subtotal + deliveryFee - discount + deliveryPrice;
 
   return (
     <MainLayout>
@@ -216,16 +246,21 @@ const Checkout = () => {
                 <MapPin size={18} className="ml-2 text-gray-500" />
                 <label htmlFor="address" className="font-medium">العنوان</label>
               </div>
-              <textarea
-                id="address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className={`w-full p-3 border rounded-lg ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل عنوانك للتوصيل"
-                rows={3}
-              />
+              <LocationPicker value={address || {}} onChange={val => setAddress(val)} />
               {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
             </div>
+          </div>
+
+          {/* Add Delivery Type Selection */}
+          <div className="bg-white rounded-lg p-4">
+            <DeliveryTypeSelector
+              options={deliveryTypes.map(type => ({
+                ...type,
+                price: deliveryPrice
+              }))}
+              selectedId={selectedDeliveryType}
+              onSelect={setSelectedDeliveryType}
+            />
           </div>
 
           {availableOffers.length > 0 && (
@@ -298,11 +333,11 @@ const Checkout = () => {
               )}
               <div className="flex justify-between">
                 <span className="text-gray-600">رسوم التوصيل</span>
-                <span className="font-medium">{deliveryFee.toFixed(2)} ج.م</span>
+                <span className="font-medium">{deliveryPrice.toFixed(2)} ج.م</span>
               </div>
               <div className="flex justify-between pt-2 border-t">
                 <span className="font-bold">الإجمالي</span>
-                <span className="font-bold text-lg">{total.toFixed(2)} ج.م</span>
+                <span className="font-bold text-lg">{(subtotal - discount + deliveryPrice).toFixed(2)} ج.م</span>
               </div>
             </div>
           </div>
