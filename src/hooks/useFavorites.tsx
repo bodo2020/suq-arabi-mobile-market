@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -8,63 +9,14 @@ export function useFavorites() {
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-
-        const customerId = await getCustomerId(session.user.id);
-        setCustomerId(customerId);
-
-        if (customerId) {
-          loadFavorites(customerId);
-        } else {
-          setIsLoading(false);
-          console.log('No customer record found for user. Unable to load favorites.');
-          toast({
-            title: "تنبيه",
-            description: "لم نتمكن من العثور على سجل العميل. المفضلة لن تكون متزامنة عبر الأجهزة.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        setUser(null);
-        setCustomerId(null);
-        setFavorites({});
-        setIsLoading(false);
-      }
-    });
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-
-        const customerId = await getCustomerId(session.user.id);
-        setCustomerId(customerId);
-
-        if (customerId) {
-          loadFavorites(customerId);
-        } else {
-          setIsLoading(false);
-          console.log('No customer record found for user. Unable to load favorites.');
-        }
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
+  // جلب customer id المرتبط بالمستخدم المسجل للدخول فقط
   const getCustomerId = async (userId: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase
         .from('customers')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching customer ID:', error);
@@ -108,6 +60,54 @@ export function useFavorites() {
     }
   };
 
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+
+        const customerId = await getCustomerId(session.user.id);
+        setCustomerId(customerId);
+
+        if (customerId) {
+          loadFavorites(customerId);
+        } else {
+          setIsLoading(false);
+          toast({
+            title: "تنبيه",
+            description: "لم نتمكن من العثور على سجل العميل.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        setUser(null);
+        setCustomerId(null);
+        setFavorites({});
+        setIsLoading(false);
+      }
+    });
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+
+        const customerId = await getCustomerId(session.user.id);
+        setCustomerId(customerId);
+
+        if (customerId) {
+          loadFavorites(customerId);
+        } else {
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
   const isFavorite = (productId: string): boolean => {
     return !!favorites[productId];
   };
@@ -124,38 +124,10 @@ export function useFavorites() {
 
     if (!customerId) {
       toast({
-        title: "خطأ في سجل العميل",
-        description: "لم نتمكن من العثور على بيانات العميل الخاصة بك",
+        title: "خطأ في حساب العميل",
+        description: "لم نتمكن من العثور على بيانات عميلك",
         variant: "destructive",
       });
-
-      try {
-        const localFavorites = localStorage.getItem('favorites') ?
-          JSON.parse(localStorage.getItem('favorites') || '[]') : [];
-
-        const isCurrentlyFavorite = isFavorite(productId);
-
-        if (isCurrentlyFavorite) {
-          const updatedFavorites = localFavorites.filter((id: string) => id !== productId);
-          localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-        } else {
-          localFavorites.push(productId);
-          localStorage.setItem('favorites', JSON.stringify(localFavorites));
-        }
-
-        setFavorites(prev => ({
-          ...prev,
-          [productId]: !isCurrentlyFavorite
-        }));
-
-        toast({
-          title: isCurrentlyFavorite ? "تمت الإزالة" : "تمت الإضافة",
-          description: isCurrentlyFavorite ? "تم إزالة المنتج من المفضلة (محليًا فقط)" : "تم إضافة المنتج إلى المفضلة (محليًا فقط)",
-        });
-      } catch (error) {
-        console.error('Error storing favorites locally:', error);
-      }
-
       return;
     }
 
@@ -181,7 +153,7 @@ export function useFavorites() {
 
         toast({
           title: "تمت الإزالة",
-          description: "تم إزالة المنتج من المفضلة",
+          description: "تمت إزالة المنتج من المفضلة",
         });
       } else {
         const { error } = await supabase
@@ -198,7 +170,7 @@ export function useFavorites() {
 
         toast({
           title: "تمت الإضافة",
-          description: "تم إضافة المنتج إلى المفضلة",
+          description: "تمت إضافة المنتج إلى المفضلة",
         });
       }
     } catch (error) {
