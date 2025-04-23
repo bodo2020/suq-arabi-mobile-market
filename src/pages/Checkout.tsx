@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check, Gift } from 'lucide-react';
@@ -57,6 +56,9 @@ const Checkout = () => {
         if (customerData) {
           setName(customerData.name);
           setPhone(customerData.phone || '');
+        } else {
+          navigate('/account/address');
+          return;
         }
 
         // Fetch default address
@@ -80,7 +82,13 @@ const Checkout = () => {
             const price = await getDeliveryPrice(selectedDeliveryType, addressData.neighborhood_id);
             setDeliveryPrice(price);
           }
+        } else {
+          navigate('/account/address');
+          return;
         }
+      } else {
+        navigate('/account/register');
+        return;
       }
     };
     
@@ -243,45 +251,48 @@ const Checkout = () => {
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <User size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="name" className="font-medium">الاسم</label>
+                <label className="font-medium">الاسم</label>
               </div>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`w-full p-3 border rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل اسمك"
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              <div className="p-3 bg-gray-50 rounded-lg">
+                {name}
+              </div>
             </div>
 
             <div className="mb-4">
               <div className="flex items-center mb-2">
                 <Phone size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
+                <label className="font-medium">رقم الهاتف</label>
               </div>
-              <input
-                type="tel"
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className={`w-full p-3 border rounded-lg ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="أدخل رقم هاتفك"
-              />
-              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+              <div className="p-3 bg-gray-50 rounded-lg">
+                {phone}
+              </div>
             </div>
 
             <div>
               <div className="flex items-center mb-2">
                 <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="address" className="font-medium">العنوان</label>
+                <label className="font-medium">العنوان</label>
               </div>
-              <LocationPicker value={address || {}} onChange={val => {
-                setAddress(val);
-                localStorage.setItem('userAddress', JSON.stringify(val));
-              }} />
-              {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+              {address && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-semibold mb-1">
+                    {address.governorates?.name && `${address.governorates.name}، `}
+                    {address.cities?.name && `${address.cities.name}، `}
+                    {address.areas?.name && `${address.areas.name}، `}
+                    {address.neighborhoods?.name && address.neighborhoods.name}
+                  </p>
+                  <p className="text-sm text-gray-600">{address.address}</p>
+                </div>
+              )}
+              {!address && (
+                <Button 
+                  type="button" 
+                  onClick={() => navigate('/account/address')}
+                  className="w-full"
+                >
+                  إضافة عنوان للتوصيل
+                </Button>
+              )}
             </div>
           </div>
 
