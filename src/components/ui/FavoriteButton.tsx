@@ -24,7 +24,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({ productId, className })
   return (
     <button
       onClick={handleClick}
-      className={`p-1.5 rounded-full bg-white shadow-sm ${className}`}
+      className={`p-1.5 rounded-full bg-white shadow-sm hover:bg-gray-50 ${className}`}
       aria-label={isFavorite(productId) ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
     >
       <Heart 

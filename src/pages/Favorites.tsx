@@ -3,61 +3,41 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
-import ProductCard from '@/components/ui/ProductCard';
+import FavoriteProductCard from '@/components/ui/FavoriteProductCard';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useFavorites } from '@/hooks/useFavorites';
 
 const Favorites = () => {
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const { user, customerId } = useFavorites();
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed in favorites:', event, session?.user?.id);
-      
-      if (event === 'SIGNED_IN') {
-        setUser(session?.user);
-        // Explicitly fetch favorites when user signs in
-        if (session?.user) {
-          fetchFavorites(session.user.id);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setFavorites([]);
-      }
-    });
+    if (customerId) {
+      fetchFavorites(customerId);
+    } else if (user) {
+      // If we have a user but no customerId, there might be an issue with the customer record
+      setLoading(false);
+    } else {
+      // No user is logged in
+      setLoading(false);
+    }
+  }, [user, customerId]);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check in favorites:', session?.user?.id);
-      setUser(session?.user || null);
-      
-      // If user is logged in, fetch favorites
-      if (session?.user) {
-        fetchFavorites(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchFavorites = async (userId: string) => {
+  const fetchFavorites = async (customerId: string) => {
     try {
       setLoading(true);
-      console.log('Fetching favorites for user:', userId);
+      console.log('Fetching favorites for customer:', customerId);
       
       // First get the favorite product IDs
       const { data: favoritesData, error: favoritesError } = await supabase
         .from('favorites')
         .select('product_id')
-        .eq('user_id', userId);
+        .eq('customer_id', customerId);
 
       if (favoritesError) {
         console.error('Error fetching favorites:', favoritesError);
@@ -104,7 +84,6 @@ const Favorites = () => {
   return (
     <MainLayout>
       <div className="py-4">
-        {/* Header with back button */}
         <div className="flex items-center mb-4">
           <button
             onClick={handleBack}
@@ -114,7 +93,7 @@ const Favorites = () => {
             <ArrowRight size={24} />
           </button>
           <h1 className="text-xl font-bold flex-1 text-center">المفضلة</h1>
-          <div className="w-10"></div> {/* Spacer for alignment */}
+          <div className="w-10"></div>
         </div>
 
         {loading ? (
@@ -138,9 +117,9 @@ const Favorites = () => {
             </button>
           </div>
         ) : favorites.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {favorites.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <FavoriteProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (

@@ -1,7 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-export const toggleFavorite = async (productId: string, customerId: string | undefined) => {
+export const toggleFavorite = async (productId: string, customerId: string | undefined | null) => {
   if (!customerId) {
     toast({
       title: "لم يتم تسجيل الدخول",
@@ -74,7 +75,7 @@ export const toggleFavorite = async (productId: string, customerId: string | und
   }
 };
 
-export const checkIsFavorite = async (productId: string, customerId: string | undefined) => {
+export const checkIsFavorite = async (productId: string, customerId: string | undefined | null) => {
   if (!customerId) return false;
 
   try {

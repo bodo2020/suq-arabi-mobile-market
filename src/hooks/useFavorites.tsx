@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -161,6 +162,7 @@ export function useFavorites() {
 
     const isCurrentlyFavorite = isFavorite(productId);
 
+    // Update UI optimistically
     setFavorites(prev => ({
       ...prev,
       [productId]: !isCurrentlyFavorite
@@ -204,6 +206,7 @@ export function useFavorites() {
     } catch (error) {
       console.error('Error toggling favorite:', error);
 
+      // Revert UI state on error
       setFavorites(prev => ({
         ...prev,
         [productId]: isCurrentlyFavorite
