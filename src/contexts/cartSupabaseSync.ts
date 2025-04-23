@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CartItem } from '@/lib/supabase';
-import { toast } from "sonner";
+import { toast } from '@/hooks/use-toast';
 
 // This hook will sync cart state with Supabase/localStorage and user
 export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
@@ -12,6 +12,8 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
 
   // User authentication hooks and state
   useEffect(() => {
+    let user: any = null;
+    let isLoading = true;
     let authListener: any = null;
 
     async function checkCustomerId(userId: string): Promise<string | null> {
@@ -36,19 +38,27 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     }
 
     async function updateCartForUser(sessionUser: any) {
-      if (sessionUser) {
-        const customerId = await checkCustomerId(sessionUser.id);
+      user = sessionUser;
+      isLoading = true;
+      
+      if (user) {
+        const customerId = await checkCustomerId(user.id);
         customerIdRef.current = customerId;
         
         if (!customerId) {
           console.log('No customer record found. Items will be stored in localStorage only.');
-          toast("تنبيه: لم نتمكن من ربط حسابك بملف العميل. ستُحفظ العناصر محليًا فقط.");
+          toast({
+            title: "تنبيه",
+            description: "لم نتمكن من ربط حسابك بملف العميل. ستُحفظ العناصر محليًا فقط.",
+            variant: "destructive",
+          });
         }
       } else {
         customerIdRef.current = null;
       }
       
-      fetchCartItems(sessionUser, setItems).finally(() => { 
+      fetchCartItems(user, setItems).finally(() => { 
+        isLoading = false; 
         isInitializedRef.current = true; 
       });
     }
@@ -78,8 +88,9 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     // Only sync if initialized and not in initial SSR/hydration
     if (!isInitializedRef.current && !needsSyncRef.current) return;
 
+    let user: any;
     supabase.auth.getSession().then(({ data: { session } }) => {
-      const user = session?.user || null;
+      user = session?.user || null;
       syncCartPersistence(user, items, customerIdRef.current).then(() => {
         if (needsSyncRef.current) needsSyncRef.current = false;
       });
@@ -100,8 +111,11 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
 
       if (cartError) {
         console.error('Error fetching cart items:', cartError);
-        toast("خطأ في تحميل السلة: حدث خطأ أثناء تحميل عناصر السلة");
-        
+        toast({
+          title: "خطأ في تحميل السلة",
+          description: "حدث خطأ أثناء تحميل عناصر السلة",
+          variant: "destructive",
+        });
         // Fallback to localStorage
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
@@ -185,12 +199,24 @@ async function syncCartPersistence(user: any, items: CartItem[], customerId: str
   // Always store in localStorage as a fallback
   localStorage.setItem('cart', JSON.stringify(items));
   
-  // If not logged in, just use localStorage
-  if (!user) {
+  // If not logged in or no customer record exists, just use localStorage
+  if (!user || !customerId) {
     return;
   }
   
   try {
+    // Check if the user has a customer record
+    if (!customerId) {
+      // If no customer record, don't try to sync with Supabase
+      console.log('No customer record found, skipping Supabase sync');
+      toast({
+        title: "تعذر حفظ السلة",
+        description: "لا يمكن حفظ السلة في قاعدة البيانات، تم الحفظ محليًا فقط",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Clear old cart
     const { error: deleteError } = await supabase
       .from('cart_items')
@@ -199,7 +225,11 @@ async function syncCartPersistence(user: any, items: CartItem[], customerId: str
 
     if (deleteError) {
       console.error('Error clearing cart items:', deleteError);
-      toast("خطأ في حفظ السلة: حدث خطأ أثناء حذف العناصر القديمة");
+      toast({
+        title: "خطأ في حفظ السلة",
+        description: "حدث خطأ أثناء حذف العناصر القديمة",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -216,13 +246,21 @@ async function syncCartPersistence(user: any, items: CartItem[], customerId: str
         
       if (insertError) {
         console.error('Error inserting cart items:', insertError);
-        toast("خطأ في حفظ السلة: تعذر حفظ العناصر في قاعدة البيانات، تم الحفظ محليًا فقط");
+        toast({
+          title: "خطأ في حفظ السلة",
+          description: "تعذر حفظ العناصر في قاعدة البيانات، تم الحفظ محليًا فقط",
+          variant: "destructive",
+        });
       } else {
         console.log('Cart items successfully synced to Supabase');
       }
     }
   } catch (error) {
     console.error('Error in syncCartPersistence:', error);
-    toast("خطأ في حفظ السلة: حدث خطأ غير متوقع أثناء حفظ السلة");
+    toast({
+      title: "خطأ في حفظ السلة",
+      description: "حدث خطأ غير متوقع أثناء حفظ السلة",
+      variant: "destructive",
+    });
   }
 }

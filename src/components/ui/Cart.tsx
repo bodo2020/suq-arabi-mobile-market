@@ -1,18 +1,11 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
-import { useOffers } from '@/hooks/useOffers';
-import { toast } from "sonner";
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
-  const { offers } = useOffers();
-  const [deliveryFee] = useState(10);
-  const [coupon, setCoupon] = useState('');
-  const [couponApplied, setCouponApplied] = useState<any>(null);
 
   const handleIncreaseQuantity = (productId: string) => {
     const item = items.find(item => item.product.id === productId);
@@ -39,33 +32,6 @@ const Cart = () => {
       ? item.product.image_urls[0] 
       : '/placeholder.svg';
   };
-
-  const applyCoupon = () => {
-    if (!coupon) return;
-    const offer = offers.find(
-      offer =>
-        offer.code &&
-        offer.code.toLowerCase() === coupon.trim().toLowerCase() &&
-        offer.active);
-    if (!offer) {
-      toast.error('الكوبون غير صحيح أو منتهي');
-      setCouponApplied(null);
-      return;
-    }
-    setCouponApplied(offer);
-    toast.success('تم تفعيل الكوبون!');
-  };
-
-  const subtotal = getTotalPrice();
-  let discount = 0;
-  if (couponApplied) {
-    if (couponApplied.discount_type === "percent") {
-      discount = Math.min(subtotal * (couponApplied.discount_value / 100), couponApplied.max_discount || subtotal);
-    } else if (couponApplied.discount_type === "fixed") {
-      discount = Math.min(couponApplied.discount_value, subtotal);
-    }
-  }
-  const total = subtotal + deliveryFee - discount;
 
   return (
     <MainLayout>
@@ -153,80 +119,22 @@ const Cart = () => {
             </div>
 
             <div className="bg-white rounded-lg p-4 mb-4">
-              <h3 className="text-lg font-bold mb-3">العروض المتاحة</h3>
-              {offers &&
-                offers.length > 0 ? (
-                  <ul className="mb-2">
-                    {offers.map(offer => (
-                      <li key={offer.id} className="mb-2 text-sm">
-                        <span className="font-medium text-primary">{offer.name}</span>
-                        {offer.code && (
-                          <span className="ml-2 bg-gray-100 px-1 rounded text-xs">كود: {offer.code}</span>
-                        )}
-                        {offer.discount_type === "percent"
-                          ? ` - خصم ${offer.discount_value}%`
-                          : offer.discount_type === "fixed"
-                            ? ` - خصم ${offer.discount_value} ر.س`
-                            : ""}
-                        {offer.expiry_date && (
-                          <span className="ml-2 text-gray-400">حتى {offer.expiry_date.split('T')[0]}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : <span className="text-gray-400 text-sm">لا توجد عروض</span>
-              }
-              <form
-                className="flex gap-2 mt-2"
-                onSubmit={e => {
-                  e.preventDefault();
-                  applyCoupon();
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="كوبون الخصم"
-                  className="border rounded px-2 flex-1"
-                  value={coupon}
-                  onChange={e => setCoupon(e.target.value)}
-                  disabled={couponApplied}
-                />
-                <button
-                  className="bg-primary text-white py-2 px-4 rounded"
-                  type="submit"
-                  disabled={couponApplied}
-                >
-                  {couponApplied ? "تم التفعيل" : "تطبيق"}
-                </button>
-              </form>
-            </div>
-
-            <div className="bg-white rounded-lg p-4 mb-4">
+              <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
               <div className="flex justify-between py-2 border-b">
                 <span className="font-bold">{getTotalPrice().toFixed(2)} ر.س</span>
                 <span>المجموع</span>
               </div>
               <div className="flex justify-between py-2 border-b">
-                <span className="font-bold">{deliveryFee.toFixed(2)} ر.س</span>
+                <span className="font-bold">0.00 ر.س</span>
                 <span>التوصيل</span>
               </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-bold">{discount.toFixed(2)} ر.س</span>
-                <span>الخصم</span>
-              </div>
               <div className="flex justify-between py-2 mt-2">
-                <span className="font-bold text-lg">{total.toFixed(2)} ر.س</span>
+                <span className="font-bold text-lg">{getTotalPrice().toFixed(2)} ر.س</span>
                 <span className="font-bold">الإجمالي</span>
               </div>
             </div>
 
-            <Link
-              to={{
-                pathname: "/checkout",
-                search: couponApplied ? `?coupon=${couponApplied.code}` : ''
-              }}
-              className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full"
-            >
+            <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
               متابعة الطلب
             </Link>
           </>
