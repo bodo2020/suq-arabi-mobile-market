@@ -1,13 +1,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Heart, ShoppingBag } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import FavoriteProductCard from '@/components/ui/FavoriteProductCard';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useFavorites } from '@/hooks/useFavorites';
+import { Button } from '@/components/ui/button';
 
 const Favorites = () => {
   const navigate = useNavigate();
@@ -83,11 +84,11 @@ const Favorites = () => {
 
   return (
     <MainLayout>
-      <div className="py-4">
-        <div className="flex items-center mb-4">
+      <div className="py-4 px-4 md:px-6">
+        <div className="flex items-center mb-6">
           <button
             onClick={handleBack}
-            className="p-2"
+            className="p-2 focus:outline-none"
             aria-label="الرجوع"
           >
             <ArrowRight size={24} />
@@ -101,40 +102,39 @@ const Favorites = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : !user ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
-              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
-              <path d="M12 6v2"></path>
-              <path d="M12 16v.01"></path>
-            </svg>
-            <h3 className="text-lg font-medium text-gray-500 mb-1">يرجى تسجيل الدخول</h3>
-            <p className="text-sm text-gray-400 mb-4">تحتاج إلى تسجيل الدخول للوصول إلى المفضلة</p>
-            <button 
+          <div className="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <Heart size={32} className="text-gray-300" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">تسجيل الدخول مطلوب</h3>
+            <p className="text-sm text-gray-500 mb-6">لعرض منتجاتك المفضلة، يرجى تسجيل الدخول أو إنشاء حساب جديد</p>
+            <Button 
               onClick={() => navigate('/account')}
-              className="bg-primary text-white px-4 py-2 rounded-md"
+              className="min-w-32"
             >
-              الذهاب لتسجيل الدخول
-            </button>
+              تسجيل الدخول
+            </Button>
           </div>
         ) : favorites.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {favorites.map((product) => (
               <FavoriteProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12">
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
-              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
-            </svg>
-            <h3 className="text-lg font-medium text-gray-500 mb-1">المفضلة فارغة</h3>
-            <p className="text-sm text-gray-400 mb-4">لم تقم بإضافة أي منتجات للمفضلة</p>
-            <button 
+          <div className="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <Heart size={32} className="text-gray-300" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">المفضلة فارغة</h3>
+            <p className="text-sm text-gray-500 mb-6">لم تقم بإضافة أي منتجات للمفضلة حتى الآن</p>
+            <Button
               onClick={() => navigate('/')}
-              className="bg-primary text-white px-4 py-2 rounded-md"
+              className="min-w-32"
             >
-              استعرض المنتجات
-            </button>
+              <ShoppingBag size={16} className="ml-2" />
+              تسوق الآن
+            </Button>
           </div>
         )}
       </div>

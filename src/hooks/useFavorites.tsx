@@ -13,20 +13,13 @@ export function useFavorites() {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
-
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
-
+        
         if (customerId) {
           loadFavorites(customerId);
         } else {
           setIsLoading(false);
-          console.log('No customer record found for user. Unable to load favorites.');
-          toast({
-            title: "تنبيه",
-            description: "لم نتمكن من العثور على سجل العميل. المفضلة لن تكون متزامنة عبر الأجهزة.",
-            variant: "destructive",
-          });
         }
       } else {
         setUser(null);
@@ -39,15 +32,13 @@ export function useFavorites() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
-
+        
         if (customerId) {
           loadFavorites(customerId);
         } else {
           setIsLoading(false);
-          console.log('No customer record found for user. Unable to load favorites.');
         }
       } else {
         setIsLoading(false);
@@ -129,34 +120,6 @@ export function useFavorites() {
         description: "لم نتمكن من العثور على بيانات العميل الخاصة بك",
         variant: "destructive",
       });
-
-      try {
-        const localFavorites = localStorage.getItem('favorites') ?
-          JSON.parse(localStorage.getItem('favorites') || '[]') : [];
-
-        const isCurrentlyFavorite = isFavorite(productId);
-
-        if (isCurrentlyFavorite) {
-          const updatedFavorites = localFavorites.filter((id: string) => id !== productId);
-          localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-        } else {
-          localFavorites.push(productId);
-          localStorage.setItem('favorites', JSON.stringify(localFavorites));
-        }
-
-        setFavorites(prev => ({
-          ...prev,
-          [productId]: !isCurrentlyFavorite
-        }));
-
-        toast({
-          title: isCurrentlyFavorite ? "تمت الإزالة" : "تمت الإضافة",
-          description: isCurrentlyFavorite ? "تم إزالة المنتج من المفضلة (محليًا فقط)" : "تم إضافة المنتج إلى المفضلة (محليًا فقط)",
-        });
-      } catch (error) {
-        console.error('Error storing favorites locally:', error);
-      }
-
       return;
     }
 

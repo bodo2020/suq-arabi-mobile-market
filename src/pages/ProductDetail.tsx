@@ -110,14 +110,19 @@ const ProductDetail = () => {
 
   return (
     <MainLayout>
-      <div className="py-4">
+      <div className="py-4 px-4">
         <div className="flex items-center mb-4">
           <button onClick={handleBack} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />
           </button>
           <div className="flex-1"></div>
           {product && (
-            <FavoriteButton productId={product.id} className="ml-2" />
+            <FavoriteButton 
+              productId={product.id} 
+              size="lg" 
+              variant="filled"
+              className="ml-2" 
+            />
           )}
         </div>
 

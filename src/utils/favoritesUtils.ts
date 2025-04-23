@@ -19,7 +19,7 @@ export const toggleFavorite = async (productId: string, customerId: string | und
       .select('*')
       .eq('customer_id', customerId)
       .eq('product_id', productId)
-      .single();
+      .maybeSingle();
 
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('Error checking favorite status:', checkError);
