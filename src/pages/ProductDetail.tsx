@@ -8,7 +8,6 @@ import { Product, Company, getProductById, getRelatedProducts, getCompanyById } 
 import { useCart } from '@/contexts/useCart';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import FavoriteButton from '@/components/ui/FavoriteButton';
 
 const ProductDetail = () => {
   const {
@@ -26,7 +25,10 @@ const ProductDetail = () => {
   const [company, setCompany] = useState<Company | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const { toast } = useToast();
 
   const cartItem = items.find(item => item.product.id === product?.id);
   const quantity = cartItem?.quantity || 0;
@@ -67,8 +69,68 @@ const ProductDetail = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (user && product?.id) {
+      const checkFavorite = async () => {
+        const { data } = await supabase
+          .from('favorites')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('product_id', product.id)
+          .maybeSingle();
+
+        if (data) setIsFavorite(true);
+        else setIsFavorite(false);
+      };
+      checkFavorite();
+    }
+  }, [user, product?.id]);
+
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const toggleFavorite = async () => {
+    if (!user) {
+      toast({
+        title: "مطلوب تسجيل الدخول",
+        description: "يرجى تسجيل الدخول لإضافة المنتجات إلى المفضلة",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        navigate('/account');
+      }, 1500);
+      return;
+    }
+    setLoadingFavorite(true);
+    try {
+      if (isFavorite && user) {
+        await supabase.from('favorites').delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product?.id);
+        setIsFavorite(false);
+        toast({
+          title: "تمت إزالة المنتج من المفضلة",
+        });
+      } else {
+        await supabase.from('favorites').insert({
+          user_id: user.id,
+          product_id: product?.id,
+        });
+        setIsFavorite(true);
+        toast({
+          title: "تمت إضافة المنتج إلى المفضلة",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "حدث خطأ",
+        description: "لم نتمكن من تحديث المفضلة",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingFavorite(false);
+    }
   };
 
   const handleAddToCart = () => {
@@ -123,14 +185,14 @@ const ProductDetail = () => {
   }
 
   return <MainLayout>
-      <div className="py-4" dir="rtl">
+      <div className="py-4">
         <div className="flex items-center mb-4">
           <button onClick={handleBack} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />
           </button>
-          {product?.id && (
-            <FavoriteButton productId={product.id} size={32} className="mx-1" />
-          )}
+          <button className="p-2" onClick={toggleFavorite} aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"} disabled={loadingFavorite}>
+            <Heart fill={isFavorite ? "red" : "none"} color={isFavorite ? "red" : "currentColor"} size={24} />
+          </button>
         </div>
 
         <div className="bg-white rounded-lg p-4 mb-4 flex justify-center">
