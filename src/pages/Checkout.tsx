@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check, Gift } from 'lucide-react';
@@ -77,11 +78,6 @@ const Checkout = () => {
 
         if (addressData) {
           setAddress(addressData);
-          // Fetch delivery price based on neighborhood
-          if (selectedDeliveryType && addressData.neighborhood_id) {
-            const price = await getDeliveryPrice(selectedDeliveryType, addressData.neighborhood_id);
-            setDeliveryPrice(price);
-          }
         } else {
           navigate('/account/address');
           return;
@@ -100,7 +96,7 @@ const Checkout = () => {
     const loadDeliveryTypes = async () => {
       const types = await getDeliveryTypes();
       setDeliveryTypes(types);
-      if (types.length > 0) {
+      if (types.length > 0 && !selectedDeliveryType) {
         setSelectedDeliveryType(types[0].id);
       }
     };
@@ -108,8 +104,9 @@ const Checkout = () => {
     loadUserData();
     loadOffers();
     loadDeliveryTypes();
-  }, [items.length, navigate, getTotalPrice, selectedDeliveryType]);
+  }, [items.length, navigate, getTotalPrice]);
 
+  // Separate useEffect for updating delivery price when selectedDeliveryType or address changes
   useEffect(() => {
     const updateDeliveryPrice = async () => {
       if (selectedDeliveryType && address?.neighborhood_id) {
@@ -229,6 +226,11 @@ const Checkout = () => {
   const deliveryFee = 0;
   const total = subtotal + deliveryFee - discount + deliveryPrice;
 
+  // Function to handle delivery type selection
+  const handleDeliveryTypeChange = (deliveryTypeId: string) => {
+    setSelectedDeliveryType(deliveryTypeId);
+  };
+
   return (
     <MainLayout>
       <div className="py-4 pb-24" dir="rtl">
@@ -303,7 +305,7 @@ const Checkout = () => {
                 price: deliveryPrice
               }))}
               selectedId={selectedDeliveryType}
-              onSelect={setSelectedDeliveryType}
+              onSelect={handleDeliveryTypeChange}
             />
           </div>
 
