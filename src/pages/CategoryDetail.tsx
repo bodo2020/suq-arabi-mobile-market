@@ -130,10 +130,12 @@ const CategoryDetail = () => {
   const handleSubcategorySelect = (subcatId: string | null) => {
     setSelectedSubcategory(subcatId);
     setSelectedSubsubcategory(null);
-
+    
     if (!subcatId) {
+      // "All Products" was selected
       setProducts(allProducts);
     } else {
+      // Filter products by subcategory
       const filtered = allProducts.filter(product => product.subcategory_id === subcatId);
       setProducts(filtered);
     }
@@ -141,24 +143,29 @@ const CategoryDetail = () => {
 
   const handleSubsubcategorySelect = (subsubcatId: string | null) => {
     setSelectedSubsubcategory(subsubcatId);
-
+    
     if (!subsubcatId) {
+      // If "All Products" was selected in subsubcategory filter
       if (selectedSubcategory) {
+        // Still filter by the selected subcategory
         const filtered = allProducts.filter(product => product.subcategory_id === selectedSubcategory);
         setProducts(filtered);
       } else {
+        // Show all products
         setProducts(allProducts);
       }
     } else {
+      // Filter products by subsubcategory
       const filtered = allProducts.filter(product => product.subsubcategory_id === subsubcatId);
       setProducts(filtered);
     }
   };
 
-  // تظهر الشبكة بشكل كبير للأقسام الرئيسية والفرعية وتشيبس للتفصيلية فقط
   return (
+    
     <MainLayout>
       <div className="py-4">
+        {/* Header with back button */}
         <div className="flex items-center mb-4">
           <button
             onClick={handleBack}
@@ -170,10 +177,42 @@ const CategoryDetail = () => {
           <h1 className="text-xl font-bold flex-1 text-center">
             {loading ? 'جاري التحميل...' : categoryInfo?.name}
           </h1>
-          <div className="w-10"></div>
+          <div className="w-10"></div> {/* Spacer for alignment */}
         </div>
-        {/* عرض الشيبس فقط لـ subsubcategories */}
-        {!loading && subsubcategories.length > 0 && (
+
+        {/* Subcategories as horizontal ships/chips */}
+        {!loading && subcategories.length > 0 && (
+          <div className="mb-4 overflow-x-auto hide-scrollbar">
+            <div className="flex space-x-2 space-x-reverse pb-2">
+              <button
+                onClick={() => handleSubcategorySelect(null)}
+                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                  selectedSubcategory === null 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                كل المنتجات
+              </button>
+              {subcategories.map(subcat => (
+                <button
+                  key={subcat.id}
+                  onClick={() => handleSubcategorySelect(subcat.id)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                    selectedSubcategory === subcat.id 
+                      ? 'bg-primary text-white' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {subcat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Subsubcategories as horizontal ships/chips */}
+        {!loading && (categoryType === 'sub' || selectedSubcategory) && subsubcategories.length > 0 && (
           <div className="mb-4 overflow-x-auto hide-scrollbar">
             <div className="flex space-x-2 space-x-reverse pb-2">
               <button
