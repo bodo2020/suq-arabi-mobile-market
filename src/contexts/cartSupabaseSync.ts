@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
   const isInitializedRef = useRef(false);
   const needsSyncRef = useRef(false);
-  const profileIdRef = useRef<string | null>(null);
+  const customerIdRef = useRef<string | null>(null);
 
   // User authentication hooks and state
   useEffect(() => {
@@ -16,36 +16,23 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     let isLoading = true;
     let authListener: any = null;
 
-    async function checkUserProfile(userId: string): Promise<string | null> {
+    async function checkCustomerId(userId: string): Promise<string | null> {
       try {
-        // First check if the user has a profile in the profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
+        // Check if the user has a customer record
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
           .select('id')
-          .eq('id', userId)
+          .eq('user_id', userId)
           .single();
-
-        if (profileError) {
-          console.error('Error checking user profile:', profileError);
-          
-          // Check if customer record exists as fallback
-          const { data: customerData, error: customerError } = await supabase
-            .from('customers')
-            .select('id')
-            .eq('user_id', userId)
-            .single();
             
-          if (customerError) {
-            console.error('Error checking customer record:', customerError);
-            return null;
-          }
-          
-          return customerData?.id || null;
+        if (customerError) {
+          console.error('Error checking customer record:', customerError);
+          return null;
         }
-
-        return profileData?.id || null;
+        
+        return customerData?.id || null;
       } catch (error) {
-        console.error('Exception checking user profile:', error);
+        console.error('Exception checking customer record:', error);
         return null;
       }
     }
@@ -55,19 +42,19 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
       isLoading = true;
       
       if (user) {
-        const profileId = await checkUserProfile(user.id);
-        profileIdRef.current = profileId;
+        const customerId = await checkCustomerId(user.id);
+        customerIdRef.current = customerId;
         
-        if (!profileId) {
-          console.log('No user profile found. Items will be stored in localStorage only.');
+        if (!customerId) {
+          console.log('No customer record found. Items will be stored in localStorage only.');
           toast({
             title: "تنبيه",
-            description: "لم نتمكن من ربط حسابك بملف التعريف. ستُحفظ العناصر محليًا فقط.",
+            description: "لم نتمكن من ربط حسابك بملف العميل. ستُحفظ العناصر محليًا فقط.",
             variant: "destructive",
           });
         }
       } else {
-        profileIdRef.current = null;
+        customerIdRef.current = null;
       }
       
       fetchCartItems(user, setItems).finally(() => { 
@@ -104,7 +91,7 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     let user: any;
     supabase.auth.getSession().then(({ data: { session } }) => {
       user = session?.user || null;
-      syncCartPersistence(user, items, profileIdRef.current).then(() => {
+      syncCartPersistence(user, items, customerIdRef.current).then(() => {
         if (needsSyncRef.current) needsSyncRef.current = false;
       });
     });
@@ -208,20 +195,20 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
   }
 }
 
-async function syncCartPersistence(user: any, items: CartItem[], profileId: string | null) {
+async function syncCartPersistence(user: any, items: CartItem[], customerId: string | null) {
   // Always store in localStorage as a fallback
   localStorage.setItem('cart', JSON.stringify(items));
   
-  // If not logged in or no profile exists, just use localStorage
-  if (!user || !profileId) {
+  // If not logged in or no customer record exists, just use localStorage
+  if (!user || !customerId) {
     return;
   }
   
   try {
-    // Check if the user has a profile or customer record
-    if (!profileId) {
-      // If no profile, don't try to sync with Supabase
-      console.log('No user profile found, skipping Supabase sync');
+    // Check if the user has a customer record
+    if (!customerId) {
+      // If no customer record, don't try to sync with Supabase
+      console.log('No customer record found, skipping Supabase sync');
       toast({
         title: "تعذر حفظ السلة",
         description: "لا يمكن حفظ السلة في قاعدة البيانات، تم الحفظ محليًا فقط",

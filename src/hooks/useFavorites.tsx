@@ -1,15 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [user, setUser] = useState<any>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
-  const [profileId, setProfileId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   // Load user, customer ID, and favorites
   useEffect(() => {
@@ -17,29 +15,24 @@ export function useFavorites() {
       if (session?.user) {
         setUser(session.user);
         
-        // First check if user has a profile
-        const profileId = await checkUserProfile(session.user.id);
-        setProfileId(profileId);
-        
-        // Also try to get customer ID as fallback
+        // Try to get customer ID
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
         
-        if (profileId || customerId) {
+        if (customerId) {
           loadFavorites(session.user.id);
         } else {
           setIsLoading(false);
-          console.log('No profile or customer record found for user. Unable to load favorites.');
+          console.log('No customer record found for user. Unable to load favorites.');
           toast({
             title: "تنبيه",
-            description: "لم نتمكن من العثور على ملف تعريف المستخدم. المفضلة لن تكون متزامنة عبر الأجهزة.",
+            description: "لم نتمكن من العثور على سجل العميل. المفضلة لن تكون متزامنة عبر الأجهزة.",
             variant: "destructive",
           });
         }
       } else {
         setUser(null);
         setCustomerId(null);
-        setProfileId(null);
         setFavorites({});
         setIsLoading(false);
       }
@@ -49,19 +42,15 @@ export function useFavorites() {
       if (session?.user) {
         setUser(session.user);
         
-        // First check if user has a profile
-        const profileId = await checkUserProfile(session.user.id);
-        setProfileId(profileId);
-        
-        // Also try to get customer ID as fallback
+        // Try to get customer ID
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
         
-        if (profileId || customerId) {
+        if (customerId) {
           loadFavorites(session.user.id);
         } else {
           setIsLoading(false);
-          console.log('No profile or customer record found for user. Unable to load favorites.');
+          console.log('No customer record found for user. Unable to load favorites.');
         }
       } else {
         setIsLoading(false);
@@ -71,28 +60,7 @@ export function useFavorites() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [toast]);
-
-  // Helper function to check if user has a profile
-  const checkUserProfile = async (userId: string): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error checking user profile:', error);
-        return null;
-      }
-
-      return data?.id || null;
-    } catch (error) {
-      console.error('Exception in checkUserProfile:', error);
-      return null;
-    }
-  };
+  }, []);
 
   // Helper function to get customer ID from user ID
   const getCustomerId = async (userId: string): Promise<string | null> => {
@@ -161,11 +129,11 @@ export function useFavorites() {
       return;
     }
 
-    // Check if user has a profile or customer record
-    if (!profileId && !customerId) {
+    // Check if user has a customer record
+    if (!customerId) {
       toast({
-        title: "خطأ في الملف الشخصي",
-        description: "لم نتمكن من العثور على بيانات المستخدم الخاصة بك",
+        title: "خطأ في سجل العميل",
+        description: "لم نتمكن من العثور على بيانات العميل الخاصة بك",
         variant: "destructive",
       });
       
@@ -268,7 +236,6 @@ export function useFavorites() {
     isFavorite,
     toggleFavorite,
     user,
-    customerId,
-    profileId,
+    customerId
   };
 }
