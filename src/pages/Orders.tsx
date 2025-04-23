@@ -93,7 +93,7 @@ const Orders = () => {
                       {formatDate(order.created_at)}
                     </span>
                     <div className="font-semibold mt-1">
-                      {order.total.toFixed(2)} ر.س
+                      {order.total.toFixed(2)} ج.م
                     </div>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
