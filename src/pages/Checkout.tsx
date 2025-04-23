@@ -44,21 +44,10 @@ const Checkout = () => {
 
     const savedName = localStorage.getItem('userName');
     const savedPhone = localStorage.getItem('userPhone');
-    const savedAddress = localStorage.getItem('userAddress');
     
     if (savedName) setName(savedName);
     if (savedPhone) setPhone(savedPhone);
     
-    if (savedAddress) {
-      try {
-        const parsedAddress = JSON.parse(savedAddress);
-        setAddress(parsedAddress);
-      } catch (error) {
-        console.error('Error parsing saved address:', error);
-        setAddress(null);
-      }
-    }
-
     const loadOffers = async () => {
       const offers = await getApplicableOffers(getTotalPrice());
       setAvailableOffers(offers);
@@ -254,7 +243,10 @@ const Checkout = () => {
                 <MapPin size={18} className="ml-2 text-gray-500" />
                 <label htmlFor="address" className="font-medium">العنوان</label>
               </div>
-              <LocationPicker value={address || {}} onChange={val => setAddress(val)} />
+              <LocationPicker value={address || {}} onChange={val => {
+                setAddress(val);
+                localStorage.setItem('userAddress', JSON.stringify(val));
+              }} />
               {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
             </div>
           </div>
@@ -378,7 +370,7 @@ const Checkout = () => {
               ) : (
                 <>
                   <span>تأكيد الطلب</span>
-                  <span className="mr-2">{total.toFixed(2)} ج.م</span>
+                  <span className="mr-2">{(getTotalPrice() - discount + deliveryPrice).toFixed(2)} ج.م</span>
                 </>
               )}
             </button>
