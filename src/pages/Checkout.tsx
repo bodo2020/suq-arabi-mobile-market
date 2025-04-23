@@ -200,9 +200,29 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('يجب تسجيل الدخول لإتمام الطلب');
+        navigate('/account/login');
+        return;
+      }
+
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!customerData) {
+        toast.error('لم يتم العثور على بيانات العميل');
+        return;
+      }
+
       const formattedAddress = `${address.address}, ${address.neighborhoods?.name || ''}, ${address.areas?.name || ''}, ${address.cities?.name || ''}, ${address.governorates?.name || ''}`;
 
       const orderData = {
+        customer_id: customerData.id,
         items: items.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity,

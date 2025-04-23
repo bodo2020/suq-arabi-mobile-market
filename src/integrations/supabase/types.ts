@@ -153,13 +153,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "cart_items_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cash_tracking: {
@@ -622,13 +615,6 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "favorites_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       governorates: {
@@ -796,6 +782,7 @@ export type Database = {
           notes: string | null
           payment_method: string | null
           payment_status: Database["public"]["Enums"]["order_payment_status"]
+          return_status: string | null
           shipping_address: string | null
           shipping_cost: number | null
           status: Database["public"]["Enums"]["order_status"]
@@ -813,6 +800,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["order_payment_status"]
+          return_status?: string | null
           shipping_address?: string | null
           shipping_cost?: number | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -830,6 +818,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["order_payment_status"]
+          return_status?: string | null
           shipping_address?: string | null
           shipping_cost?: number | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -991,44 +980,6 @@ export type Database = {
           },
         ]
       }
-      profiles: {
-        Row: {
-          created_at: string | null
-          customer_id: string | null
-          full_name: string
-          id: string
-          location: string | null
-          phone_number: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          customer_id?: string | null
-          full_name: string
-          id: string
-          location?: string | null
-          phone_number: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          customer_id?: string | null
-          full_name?: string
-          id?: string
-          location?: string | null
-          phone_number?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       purchase_items: {
         Row: {
           created_at: string
@@ -1161,6 +1112,102 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          price: number
+          product_id: string | null
+          quantity: number
+          reason: string | null
+          return_id: string | null
+          total: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          price: number
+          product_id?: string | null
+          quantity: number
+          reason?: string | null
+          return_id?: string | null
+          total: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          price?: number
+          product_id?: string | null
+          quantity?: number
+          reason?: string | null
+          return_id?: string | null
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      returns: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          order_id: string | null
+          reason: string | null
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "returns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "online_orders"
             referencedColumns: ["id"]
           },
         ]
