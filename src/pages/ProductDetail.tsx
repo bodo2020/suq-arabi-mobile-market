@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Heart, Plus, Minus } from 'lucide-react';
@@ -25,6 +26,7 @@ const ProductDetail = () => {
   const [company, setCompany] = useState<Company | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
   const cartItem = items.find(item => item.product.id === product?.id);
   const quantity = cartItem?.quantity || 0;
