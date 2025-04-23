@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Heart, HeartOff } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { cn } from '@/lib/utils';
 
@@ -8,14 +8,18 @@ interface FavoriteButtonProps {
   productId: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'outlined' | 'filled';
 }
+
+const sizeMap = {
+  sm: 20,
+  md: 28,
+  lg: 36,
+};
 
 const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   productId,
   className,
   size = 'md',
-  variant = 'outlined',
 }) => {
   const { isFavorite, toggleFavorite, isLoading } = useFavorites();
 
@@ -25,51 +29,40 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
     toggleFavorite(productId);
   };
 
-  if (isLoading) {
-    return (
-      <button
-        type="button"
-        className={cn(
-          'rounded-full bg-white animate-pulse',
-          size === 'sm' && 'p-1',
-          size === 'md' && 'p-1.5',
-          size === 'lg' && 'p-2',
-          className
-        )}
-        disabled
-        aria-label="جارٍ التحميل"
-      >
-        <Heart className="text-gray-300" size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} />
-      </button>
-    );
-  }
+  const iconSize = sizeMap[size];
 
-  const fav = isFavorite(productId);
-  
+  // Styling: white circle, subtle shadow, soft border, green filling if favorite
   return (
     <button
       type="button"
       onClick={handleClick}
-      aria-label={fav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+      aria-label={isFavorite(productId) ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+      disabled={isLoading}
       className={cn(
-        "rounded-full transition-all duration-300 border border-gray-100 group",
-        size === "sm" && "p-1",
-        size === "md" && "p-1.5",
-        size === "lg" && "p-2",
-        variant === 'outlined' && "bg-white hover:shadow-lg shadow-md",
-        variant === 'filled' && "bg-primary shadow-lg",
-        fav && variant === 'outlined' && "ring-2 ring-primary ring-offset-2",
+        'rounded-full border border-gray-200 bg-white flex items-center justify-center transition-shadow duration-200 shadow-sm hover:shadow-md',
+        size === 'sm' && 'w-8 h-8',
+        size === 'md' && 'w-11 h-11',
+        size === 'lg' && 'w-14 h-14',
         className
       )}
+      style={{
+        padding: 0,
+        position: 'relative',
+      }}
     >
       <Heart
-        size={size === "sm" ? 16 : size === "lg" ? 24 : 20}
+        size={iconSize}
+        strokeWidth={2}
         className={cn(
-          "transition-all duration-300",
-          fav ? "fill-primary text-primary" : 
-            variant === 'outlined' ? "text-gray-400 group-hover:text-primary" : "text-white group-hover:fill-white"
+          "transition-colors duration-300",
+          isFavorite(productId)
+            ? "fill-[#22C55E] text-[#22C55E]"  // Solid green
+            : "text-gray-300 group-hover:text-primary"
         )}
       />
+      {isLoading && (
+        <span className="absolute top-0 right-0 left-0 bottom-0 bg-white opacity-60 cursor-wait rounded-full"></span>
+      )}
     </button>
   );
 };

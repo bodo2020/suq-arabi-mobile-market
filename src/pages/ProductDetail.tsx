@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Plus, Minus } from 'lucide-react';
@@ -120,7 +119,6 @@ const ProductDetail = () => {
             <FavoriteButton 
               productId={product.id} 
               size="lg" 
-              variant="outlined"
               className="ml-2" 
             />
           )}
@@ -137,15 +135,15 @@ const ProductDetail = () => {
             {product.offer_price ? (
               <div className="flex items-center">
                 <span className="text-lg font-bold text-primary ml-2">
-                  {product.offer_price} ر.س
+                  {product.offer_price} ج.م
                 </span>
                 <span className="text-sm line-through text-gray-500">
-                  {product.price} ر.س
+                  {product.price} ج.م
                 </span>
               </div>
             ) : (
               <span className="text-lg font-bold">
-                {product.price} ر.س
+                {product.price} ج.م
               </span>
             )}
           </div>

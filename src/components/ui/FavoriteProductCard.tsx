@@ -4,7 +4,7 @@ import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import FavoriteButton from './FavoriteButton';
-import { Plus, Minus, Trash2 } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface FavoriteProductCardProps {
@@ -58,7 +58,8 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
 
   return (
     <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale">
-      <div className="absolute top-2 right-2 z-20 flex flex-col gap-2">
+      {/* Only ONE favorite button in the upper right corner (not two) */}
+      <div className="absolute top-2 right-2 z-20">
         <FavoriteButton productId={product.id} size="md" />
       </div>
 
@@ -96,8 +97,7 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
                 <span className="font-bold">{product.price} ج.م</span>
               )}
             </div>
-            {/* زر حذف من المفضلة */}
-            <FavoriteButton productId={product.id} size="sm" />
+            {/* Removed second favorite button from the lower card */}
           </div>
           {isOutOfStock ? (
             <button
