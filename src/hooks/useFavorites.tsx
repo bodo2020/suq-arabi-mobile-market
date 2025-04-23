@@ -7,6 +7,7 @@ export function useFavorites() {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [user, setUser] = useState<any>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -15,17 +16,30 @@ export function useFavorites() {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
+        
+        // First check if user has a profile
+        const profileId = await checkUserProfile(session.user.id);
+        setProfileId(profileId);
+        
+        // Also try to get customer ID as fallback
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
-        if (customerId) {
+        
+        if (profileId || customerId) {
           loadFavorites(session.user.id);
         } else {
           setIsLoading(false);
-          console.log('No customer profile found for user. Unable to load favorites.');
+          console.log('No profile or customer record found for user. Unable to load favorites.');
+          toast({
+            title: "تنبيه",
+            description: "لم نتمكن من العثور على ملف تعريف المستخدم. المفضلة لن تكون متزامنة عبر الأجهزة.",
+            variant: "destructive",
+          });
         }
       } else {
         setUser(null);
         setCustomerId(null);
+        setProfileId(null);
         setFavorites({});
         setIsLoading(false);
       }
@@ -34,13 +48,20 @@ export function useFavorites() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
+        
+        // First check if user has a profile
+        const profileId = await checkUserProfile(session.user.id);
+        setProfileId(profileId);
+        
+        // Also try to get customer ID as fallback
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
-        if (customerId) {
+        
+        if (profileId || customerId) {
           loadFavorites(session.user.id);
         } else {
           setIsLoading(false);
-          console.log('No customer profile found for user. Unable to load favorites.');
+          console.log('No profile or customer record found for user. Unable to load favorites.');
         }
       } else {
         setIsLoading(false);
@@ -50,7 +71,28 @@ export function useFavorites() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [toast]);
+
+  // Helper function to check if user has a profile
+  const checkUserProfile = async (userId: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking user profile:', error);
+        return null;
+      }
+
+      return data?.id || null;
+    } catch (error) {
+      console.error('Exception in checkUserProfile:', error);
+      return null;
+    }
+  };
 
   // Helper function to get customer ID from user ID
   const getCustomerId = async (userId: string): Promise<string | null> => {
@@ -119,13 +161,43 @@ export function useFavorites() {
       return;
     }
 
-    // Check if customer profile exists
-    if (!customerId) {
+    // Check if user has a profile or customer record
+    if (!profileId && !customerId) {
       toast({
         title: "خطأ في الملف الشخصي",
-        description: "لم نتمكن من العثور على بيانات العميل الخاصة بك",
+        description: "لم نتمكن من العثور على بيانات المستخدم الخاصة بك",
         variant: "destructive",
       });
+      
+      // Store in localStorage as fallback
+      try {
+        const localFavorites = localStorage.getItem('favorites') ? 
+          JSON.parse(localStorage.getItem('favorites') || '[]') : [];
+          
+        const isCurrentlyFavorite = isFavorite(productId);
+        
+        if (isCurrentlyFavorite) {
+          const updatedFavorites = localFavorites.filter((id: string) => id !== productId);
+          localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
+        } else {
+          localFavorites.push(productId);
+          localStorage.setItem('favorites', JSON.stringify(localFavorites));
+        }
+        
+        // Update UI state
+        setFavorites(prev => ({
+          ...prev,
+          [productId]: !isCurrentlyFavorite
+        }));
+        
+        toast({
+          title: isCurrentlyFavorite ? "تمت الإزالة" : "تمت الإضافة",
+          description: isCurrentlyFavorite ? "تم إزالة المنتج من المفضلة (محليًا فقط)" : "تم إضافة المنتج إلى المفضلة (محليًا فقط)",
+        });
+      } catch (error) {
+        console.error('Error storing favorites locally:', error);
+      }
+      
       return;
     }
 
@@ -197,5 +269,6 @@ export function useFavorites() {
     toggleFavorite,
     user,
     customerId,
+    profileId,
   };
 }

@@ -11,7 +11,7 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
   const { toast } = useToast();
   const isInitializedRef = useRef(false);
   const needsSyncRef = useRef(false);
-  const customerIdRef = useRef<string | null>(null);
+  const profileIdRef = useRef<string | null>(null);
 
   // User authentication hooks and state
   useEffect(() => {
@@ -19,22 +19,36 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
     let isLoading = true;
     let authListener: any = null;
 
-    async function getCustomerId(userId: string): Promise<string | null> {
+    async function checkUserProfile(userId: string): Promise<string | null> {
       try {
-        const { data, error } = await supabase
-          .from('customers')
+        // First check if the user has a profile in the profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
           .select('id')
-          .eq('user_id', userId)
+          .eq('id', userId)
           .single();
 
-        if (error) {
-          console.error('Error fetching customer ID:', error);
-          return null;
+        if (profileError) {
+          console.error('Error checking user profile:', profileError);
+          
+          // Check if customer record exists as fallback
+          const { data: customerData, error: customerError } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+            
+          if (customerError) {
+            console.error('Error checking customer record:', customerError);
+            return null;
+          }
+          
+          return customerData?.id || null;
         }
 
-        return data?.id || null;
+        return profileData?.id || null;
       } catch (error) {
-        console.error('Exception in getCustomerId:', error);
+        console.error('Exception checking user profile:', error);
         return null;
       }
     }
@@ -44,19 +58,19 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
       isLoading = true;
       
       if (user) {
-        const customerId = await getCustomerId(user.id);
-        customerIdRef.current = customerId;
+        const profileId = await checkUserProfile(user.id);
+        profileIdRef.current = profileId;
         
-        if (!customerId) {
-          console.log('No customer profile found for user. Items will be stored in localStorage only.');
+        if (!profileId) {
+          console.log('No user profile found. Items will be stored in localStorage only.');
           toast({
             title: "تنبيه",
-            description: "لم نتمكن من ربط حسابك بملف تعريف العميل. ستُحفظ العناصر محليًا فقط.",
+            description: "لم نتمكن من ربط حسابك بملف التعريف. ستُحفظ العناصر محليًا فقط.",
             variant: "destructive",
           });
         }
       } else {
-        customerIdRef.current = null;
+        profileIdRef.current = null;
       }
       
       fetchCartItems(user, setItems, toast).finally(() => { 
@@ -93,7 +107,7 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
     let user: any;
     supabase.auth.getSession().then(({ data: { session } }) => {
       user = session?.user || null;
-      syncCartPersistence(user, items, toast, customerIdRef.current).then(() => {
+      syncCartPersistence(user, items, toast, profileIdRef.current).then(() => {
         if (needsSyncRef.current) needsSyncRef.current = false;
       });
     });
@@ -195,16 +209,28 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
   }
 }
 
-async function syncCartPersistence(user: any, items: CartItem[], toast: any, customerId: string | null) {
+async function syncCartPersistence(user: any, items: CartItem[], toast: any, profileId: string | null) {
   // Always store in localStorage as a fallback
   localStorage.setItem('cart', JSON.stringify(items));
   
-  // If not logged in or no customer profile, just use localStorage
-  if (!user || !customerId) {
+  // If not logged in or no profile exists, just use localStorage
+  if (!user || !profileId) {
     return;
   }
   
   try {
+    // Check if the user has a profile or customer record
+    if (!profileId) {
+      // If no profile, don't try to sync with Supabase
+      console.log('No user profile found, skipping Supabase sync');
+      toast && toast({
+        title: "تعذر حفظ السلة",
+        description: "لا يمكن حفظ السلة في قاعدة البيانات، تم الحفظ محليًا فقط",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Clear old cart
     const { error: deleteError } = await supabase
       .from('cart_items')
