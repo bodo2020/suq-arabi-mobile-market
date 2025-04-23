@@ -9,17 +9,28 @@ export function useOffers() {
 
   useEffect(() => {
     async function fetchOffers() {
-      setIsLoading(true);
-      const now = new Date().toISOString();
-      const { data, error } = await supabase
-        .from("special_offers")
-        .select("*")
-        .eq("active", true)
-        .or(`expiry_date.is.null,expiry_date.gte.${now}`); // اعرض الغير منتهية فقط
+      try {
+        setIsLoading(true);
+        const now = new Date().toISOString();
+        const { data, error } = await supabase
+          .from("special_offers")
+          .select("*")
+          .eq("active", true)
+          .or(`expiry_date.is.null,expiry_date.gte.${now}`); // اعرض الغير منتهية فقط
 
-      setOffers(data || []);
-      setIsLoading(false);
+        if (error) {
+          console.error('Error fetching offers:', error);
+          throw error;
+        }
+
+        setOffers(data || []);
+      } catch (err) {
+        console.error('Failed to load offers:', err);
+      } finally {
+        setIsLoading(false);
+      }
     }
+    
     fetchOffers();
   }, []);
 

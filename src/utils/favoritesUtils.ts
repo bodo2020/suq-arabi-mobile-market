@@ -1,14 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 
 export const toggleFavorite = async (productId: string, userId: string | undefined) => {
   if (!userId) {
-    toast({
-      title: "لم يتم تسجيل الدخول",
-      description: "يرجى تسجيل الدخول لإضافة المنتجات إلى المفضلة",
-      variant: "destructive",
-    });
+    toast("لم يتم تسجيل الدخول: يرجى تسجيل الدخول لإضافة المنتجات إلى المفضلة");
     return false;
   }
 
@@ -39,10 +35,7 @@ export const toggleFavorite = async (productId: string, userId: string | undefin
         throw deleteError;
       }
 
-      toast({
-        title: "تمت الإزالة",
-        description: "تمت إزالة المنتج من المفضلة",
-      });
+      toast("تمت الإزالة: تمت إزالة المنتج من المفضلة");
       return false;
     } else {
       // Add to favorites
@@ -58,19 +51,12 @@ export const toggleFavorite = async (productId: string, userId: string | undefin
         throw insertError;
       }
 
-      toast({
-        title: "تمت الإضافة",
-        description: "تمت إضافة المنتج إلى المفضلة",
-      });
+      toast("تمت الإضافة: تمت إضافة المنتج إلى المفضلة");
       return true;
     }
   } catch (error) {
     console.error('Error toggling favorite:', error);
-    toast({
-      title: "حدث خطأ",
-      description: "حدث خطأ أثناء تحديث المفضلة",
-      variant: "destructive",
-    });
+    toast("حدث خطأ: حدث خطأ أثناء تحديث المفضلة");
     return null;
   }
 };

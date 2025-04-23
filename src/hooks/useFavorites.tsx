@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
@@ -19,17 +19,7 @@ export function useFavorites() {
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
         
-        if (customerId) {
-          loadFavorites(session.user.id);
-        } else {
-          setIsLoading(false);
-          console.log('No customer record found for user. Unable to load favorites.');
-          toast({
-            title: "تنبيه",
-            description: "لم نتمكن من العثور على سجل العميل. المفضلة لن تكون متزامنة عبر الأجهزة.",
-            variant: "destructive",
-          });
-        }
+        loadFavorites(session.user.id);
       } else {
         setUser(null);
         setCustomerId(null);
@@ -46,12 +36,7 @@ export function useFavorites() {
         const customerId = await getCustomerId(session.user.id);
         setCustomerId(customerId);
         
-        if (customerId) {
-          loadFavorites(session.user.id);
-        } else {
-          setIsLoading(false);
-          console.log('No customer record found for user. Unable to load favorites.');
-        }
+        loadFavorites(session.user.id);
       } else {
         setIsLoading(false);
       }
@@ -121,51 +106,7 @@ export function useFavorites() {
 
   const toggleFavorite = async (productId: string) => {
     if (!user) {
-      toast({
-        title: "تسجيل الدخول مطلوب",
-        description: "الرجاء تسجيل الدخول لإضافة منتجات للمفضلة",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if user has a customer record
-    if (!customerId) {
-      toast({
-        title: "خطأ في سجل العميل",
-        description: "لم نتمكن من العثور على بيانات العميل الخاصة بك",
-        variant: "destructive",
-      });
-      
-      // Store in localStorage as fallback
-      try {
-        const localFavorites = localStorage.getItem('favorites') ? 
-          JSON.parse(localStorage.getItem('favorites') || '[]') : [];
-          
-        const isCurrentlyFavorite = isFavorite(productId);
-        
-        if (isCurrentlyFavorite) {
-          const updatedFavorites = localFavorites.filter((id: string) => id !== productId);
-          localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-        } else {
-          localFavorites.push(productId);
-          localStorage.setItem('favorites', JSON.stringify(localFavorites));
-        }
-        
-        // Update UI state
-        setFavorites(prev => ({
-          ...prev,
-          [productId]: !isCurrentlyFavorite
-        }));
-        
-        toast({
-          title: isCurrentlyFavorite ? "تمت الإزالة" : "تمت الإضافة",
-          description: isCurrentlyFavorite ? "تم إزالة المنتج من المفضلة (محليًا فقط)" : "تم إضافة المنتج إلى المفضلة (محليًا فقط)",
-        });
-      } catch (error) {
-        console.error('Error storing favorites locally:', error);
-      }
-      
+      toast("تسجيل الدخول مطلوب: الرجاء تسجيل الدخول لإضافة منتجات للمفضلة");
       return;
     }
 
@@ -191,10 +132,7 @@ export function useFavorites() {
           throw error;
         }
         
-        toast({
-          title: "تمت الإزالة",
-          description: "تم إزالة المنتج من المفضلة",
-        });
+        toast("تمت الإزالة: تم إزالة المنتج من المفضلة");
       } else {
         // Add to favorites
         const { error } = await supabase
@@ -209,10 +147,7 @@ export function useFavorites() {
           throw error;
         }
         
-        toast({
-          title: "تمت الإضافة",
-          description: "تم إضافة المنتج إلى المفضلة",
-        });
+        toast("تمت الإضافة: تم إضافة المنتج إلى المفضلة");
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
@@ -223,11 +158,7 @@ export function useFavorites() {
         [productId]: isCurrentlyFavorite
       }));
       
-      toast({
-        title: "حدث خطأ",
-        description: "لم نتمكن من تحديث المفضلة",
-        variant: "destructive",
-      });
+      toast("حدث خطأ: لم نتمكن من تحديث المفضلة");
     }
   };
 
@@ -235,7 +166,6 @@ export function useFavorites() {
     isLoading,
     isFavorite,
     toggleFavorite,
-    user,
-    customerId
+    user
   };
 }
