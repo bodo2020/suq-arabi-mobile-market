@@ -120,7 +120,7 @@ const ProductDetail = () => {
             <FavoriteButton 
               productId={product.id} 
               size="lg" 
-              variant="filled"
+              variant="outlined"
               className="ml-2" 
             />
           )}

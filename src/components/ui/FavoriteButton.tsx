@@ -8,12 +8,14 @@ interface FavoriteButtonProps {
   productId: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  variant?: 'outlined' | 'filled';
 }
 
 const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   productId,
   className,
   size = 'md',
+  variant = 'outlined',
 }) => {
   const { isFavorite, toggleFavorite, isLoading } = useFavorites();
 
@@ -43,18 +45,20 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   }
 
   const fav = isFavorite(productId);
-
+  
   return (
     <button
       type="button"
       onClick={handleClick}
       aria-label={fav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
       className={cn(
-        "rounded-full transition-all duration-300 shadow-md border border-gray-100 bg-white hover:shadow-lg group",
+        "rounded-full transition-all duration-300 border border-gray-100 group",
         size === "sm" && "p-1",
         size === "md" && "p-1.5",
         size === "lg" && "p-2",
-        fav && "ring-2 ring-primary ring-offset-2",
+        variant === 'outlined' && "bg-white hover:shadow-lg shadow-md",
+        variant === 'filled' && "bg-primary shadow-lg",
+        fav && variant === 'outlined' && "ring-2 ring-primary ring-offset-2",
         className
       )}
     >
@@ -62,7 +66,8 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         size={size === "sm" ? 16 : size === "lg" ? 24 : 20}
         className={cn(
           "transition-all duration-300",
-          fav ? "fill-primary text-primary" : "text-gray-400 group-hover:text-primary"
+          fav ? "fill-primary text-primary" : 
+            variant === 'outlined' ? "text-gray-400 group-hover:text-primary" : "text-white group-hover:fill-white"
         )}
       />
     </button>
