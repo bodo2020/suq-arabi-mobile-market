@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check, Gift } from 'lucide-react';
@@ -42,17 +43,51 @@ const Checkout = () => {
       return;
     }
 
-    const savedName = localStorage.getItem('userName');
-    const savedPhone = localStorage.getItem('userPhone');
-    
-    if (savedName) setName(savedName);
-    if (savedPhone) setPhone(savedPhone);
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Fetch customer data
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (customerData) {
+          setName(customerData.name);
+          setPhone(customerData.phone || '');
+        }
+
+        // Fetch default address
+        const { data: addressData } = await supabase
+          .from('customer_addresses')
+          .select(`
+            *,
+            governorates(name),
+            cities(name),
+            areas(name),
+            neighborhoods(name)
+          `)
+          .eq('user_id', user.id)
+          .eq('is_default', true)
+          .single();
+
+        if (addressData) {
+          setAddress(addressData);
+          // Fetch delivery price based on neighborhood
+          if (selectedDeliveryType && addressData.neighborhood_id) {
+            const price = await getDeliveryPrice(selectedDeliveryType, addressData.neighborhood_id);
+            setDeliveryPrice(price);
+          }
+        }
+      }
+    };
     
     const loadOffers = async () => {
       const offers = await getApplicableOffers(getTotalPrice());
       setAvailableOffers(offers);
     };
-    loadOffers();
 
     const loadDeliveryTypes = async () => {
       const types = await getDeliveryTypes();
@@ -61,8 +96,11 @@ const Checkout = () => {
         setSelectedDeliveryType(types[0].id);
       }
     };
+
+    loadUserData();
+    loadOffers();
     loadDeliveryTypes();
-  }, [items.length, navigate, getTotalPrice]);
+  }, [items.length, navigate, getTotalPrice, selectedDeliveryType]);
 
   useEffect(() => {
     const updateDeliveryPrice = async () => {
@@ -135,11 +173,7 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
-      localStorage.setItem('userName', name);
-      localStorage.setItem('userPhone', phone);
-      if (address) {
-        localStorage.setItem('userAddress', JSON.stringify(address));
-      }
+      const formattedAddress = `${address.address}, ${address.neighborhoods?.name || ''}, ${address.areas?.name || ''}, ${address.cities?.name || ''}, ${address.governorates?.name || ''}`;
 
       const orderData = {
         items: items.map(item => ({
@@ -149,7 +183,7 @@ const Checkout = () => {
           name: item.product.name,
         })),
         total: getTotalPrice() - discount + deliveryPrice,
-        shipping_address: address,
+        shipping_address: formattedAddress,
         shipping_cost: deliveryPrice,
         payment_method: paymentMethod,
         payment_status: "pending" as const,
@@ -162,7 +196,7 @@ const Checkout = () => {
       if (appliedOffer) {
         await supabase.from('coupon_usage').insert({
           offer_id: appliedOffer.id,
-          user_id: null, // Add user_id if authenticated
+          user_id: null,
         });
       }
       
