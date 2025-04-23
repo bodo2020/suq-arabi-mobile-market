@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, Bell, AlertTriangle } from 'lucide-react';
@@ -70,7 +69,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
 
   return (
     <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale group relative">
-      {/* Only ONE floating favorite button */}
       <div className="absolute top-2 right-2 z-20">
         <FavoriteButton 
           productId={product.id} 
@@ -127,7 +125,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
               className="add-to-cart-btn empty w-full hover-scale"
               aria-label="إضافة إلى السلة"
             >
-              <Plus size={18} color="white" />
               إضافة للسلة
             </button>
           ) : (

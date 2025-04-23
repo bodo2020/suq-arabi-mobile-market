@@ -16,11 +16,18 @@ const ProductDetail = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [companyProducts, setCompanyProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
   const cartItem = items.find(item => item.product.id === product?.id);
   const quantity = cartItem?.quantity || 0;
+
+  const handleCompanyClick = async () => {
+    if (company) {
+      navigate(`/company-products/${company.id}`);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -149,12 +156,15 @@ const ProductDetail = () => {
           </div>
           
           {company && (
-            <Link to={`/company/${company.id}`} className="flex items-center bg-gray-50 p-3 rounded-lg mb-4">
-              <div className="mr-auto flex items-center">
-                <span className="text-sm font-medium">{company.name}</span>
-                <img src={company.logo_url} alt={company.name} className="w-10 h-10 object-contain ml-2" />
-              </div>
-            </Link>
+            <div className="flex justify-end w-full mb-4">
+              <button
+                onClick={handleCompanyClick}
+                className="text-primary font-bold hover:underline px-3 py-1 bg-primary/10 rounded transition"
+                style={{fontSize: '15px'}}
+              >
+                {company.name}
+              </button>
+            </div>
           )}
           
           <div className="mb-4">
@@ -168,7 +178,6 @@ const ProductDetail = () => {
                 onClick={handleAddToCart} 
                 className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center"
               >
-                <Plus size={20} className="ml-2" />
                 إضافة إلى السلة
               </button>
             ) : (

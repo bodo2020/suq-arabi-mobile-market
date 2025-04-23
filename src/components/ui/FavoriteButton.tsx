@@ -31,7 +31,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
 
   const iconSize = sizeMap[size];
 
-  // Styling: white circle, subtle shadow, soft border, green filling if favorite
+  // زر قلب بدون دائرة خلفية (شفاف تمامًا)
   return (
     <button
       type="button"
@@ -39,7 +39,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
       aria-label={isFavorite(productId) ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
       disabled={isLoading}
       className={cn(
-        'rounded-full border border-gray-200 bg-white flex items-center justify-center transition-shadow duration-200 shadow-sm hover:shadow-md',
+        'flex items-center justify-center transition-shadow duration-200',
         size === 'sm' && 'w-8 h-8',
         size === 'md' && 'w-11 h-11',
         size === 'lg' && 'w-14 h-14',
@@ -47,6 +47,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
       )}
       style={{
         padding: 0,
+        background: 'transparent',
         position: 'relative',
       }}
     >
@@ -56,7 +57,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         className={cn(
           "transition-colors duration-300",
           isFavorite(productId)
-            ? "fill-[#22C55E] text-[#22C55E]"  // Solid green
+            ? "fill-[#22C55E] text-[#22C55E]"  // Solid green if favorite
             : "text-gray-300 group-hover:text-primary"
         )}
       />
@@ -68,3 +69,4 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
 };
 
 export default FavoriteButton;
+
