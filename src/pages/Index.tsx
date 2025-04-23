@@ -100,6 +100,11 @@ const Index = () => {
     navigate('/search');
   };
 
+  const handleChangeLocation = () => {
+    setPopoverOpen(false);
+    navigate('/account/address');
+  };
+
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
   
   const availableProducts = products.filter(product => product.quantity > 0);
