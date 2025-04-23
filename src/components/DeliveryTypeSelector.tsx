@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Delivery } from "lucide-react";
+import { Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DeliveryOption {
@@ -21,7 +21,7 @@ const DeliveryTypeSelector = ({ options, selectedId, onSelect }: DeliveryTypeSel
   return (
     <div className="space-y-4">
       <div className="flex items-center mb-4">
-        <Delivery size={18} className="ml-2 text-gray-500" />
+        <Truck size={18} className="ml-2 text-gray-500" />
         <span className="font-medium">اختر طريقة التوصيل</span>
       </div>
       
