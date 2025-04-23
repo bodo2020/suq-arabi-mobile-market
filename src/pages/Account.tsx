@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, User, Package, Heart, ChevronLeft, Phone, MapPin } from 'lucide-react';
@@ -7,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Address } from '@/lib/supabase';
 
 const Account = () => {
-  const [user, setUser] = useState(supabase.auth.getUser() as any | null);
+  const [user, setUser] = useState<any | null>(null);
   const [customer, setCustomer] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -16,21 +17,49 @@ const Account = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Get user from auth
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // Fetch customer details
-        const { data: customerData, error: customerError } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+      setUser(user);
 
-        // Fetch user addresses
+      if (user) {
+        // Get profile which now contains customer_id
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*, customer_id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        let customerData = null;
+
+        // Prefer loading customer by profiles.customer_id
+        if (profile?.customer_id) {
+          const { data: cust, error: custErr } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('id', profile.customer_id)
+            .maybeSingle();
+          customerData = cust;
+          if (custErr) console.error('Error loading customer by customer_id:', custErr);
+        }
+
+        // Fallback: get customer by user.id (compatibility for existing users)
+        if (!customerData) {
+          const { data: custByUid, error: custByUidErr } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          customerData = custByUid;
+          if (custByUidErr) console.error('Error loading customer by user_id:', custByUidErr);
+        }
+
+        setCustomer(customerData);
+
+        // Fetch addresses as before
         const { data: addressesData, error: addressesError } = await supabase
           .from('customer_addresses')
           .select(`
-            *,
+            *, 
             governorates(name),
             cities(name),
             areas(name),
@@ -38,10 +67,6 @@ const Account = () => {
           `)
           .eq('user_id', user.id)
           .order('is_default', { ascending: false });
-
-        if (customerError) {
-          console.error('Error fetching customer:', customerError);
-        }
 
         if (addressesError) {
           console.error('Error fetching addresses:', addressesError);
@@ -55,10 +80,9 @@ const Account = () => {
           neighborhood_name: addr.neighborhoods?.name
         }));
 
-        setCustomer(customerData);
         setAddresses(enhancedAddresses);
 
-        // Update localStorage with default address
+        // Store defaults in localStorage
         const defaultAddress = enhancedAddresses.find(a => a.is_default);
         if (defaultAddress) {
           localStorage.setItem('userArea', defaultAddress.area_name || '');
@@ -134,7 +158,10 @@ const Account = () => {
               <User size={32} className="text-gray-500" />
             </div>
             <div>
-              <h2 className="font-bold">{customer?.name || customer?.first_name && customer?.last_name ? `${customer.first_name} ${customer.last_name}` : ''}</h2>
+              <h2 className="font-bold">
+                {/* اعرض الاسم من بيانات العميل المربوطة */}
+                {customer?.name || customer?.first_name && customer?.last_name ? `${customer.first_name} ${customer.last_name}` : ''}
+              </h2>
               <p className="text-sm text-gray-500">{customer?.email ?? user.email}</p>
               {customer?.phone && <p className="text-sm text-gray-500 flex items-center mt-1">
                 <Phone size={14} className="ml-1" />
@@ -207,3 +234,4 @@ const Account = () => {
 };
 
 export default Account;
+

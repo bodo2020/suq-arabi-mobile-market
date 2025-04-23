@@ -935,6 +935,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          customer_id: string | null
           full_name: string
           id: string
           location: string | null
@@ -943,6 +944,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          customer_id?: string | null
           full_name: string
           id: string
           location?: string | null
@@ -951,13 +953,22 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          customer_id?: string | null
           full_name?: string
           id?: string
           location?: string | null
           phone_number?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchase_items: {
         Row: {
