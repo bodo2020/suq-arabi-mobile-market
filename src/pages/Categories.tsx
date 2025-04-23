@@ -20,6 +20,7 @@ const Categories = () => {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [activeCategoryName, setActiveCategoryName] = useState<string | null>(null);
   const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(null);
+  const [activeSubcategoryName, setActiveSubcategoryName] = useState<string | null>(null);
 
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ const Categories = () => {
   // لما تضغط على subcategory تظهر الشيبس بالأعلى
   const handleSubCategoryClick = (subcat: Subcategory) => {
     setActiveSubcategoryId(subcat.id);
+    setActiveSubcategoryName(subcat.name);
     setActiveLevel('subsub');
   };
 
@@ -46,6 +48,7 @@ const Categories = () => {
     if (activeLevel === 'subsub') {
       setActiveLevel('sub');
       setActiveSubcategoryId(null);
+      setActiveSubcategoryName(null);
     } else if (activeLevel === 'sub') {
       setActiveLevel('main');
       setActiveCategoryId(null);
@@ -123,9 +126,9 @@ const Categories = () => {
       case 'main':
         return 'الأقسام الرئيسية';
       case 'sub':
-        return `أقسام ${activeCategoryName || ''}`;
+        return activeCategoryName || 'الأقسام الفرعية';
       case 'subsub':
-        return 'الأقسام التفصيلية';
+        return activeCategoryName || 'الأقسام التفصيلية';
       default:
         return 'الأقسام';
     }
@@ -174,11 +177,7 @@ const Categories = () => {
               subcategories.map(subcat => (
                 <CategoryItem
                   key={subcat.id}
-                  category={{
-                    ...subcat,
-                    // لإظهـار اسم القسم الرئيسي بدل الفرعي
-                    name: activeCategoryName || subcat.name,
-                  }}
+                  category={subcat}
                   onClick={() => handleSubCategoryClick(subcat)}
                 />
               ))
@@ -240,4 +239,3 @@ const Categories = () => {
 };
 
 export default Categories;
-

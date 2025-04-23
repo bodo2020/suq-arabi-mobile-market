@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Plus, Minus } from 'lucide-react';
@@ -23,7 +24,7 @@ const ProductDetail = () => {
   const cartItem = items.find(item => item.product.id === product?.id);
   const quantity = cartItem?.quantity || 0;
 
-  const handleCompanyClick = async () => {
+  const handleCompanyClick = () => {
     if (company) {
       navigate(`/company-products/${company.id}`);
     }
