@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, User, Phone, Check, Gift } from 'lucide-react';
@@ -37,6 +36,7 @@ const Checkout = () => {
   const [selectedDeliveryType, setSelectedDeliveryType] = useState('');
   const [deliveryPrice, setDeliveryPrice] = useState(0);
   const [deliveryPrices, setDeliveryPrices] = useState<{[key: string]: number}>({});
+  const [freeDeliveryOffer, setFreeDeliveryOffer] = useState<any>(null);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -48,7 +48,6 @@ const Checkout = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Fetch customer data
         const { data: customerData } = await supabase
           .from('customers')
           .select('*')
@@ -63,7 +62,6 @@ const Checkout = () => {
           return;
         }
 
-        // Fetch default address
         const { data: addressData } = await supabase
           .from('customer_addresses')
           .select(`
@@ -102,25 +100,34 @@ const Checkout = () => {
       }
     };
 
+    const loadFreeDeliveryOffer = async () => {
+      const offer = await getFreeDeliveryOffer(getTotalPrice());
+      setFreeDeliveryOffer(offer);
+    };
+
     loadUserData();
     loadOffers();
     loadDeliveryTypes();
+    loadFreeDeliveryOffer();
   }, [items.length, navigate, getTotalPrice]);
 
-  // Separate useEffect for updating delivery prices for all delivery types
   useEffect(() => {
     const updateDeliveryPrices = async () => {
       if (address?.neighborhood_id) {
         const newDeliveryPrices: {[key: string]: number} = {};
         
         for (const type of deliveryTypes) {
-          const price = await getDeliveryPrice(type.id, address.neighborhood_id);
+          let price = await getDeliveryPrice(type.id, address.neighborhood_id);
+          
+          if (freeDeliveryOffer && getTotalPrice() >= freeDeliveryOffer.min_order_amount) {
+            price = 0;
+          }
+          
           newDeliveryPrices[type.id] = price;
         }
         
         setDeliveryPrices(newDeliveryPrices);
         
-        // Update the currently selected delivery price
         if (selectedDeliveryType) {
           setDeliveryPrice(newDeliveryPrices[selectedDeliveryType] || 0);
         }
@@ -130,7 +137,7 @@ const Checkout = () => {
     if (deliveryTypes.length > 0 && address?.neighborhood_id) {
       updateDeliveryPrices();
     }
-  }, [deliveryTypes, address, selectedDeliveryType]);
+  }, [deliveryTypes, address, selectedDeliveryType, freeDeliveryOffer, getTotalPrice]);
 
   const handleBack = () => {
     navigate(-1);
@@ -241,7 +248,6 @@ const Checkout = () => {
   const deliveryFee = 0;
   const total = subtotal + deliveryFee - discount + deliveryPrice;
 
-  // Function to handle delivery type selection
   const handleDeliveryTypeChange = (deliveryTypeId: string) => {
     setSelectedDeliveryType(deliveryTypeId);
     setDeliveryPrice(deliveryPrices[deliveryTypeId] || 0);

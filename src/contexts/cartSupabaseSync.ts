@@ -1,9 +1,9 @@
+
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CartItem } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
-// This hook will sync cart state with Supabase/localStorage and user
 export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
   const isInitializedRef = useRef(false);
   const needsSyncRef = useRef(false);
@@ -43,10 +43,10 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
         customerIdRef.current = customerId;
 
         if (!customerId) {
-          console.log('No customer record found. Items will be stored in localStorage only.');
+          console.log('No customer record found.');
           toast({
             title: "تنبيه",
-            description: "لم نتمكن من ربط حسابك بملف العميل. ستُحفظ العناصر محليًا فقط.",
+            description: "لم نتمكن من ربط حسابك بملف العميل.",
             variant: "destructive",
           });
         }
@@ -65,6 +65,7 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
         updateCartForUser(session?.user || null);
       } else if (event === 'SIGNED_OUT') {
         updateCartForUser(null);
+        setItems([]);
       }
     });
     authListener = listener;
@@ -78,7 +79,6 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     };
   }, [setItems]);
 
-  // Sync cart to persistence (Supabase/localStorage)
   useEffect(() => {
     if (!isInitializedRef.current && !needsSyncRef.current) return;
 
@@ -97,7 +97,6 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
 async function fetchCartItems(user: any, customerId: string | null, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
   if (user && customerId) {
     try {
-      // Fetch from Supabase
       const { data: cartData, error: cartError } = await supabase
         .from('cart_items')
         .select('*')
@@ -110,18 +109,7 @@ async function fetchCartItems(user: any, customerId: string | null, setItems: Re
           description: "حدث خطأ أثناء تحميل عناصر السلة",
           variant: "destructive",
         });
-        // Fallback to localStorage
-        const savedCart = localStorage.getItem('cart');
-        if (savedCart) {
-          try {
-            setItems(JSON.parse(savedCart));
-          } catch {
-            localStorage.removeItem('cart');
-            setItems([]);
-          }
-        } else {
-          setItems([]);
-        }
+        setItems([]);
         return;
       }
 
@@ -150,53 +138,23 @@ async function fetchCartItems(user: any, customerId: string | null, setItems: Re
           setItems(cartItems);
         }
       } else {
-        // No items for user; check localStorage for migration
-        const savedCart = localStorage.getItem('cart');
-        if (savedCart) {
-          try {
-            const localItems = JSON.parse(savedCart);
-            if (localItems.length > 0) {
-              setItems(localItems);
-            } else {
-              setItems([]);
-            }
-          } catch {
-            localStorage.removeItem('cart');
-            setItems([]);
-          }
-        } else {
-          setItems([]);
-        }
+        setItems([]);
       }
     } catch (error) {
       console.error('Error in fetchCartItems:', error);
       setItems([]);
     }
   } else {
-    // Not logged in or no customer record; get from localStorage
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
-        setItems(JSON.parse(savedCart));
-      } catch {
-        localStorage.removeItem('cart');
-        setItems([]);
-      }
-    } else {
-      setItems([]);
-    }
+    setItems([]);
   }
 }
 
 async function syncCartPersistence(user: any, items: CartItem[], customerId: string | null) {
-  localStorage.setItem('cart', JSON.stringify(items));
-
   if (!user || !customerId) {
     return;
   }
 
   try {
-    // Clear old cart
     const { error: deleteError } = await supabase
       .from('cart_items')
       .delete()
@@ -227,7 +185,7 @@ async function syncCartPersistence(user: any, items: CartItem[], customerId: str
         console.error('Error inserting cart items:', insertError);
         toast({
           title: "خطأ في حفظ السلة",
-          description: "تعذر حفظ العناصر في قاعدة البيانات، تم الحفظ محليًا فقط",
+          description: "تعذر حفظ العناصر في قاعدة البيانات",
           variant: "destructive",
         });
       } else {

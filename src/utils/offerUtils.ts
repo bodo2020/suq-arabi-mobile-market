@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 
 export const calculateDiscount = (subtotal: number, discountType: string, discountValue: number, maxDiscount?: number) => {
@@ -17,13 +16,35 @@ export const calculateDiscount = (subtotal: number, discountType: string, discou
 };
 
 export const getApplicableOffers = async (subtotal: number) => {
-  const { data: offers } = await supabase
-    .from('special_offers')
-    .select('*')
-    .lte('min_order_amount', subtotal)
-    .eq('active', true);
-    
-  return offers || [];
+  try {
+    const { data: offers } = await supabase
+      .from('special_offers')
+      .select('*')
+      .lte('min_order_amount', subtotal)
+      .eq('active', true);
+      
+    return offers || [];
+  } catch (error) {
+    console.error('Error fetching offers:', error);
+    return [];
+  }
+};
+
+export const getFreeDeliveryOffer = async (subtotal: number) => {
+  try {
+    const { data: offer } = await supabase
+      .from('special_offers')
+      .select('*')
+      .eq('offer_type', 'free_delivery')
+      .eq('active', true)
+      .lte('min_order_amount', subtotal)
+      .single();
+
+    return offer || null;
+  } catch (error) {
+    console.error('Error fetching free delivery offer:', error);
+    return null;
+  }
 };
 
 export const applyCoupon = async (code: string, subtotal: number) => {
