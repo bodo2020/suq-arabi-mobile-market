@@ -2,15 +2,15 @@
 import React, { useState, useCallback } from 'react';
 import { CartContextType } from './cartTypes';
 import { CartItem, Product } from '@/lib/supabase';
-import { cartSupabaseSync } from './cartSupabaseSync';
+import { useCartSync } from './cartSupabaseSync';
 
 export const CartContext = React.createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // Sync with supabase & localStorage (effects centralized)
-  cartSupabaseSync(items, setItems);
+  // Use the useCartSync hook for syncing with Supabase & localStorage
+  useCartSync(items, setItems);
 
   const addToCart = useCallback((product: Product) => {
     setItems(currentItems => {

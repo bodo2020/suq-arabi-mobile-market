@@ -2,13 +2,10 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CartItem } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 // This hook will sync cart state with Supabase/localStorage and user
-// To be inside the CartProvider for effect
-export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
-  // Since this module is imported and used in CartProvider, we can use hooks inside it
-  const { toast } = useToast();
+export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
   const isInitializedRef = useRef(false);
   const needsSyncRef = useRef(false);
   const profileIdRef = useRef<string | null>(null);
@@ -73,7 +70,7 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
         profileIdRef.current = null;
       }
       
-      fetchCartItems(user, setItems, toast).finally(() => { 
+      fetchCartItems(user, setItems).finally(() => { 
         isLoading = false; 
         isInitializedRef.current = true; 
       });
@@ -97,7 +94,7 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
     return () => {
       authListener?.subscription?.unsubscribe();
     };
-  }, [setItems, toast]);
+  }, [setItems]);
 
   // Sync cart to persistence (Supabase/localStorage)
   useEffect(() => {
@@ -107,14 +104,16 @@ export function cartSupabaseSync(items: CartItem[], setItems: React.Dispatch<Rea
     let user: any;
     supabase.auth.getSession().then(({ data: { session } }) => {
       user = session?.user || null;
-      syncCartPersistence(user, items, toast, profileIdRef.current).then(() => {
+      syncCartPersistence(user, items, profileIdRef.current).then(() => {
         if (needsSyncRef.current) needsSyncRef.current = false;
       });
     });
-  }, [items, toast, setItems]);
+  }, [items]);
+
+  return null; // This hook doesn't render anything
 }
 
-async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>, toast: any) {
+async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
   if (user) {
     try {
       // Fetch from Supabase
@@ -125,7 +124,7 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
 
       if (cartError) {
         console.error('Error fetching cart items:', cartError);
-        toast && toast({
+        toast({
           title: "خطأ في تحميل السلة",
           description: "حدث خطأ أثناء تحميل عناصر السلة",
           variant: "destructive",
@@ -209,7 +208,7 @@ async function fetchCartItems(user: any, setItems: React.Dispatch<React.SetState
   }
 }
 
-async function syncCartPersistence(user: any, items: CartItem[], toast: any, profileId: string | null) {
+async function syncCartPersistence(user: any, items: CartItem[], profileId: string | null) {
   // Always store in localStorage as a fallback
   localStorage.setItem('cart', JSON.stringify(items));
   
@@ -223,7 +222,7 @@ async function syncCartPersistence(user: any, items: CartItem[], toast: any, pro
     if (!profileId) {
       // If no profile, don't try to sync with Supabase
       console.log('No user profile found, skipping Supabase sync');
-      toast && toast({
+      toast({
         title: "تعذر حفظ السلة",
         description: "لا يمكن حفظ السلة في قاعدة البيانات، تم الحفظ محليًا فقط",
         variant: "destructive",
@@ -239,7 +238,7 @@ async function syncCartPersistence(user: any, items: CartItem[], toast: any, pro
 
     if (deleteError) {
       console.error('Error clearing cart items:', deleteError);
-      toast && toast({
+      toast({
         title: "خطأ في حفظ السلة",
         description: "حدث خطأ أثناء حذف العناصر القديمة",
         variant: "destructive",
@@ -260,7 +259,7 @@ async function syncCartPersistence(user: any, items: CartItem[], toast: any, pro
         
       if (insertError) {
         console.error('Error inserting cart items:', insertError);
-        toast && toast({
+        toast({
           title: "خطأ في حفظ السلة",
           description: "تعذر حفظ العناصر في قاعدة البيانات، تم الحفظ محليًا فقط",
           variant: "destructive",
@@ -271,7 +270,7 @@ async function syncCartPersistence(user: any, items: CartItem[], toast: any, pro
     }
   } catch (error) {
     console.error('Error in syncCartPersistence:', error);
-    toast && toast({
+    toast({
       title: "خطأ في حفظ السلة",
       description: "حدث خطأ غير متوقع أثناء حفظ السلة",
       variant: "destructive",
