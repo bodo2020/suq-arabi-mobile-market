@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 
 export const calculateDiscount = (subtotal: number, discountType: string, discountValue: number, maxDiscount?: number) => {

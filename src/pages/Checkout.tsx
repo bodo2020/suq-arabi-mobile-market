@@ -5,7 +5,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
 import { submitOrder, supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { applyCoupon, getApplicableOffers } from '@/utils/offerUtils';
+import { applyCoupon, getApplicableOffers, getFreeDeliveryOffer } from '@/utils/offerUtils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
