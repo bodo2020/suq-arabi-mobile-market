@@ -13,16 +13,15 @@ const Categories = () => {
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [subsubcategories, setSubsubcategories] = useState<Subsubcategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeLevel, setActiveLevel<'main' | 'sub' | 'subsub'>('main');
-  const [activeCategoryId, setActiveCategoryId<string | null>(null);
-  const [activeSubcategoryId, setActiveSubcategoryId<string | null>(null);
+  const [activeLevel, setActiveLevel] = useState<'main' | 'sub' | 'subsub'>('main');
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
-  const [storeInfo, setStoreInfo<any>(null);
-  const [showSubsubAsChips, setShowSubsubAsChips<boolean>(false);
+  const [storeInfo, setStoreInfo] = useState<any>(null);
+  const [showSubsubAsChips, setShowSubsubAsChips] = useState<boolean>(false);
 
-  // <<--- HANDLE MAIN, SUB AND SUBSUB AS TILES/CHIPS --->
   const handleMainCategoryClick = (id: string) => {
     setActiveCategoryId(id);
     setActiveLevel('sub');
@@ -153,7 +152,6 @@ const Categories = () => {
     }
   };
 
-  // استخدم CategoryItem في كل المستويات للأقسام والباقي chips
   return <MainLayout>
     <div className="py-4">
       {storeInfo && <div className="flex justify-center mb-4">
