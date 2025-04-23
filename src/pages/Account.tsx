@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, User, Package, Heart, ChevronLeft, Phone, MapPin } from 'lucide-react';
@@ -22,35 +21,15 @@ const Account = () => {
       setUser(user);
 
       if (user) {
-        // Get profile which now contains customer_id
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*, customer_id')
-          .eq('id', user.id)
+        // Get customer directly by user_id
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('user_id', user.id)
           .maybeSingle();
 
-        let customerData = null;
-
-        // Prefer loading customer by profiles.customer_id
-        if (profile?.customer_id) {
-          const { data: cust, error: custErr } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('id', profile.customer_id)
-            .maybeSingle();
-          customerData = cust;
-          if (custErr) console.error('Error loading customer by customer_id:', custErr);
-        }
-
-        // Fallback: get customer by user.id (compatibility for existing users)
-        if (!customerData) {
-          const { data: custByUid, error: custByUidErr } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          customerData = custByUid;
-          if (custByUidErr) console.error('Error loading customer by user_id:', custByUidErr);
+        if (customerError) {
+          console.error('Error loading customer:', customerError);
         }
 
         setCustomer(customerData);
@@ -234,4 +213,3 @@ const Account = () => {
 };
 
 export default Account;
-
