@@ -1,94 +1,137 @@
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, User, Phone, Check } from 'lucide-react';
-import MainLayout from '@/components/layout/MainLayout';
-import { useCart } from '@/contexts/useCart';
-import { submitOrder } from '@/lib/supabase';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowRight, MapPin, User, Phone, Check } from "lucide-react";
+import MainLayout from "@/components/layout/MainLayout";
+import { useCart } from "@/contexts/useCart";
+import { submitOrder } from "@/lib/supabase";
+import { toast } from "sonner";
+import { useOffers } from "@/hooks/useOffers";
+import { useAddresses } from "@/hooks/useAddresses";
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { items, getTotalPrice, clearCart } = useCart();
-  
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState({
-    name: '',
-    phone: '',
-    address: '',
-  });
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
-  const getProductImage = (item) => {
-    return item.product.image_urls && item.product.image_urls.length > 0 
-      ? item.product.image_urls[0] 
-      : '/placeholder.svg';
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({ name: '', phone: '', address: '' });
+
+  const [user, setUser] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const { offers } = useOffers();
+  const params = new URLSearchParams(location.search);
+  const [coupon, setCoupon] = useState(params.get("coupon") || "");
+  const [couponApplied, setCouponApplied] = useState<any>(null);
+
+  const [deliveryFee] = useState(10);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const _user = session?.user;
+      setUser(_user);
+      setUserId(_user ? _user.id : null);
+    });
+  }, []);
+
+  const { addresses } = useAddresses(userId);
 
   useEffect(() => {
     if (items.length === 0) {
-      navigate('/cart');
+      navigate("/cart");
       return;
     }
 
-    const savedName = localStorage.getItem('userName');
-    const savedPhone = localStorage.getItem('userPhone');
-    const savedAddress = localStorage.getItem('userAddress');
+    const savedName = localStorage.getItem("userName");
+    const savedPhone = localStorage.getItem("userPhone");
+    const savedAddress = localStorage.getItem("userAddress");
     
     if (savedName) setName(savedName);
     if (savedPhone) setPhone(savedPhone);
     if (savedAddress) setAddress(savedAddress);
-  }, [items.length, navigate]);
 
-  const handleBack = () => {
-    navigate(-1);
+    if (userId) {
+      supabase
+        .from("customers")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setName(data.name || "");
+            setPhone(data.phone || "");
+          }
+        });
+    }
+  }, [items.length, userId, navigate]);
+
+  useEffect(() => {
+    if (!coupon) {
+      setCouponApplied(null);
+      return;
+    }
+
+    const offer = offers.find(
+      offer => offer.code && offer.code.toLowerCase() === coupon.trim().toLowerCase()
+    );
+    if (!offer) {
+      setCouponApplied(null);
+    } else {
+      setCouponApplied(offer);
+    }
+  }, [coupon, offers]);
+
+  useEffect(() => {
+    if (!addresses || addresses.length === 0) return;
+    const defaultAddress = addresses.find(a => a.is_default) || addresses[0];
+    setSelectedAddressId(defaultAddress.id);
+    setAddress(defaultAddress.address);
+  }, [addresses]);
+
+  const handleAddressChange = (aid: string) => {
+    setSelectedAddressId(aid);
+    const selected = addresses.find(a => a.id === aid);
+    setAddress(selected ? selected.address : '');
   };
 
+  const handleBack = () => navigate(-1);
+
   const validate = () => {
-    const newErrors = {
-      name: '',
-      phone: '',
-      address: '',
-    };
+    const newErrors = { name: '', phone: '', address: '' };
     let isValid = true;
-
-    if (!name.trim()) {
-      newErrors.name = 'الاسم مطلوب';
-      isValid = false;
-    }
-
-    if (!phone.trim()) {
-      newErrors.phone = 'رقم الهاتف مطلوب';
-      isValid = false;
-    } else if (!/^\d{10,11}$/.test(phone.trim())) {
-      newErrors.phone = 'رقم الهاتف غير صحيح';
-      isValid = false;
-    }
-
-    if (!address.trim()) {
-      newErrors.address = 'العنوان مطلوب';
-      isValid = false;
-    }
-
+    if (!name.trim()) { newErrors.name = 'الاسم مطلوب'; isValid = false; }
+    if (!phone.trim()) { newErrors.phone = 'رقم الهاتف مطلوب'; isValid = false; }
+    else if (!/^\d{10,11}$/.test(phone.trim())) { newErrors.phone = 'رقم الهاتف غير صحيح'; isValid = false; }
+    if (!address.trim()) { newErrors.address = 'العنوان مطلوب'; isValid = false; }
     setErrors(newErrors);
     return isValid;
   };
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
-
+    if (!validate()) return;
     setIsSubmitting(true);
-
     try {
-      localStorage.setItem('userName', name);
-      localStorage.setItem('userPhone', phone);
-      localStorage.setItem('userAddress', address);
+      localStorage.setItem("userName", name);
+      localStorage.setItem("userPhone", phone);
+      localStorage.setItem("userAddress", address);
+
+      const subtotal = getTotalPrice();
+      let discount = 0;
+      if (couponApplied) {
+        if (couponApplied.discount_type === "percent") {
+          discount = Math.min(subtotal * (couponApplied.discount_value / 100), couponApplied.max_discount || subtotal);
+        } else if (couponApplied.discount_type === "fixed") {
+          discount = Math.min(couponApplied.discount_value, subtotal);
+        }
+      }
+      const total = subtotal + deliveryFee - discount;
 
       const orderData = {
         items: items.map(item => ({
@@ -97,105 +140,141 @@ const Checkout = () => {
           price: item.product.offer_price || item.product.price,
           name: item.product.name,
         })),
-        total: getTotalPrice(),
+        total,
         shipping_address: address,
-        shipping_cost: 0,
-        payment_method: 'cash_on_delivery',
+        shipping_cost: deliveryFee,
+        payment_method: "cash_on_delivery",
         payment_status: "pending" as "pending" | "paid" | "failed" | "refunded",
         status: "waiting" as "waiting" | "ready" | "shipped" | "done",
-        notes: `Customer Name: ${name}\nPhone: ${phone}`,
+        notes: `Customer Name: ${name}\nPhone: ${phone}\nCoupon: ${couponApplied?.code || ""}`,
+        coupon,
       };
 
       await submitOrder(orderData);
-      
       clearCart();
-      
-      toast.success('تم تأكيد طلبك بنجاح');
-
-      navigate('/order-success');
+      toast.success("تم تأكيد طلبك بنجاح");
+      navigate("/order-success");
     } catch (error) {
-      console.error('Error submitting order:', error);
-      toast.error('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى');
+      console.error("Error submitting order:", error);
+      toast.error("حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const subtotal = getTotalPrice();
-  const deliveryFee = 0;
-  const total = subtotal + deliveryFee;
+  let discount = 0;
+  if (couponApplied) {
+    if (couponApplied.discount_type === "percent") {
+      discount = Math.min(subtotal * (couponApplied.discount_value / 100), couponApplied.max_discount || subtotal);
+    } else if (couponApplied.discount_type === "fixed") {
+      discount = Math.min(couponApplied.discount_value, subtotal);
+    }
+  }
+  const total = subtotal + deliveryFee - discount;
 
   return (
     <MainLayout>
       <div className="py-4 pb-24">
         <div className="flex items-center mb-6">
-          <button
-            onClick={handleBack}
-            className="p-2"
-            aria-label="الرجوع"
-          >
+          <button onClick={handleBack} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />
           </button>
           <h1 className="text-xl font-bold flex-1 text-center">إتمام الطلب</h1>
           <div className="w-10"></div>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-lg p-4">
-            <h2 className="font-bold text-lg mb-4">معلومات التوصيل</h2>
-
-            <div className="mb-4">
+            <h2 className="font-bold text-lg mb-4">معلومات العميل والعنوان</h2>
+            <div className="mb-2">
               <div className="flex items-center mb-2">
                 <User size={18} className="ml-2 text-gray-500" />
                 <label htmlFor="name" className="font-medium">الاسم</label>
               </div>
               <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                type="text" id="name" value={name}
+                onChange={e => setName(e.target.value)}
+                className={`w-full p-3 border rounded-lg text-right ${errors.name ? "border-red-500" : "border-gray-300"}`}
                 placeholder="أدخل اسمك"
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
-
-            <div className="mb-4">
+            <div className="mb-2">
               <div className="flex items-center mb-2">
                 <Phone size={18} className="ml-2 text-gray-500" />
                 <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
               </div>
               <input
-                type="tel"
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
+                type="tel" id="phone" value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className={`w-full p-3 border rounded-lg text-right ${errors.phone ? "border-red-500" : "border-gray-300"}`}
                 placeholder="أدخل رقم هاتفك"
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
-
-            <div>
+            <div className="mb-2">
               <div className="flex items-center mb-2">
                 <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="address" className="font-medium">العنوان</label>
+                <label className="font-medium">اختر العنوان</label>
+                <button type="button"
+                  onClick={() => navigate('/account/address')}
+                  className="ml-2 text-xs bg-gray-100 px-2 rounded"
+                >تعديل العناوين</button>
               </div>
+              {addresses && addresses.length > 0 ? (
+                <select
+                  value={selectedAddressId || ""}
+                  className={`w-full p-3 border rounded-lg text-right mb-1 ${errors.address ? "border-red-500" : "border-gray-300"}`}
+                  onChange={e => handleAddressChange(e.target.value)}
+                >
+                  {addresses.map(addr => (
+                    <option key={addr.id} value={addr.id}>{addr.address}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-xs text-gray-400">
+                  لا توجد عناوين محفوظة. يمكنك إضافة عنوان من <button type="button" className="font-bold underline" onClick={() => navigate('/account/address')}>إدارة العناوين</button>
+                </p>
+              )}
+            </div>
+            <div>
               <textarea
                 id="address"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
+                onChange={e => setAddress(e.target.value)}
+                className={`w-full p-3 border rounded-lg text-right ${errors.address ? "border-red-500" : "border-gray-300"}`}
                 placeholder="أدخل عنوانك للتوصيل"
-                rows={3}
+                rows={2}
               />
               {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
             </div>
           </div>
-
+          <div className="bg-white rounded-lg p-4">
+            <h2 className="font-bold text-lg mb-4">ادخل كوبون الخصم</h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="كود كوبون إن وجد"
+                className="border rounded px-2 flex-1"
+                value={coupon}
+                onChange={e => setCoupon(e.target.value)}
+                disabled={!!couponApplied}
+              />
+              <button
+                type="button"
+                className="bg-primary text-white py-2 px-4 rounded"
+                onClick={() => setCoupon(coupon)}
+                disabled={!!couponApplied}
+              >
+                {couponApplied ? "تم التفعيل" : "تطبيق"}
+              </button>
+            </div>
+            {couponApplied && (
+              <div className="text-green-600 text-xs mt-1">تم تطبيق الكوبون: {couponApplied.name}</div>
+            )}
+          </div>
           <div className="bg-white rounded-lg p-4">
             <h2 className="font-bold text-lg mb-4">ملخص الطلب</h2>
-            
             <div className="space-y-3 mb-4">
               {items.map((item) => (
                 <div key={item.product.id} className="flex justify-between py-2 border-b last:border-b-0">
@@ -207,7 +286,6 @@ const Checkout = () => {
                 </div>
               ))}
             </div>
-            
             <div className="border-t pt-3 space-y-2">
               <div className="flex justify-between">
                 <span className="font-medium">{subtotal.toFixed(2)} ر.س</span>
@@ -217,16 +295,18 @@ const Checkout = () => {
                 <span className="font-medium">{deliveryFee.toFixed(2)} ر.س</span>
                 <span className="text-gray-600">رسوم التوصيل</span>
               </div>
+              <div className="flex justify-between">
+                <span className="font-medium">{discount.toFixed(2)} ر.س</span>
+                <span className="text-gray-600">الخصم</span>
+              </div>
               <div className="flex justify-between pt-2 border-t">
                 <span className="font-bold text-lg">{total.toFixed(2)} ر.س</span>
                 <span className="font-bold">الإجمالي</span>
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-lg p-4">
             <h2 className="font-bold text-lg mb-4">طريقة الدفع</h2>
-            
             <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
               <div className="bg-primary h-5 w-5 rounded-full flex items-center justify-center">
                 <Check size={14} className="text-white" />
@@ -241,7 +321,6 @@ const Checkout = () => {
               </div>
             </div>
           </div>
-
           <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t">
             <button
               type="submit"
