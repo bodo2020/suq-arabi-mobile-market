@@ -1,5 +1,5 @@
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export const calculateDiscount = (subtotal: number, discountType: string, discountValue: number, maxDiscount?: number) => {
   let discount = 0;
