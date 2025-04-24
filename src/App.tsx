@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "./contexts/CartProvider";
+import { UserProvider } from "./contexts/UserContext";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
 import CategoryDetail from "./pages/CategoryDetail";
@@ -30,35 +31,37 @@ const queryClient = new QueryClient();
 const App = () => (
   <div className="hide-scrollbar">
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/categories" element={<Categories />} />
-              <Route path="/category/:id" element={<CategoryDetail />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
-              <Route path="/company-products/:id" element={<CompanyProducts />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-success" element={<OrderSuccess />} />
-              <Route path="/account" element={<Account />} />
-              <Route path="/account/register" element={<Register />} />
-              <Route path="/account/address" element={<Address />} />
-              <Route path="/account/addresses" element={<AddressManager />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/barcode-scan" element={<BarcodeScanner />} />
-              <Route path="/account/edit" element={<EditAccount />} />
-              <Route path="/banner-products/:id" element={<BannerProducts />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </CartProvider>
+      <UserProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/category/:id" element={<CategoryDetail />} />
+                <Route path="/product/:id" element={<ProductDetail />} />
+                <Route path="/company-products/:id" element={<CompanyProducts />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/order-success" element={<OrderSuccess />} />
+                <Route path="/account" element={<Account />} />
+                <Route path="/account/register" element={<Register />} />
+                <Route path="/account/address" element={<Address />} />
+                <Route path="/account/addresses" element={<AddressManager />} />
+                <Route path="/favorites" element={<Favorites />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/barcode-scan" element={<BarcodeScanner />} />
+                <Route path="/account/edit" element={<EditAccount />} />
+                <Route path="/banner-products/:id" element={<BannerProducts />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CartProvider>
+      </UserProvider>
     </QueryClientProvider>
   </div>
 );

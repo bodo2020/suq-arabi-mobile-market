@@ -4,7 +4,7 @@ import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from "@/components/ui/button"
 import { ArrowRight, User, MapPin, ListChecks } from 'lucide-react';
-import { Address } from '@/lib/supabase';
+import { Address, supabase } from '@/lib/supabase';
 
 const Account = () => {
   const { user, signOut } = useUser();
@@ -15,9 +15,14 @@ const Account = () => {
     const fetchAddress = async () => {
       if (user) {
         try {
-          const { getAddresses } = await import('@/lib/supabase');
-          const addresses = await getAddresses(user.id);
-          const defaultAddress = addresses.find(addr => addr.is_default);
+          const { data: addresses, error } = await supabase
+            .from('addresses')
+            .select('*')
+            .eq('user_id', user.id);
+          
+          if (error) throw error;
+          
+          const defaultAddress = addresses?.find(addr => addr.is_default);
           setAddress(defaultAddress || null);
         } catch (error) {
           console.error('Error fetching address:', error);
@@ -37,9 +42,6 @@ const Account = () => {
     if (!address) return '';
     
     let parts = [address.address];
-    
-    // Use optional chaining to safely access potentially undefined properties
-    // We'll pull them from governorate_id, city_id, etc. which are guaranteed to exist in our type
     
     if (address.neighborhood_id) {
       parts.push(`الحي: ${address.neighborhood_id}`);

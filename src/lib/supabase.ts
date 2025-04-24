@@ -209,6 +209,17 @@ export async function getStoreInfo() {
   return data;
 }
 
+// Function to get addresses for a user
+export async function getAddresses(userId: string) {
+  const { data, error } = await supabase
+    .from('addresses')
+    .select('*')
+    .eq('user_id', userId);
+  
+  if (error) console.error(`Error fetching addresses:`, error);
+  return data || [];
+}
+
 // Updated function to create or update a customer
 export async function createOrUpdateCustomer(customerData: { 
   user_id?: string;

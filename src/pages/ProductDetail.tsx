@@ -1,15 +1,16 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import CompanyCard from '@/components/ui/CompanyCard';
-import { Product, getProductById, getRelatedProducts, getCompanyById } from '@/lib/supabase';
+import { Product, getProductById, getRelatedProducts, getCompanyById, Company } from '@/lib/supabase';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [company, setCompany] = useState<any>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
