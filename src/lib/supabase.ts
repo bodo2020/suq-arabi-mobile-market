@@ -12,9 +12,8 @@ export type Product = {
   price: number;
   offer_price?: number;
   image_urls: string[];
-  category_id: string;
+  main_category_id: string;
   subcategory_id?: string;
-  subsubcategory_id?: string;
   company_id: string;
   quantity: number;
   created_at: string;
@@ -56,24 +55,14 @@ export type Subcategory = {
   updated_at?: string;
 };
 
-export type Subsubcategory = {
-  id: string;
-  name: string;
-  image_url: string;
-  description?: string;
-  subcategory_id: string;
-  created_at?: string;
-  updated_at?: string;
-};
-
 export type Company = {
   id: string;
-  name: string;
   logo_url: string;
   description?: string;
   contact_phone?: string;
   contact_email?: string;
   address?: string;
+  name: string;
 };
 
 export type CartItem = {
@@ -129,23 +118,17 @@ export async function getSubcategories(categoryId?: string) {
   return data || [];
 }
 
-export async function getSubsubcategories(subcategoryId?: string) {
-  let query = supabase.from('subsubcategories').select('*');
-  
-  if (subcategoryId) {
-    query = query.eq('subcategory_id', subcategoryId);
-  }
-  
-  const { data, error } = await query;
-  if (error) console.error('Error fetching subsubcategories:', error);
-  return data || [];
-}
-
-export async function getProducts(categoryId?: string) {
+export async function getProducts(categoryIdOrSubcategoryId?: string, isSubcategory: boolean = false) {
   let query = supabase.from('products').select('*');
   
-  if (categoryId) {
-    query = query.eq('category_id', categoryId);
+  if (categoryIdOrSubcategoryId) {
+    if (isSubcategory) {
+      // Filter by subcategory_id
+      query = query.eq('subcategory_id', categoryIdOrSubcategoryId);
+    } else {
+      // Filter by main_category_id
+      query = query.eq('main_category_id', categoryIdOrSubcategoryId);
+    }
   }
   
   const { data, error } = await query;
@@ -189,7 +172,7 @@ export async function getRelatedProducts(productId: string, categoryId: string) 
   const { data, error } = await supabase
     .from('products')
     .select('*')
-    .eq('category_id', categoryId)
+    .eq('main_category_id', categoryId)
     .neq('id', productId)
     .limit(4);
   

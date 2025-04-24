@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Plus, Trash2, Home } from 'lucide-react';
@@ -131,6 +130,30 @@ const AddressManager = () => {
     }
   };
 
+  const formatAddressDisplay = (address: Address) => {
+    if (!address) return '';
+    
+    let parts = [address.address];
+    
+    if (address.governorate_id) {
+      parts.push(`المحافظة: ${address.governorate_id}`);
+    }
+    
+    if (address.city_id) {
+      parts.push(`المدينة: ${address.city_id}`);
+    }
+    
+    if (address.area_id) {
+      parts.push(`المنطقة: ${address.area_id}`);
+    }
+    
+    if (address.neighborhood_id) {
+      parts.push(`الحي: ${address.neighborhood_id}`);
+    }
+    
+    return parts.join(', ');
+  };
+
   return (
     <MainLayout>
       <div className="py-4">
@@ -201,7 +224,7 @@ const AddressManager = () => {
                 value={newAddress}
                 onChange={(e) => setNewAddress(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل تفاصيل العنوان - الشارع، رقم المبنى، الطابق، الخ."
+                placeholder="أدخل تفاص��ل العنوان - الشارع، رقم المبنى، الطابق، الخ."
                 rows={3}
                 required
               />

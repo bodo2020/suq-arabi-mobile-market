@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import { MainCategory, Subcategory, Subsubcategory, getCategories, getSubcategories, getSubsubcategories, getProducts, Product } from '@/lib/supabase';
+import { MainCategory, Subcategory, getCategories, getSubcategories, getProducts, Product } from '@/lib/supabase';
 import { ChevronLeft } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
 import { useNavigate } from 'react-router-dom';
@@ -65,17 +65,22 @@ const Categories = () => {
       setSubcategories(subcatsData as Subcategory[]);
       
       // Get all products for the main category
-      const productsData = await getProducts(categoryId);
+      const productsData = await getProducts(categoryId, false);
       setAllProducts(productsData as Product[]);
       
       // Organize products by subcategory
       const productsBySubcategory: { [key: string]: Product[] } = {};
       
+      // First initialize all subcategories with empty arrays
       for (const subcat of subcatsData) {
-        const subcatProducts = productsData.filter(
-          (product: Product) => product.subcategory_id === subcat.id
-        );
-        productsBySubcategory[subcat.id] = subcatProducts;
+        productsBySubcategory[subcat.id] = [];
+      }
+      
+      // Then populate with products
+      for (const subcat of subcatsData) {
+        // Get products specific to this subcategory
+        const subcatProducts = await getProducts(subcat.id, true);
+        productsBySubcategory[subcat.id] = subcatProducts as Product[];
       }
       
       setSubcategoryProducts(productsBySubcategory);
@@ -111,7 +116,6 @@ const Categories = () => {
   useEffect(() => {
     async function fetchStoreInfo() {
       try {
-        const { getStoreInfo } = await import('@/lib/supabase');
         const data = await getStoreInfo();
         setStoreInfo(data);
       } catch (e) {
