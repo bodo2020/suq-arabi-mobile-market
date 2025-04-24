@@ -7,9 +7,10 @@ interface CategoryItemProps {
   category: MainCategory;
   onClick?: (category: MainCategory) => void;
   isActive?: boolean;
+  hideLabel?: boolean;
 }
 
-const CategoryItem: React.FC<CategoryItemProps> = ({ category, onClick, isActive }) => {
+const CategoryItem: React.FC<CategoryItemProps> = ({ category, onClick, isActive, hideLabel }) => {
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {
       e.preventDefault();
@@ -25,16 +26,16 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, onClick, isActive
         `category-item flex flex-col items-center relative group
         ${isActive ? 'ring-2 ring-primary' : ''}`
       }
-      style={{minWidth: '120px', minHeight: '120px'}}
+      style={{minWidth: '120px', minHeight: hideLabel ? '90px' : '120px'}}
     >
-      <div className="h-28 w-28 md:h-32 md:w-32 rounded-lg flex items-center justify-center mb-2 bg-white group-hover:shadow-lg transition-shadow">
+      <div className="h-24 w-24 md:h-28 md:w-28 rounded-lg flex items-center justify-center bg-white group-hover:shadow-lg transition-shadow">
         <img 
           src={category.image_url} 
           alt={category.name} 
-          className="h-24 w-24 md:h-28 md:w-28 object-contain"
+          className="h-20 w-20 md:h-24 md:w-24 object-contain"
         />
       </div>
-      <span className="text-sm md:text-base text-center line-clamp-1 font-semibold">{category.name}</span>
+      {!hideLabel && <span className="text-sm md:text-base text-center line-clamp-1 font-semibold mt-2">{category.name}</span>}
     </Link>
   );
 };

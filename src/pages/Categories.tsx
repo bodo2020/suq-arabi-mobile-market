@@ -1,62 +1,97 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import { MainCategory, Subcategory, Subsubcategory, getCategories, getSubcategories, getSubsubcategories } from '@/lib/supabase';
-import { Link } from 'react-router-dom';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { MainCategory, Subcategory, Subsubcategory, getCategories, getSubcategories, getSubsubcategories, getProducts, Product } from '@/lib/supabase';
 import { ChevronLeft } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
 import { useNavigate } from 'react-router-dom';
 import CategoryItem from '@/components/ui/CategoryItem';
+import ProductCard from '@/components/ui/ProductCard';
+import CategoryScrollArea, { CategoryScrollAreaRef } from '@/components/ui/CategoryScrollArea';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 
 const Categories = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [subsubcategories, setSubsubcategories] = useState<Subsubcategory[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // لتتبع المستوى والاختيار الحالي
-  const [activeLevel, setActiveLevel] = useState<'main' | 'sub' | 'subsub'>('main');
+  const [activeLevel, setActiveLevel] = useState<'main' | 'sub'>('main');
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [activeCategoryName, setActiveCategoryName] = useState<string | null>(null);
   const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(null);
-  const [activeSubcategoryName, setActiveSubcategoryName] = useState<string | null>(null);
+  const [subcategoryProducts, setSubcategoryProducts] = useState<{ [key: string]: Product[] }>({});
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [storeInfo, setStoreInfo] = useState<any>(null);
+  const scrollAreaRef = useRef<CategoryScrollAreaRef>(null);
 
-  const isMobile = useIsMobile();
+  const isMobile = window.innerWidth <= 768;
   const navigate = useNavigate();
 
-  const [storeInfo, setStoreInfo] = useState<any>(null);
-
-  // لما تضغط على main category يعرض الصفحة التالية للأقسام الفرعية
+  // Handle main category click to show subcategories
   const handleMainCategoryClick = (cat: MainCategory) => {
     setActiveCategoryId(cat.id);
     setActiveCategoryName(cat.name);
     setActiveLevel('sub');
-    setActiveSubcategoryId(null);
-    setSubsubcategories([]);
+    loadSubcategoriesAndProducts(cat.id);
   };
 
-  // لما تضغط على subcategory تظهر الشيبس بالأعلى
-  const handleSubCategoryClick = (subcat: Subcategory) => {
-    setActiveSubcategoryId(subcat.id);
-    setActiveSubcategoryName(subcat.name);
-    setActiveLevel('subsub');
-  };
-
-  // رجوع من subsub إلى sub أو من sub إلى main
+  // Back button handler
   const handleCategoryBack = () => {
-    if (activeLevel === 'subsub') {
-      setActiveLevel('sub');
-      setActiveSubcategoryId(null);
-      setActiveSubcategoryName(null);
-    } else if (activeLevel === 'sub') {
-      setActiveLevel('main');
-      setActiveCategoryId(null);
-      setActiveCategoryName(null);
-      setSubcategories([]);
+    setActiveLevel('main');
+    setActiveCategoryId(null);
+    setActiveCategoryName(null);
+    setSubcategories([]);
+    setSubcategoryProducts({});
+    setAllProducts([]);
+    setActiveSubcategoryId(null);
+  };
+
+  // Handle subcategory selection
+  const handleSubcategorySelect = (subcatId: string) => {
+    setActiveSubcategoryId(subcatId);
+    
+    // Scroll to the subcategory's products section
+    setTimeout(() => {
+      scrollAreaRef.current?.scrollToSection(`subcategory-${subcatId}`);
+    }, 100);
+  };
+
+  // Load subcategories and their products
+  const loadSubcategoriesAndProducts = async (categoryId: string) => {
+    setLoading(true);
+    try {
+      // Get subcategories for the selected main category
+      const subcatsData = await getSubcategories(categoryId);
+      setSubcategories(subcatsData as Subcategory[]);
+      
+      // Get all products for the main category
+      const productsData = await getProducts(categoryId);
+      setAllProducts(productsData as Product[]);
+      
+      // Organize products by subcategory
+      const productsBySubcategory: { [key: string]: Product[] } = {};
+      
+      for (const subcat of subcatsData) {
+        const subcatProducts = productsData.filter(
+          (product: Product) => product.subcategory_id === subcat.id
+        );
+        productsBySubcategory[subcat.id] = subcatProducts;
+      }
+      
+      setSubcategoryProducts(productsBySubcategory);
+      
+      // Set the first subcategory as active if available
+      if (subcatsData.length > 0 && !activeSubcategoryId) {
+        setActiveSubcategoryId(subcatsData[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading subcategories and products:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Load main categories on initial render
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -68,9 +103,11 @@ const Categories = () => {
         setLoading(false);
       }
     };
+    
     fetchCategories();
   }, []);
 
+  // Load store info
   useEffect(() => {
     async function fetchStoreInfo() {
       try {
@@ -83,56 +120,6 @@ const Categories = () => {
     }
     fetchStoreInfo();
   }, []);
-
-  // احضار الأقسام الفرعية عند اختيار main
-  useEffect(() => {
-    if (activeCategoryId && activeLevel === 'sub') {
-      const fetchSubcategories = async () => {
-        setLoading(true);
-        try {
-          const data = await getSubcategories(activeCategoryId);
-          setSubcategories(data as Subcategory[]);
-        } catch (error) {
-          console.error('Error fetching subcategories:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchSubcategories();
-    }
-  }, [activeCategoryId, activeLevel]);
-
-  // احضار الأقسام التفصيلية عند اختيار sub
-  useEffect(() => {
-    if (activeSubcategoryId && activeLevel === 'subsub') {
-      const fetchSubsubcategories = async () => {
-        setLoading(true);
-        try {
-          const data = await getSubsubcategories(activeSubcategoryId);
-          setSubsubcategories(data as Subsubcategory[]);
-        } catch (error) {
-          console.error('Error fetching subsubcategories:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchSubsubcategories();
-    }
-  }, [activeSubcategoryId, activeLevel]);
-
-  // التايتل حسب المستوى
-  const getTitle = () => {
-    switch (activeLevel) {
-      case 'main':
-        return 'الأقسام الرئيسية';
-      case 'sub':
-        return activeCategoryName || 'الأقسام الفرعية';
-      case 'subsub':
-        return activeCategoryName || 'الأقسام التفصيلية';
-      default:
-        return 'الأقسام';
-    }
-  };
 
   return (
     <MainLayout>
@@ -150,88 +137,83 @@ const Categories = () => {
           />
         </div>
 
-        <div className="flex items-center mb-3">
-          {activeLevel !== 'main' && (
-            <button onClick={handleCategoryBack} className="pr-2 py-0.5 text-primary underline text-sm">رجوع</button>
-          )}
-          <h2 className="text-lg font-bold mr-2">{getTitle()}</h2>
-        </div>
-
-        {/* الأقسام الرئيسية */}
-        {activeLevel === 'main' && (
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-            {categories.map(cat => (
-              <CategoryItem
-                key={cat.id}
-                category={cat}
-                onClick={() => handleMainCategoryClick(cat)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* الأقسام الفرعية */}
-        {activeLevel === 'sub' && (
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-            {subcategories.length > 0 ? (
-              subcategories.map(subcat => (
-                <CategoryItem
-                  key={subcat.id}
-                  category={subcat}
-                  onClick={() => handleSubCategoryClick(subcat)}
-                />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center py-10">
-                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
-                  <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-                  <path d="m22 7-7.1 3.78c-.57.3-1.23.3-1.8 0L6 7"></path>
-                  <path d="M14 14v4"></path>
-                  <path d="M10 14v4"></path>
-                </svg>
-                <h3 className="text-lg font-medium text-gray-500 mb-1">لا توجد أقسام فرعية</h3>
-                <p className="text-sm text-gray-400">لا توجد أقسام فرعية في هذا القسم حالياً</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* الشيبس للأقسام التفصيلية + أول واحدة جميع المنتجات */}
-        {activeLevel === 'subsub' && (
-          <div className="mb-4 overflow-x-auto hide-scrollbar">
-            <div className="flex space-x-2 space-x-reverse pb-2">
-              {/* chip لجميع المنتجات */}
-              <button
-                className="whitespace-nowrap px-4 py-2 rounded-full bg-primary text-white text-sm font-bold border border-primary hover:bg-primary/80 transition"
-                onClick={() => {
-                  // هنا يمكن عمل نفيجيت لصفحة تعرض كل المنتجات في هذا القسم الفرعي
-                  navigate(`/category/${activeSubcategoryId}`);
-                }}
-              >
-                جميع المنتجات
-              </button>
-              {subsubcategories.length > 0 ? subsubcategories.map(subsubcat => (
-                <button
-                  key={subsubcat.id}
-                  className="whitespace-nowrap px-4 py-2 rounded-full bg-primary text-white text-sm font-bold border border-primary hover:bg-primary/80 transition"
-                  // كل chip ممكن تعطيه حدث حسب الحاجة مثلاً نفيجيت إلى فلترة بهذا القسم التفصيلي
-                  onClick={() => {
-                    navigate(`/category/${subsubcat.id}`);
-                  }}
-                >
-                  {/* يظهر دوماً اسم القسم الرئيسي في كل الشيبس */}
-                  {activeCategoryName}
-                </button>
-              )) : (
-                <button
-                  className="whitespace-nowrap px-4 py-2 rounded-full bg-slate-200 text-gray-600 text-sm font-bold border border-gray-400 ml-2 cursor-not-allowed"
-                  disabled
-                >
-                  لا توجد أقسام تفصيلية
-                </button>
-              )}
+        {activeLevel === 'main' ? (
+          <>
+            <div className="flex items-center mb-3">
+              <h2 className="text-lg font-bold mr-2">الأقسام الرئيسية</h2>
             </div>
-          </div>
+            
+            {/* Main categories grid without names */}
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+              {categories.map(cat => (
+                <CategoryItem
+                  key={cat.id}
+                  category={cat}
+                  onClick={handleMainCategoryClick}
+                  hideLabel={true}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center mb-3">
+              <button onClick={handleCategoryBack} className="pr-1 py-0.5 text-primary flex items-center">
+                <ChevronLeft size={20} className="ml-1" />
+                <span className="text-sm font-medium">رجوع</span>
+              </button>
+              <h2 className="text-lg font-bold mr-2">{activeCategoryName}</h2>
+            </div>
+            
+            {/* Subcategories as horizontal chips */}
+            <div className="sticky top-0 z-10 bg-white pb-2">
+              <div className="mb-4 overflow-x-auto hide-scrollbar">
+                <div className="flex space-x-2 space-x-reverse pb-2">
+                  {subcategories.map(subcat => (
+                    <Badge
+                      key={subcat.id}
+                      variant={activeSubcategoryId === subcat.id ? "default" : "outline"}
+                      className="py-2 px-4 cursor-pointer whitespace-nowrap"
+                      onClick={() => handleSubcategorySelect(subcat.id)}
+                    >
+                      {subcat.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Products by subcategory with scrolling */}
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <CategoryScrollArea ref={scrollAreaRef}>
+                {subcategories.map(subcat => (
+                  <div 
+                    key={subcat.id} 
+                    id={`subcategory-${subcat.id}`}
+                    className="mb-8"
+                  >
+                    <h3 className="font-bold text-base mb-3">{subcat.name}</h3>
+                    
+                    {subcategoryProducts[subcat.id]?.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {subcategoryProducts[subcat.id].map(product => (
+                          <ProductCard key={product.id} product={product} />
+                        ))}
+                      </div>
+                    ) : (
+                      <Card className="p-6 text-center">
+                        <p className="text-gray-500">لا توجد منتجات في هذا القسم</p>
+                      </Card>
+                    )}
+                  </div>
+                ))}
+              </CategoryScrollArea>
+            )}
+          </>
         )}
       </div>
     </MainLayout>
