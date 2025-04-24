@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import { MainCategory, Subcategory, getCategories, getSubcategories, getProducts, Product } from '@/lib/supabase';
+import { MainCategory, Subcategory, Subsubcategory, getCategories, getSubcategories, getSubsubcategories, getProducts, Product } from '@/lib/supabase';
 import { ChevronLeft } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
 import { useNavigate } from 'react-router-dom';

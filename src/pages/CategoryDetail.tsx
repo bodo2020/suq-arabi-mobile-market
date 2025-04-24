@@ -7,11 +7,13 @@ import ProductCard from '@/components/ui/ProductCard';
 import CategoryItem from '@/components/ui/CategoryItem';
 import { 
   MainCategory,
-  Subcategory,
+  Subcategory, 
+  Subsubcategory, 
   Product, 
   getProducts, 
   getCategories,
   getSubcategories,
+  getSubsubcategories
 } from '@/lib/supabase';
 
 interface CategoryInfo {
@@ -28,9 +30,11 @@ const CategoryDetail = () => {
   const [categoryInfo, setCategoryInfo] = useState<CategoryInfo | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categoryType, setCategoryType] = useState<'main' | 'sub'>('main');
+  const [categoryType, setCategoryType] = useState<'main' | 'sub' | 'subsub'>('main');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [subsubcategories, setSubsubcategories] = useState<Subsubcategory[]>([]);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedSubsubcategory, setSelectedSubsubcategory] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [mainCategoryName, setMainCategoryName] = useState<string>('');
 
@@ -40,9 +44,10 @@ const CategoryDetail = () => {
         if (!id) return;
         setLoading(true);
         
-        const [categoriesData, subcategoriesData] = await Promise.all([
+        const [categoriesData, subcategoriesData, subsubcategoriesData] = await Promise.all([
           getCategories(),
-          getSubcategories()
+          getSubcategories(),
+          getSubsubcategories()
         ]);
         
         // Check if it's a main category
@@ -84,10 +89,43 @@ const CategoryDetail = () => {
               setMainCategoryName(mainCat.name);
             }
             
+            // Get subsubcategories for this subcategory
+            const subcategorySubsubcategories = subsubcategoriesData.filter(
+              subsubcat => subsubcat.subcategory_id === id
+            );
+            setSubsubcategories(subcategorySubsubcategories);
+            
             // Fetch all products for this subcategory
             const productsData = await getProducts(id);
             setAllProducts(productsData as Product[]);
             setProducts(productsData as Product[]);
+            
+          } else {
+            // Check if it's a subsubcategory
+            const subsubcategoryData = subsubcategoriesData.find(subsubcat => subsubcat.id === id);
+            if (subsubcategoryData) {
+              setCategoryInfo({
+                id: subsubcategoryData.id,
+                name: subsubcategoryData.name,
+                image_url: subsubcategoryData.image_url,
+                description: subsubcategoryData.description
+              });
+              setCategoryType('subsub');
+              
+              // Find subcategory to get main category name
+              const subcat = subcategoriesData.find(sc => sc.id === subsubcategoryData.subcategory_id);
+              if (subcat) {
+                const mainCat = categoriesData.find(cat => cat.id === subcat.category_id);
+                if (mainCat) {
+                  setMainCategoryName(mainCat.name);
+                }
+              }
+              
+              // Fetch all products for this subsubcategory
+              const productsData = await getProducts(id);
+              setAllProducts(productsData as Product[]);
+              setProducts(productsData as Product[]);
+            }
           }
         }
       } catch (error) {
@@ -106,6 +144,7 @@ const CategoryDetail = () => {
 
   const handleSubcategorySelect = (subcatId: string | null) => {
     setSelectedSubcategory(subcatId);
+    setSelectedSubsubcategory(null);
     
     if (!subcatId) {
       // "All Products" was selected
@@ -113,6 +152,26 @@ const CategoryDetail = () => {
     } else {
       // Filter products by subcategory
       const filtered = allProducts.filter(product => product.subcategory_id === subcatId);
+      setProducts(filtered);
+    }
+  };
+
+  const handleSubsubcategorySelect = (subsubcatId: string | null) => {
+    setSelectedSubsubcategory(subsubcatId);
+    
+    if (!subsubcatId) {
+      // If "All Products" was selected in subsubcategory filter
+      if (selectedSubcategory) {
+        // Still filter by the selected subcategory
+        const filtered = allProducts.filter(product => product.subcategory_id === selectedSubcategory);
+        setProducts(filtered);
+      } else {
+        // Show all products
+        setProducts(allProducts);
+      }
+    } else {
+      // Filter products by subsubcategory
+      const filtered = allProducts.filter(product => product.subsubcategory_id === subsubcatId);
       setProducts(filtered);
     }
   };
@@ -145,6 +204,37 @@ const CategoryDetail = () => {
                 onClick={() => navigate(`/category/${subcat.id}`)}
               />
             ))}
+          </div>
+        )}
+
+        {/* Subsubcategories as chips */}
+        {!loading && categoryType === 'sub' && subsubcategories.length > 0 && (
+          <div className="mb-4 overflow-x-auto hide-scrollbar">
+            <div className="flex space-x-2 space-x-reverse pb-2">
+              <button
+                onClick={() => handleSubsubcategorySelect(null)}
+                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                  selectedSubsubcategory === null 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                جميع المنتجات
+              </button>
+              {subsubcategories.map(subsubcat => (
+                <button
+                  key={subsubcat.id}
+                  onClick={() => handleSubsubcategorySelect(subsubcat.id)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                    selectedSubsubcategory === subsubcat.id 
+                      ? 'bg-primary text-white' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {mainCategoryName}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
