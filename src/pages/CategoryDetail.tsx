@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -9,6 +10,7 @@ const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productsRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -64,6 +66,25 @@ const CategoryDetail = () => {
     }
   };
 
+  // Handle horizontal scroll for RTL layout
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({
+        left: -100,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({
+        left: 100,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -87,33 +108,50 @@ const CategoryDetail = () => {
           <div className="w-10"></div>
         </div>
 
-        <div className="sticky top-0 z-10 mb-4">
-          <div className="overflow-x-auto no-scrollbar">
-            <div className="flex gap-2 p-2 whitespace-nowrap">
-              <button
-                onClick={() => handleSubcategorySelect(null)}
-                className={`px-4 py-2 rounded-full text-sm ${
-                  selectedSubcategory === null 
-                    ? 'bg-[#d3ffb3] text-[#005931]' 
-                    : 'bg-transparent border border-[#005931] text-[#005931]'
-                }`}
-              >
-                جميع المنتجات
-              </button>
-              {subcategories.map(subcat => (
+        <div className="sticky top-0 z-10 mb-4 bg-white">
+          <div className="flex items-center">
+            <button onClick={scrollLeft} className="px-2 text-[#005931] flex-shrink-0 z-10">
+              ◀
+            </button>
+            <div 
+              ref={scrollContainerRef}
+              className="overflow-x-scroll scrollbar-hide flex-grow" 
+              style={{ 
+                scrollbarWidth: 'none', // Firefox
+                msOverflowStyle: 'none',  // IE
+                WebkitOverflowScrolling: 'touch',
+                direction: 'rtl'
+              }}
+            >
+              <div className="flex gap-2 p-2 whitespace-nowrap min-w-max">
                 <button
-                  key={subcat.id}
-                  onClick={() => handleSubcategorySelect(subcat.id)}
+                  onClick={() => handleSubcategorySelect(null)}
                   className={`px-4 py-2 rounded-full text-sm ${
-                    selectedSubcategory === subcat.id 
+                    selectedSubcategory === null 
                       ? 'bg-[#d3ffb3] text-[#005931]' 
                       : 'bg-transparent border border-[#005931] text-[#005931]'
                   }`}
                 >
-                  {subcat.name}
+                  جميع المنتجات
                 </button>
-              ))}
+                {subcategories.map(subcat => (
+                  <button
+                    key={subcat.id}
+                    onClick={() => handleSubcategorySelect(subcat.id)}
+                    className={`px-4 py-2 rounded-full text-sm ${
+                      selectedSubcategory === subcat.id 
+                        ? 'bg-[#d3ffb3] text-[#005931]' 
+                        : 'bg-transparent border border-[#005931] text-[#005931]'
+                    }`}
+                  >
+                    {subcat.name}
+                  </button>
+                ))}
+              </div>
             </div>
+            <button onClick={scrollRight} className="px-2 text-[#005931] flex-shrink-0 z-10">
+              ▶
+            </button>
           </div>
         </div>
 

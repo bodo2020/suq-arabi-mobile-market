@@ -115,14 +115,14 @@ html, body, #root {
 }
 
 /* Hide scrollbar but keep functionality */
-.hide-scrollbar {
+.hide-scrollbar, .scrollbar-hide {
   scrollbar-width: none !important; /* Firefox */
   -ms-overflow-style: none !important;  /* IE and Edge */
   overflow-y: auto !important;
-  overflow-x: hidden !important;
+  overflow-x: auto !important;
 }
 
-.hide-scrollbar::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar, .scrollbar-hide::-webkit-scrollbar {
   display: none !important; /* Chrome, Safari, Opera */
 }
 
