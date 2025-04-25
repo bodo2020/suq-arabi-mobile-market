@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -99,7 +100,7 @@ const Categories = () => {
         <div className="mb-4">
           <SearchBar readOnly onFocus={handleSearchFocus} />
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
           {categories.map((category) => (
             <CategoryItem 
               key={category.id} 
