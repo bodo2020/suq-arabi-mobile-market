@@ -21,18 +21,18 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, onClick, isActive
     <Link 
       to={`/category/${category.id}`}
       onClick={handleClick}
-      className={
-        `category-item flex items-center justify-center relative group 
-        rounded-lg bg-green-50 p-2
-        ${isActive ? 'ring-2 ring-primary' : ''}`
-      }
-      style={{minWidth: '180px', minHeight: '180px'}}
+      className={`
+        category-item flex items-center justify-center relative 
+        rounded-2xl bg-[#F2FCE2] p-3
+        ${isActive ? 'ring-2 ring-primary' : ''}
+      `}
+      style={{aspectRatio: '1'}}
     >
-      <div className="h-full w-full rounded-lg flex items-center justify-center">
+      <div className="h-full w-full rounded-2xl flex items-center justify-center p-2">
         <img 
           src={category.image_url} 
           alt={category.name} 
-          className="h-full w-full object-contain rounded-lg"
+          className="h-full w-full object-contain"
         />
       </div>
     </Link>
