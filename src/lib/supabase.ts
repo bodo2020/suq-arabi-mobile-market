@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 
@@ -70,6 +71,7 @@ export type CartItem = {
   quantity: number;
 };
 
+// Updated Address type to match the customer_addresses table structure
 export type Address = {
   id: string;
   user_id: string;
@@ -79,10 +81,8 @@ export type Address = {
   area_id?: string | null;
   neighborhood_id?: string | null;
   is_default: boolean;
-  governorate_name?: string;
-  city_name?: string;
-  area_name?: string;
-  neighborhood_name?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type Order = {
@@ -212,7 +212,7 @@ export async function getStoreInfo() {
 // Function to get addresses for a user
 export async function getAddresses(userId: string) {
   const { data, error } = await supabase
-    .from('addresses')
+    .from('customer_addresses')
     .select('*')
     .eq('user_id', userId);
   

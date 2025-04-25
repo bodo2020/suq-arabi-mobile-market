@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -16,7 +17,7 @@ const Account = () => {
       if (user) {
         try {
           const { data: addresses, error } = await supabase
-            .from('addresses')
+            .from('customer_addresses')
             .select('*')
             .eq('user_id', user.id);
           
