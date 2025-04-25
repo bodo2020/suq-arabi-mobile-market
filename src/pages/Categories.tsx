@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
@@ -16,13 +16,15 @@ const Categories = () => {
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: getCategories,
-    onError: () => {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تحميل الأقسام",
-        variant: "destructive",
-      });
-    },
+    meta: {
+      onError: () => {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ أثناء تحميل الأقسام",
+          variant: "destructive",
+        });
+      }
+    }
   });
 
   const handleSearchFocus = () => {
