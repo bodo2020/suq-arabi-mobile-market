@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -90,7 +89,7 @@ const CategoryDetail = () => {
 
         <div className="sticky top-0 bg-white z-10 mb-4">
           <div className="overflow-x-auto hide-scrollbar">
-            <div className="flex space-x-2 space-x-reverse">
+            <div className="flex space-x-2 space-x-reverse p-2">
               <button
                 onClick={() => handleSubcategorySelect(null)}
                 className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
@@ -135,4 +134,3 @@ const CategoryDetail = () => {
 };
 
 export default CategoryDetail;
-
