@@ -23,7 +23,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, onClick, isActive
       to={`/category/${category.id}`}
       onClick={handleClick}
       className={
-        `category-item flex flex-col items-center relative group pr-0
+        `category-item flex flex-col items-center relative group pr-0 p-1
         ${isActive ? 'ring-2 ring-primary' : ''}`
       }
       style={{minWidth: '140px', minHeight: hideLabel ? '140px' : '170px'}}
