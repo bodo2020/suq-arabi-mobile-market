@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -20,15 +19,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import LocationDisplay from "@/components/ui/LocationDisplay";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { useQuery } from '@tanstack/react-query';
 
 const Index = () => {
-  const [categories, setCategories] = useState<MainCategory[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ area?: string; neighborhood?: string; } | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchBackground, setSearchBackground] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
   const [activeBanner, setActiveBanner] = useState(0);
@@ -36,21 +33,23 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [activeMainCategory, setActiveMainCategory] = useState<MainCategory | null>(null);
-  const [categorySubcategories, setCategorySubcategories] = useState<any[]>([]);
-  const [catLoading, setCatLoading] = useState(false);
+
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+  });
+
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => getProducts(),
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesData, productsData, storeInfoData, bannersData] = await Promise.all([
-          getCategories(),
-          getProducts(),
-          getStoreInfo(),
-          supabase.from('banners').select('*').eq('active', true).order('position')
-        ]);
-        setCategories(categoriesData);
-        setProducts(productsData as Product[]);
+        const storeInfoData = await getStoreInfo();
+        const bannersData = await supabase.from('banners').select('*').eq('active', true).order('position');
+
         setStoreInfo(storeInfoData);
         if (bannersData.data) setBanners(bannersData.data);
 
@@ -62,8 +61,6 @@ const Index = () => {
         if (area || neighborhood) setUserLocation({ area, neighborhood });
       } catch (error) {
         console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
       }
     };
     fetchData();
@@ -107,7 +104,6 @@ const Index = () => {
   };
 
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
-  
   const availableProducts = products.filter(product => product.quantity > 0);
   const featuredProducts = availableProducts.slice(0, isMobile ? 4 : 10);
 
@@ -115,12 +111,7 @@ const Index = () => {
     navigate(`/category/${cat.id}`);
   };
 
-  const handleBackToMainCategories = () => {
-    setActiveMainCategory(null);
-    setCategorySubcategories([]);
-  };
-
-  if (loading) {
+  if (categoriesLoading || productsLoading) {
     return (
       <MainLayout>
         <div className="py-4">
@@ -151,7 +142,7 @@ const Index = () => {
           </div>
         </div>
       </MainLayout>
-    )
+    );
   }
 
   return (

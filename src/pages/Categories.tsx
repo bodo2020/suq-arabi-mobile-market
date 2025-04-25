@@ -1,97 +1,34 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
-import { MainCategory, Subcategory, getCategories, getSubcategories, Product, supabase } from '@/lib/supabase';
-import CategoryScrollArea from '@/components/ui/CategoryScrollArea';
+import { MainCategory, getCategories } from '@/lib/supabase';
 import CategoryItem from '@/components/ui/CategoryItem';
+import CategorySkeleton from '@/components/ui/CategorySkeleton';
 import { useToast } from "@/hooks/use-toast";
 import SearchBar from '@/components/ui/SearchBar';
 
 const Categories = () => {
-  const [categories, setCategories] = useState<MainCategory[]>([]);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<MainCategory | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [storeInfo, setStoreInfo] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSearchFocus = () => {
-    navigate('/search');
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const categoriesData = await getCategories();
-      setCategories(categoriesData);
-      
-      if (categoriesData.length > 0) {
-        setSelectedCategory(categoriesData[0]);
-      }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    onError: () => {
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء تحميل الأقسام",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSearchFocus = () => {
+    navigate('/search');
   };
 
-  const fetchSubcategories = async (categoryId: string) => {
-    try {
-      const subcategoriesData = await getSubcategories(categoryId);
-      setSubcategories(subcategoriesData);
-    } catch (error) {
-      console.error("Error fetching subcategories:", error);
-    }
-  };
-
-  const fetchStoreInfo = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('store_settings')
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      setStoreInfo(data);
-    } catch (error) {
-      console.error("Error fetching store info:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!categories.length) {
-      fetchCategories();
-      fetchStoreInfo();
-    }
-  }, [categories.length]);
-
-  useEffect(() => {
-    if (selectedCategory) {
-      fetchSubcategories(selectedCategory.id);
-    }
-  }, [selectedCategory]);
-
-  const handleCategoryClick = (category: MainCategory) => {
-    setSelectedCategory(category);
-  };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-[80vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      </MainLayout>
-    );
-  }
-  
   return (
     <MainLayout>
       <div>
@@ -100,12 +37,18 @@ const Categories = () => {
           <SearchBar readOnly onFocus={handleSearchFocus} />
         </div>
         <div className="grid grid-cols-3 gap-3 px-3">
-          {categories.map((category) => (
-            <CategoryItem 
-              key={category.id} 
-              category={category}
-            />
-          ))}
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, index) => (
+              <CategorySkeleton key={index} />
+            ))
+          ) : (
+            categories.map((category) => (
+              <CategoryItem 
+                key={category.id} 
+                category={category}
+              />
+            ))
+          )}
         </div>
       </div>
     </MainLayout>
