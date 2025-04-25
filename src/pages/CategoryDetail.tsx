@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -90,7 +89,7 @@ const CategoryDetail = () => {
         </div>
 
         <div className="sticky top-0 bg-white z-10 mb-4">
-          <ScrollArea className="w-full" orientation="horizontal">
+          <ScrollArea className="w-full">
             <div className="flex space-x-2 space-x-reverse p-2 min-w-max">
               <button
                 onClick={() => handleSubcategorySelect(null)}
