@@ -100,12 +100,12 @@ const Categories = () => {
         <div className="mb-4">
           <SearchBar readOnly onFocus={handleSearchFocus} />
         </div>
-        <div className="grid grid-cols-3 gap-3 px-2">
+        <div className="grid grid-cols-3 gap-4 px-4">
           {categories.map((category) => (
             <CategoryItem 
               key={category.id} 
               category={category}
-              hideLabel={true}
+              hideLabel={false}
             />
           ))}
         </div>
@@ -115,3 +115,4 @@ const Categories = () => {
 };
 
 export default Categories;
+
