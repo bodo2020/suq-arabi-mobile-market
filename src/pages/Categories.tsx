@@ -87,54 +87,15 @@ const Categories = () => {
       <div className="container pb-8">
         <h1 className="text-2xl font-bold mb-4">الأقسام</h1>
         
-        <div className="mb-4">
-          <CategoryScrollArea>
-            {categories.map((category) => (
-              <div 
-                key={category.id} 
-                onClick={() => handleCategoryClick(category)}
-                className={`cursor-pointer px-2 ${selectedCategory?.id === category.id ? 'scale-105' : 'opacity-75'}`}
-              >
-                <CategoryItem 
-                  category={category} 
-                  isActive={selectedCategory?.id === category.id}
-                />
-              </div>
-            ))}
-          </CategoryScrollArea>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+          {categories.map((category) => (
+            <CategoryItem 
+              key={category.id} 
+              category={category}
+              hideLabel={true}
+            />
+          ))}
         </div>
-
-        {selectedCategory && (
-          <div className="mb-6">
-            <h2 className="text-xl font-bold mb-3">
-              {selectedCategory.name}
-            </h2>
-            {subcategories.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {subcategories.map((subcategory) => (
-                  <Link 
-                    to={`/category/${subcategory.id}`} 
-                    key={subcategory.id}
-                    className="bg-white rounded-lg p-4 shadow hover:shadow-md transition-all"
-                  >
-                    <div className="aspect-square relative mb-2">
-                      <img 
-                        src={subcategory.image_url || '/placeholder.svg'} 
-                        alt={subcategory.name}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <h3 className="text-center font-medium text-sm">{subcategory.name}</h3>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                لا توجد أقسام فرعية في هذا القسم
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </MainLayout>
   );

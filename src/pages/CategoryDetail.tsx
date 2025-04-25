@@ -1,38 +1,22 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
-import CategoryItem from '@/components/ui/CategoryItem';
-import { 
-  MainCategory,
-  Subcategory, 
-  Product, 
-  getProducts, 
-  getCategories,
-  getSubcategories
-} from '@/lib/supabase';
-
-interface CategoryInfo {
-  id: string;
-  name: string;
-  image_url?: string;
-  description?: string;
-}
+import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 
 const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const productsRef = useRef<HTMLDivElement>(null);
   
-  const [categoryInfo, setCategoryInfo] = useState<CategoryInfo | null>(null);
+  const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categoryType, setCategoryType] = useState<'main' | 'sub'>('main');
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [mainCategoryName, setMainCategoryName] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,53 +26,17 @@ const CategoryDetail = () => {
         
         const [categoriesData, subcategoriesData] = await Promise.all([
           getCategories(),
-          getSubcategories()
+          getSubcategories(id)
         ]);
         
-        // Check if it's a main category
-        let categoryData = categoriesData.find(cat => cat.id === id);
+        const categoryData = categoriesData.find(cat => cat.id === id);
         if (categoryData) {
-          setCategoryInfo({
-            id: categoryData.id,
-            name: categoryData.name,
-            image_url: categoryData.image_url,
-            description: categoryData.description
-          });
-          setMainCategoryName(categoryData.name);
-          setCategoryType('main');
+          setCategoryInfo(categoryData);
+          setSubcategories(subcategoriesData);
           
-          // Get subcategories for this main category
-          const categorySubcategories = subcategoriesData.filter(subcat => subcat.category_id === id);
-          setSubcategories(categorySubcategories);
-          
-          // Fetch all products for this category
           const productsData = await getProducts(id, false);
-          setAllProducts(productsData as Product[]);
-          setProducts(productsData as Product[]);
-          
-        } else {
-          // Check if it's a subcategory
-          const subcategoryData = subcategoriesData.find(subcat => subcat.id === id);
-          if (subcategoryData) {
-            setCategoryInfo({
-              id: subcategoryData.id,
-              name: subcategoryData.name,
-              image_url: subcategoryData.image_url,
-              description: subcategoryData.description
-            });
-            setCategoryType('sub');
-            
-            // Find main category name
-            const mainCat = categoriesData.find(cat => cat.id === subcategoryData.category_id);
-            if (mainCat) {
-              setMainCategoryName(mainCat.name);
-            }
-            
-            // Fetch all products for this subcategory
-            const productsData = await getProducts(id, true);
-            setAllProducts(productsData as Product[]);
-            setProducts(productsData as Product[]);
-          }
+          setAllProducts(productsData);
+          setProducts(productsData);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -100,61 +48,50 @@ const CategoryDetail = () => {
     fetchData();
   }, [id]);
 
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  const handleSubcategorySelect = (subcatId: string | null) => {
+  const handleSubcategorySelect = async (subcatId: string | null) => {
     setSelectedSubcategory(subcatId);
     
     if (!subcatId) {
-      // "All Products" was selected
       setProducts(allProducts);
     } else {
-      // Fetch products specific to this subcategory
-      getProducts(subcatId, true).then(data => {
-        setProducts(data as Product[]);
-      }).catch(error => {
-        console.error('Error fetching subcategory products:', error);
-      });
+      const subcategoryProducts = await getProducts(subcatId, true);
+      setProducts(subcategoryProducts);
+    }
+
+    // Smooth scroll to products after data is loaded
+    if (productsRef.current) {
+      setTimeout(() => {
+        productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     }
   };
 
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
-      <div className="py-4">
-        {/* Header with back button */}
+      <div className="container py-4">
         <div className="flex items-center mb-4">
-          <button
-            onClick={handleBack}
-            className="p-2"
-            aria-label="الرجوع"
-          >
+          <button onClick={() => navigate(-1)} className="p-2">
             <ArrowRight size={24} />
           </button>
           <h1 className="text-xl font-bold flex-1 text-center">
-            {loading ? 'جاري التحميل...' : categoryInfo?.name}
+            {categoryInfo?.name}
           </h1>
           <div className="w-10"></div>
         </div>
 
-        {/* Show subcategories as grid if main category */}
-        {!loading && categoryType === 'main' && subcategories.length > 0 && (
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
-            {subcategories.map(subcat => (
-              <CategoryItem
-                key={subcat.id}
-                category={subcat}
-                onClick={() => navigate(`/category/${subcat.id}`)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Subcategories as chips */}
-        {!loading && categoryType === 'main' && subcategories.length > 0 && (
-          <div className="mb-4 overflow-x-auto hide-scrollbar">
-            <div className="flex space-x-2 space-x-reverse pb-2">
+        <div className="sticky top-0 bg-white z-10 pb-4 mb-4">
+          <div className="overflow-x-auto hide-scrollbar">
+            <div className="flex space-x-2 space-x-reverse">
               <button
                 onClick={() => handleSubcategorySelect(null)}
                 className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
@@ -180,29 +117,17 @@ const CategoryDetail = () => {
               ))}
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Products Grid */}
-        {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12">
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
-              <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-              <path d="m22 7-7.1 3.78c-.57.3-1.23.3-1.8 0L6 7"></path>
-              <path d="M14 14v4"></path>
-              <path d="M10 14v4"></path>
-            </svg>
-            <h3 className="text-lg font-medium text-gray-500 mb-1">لا توجد منتجات</h3>
-            <p className="text-sm text-gray-400">لا توجد منتجات في هذا القسم حالياً</p>
+        <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+
+        {products.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            لا توجد منتجات في هذا القسم
           </div>
         )}
       </div>
