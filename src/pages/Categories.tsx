@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -6,6 +5,7 @@ import { MainCategory, Subcategory, getCategories, getSubcategories, Product, su
 import CategoryScrollArea from '@/components/ui/CategoryScrollArea';
 import CategoryItem from '@/components/ui/CategoryItem';
 import { useToast } from "@/hooks/use-toast";
+import SearchBar from '@/components/ui/SearchBar';
 
 const Categories = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
@@ -61,9 +61,11 @@ const Categories = () => {
   };
 
   useEffect(() => {
-    fetchCategories();
-    fetchStoreInfo();
-  }, []);
+    if (!categories.length) {
+      fetchCategories();
+      fetchStoreInfo();
+    }
+  }, [categories.length]);
 
   useEffect(() => {
     if (selectedCategory) {
@@ -87,9 +89,11 @@ const Categories = () => {
   
   return (
     <MainLayout>
-      <div className="pt-2">
-        <h1 className="text-2xl font-bold mb-4">الأقسام</h1>
-        
+      <div>
+        <h1 className="text-2xl font-bold text-center mb-4">الأقسام</h1>
+        <div className="mb-4">
+          <SearchBar />
+        </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
           {categories.map((category) => (
             <CategoryItem 

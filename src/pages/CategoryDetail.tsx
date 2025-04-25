@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -20,10 +19,9 @@ const CategoryDetail = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!id || products.length > 0) return; // Skip if we already have products
+      setLoading(true);
       try {
-        if (!id) return;
-        setLoading(true);
-        
         const [categoriesData, subcategoriesData] = await Promise.all([
           getCategories(),
           getSubcategories(id)
@@ -46,7 +44,7 @@ const CategoryDetail = () => {
     };
 
     fetchData();
-  }, [id]);
+  }, [id, products.length]);
 
   const handleSubcategorySelect = async (subcatId: string | null) => {
     setSelectedSubcategory(subcatId);
