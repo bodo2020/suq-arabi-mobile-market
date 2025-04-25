@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from "@/components/ui/button"
-import { ArrowRight, User, MapPin, ListChecks } from 'lucide-react';
+import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft } from 'lucide-react';
 import { Address, getAddresses } from '@/lib/supabase';
+import { Separator } from "@/components/ui/separator";
 
 const Account = () => {
   const { user, signOut } = useUser();
@@ -51,64 +53,86 @@ const Account = () => {
   return (
     <MainLayout>
       <div className="container py-8">
-        <h1 className="text-2xl font-bold mb-4">حسابي</h1>
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">حسابي</h1>
 
-        {user ? (
-          <>
-            <div className="bg-white rounded-lg shadow p-6 mb-4">
-              <div className="flex items-center mb-2">
-                <User className="mr-2 h-5 w-5 text-gray-500" />
-                <h2 className="text-lg font-semibold">معلومات المستخدم</h2>
+          {user ? (
+            <div className="space-y-6">
+              {/* User Info Card */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <User className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="mr-4">
+                    <h2 className="font-semibold">{user.email}</h2>
+                    <p className="text-sm text-gray-500">مرحباً بك في ماركت المعداوي</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/account/edit')}>
+                  تعديل البيانات الشخصية
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                </Button>
               </div>
-              <p><strong>اسم المستخدم:</strong> {user.email}</p>
-            </div>
 
-            <div className="bg-white rounded-lg shadow p-6 mb-4">
-              <div className="flex items-center mb-2">
-                <MapPin className="mr-2 h-5 w-5 text-gray-500" />
-                <h2 className="text-lg font-semibold">عنوان التوصيل الافتراضي</h2>
+              {/* Quick Links */}
+              <div className="grid grid-cols-2 gap-4">
+                <Link to="/favorites" className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-center justify-center hover:shadow-md transition-shadow">
+                  <Heart className="h-6 w-6 text-primary mb-2" />
+                  <span className="text-sm font-medium">المفضلة</span>
+                </Link>
+                <Link to="/orders" className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-center justify-center hover:shadow-md transition-shadow">
+                  <ListChecks className="h-6 w-6 text-primary mb-2" />
+                  <span className="text-sm font-medium">الطلبات</span>
+                </Link>
               </div>
-              {address ? (
-                <>
-                  <p>{formatAddressDisplay(address)}</p>
-                  <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/account/addresses')}>
-                    تغيير العنوان
-                    <ArrowRight className="mr-2 h-4 w-4" />
+
+              {/* Address Section */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold flex items-center">
+                    <MapPin className="h-5 w-5 ml-2 text-primary" />
+                    عنوان التوصيل
+                  </h3>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/account/addresses')}>
+                    إدارة العناوين
+                    <ChevronLeft className="mr-2 h-4 w-4" />
                   </Button>
-                </>
-              ) : (
-                <>
-                  <p>لا يوجد عنوان افتراضي. الرجاء إضافة عنوان.</p>
-                  <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/account/addresses')}>
-                    إضافة عنوان
-                    <ArrowRight className="mr-2 h-4 w-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6 mb-4">
-              <div className="flex items-center mb-2">
-                <ListChecks className="mr-2 h-5 w-5 text-gray-500" />
-                <h2 className="text-lg font-semibold">الطلبات</h2>
+                </div>
+                {address ? (
+                  <p className="text-sm text-gray-600">{formatAddressDisplay(address)}</p>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500 mb-3">لا يوجد عنوان محفوظ</p>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/account/addresses')}>
+                      إضافة عنوان جديد
+                    </Button>
+                  </div>
+                )}
               </div>
-              <p>عرض سجل طلباتك السابقة.</p>
-              <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/orders')}>
-                عرض الطلبات
-                <ArrowRight className="mr-2 h-4 w-4" />
+
+              <Separator />
+
+              {/* Logout Button */}
+              <Button 
+                variant="destructive" 
+                onClick={handleSignOut}
+                className="w-full"
+              >
+                تسجيل الخروج
               </Button>
             </div>
-
-            <Button className="w-full" variant="destructive" onClick={handleSignOut}>
-              تسجيل الخروج
-            </Button>
-          </>
-        ) : (
-          <div>
-            <p>الرجاء تسجيل الدخول لعرض معلومات حسابك.</p>
-            <Button onClick={() => navigate('/account/register')}>تسجيل الدخول</Button>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-12">
+              <User className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">مرحباً بك</h2>
+              <p className="text-gray-500 mb-6">قم بتسجيل الدخول للوصول إلى حسابك</p>
+              <Button onClick={() => navigate('/account/register')} size="lg">
+                تسجيل الدخول
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </MainLayout>
   );

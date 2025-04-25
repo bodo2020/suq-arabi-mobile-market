@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Layers, ShoppingCart, User } from 'lucide-react';
+import { Home, Grid2x2, ShoppingCart, User } from 'lucide-react';
 import { useCart } from '@/contexts/useCart';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -49,7 +50,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 to="/categories" 
                 className={`flex items-center space-x-2 space-x-reverse text-sm ${isActive('/categories') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
               >
-                <Layers size={20} />
+                <Grid2x2 size={20} />
                 <span>الأقسام</span>
               </Link>
               <Link 
@@ -90,7 +91,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             to="/categories" 
             className={`bottom-nav-item ${isActive('/categories') ? 'active' : ''}`}
           >
-            <Layers size={24} />
+            <Grid2x2 size={24} />
             <span>الأقسام</span>
           </Link>
 
