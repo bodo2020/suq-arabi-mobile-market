@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 
 const CategoryDetail = () => {
@@ -89,8 +88,8 @@ const CategoryDetail = () => {
         </div>
 
         <div className="sticky top-0 bg-white z-10 mb-4">
-          <ScrollArea className="w-full">
-            <div className="flex space-x-2 space-x-reverse p-2 min-w-max">
+          <div className="overflow-x-auto hide-scrollbar">
+            <div className="flex space-x-2 space-x-reverse p-2">
               <button
                 onClick={() => handleSubcategorySelect(null)}
                 className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
@@ -115,7 +114,7 @@ const CategoryDetail = () => {
                 </button>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
