@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -77,7 +76,7 @@ const CategoryDetail = () => {
 
   return (
     <MainLayout>
-      <div className="container">
+      <div className="container px-0 py-0">
         <div className="flex items-center mb-4">
           <button onClick={() => navigate(-1)} className="p-2">
             <ArrowRight size={24} />
