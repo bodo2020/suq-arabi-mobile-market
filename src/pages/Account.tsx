@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from "@/components/ui/button"
 import { ArrowRight, User, MapPin, ListChecks } from 'lucide-react';
-import { Address, supabase } from '@/lib/supabase';
+import { Address, getAddresses } from '@/lib/supabase';
 
 const Account = () => {
   const { user, signOut } = useUser();
@@ -16,13 +15,7 @@ const Account = () => {
     const fetchAddress = async () => {
       if (user) {
         try {
-          const { data: addresses, error } = await supabase
-            .from('customer_addresses')
-            .select('*')
-            .eq('user_id', user.id);
-          
-          if (error) throw error;
-          
+          const addresses = await getAddresses(user.id);
           const defaultAddress = addresses?.find(addr => addr.is_default);
           setAddress(defaultAddress || null);
         } catch (error) {

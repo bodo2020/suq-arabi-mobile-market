@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 
@@ -72,6 +71,7 @@ export type CartItem = {
 };
 
 // Updated Address type to match the customer_addresses table structure
+// and include display name properties
 export type Address = {
   id: string;
   user_id: string;
@@ -83,6 +83,11 @@ export type Address = {
   is_default: boolean;
   created_at?: string;
   updated_at?: string;
+  // Additional properties for UI display (not in the DB schema)
+  governorate_name?: string;
+  city_name?: string;
+  area_name?: string;
+  neighborhood_name?: string;
 };
 
 export type Order = {
@@ -213,11 +218,27 @@ export async function getStoreInfo() {
 export async function getAddresses(userId: string) {
   const { data, error } = await supabase
     .from('customer_addresses')
-    .select('*')
+    .select(`
+      *,
+      governorates(name),
+      cities(name),
+      areas(name),
+      neighborhoods(name)
+    `)
     .eq('user_id', userId);
   
   if (error) console.error(`Error fetching addresses:`, error);
-  return data || [];
+  
+  // Map the joined data to include the name fields
+  const enhancedAddresses = data?.map(addr => ({
+    ...addr,
+    governorate_name: addr.governorates?.name,
+    city_name: addr.cities?.name,
+    area_name: addr.areas?.name,
+    neighborhood_name: addr.neighborhoods?.name
+  })) || [];
+  
+  return enhancedAddresses;
 }
 
 // Updated function to create or update a customer

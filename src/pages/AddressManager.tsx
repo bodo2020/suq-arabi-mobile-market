@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Plus, Trash2, Home } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase, Address, getAddresses } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
-import { Address } from '@/lib/supabase';
 
 const AddressManager = () => {
   const navigate = useNavigate();
