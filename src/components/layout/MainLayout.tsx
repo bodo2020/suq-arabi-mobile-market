@@ -29,13 +29,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <main className="container mx-auto px-4 md:max-w-6xl hide-scrollbar">
         {!isMobile && (
           <div className="hidden md:flex justify-between items-center py-4 mb-4 border-b">
-            <Link to="/" className="text-xl font-bold flex items-center">
+            <Link to="/" className="text-2xl font-bold flex flex-col items-center">
               <img 
                 src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" 
                 alt="ماركت المعداوي" 
-                className="h-10 w-10 mr-2" 
+                className="h-16 w-16 mb-1" 
               />
-              ماركت المعداوي
+              <span className="text-primary">ماركت المعداوي</span>
             </Link>
             <div className="flex space-x-8 space-x-reverse">
               <Link 

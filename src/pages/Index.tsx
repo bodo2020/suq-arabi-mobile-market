@@ -157,12 +157,13 @@ const Index = () => {
   return (
     <MainLayout>
       <div className="py-4">
-        {storeInfo && <div className="flex justify-center mb-4">
+        {storeInfo && <div className="flex flex-col items-center mb-4">
           <img 
             src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" 
             alt={storeInfo.name} 
-            className="h-12 w-12 object-contain" 
+            className="h-16 w-16 mb-1" 
           />
+          <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
         </div>}
 
         <div className="relative mb-2">
