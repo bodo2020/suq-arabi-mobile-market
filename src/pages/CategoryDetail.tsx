@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -48,13 +47,15 @@ const CategoryDetail = () => {
     fetchData();
   }, [id, products.length]);
 
-  const handleSubcategorySelect = async (subcatId: string | null) => {
+  const handleSubcategorySelect = (subcatId: string | null) => {
     setSelectedSubcategory(subcatId);
     
     if (!subcatId) {
       setProducts(allProducts);
     } else {
-      const subcategoryProducts = await getProducts(subcatId, true);
+      const subcategoryProducts = allProducts.filter(
+        product => product.subcategory_id === subcatId
+      );
       setProducts(subcategoryProducts);
     }
 
@@ -63,25 +64,6 @@ const CategoryDetail = () => {
       setTimeout(() => {
         productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
-    }
-  };
-
-  // Handle horizontal scroll for RTL layout
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({
-        left: -100,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({
-        left: 100,
-        behavior: 'smooth'
-      });
     }
   };
 
@@ -109,49 +91,39 @@ const CategoryDetail = () => {
         </div>
 
         <div className="sticky top-0 z-10 mb-4 bg-white">
-          <div className="flex items-center">
-            <button onClick={scrollLeft} className="px-2 text-[#005931] flex-shrink-0 z-10">
-              ◀
-            </button>
-            <div 
-              ref={scrollContainerRef}
-              className="overflow-x-scroll scrollbar-hide flex-grow" 
-              style={{ 
-                scrollbarWidth: 'none', // Firefox
-                msOverflowStyle: 'none',  // IE
-                WebkitOverflowScrolling: 'touch',
-                direction: 'rtl'
-              }}
-            >
-              <div className="flex gap-2 p-2 whitespace-nowrap min-w-max">
+          <div 
+            className="overflow-x-auto scrollbar-hide" 
+            style={{ 
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            <div className="flex gap-2 p-2 whitespace-nowrap min-w-max">
+              <button
+                onClick={() => handleSubcategorySelect(null)}
+                className={`px-4 py-2 rounded-full text-sm ${
+                  selectedSubcategory === null 
+                    ? 'bg-[#d3ffb3] text-[#005931]' 
+                    : 'bg-transparent border border-[#005931] text-[#005931]'
+                }`}
+              >
+                جميع المنتجات
+              </button>
+              {subcategories.map(subcat => (
                 <button
-                  onClick={() => handleSubcategorySelect(null)}
+                  key={subcat.id}
+                  onClick={() => handleSubcategorySelect(subcat.id)}
                   className={`px-4 py-2 rounded-full text-sm ${
-                    selectedSubcategory === null 
+                    selectedSubcategory === subcat.id 
                       ? 'bg-[#d3ffb3] text-[#005931]' 
                       : 'bg-transparent border border-[#005931] text-[#005931]'
                   }`}
                 >
-                  جميع المنتجات
+                  {subcat.name}
                 </button>
-                {subcategories.map(subcat => (
-                  <button
-                    key={subcat.id}
-                    onClick={() => handleSubcategorySelect(subcat.id)}
-                    className={`px-4 py-2 rounded-full text-sm ${
-                      selectedSubcategory === subcat.id 
-                        ? 'bg-[#d3ffb3] text-[#005931]' 
-                        : 'bg-transparent border border-[#005931] text-[#005931]'
-                    }`}
-                  >
-                    {subcat.name}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
-            <button onClick={scrollRight} className="px-2 text-[#005931] flex-shrink-0 z-10">
-              ▶
-            </button>
           </div>
         </div>
 
