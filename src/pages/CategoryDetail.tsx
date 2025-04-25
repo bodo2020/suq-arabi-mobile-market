@@ -87,15 +87,15 @@ const CategoryDetail = () => {
           <div className="w-10"></div>
         </div>
 
-        <div className="sticky top-0 bg-white z-10 mb-4">
-          <div className="overflow-x-auto hide-scrollbar">
-            <div className="flex space-x-2 space-x-reverse p-2">
+        <div className="sticky top-0 z-10 mb-4">
+          <div className="overflow-x-auto no-scrollbar">
+            <div className="flex gap-2 p-2 whitespace-nowrap">
               <button
                 onClick={() => handleSubcategorySelect(null)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                className={`px-4 py-2 rounded-full text-sm ${
                   selectedSubcategory === null 
                     ? 'bg-[#d3ffb3] text-[#005931]' 
-                    : 'bg-[#e4edea] text-[#005931]'
+                    : 'bg-transparent border border-[#005931] text-[#005931]'
                 }`}
               >
                 جميع المنتجات
@@ -104,10 +104,10 @@ const CategoryDetail = () => {
                 <button
                   key={subcat.id}
                   onClick={() => handleSubcategorySelect(subcat.id)}
-                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                  className={`px-4 py-2 rounded-full text-sm ${
                     selectedSubcategory === subcat.id 
                       ? 'bg-[#d3ffb3] text-[#005931]' 
-                      : 'bg-[#e4edea] text-[#005931]'
+                      : 'bg-transparent border border-[#005931] text-[#005931]'
                   }`}
                 >
                   {subcat.name}
