@@ -1,9 +1,11 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -87,14 +89,14 @@ const CategoryDetail = () => {
           <div className="w-10"></div>
         </div>
 
-        <div className="sticky top-0 bg-white z-10 mb-4">
-          <div className="overflow-x-auto hide-scrollbar">
-            <div className="flex space-x-2 space-x-reverse">
+        <div className="sticky top-0 bg-white z-10 mb-4 px-3">
+          <ScrollArea className="w-full whitespace-nowrap pb-2">
+            <div className="flex gap-2">
               <button
                 onClick={() => handleSubcategorySelect(null)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
+                className={`px-4 py-2 rounded-full text-sm ${
                   selectedSubcategory === null 
-                    ? 'bg-primary text-white' 
+                    ? 'bg-[#E5FE43] text-black' 
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
@@ -106,7 +108,7 @@ const CategoryDetail = () => {
                   onClick={() => handleSubcategorySelect(subcat.id)}
                   className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
                     selectedSubcategory === subcat.id 
-                      ? 'bg-primary text-white' 
+                      ? 'bg-[#E5FE43] text-black' 
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
@@ -114,10 +116,10 @@ const CategoryDetail = () => {
                 </button>
               ))}
             </div>
-          </div>
+          </ScrollArea>
         </div>
 
-        <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 px-3">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
