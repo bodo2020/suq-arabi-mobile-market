@@ -46,7 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`flex items-center gap-2 px-4 py-3 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-100 relative ${backgroundImage ? 'bg-cover bg-center' : ''}`}
+      className={`flex items-center gap-2 px-4 py-3 bg-white/50 backdrop-blur-sm rounded-lg shadow-sm border border-gray-100 relative ${backgroundImage ? 'bg-cover bg-center' : ''}`}
       style={backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {}}
     >
       <Search className="w-5 h-5 text-gray-400" />
