@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { MainCategory, Subcategory, getCategories, getSubcategories, Product, supabase } from '@/lib/supabase';
 import CategoryScrollArea from '@/components/ui/CategoryScrollArea';
@@ -14,6 +14,11 @@ const Categories = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleSearchFocus = () => {
+    navigate('/search');
+  };
 
   const fetchCategories = async () => {
     try {
@@ -92,7 +97,7 @@ const Categories = () => {
       <div>
         <h1 className="text-2xl font-bold text-center mb-4">الأقسام</h1>
         <div className="mb-4">
-          <SearchBar />
+          <SearchBar readOnly onFocus={handleSearchFocus} />
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
           {categories.map((category) => (

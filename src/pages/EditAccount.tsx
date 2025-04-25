@@ -135,7 +135,7 @@ const EditAccount = () => {
         
         <div className="bg-white rounded-lg p-4 mb-4">
           <div className="flex justify-between items-center mb-3">
-            <Link to="/account/address" className="text-primary text-sm flex items-center">
+            <Link to="/account/addresses" className="text-primary text-sm flex items-center">
               إدارة العناوين
               <ChevronLeft size={16} />
             </Link>

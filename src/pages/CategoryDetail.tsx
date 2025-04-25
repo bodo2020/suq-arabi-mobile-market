@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -19,7 +20,7 @@ const CategoryDetail = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!id || products.length > 0) return; // Skip if we already have products
+      if (!id || products.length > 0) return;
       setLoading(true);
       try {
         const [categoriesData, subcategoriesData] = await Promise.all([
@@ -76,7 +77,7 @@ const CategoryDetail = () => {
 
   return (
     <MainLayout>
-      <div className="container py-4">
+      <div className="container">
         <div className="flex items-center mb-4">
           <button onClick={() => navigate(-1)} className="p-2">
             <ArrowRight size={24} />
@@ -87,7 +88,7 @@ const CategoryDetail = () => {
           <div className="w-10"></div>
         </div>
 
-        <div className="sticky top-0 bg-white z-10 pb-4 mb-4">
+        <div className="sticky top-0 bg-white z-10 mb-4">
           <div className="overflow-x-auto hide-scrollbar">
             <div className="flex space-x-2 space-x-reverse">
               <button
