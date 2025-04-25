@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -94,8 +95,8 @@ const CategoryDetail = () => {
                 onClick={() => handleSubcategorySelect(null)}
                 className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
                   selectedSubcategory === null 
-                    ? 'bg-primary text-white' 
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-[#d3ffb3] text-[#005931]' 
+                    : 'bg-[#e4edea] text-[#005931]'
                 }`}
               >
                 جميع المنتجات
@@ -106,8 +107,8 @@ const CategoryDetail = () => {
                   onClick={() => handleSubcategorySelect(subcat.id)}
                   className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
                     selectedSubcategory === subcat.id 
-                      ? 'bg-primary text-white' 
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-[#d3ffb3] text-[#005931]' 
+                      : 'bg-[#e4edea] text-[#005931]'
                   }`}
                 >
                   {subcat.name}
@@ -134,3 +135,4 @@ const CategoryDetail = () => {
 };
 
 export default CategoryDetail;
+
