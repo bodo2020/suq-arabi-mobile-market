@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -157,7 +158,11 @@ const Index = () => {
     <MainLayout>
       <div className="py-4">
         {storeInfo && <div className="flex justify-center mb-4">
-          <img src={storeInfo.logo_url} alt={storeInfo.name} className="h-12 object-contain" />
+          <img 
+            src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" 
+            alt={storeInfo.name} 
+            className="h-12 w-12 object-contain" 
+          />
         </div>}
 
         <div className="relative mb-2">

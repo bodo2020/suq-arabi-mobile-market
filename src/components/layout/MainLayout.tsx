@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Layers, ShoppingCart, User } from 'lucide-react';
@@ -30,8 +29,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <main className="container mx-auto px-4 md:max-w-6xl hide-scrollbar">
         {!isMobile && (
           <div className="hidden md:flex justify-between items-center py-4 mb-4 border-b">
-            <Link to="/" className="text-xl font-bold">ماركت المعداوي</Link>
-            <div className="flex space-x-8 space-x-reverse"> {/* Added space-x-reverse for RTL */}
+            <Link to="/" className="text-xl font-bold flex items-center">
+              <img 
+                src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" 
+                alt="ماركت المعداوي" 
+                className="h-10 w-10 mr-2" 
+              />
+              ماركت المعداوي
+            </Link>
+            <div className="flex space-x-8 space-x-reverse">
               <Link 
                 to="/" 
                 className={`flex items-center space-x-2 space-x-reverse text-sm ${isActive('/') ? 'text-primary font-semibold' : 'text-gray-600 hover:text-primary'}`}
