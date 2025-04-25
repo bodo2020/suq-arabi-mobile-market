@@ -96,8 +96,8 @@ const CategoryDetail = () => {
                 onClick={() => handleSubcategorySelect(null)}
                 className={`px-4 py-2 rounded-full text-sm ${
                   selectedSubcategory === null 
-                    ? 'bg-[#E5FE43] text-black' 
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-[#90ff86] text-[#005931]' 
+                    : 'bg-[#e4edea] text-[#005931]'
                 }`}
               >
                 جميع المنتجات
@@ -108,8 +108,8 @@ const CategoryDetail = () => {
                   onClick={() => handleSubcategorySelect(subcat.id)}
                   className={`whitespace-nowrap px-4 py-2 rounded-full text-sm ${
                     selectedSubcategory === subcat.id 
-                      ? 'bg-[#E5FE43] text-black' 
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-[#90ff86] text-[#005931]' 
+                      : 'bg-[#e4edea] text-[#005931]'
                   }`}
                 >
                   {subcat.name}
