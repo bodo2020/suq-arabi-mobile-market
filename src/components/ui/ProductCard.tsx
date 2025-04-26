@@ -31,7 +31,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     return null;
   }
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent, isBulk: boolean = false) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isOutOfStock) {
@@ -42,8 +42,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
         
         addToCart({
           ...product,
-          price: product.price || 0,
-          quantity: quantityToAdd
+          price: isBulk ? product.bulk_price || 0 : product.price || 0,
+          quantity: quantityToAdd,
+          is_bulk: isBulk
         });
         toast({
           title: "تم الإضافة",
@@ -173,58 +174,104 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           <h3 className="font-bold text-sm mb-2 line-clamp-2">{product.name}</h3>
           <div className="mt-auto">
             <div className="flex justify-between mb-2 items-center">
-              <div className="flex flex-col items-end">
-                {displayBulkView ? (
-                  <span className="font-bold">{product.bulk_price} ج.م/وحدة</span>
-                ) : product.barcode_type === 'scale' ? (
-                  <span className="font-bold">{product.price} ج.م/كجم</span>
-                ) : product.offer_price ? (
-                  <>
-                    <span className="text-xs line-through text-gray-400">{product.price} ج.م</span>
-                    <span className="font-bold text-primary">{product.offer_price} ج.م</span>
-                  </>
-                ) : (
-                  <span className="font-bold">{product.price} ج.م</span>
-                )}
-              </div>
+              {displayBulkView ? (
+                <span className="font-bold">{product.bulk_price} ج.م/وحدة</span>
+              ) : product.barcode_type === 'scale' ? (
+                <span className="font-bold">{product.price} ج.م/كجم</span>
+              ) : product.offer_price ? (
+                <>
+                  <span className="text-xs line-through text-gray-400">{product.price} ج.م</span>
+                  <span className="font-bold text-primary">{product.offer_price} ج.م</span>
+                </>
+              ) : (
+                <span className="font-bold">{product.price} ج.م</span>
+              )}
             </div>
 
-            {isOutOfStock ? (
-              <button
-                disabled
-                className="w-full py-2 px-3 bg-gray-200 rounded-lg text-gray-500 flex items-center justify-center text-sm"
-                aria-label="غير متوفر"
-              >
-                <AlertTriangle size={16} className="ml-1" />
-                نفذت الكمية
-              </button>
-            ) : regularCartItem || (!showBulkQuantity && !product.barcode_type) ? (
-              <div className="flex items-center justify-between bg-primary text-white rounded-lg p-1">
-                <button 
-                  onClick={handleDecreaseQuantity} 
-                  className="p-1 hover:bg-primary-foreground/10 rounded"
-                  aria-label="تقليل الكمية"
+            <div className="space-y-2">
+              {isOutOfStock ? (
+                <button
+                  disabled
+                  className="w-full py-2 px-3 bg-gray-200 rounded-lg text-gray-500 flex items-center justify-center text-sm"
+                  aria-label="غير متوفر"
                 >
-                  <Minus size={16} />
+                  <AlertTriangle size={16} className="ml-1" />
+                  نفذت الكمية
                 </button>
-                <span className="mx-2">{regularCartItem?.quantity || 0}</span>
-                <button 
-                  onClick={handleIncreaseQuantity}
-                  className="p-1 hover:bg-primary-foreground/10 rounded"
-                  aria-label="زيادة الكمية"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleAddToCart}
-                className="w-full py-2 px-3 bg-primary text-white rounded-lg flex items-center justify-center text-sm hover:bg-primary/90 transition-colors"
-                aria-label="إضافة إلى السلة"
-              >
-                إضافة للسلة
-              </button>
-            )}
+              ) : (
+                <>
+                  {regularCartItem || (!showBulkQuantity && !product.barcode_type) ? (
+                    <div className="flex items-center justify-between bg-primary text-white rounded-lg p-1">
+                      <button 
+                        onClick={handleDecreaseQuantity} 
+                        className="p-1 hover:bg-primary-foreground/10 rounded"
+                        aria-label="تقليل الكمية"
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="mx-2">{regularCartItem?.quantity || 0}</span>
+                      <button 
+                        onClick={handleIncreaseQuantity}
+                        className="p-1 hover:bg-primary-foreground/10 rounded"
+                        aria-label="زيادة الكمية"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => handleAddToCart(e, false)}
+                      className="w-full py-2 px-3 bg-primary text-white rounded-lg flex items-center justify-center text-sm hover:bg-primary/90 transition-colors"
+                      aria-label="إضافة إلى السلة"
+                    >
+                      إضافة للسلة
+                    </button>
+                  )}
+
+                  {product.bulk_enabled && product.bulk_quantity && !showBulkQuantity && (
+                    bulkCartItem ? (
+                      <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-1">
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDecreaseQuantity(true);
+                          }} 
+                          className="p-1 hover:bg-[#c3ef93]/50 rounded"
+                          aria-label="تقليل الكمية"
+                        >
+                          <Minus size={16} />
+                        </button>
+                        <div className="flex items-center mx-2">
+                          <Package className="w-4 h-4 ml-1" />
+                          <span>{bulkCartItem.quantity}</span>
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleIncreaseQuantity(true);
+                          }}
+                          className="p-1 hover:bg-[#c3ef93]/50 rounded"
+                          aria-label="زيادة الكمية"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => handleAddToCart(e, true)}
+                        className="w-full py-2 px-3 bg-[#d3ffb3] text-[#005931] rounded-lg flex items-center justify-center text-sm hover:bg-[#c3ef93] transition-colors gap-2"
+                        aria-label="إضافة للجملة"
+                      >
+                        <Package className="w-4 h-4" />
+                        جملة ({product.bulk_quantity} قطعة)
+                      </button>
+                    )
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </Link>
