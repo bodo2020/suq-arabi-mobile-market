@@ -58,7 +58,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     if (product.unit_of_measure === 'weight') {
       setShowWeightSelector(true);
     } else {
-      updateQuantity(product.id, quantity + 1);
+      // Make sure we're passing the correct parameters to updateQuantity
+      updateQuantity(product.id, quantity + 1, false);
       toast({
         title: "تم التحديث",
         description: "تم تحديث الكمية",
@@ -70,13 +71,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     e.preventDefault();
     e.stopPropagation();
     if (quantity > 1) {
-      updateQuantity(product.id, quantity - 1);
+      // Make sure we're passing the correct parameters to updateQuantity
+      updateQuantity(product.id, quantity - 1, false);
       toast({
         title: "تم التحديث",
         description: "تم تحديث الكمية",
       });
     } else {
-      updateQuantity(product.id, 0);
+      // Make sure we're passing the correct parameters to updateQuantity
+      updateQuantity(product.id, 0, false);
       toast({
         title: "تم الحذف",
         description: "تم حذف المنتج من السلة",
