@@ -92,8 +92,12 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
           </div>
 
           <div className="flex justify-between items-center text-sm">
-            <span>السعر للقطعة:</span>
-            <span className="font-bold">{currentPrice} ج.م</span>
+            <span>السعر:</span>
+            <span className="font-bold">
+              {saleType === 'bulk' 
+                ? `${product.bulk_price} ج.م (سعر الجملة)` 
+                : `${currentPrice} ج.م ${product.offer_price ? '(عرض)' : ''}`}
+            </span>
           </div>
 
           <div className="flex justify-between items-center text-sm">
