@@ -25,29 +25,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         item.unit_of_measure === product.unit_of_measure
       );
       
-      // حساب الكمية المتوفرة لنفس المنتج من نفس النوع فقط (جملة أو عادي)
-      const sameTypeItems = currentItems.filter(item => 
-        item.product.id === product.id && 
-        item.is_bulk === (product.is_bulk || false) &&
-        item.unit_of_measure === product.unit_of_measure
-      );
-      
-      const totalExistingQuantity = sameTypeItems.reduce((total, item) => {
-        return total + item.quantity;
-      }, 0);
-
-      // حساب الكمية الجديدة التي سيتم إضافتها
-      let newQuantity = product.quantity;
-      
-      // التأكد من أن الكمية المطلوبة متوفرة
-      if (product.quantity + totalExistingQuantity > product.quantity) {
-        newQuantity = Math.max(0, product.quantity - totalExistingQuantity);
-        
-        if (newQuantity <= 0) {
-          return currentItems;
-        }
-      }
-
       // استبعاد المنتج الموجود من القائمة للتحديث لاحقًا
       const otherItems = currentItems.filter(item => 
         !(item.product.id === product.id && 

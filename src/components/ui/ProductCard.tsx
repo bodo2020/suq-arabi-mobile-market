@@ -40,22 +40,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     if (!isOutOfStock) {
       if (product.barcode_type === 'scale') {
         setShowWeightSelector(true);
-      } else if (product.bulk_enabled && product.bulk_quantity && quantity >= product.bulk_quantity) {
+      } else if (product.bulk_enabled && product.bulk_quantity && !showBulkQuantity) {
         setShowBulkModal(true);
       } else {
+        // تحديد الكمية المطلوبة بناء على نوع المنتج (عادي/جملة)
+        const quantityToAdd = 1; // دائمًا نضيف كرتونة واحدة أو منتج واحد
+        
         // إذا كانت صفحة منتجات الجملة والمنتج لديه إعدادات الجملة
         if (showBulkQuantity && product.bulk_enabled && product.bulk_quantity) {
           addToCart({
             ...product,
             price: product.bulk_price || 0,
-            quantity: product.bulk_quantity,
+            quantity: quantityToAdd,
             is_bulk: true
           });
         } else {
           addToCart({
             ...product,
             price: product.price || 0,
-            quantity: 1
+            quantity: quantityToAdd
           });
         }
         toast({
@@ -76,6 +79,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     if (product.unit_of_measure === 'weight') {
       setShowWeightSelector(true);
     } else if (cartItem) {
+      // التحقق من توفر المنتج قبل زيادة الكمية
+      const quantityToAdd = 1; // دائمًا نضيف كرتونة واحدة أو قطعة واحدة
+      
       const totalProductQuantity = items
         .filter(i => i.product.id === product.id)
         .reduce((total, i) => {
@@ -85,9 +91,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           return total + i.quantity;
         }, 0);
       
-      const additionalQuantity = isBulkView ? (product.bulk_quantity || 1) : 1;
+      const additionalUnitsNeeded = isBulkView ? product.bulk_quantity || 1 : 1;
       
-      if ((totalProductQuantity + additionalQuantity) <= product.quantity) {
+      if ((totalProductQuantity + additionalUnitsNeeded) <= product.quantity) {
         updateQuantity(product.id, cartItem.quantity + 1, isBulkView);
         toast({
           title: "تم التحديث",
