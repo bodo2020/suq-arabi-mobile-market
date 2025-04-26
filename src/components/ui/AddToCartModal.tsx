@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { Input } from './input';
@@ -17,8 +17,18 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   
+  // تحديث الكمية عند تغيير نوع البيع
+  useEffect(() => {
+    // إذا كان نوع البيع بالجملة، نضع الكمية الأدنى المطلوبة للجملة، وإلا نضع 1
+    if (saleType === 'bulk' && product.bulk_quantity) {
+      setQuantity(product.bulk_quantity);
+    } else {
+      setQuantity(1);
+    }
+  }, [saleType, product.bulk_quantity]);
+
   const handleAddToCart = () => {
-    // في حالة البيع بالجملة، نستخدم سعر الجملة دائماً، وإلا نستخدم سعر العرض إن وجد أو السعر العادي
+    // في حالة البيع بالجملة، نستخدم سعر الجملة فقط وليس سعر العرض
     const price = saleType === 'bulk' 
       ? product.bulk_price 
       : (product.offer_price || product.price);
@@ -37,7 +47,11 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
   const currentPrice = saleType === 'bulk' 
     ? product.bulk_price 
     : (product.offer_price || product.price);
+  
   const total = (currentPrice || 0) * quantity;
+
+  // الحد الأدنى للكمية بناءً على نوع البيع
+  const minQuantity = saleType === 'bulk' ? (product.bulk_quantity || 1) : 1;
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
@@ -65,11 +79,16 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
             <label className="text-sm font-medium">الكمية</label>
             <Input
               type="number"
-              min="1"
+              min={minQuantity}
               value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              onChange={(e) => setQuantity(parseInt(e.target.value) || minQuantity)}
               className="w-full"
             />
+            {saleType === 'bulk' && product.bulk_quantity && (
+              <p className="text-xs text-gray-500">
+                (الحد الأدنى للجملة: {product.bulk_quantity})
+              </p>
+            )}
           </div>
 
           <div className="flex justify-between items-center text-sm">
