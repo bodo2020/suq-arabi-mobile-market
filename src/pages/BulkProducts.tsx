@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Package, Search } from 'lucide-react';
@@ -25,7 +24,6 @@ const BulkProducts = () => {
           getCategories()
         ]);
         
-        // Filter only products with bulk enabled
         let bulkProducts = allProducts.filter(product => 
           product.bulk_enabled && 
           product.bulk_quantity && 
@@ -33,7 +31,6 @@ const BulkProducts = () => {
           product.quantity >= product.bulk_quantity
         );
 
-        // Filter by search query if exists
         if (searchQuery) {
           bulkProducts = bulkProducts.filter(product => 
             product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -41,7 +38,6 @@ const BulkProducts = () => {
           );
         }
 
-        // Filter by selected category - Fix: Use main_category_id instead of category_id
         if (selectedCategory) {
           bulkProducts = bulkProducts.filter(product => 
             product.main_category_id === selectedCategory
@@ -116,7 +112,10 @@ const BulkProducts = () => {
             {products.map((product) => (
               <ProductCard 
                 key={product.id} 
-                product={product} 
+                product={{
+                  ...product,
+                  price: product.bulk_price || 0
+                }} 
                 hideIfUnavailable={true}
                 showBulkQuantity={true}
               />
