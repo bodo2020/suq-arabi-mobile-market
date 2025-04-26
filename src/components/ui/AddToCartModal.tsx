@@ -18,7 +18,7 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
   const { addToCart } = useCart();
   
   const handleAddToCart = () => {
-    // تحديد السعر بناءً على نوع البيع
+    // تحديد السعر بناءً على نوع البيع (استخدام سعر الجملة مباشرة)
     const price = saleType === 'bulk' ? product.bulk_price : product.price;
     
     // إضافة المنتج للسلة مع تحديد السعر والكمية وما إذا كان بيع بالجملة
@@ -32,7 +32,7 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
     onClose();
   };
 
-  // حساب السعر الإجمالي
+  // حساب السعر الإجمالي باستخدام سعر الجملة إذا تم اختياره
   const currentPrice = saleType === 'bulk' ? product.bulk_price : product.price;
   const total = (currentPrice || 0) * quantity;
 
