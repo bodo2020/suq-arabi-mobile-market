@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
