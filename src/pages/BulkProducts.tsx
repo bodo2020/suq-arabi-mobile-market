@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Package, Search } from 'lucide-react';
@@ -28,7 +29,7 @@ const BulkProducts = () => {
           product.bulk_enabled && 
           product.bulk_quantity && 
           product.bulk_price &&
-          product.quantity >= product.bulk_quantity
+          product.quantity >= (product.bulk_quantity || 1) // Check if we have at least one full bulk unit
         );
 
         if (searchQuery) {

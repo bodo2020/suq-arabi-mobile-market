@@ -17,11 +17,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unit_of_measure?: string;
   }) => {
     setItems(currentItems => {
-      const existingItems = currentItems.filter(item => 
+      const existingItem = currentItems.find(item => 
+        item.product.id === product.id && item.is_bulk === (product.is_bulk || false)
+      );
+      
+      const allProductItems = currentItems.filter(item => 
         item.product.id === product.id
       );
       
-      const totalExistingQuantity = existingItems.reduce((total, item) => {
+      const totalExistingQuantity = allProductItems.reduce((total, item) => {
         if (item.is_bulk) {
           return total + (item.quantity * (item.product.bulk_quantity || 1));
         }
@@ -41,8 +45,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const otherItems = currentItems.filter(item => 
-        !(item.product.id === product.id && item.is_bulk === product.is_bulk)
+        !(item.product.id === product.id && item.is_bulk === (product.is_bulk || false))
       );
+      
+      if (existingItem) {
+        return [
+          ...otherItems,
+          {
+            ...existingItem,
+            quantity: existingItem.quantity + (product.is_bulk ? 1 : newQuantity)
+          }
+        ];
+      }
       
       return [...otherItems, {
         product: {
@@ -76,67 +90,59 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean) => {
     if (quantity <= 0) {
       setItems(currentItems => 
-        currentItems.filter(item => item.product.id !== productId)
+        currentItems.filter(item => 
+          !(item.product.id === productId && item.is_bulk === (is_bulk || false))
+        )
       );
       return;
     }
 
     setItems(currentItems => {
       const allItemsOfProduct = currentItems.filter(item => item.product.id === productId);
-      const otherItems = currentItems.filter(item => item.product.id !== productId);
       
-      if (allItemsOfProduct.length === 0) return currentItems;
-      
-      const product = allItemsOfProduct[0].product;
-      
-      const totalExistingQuantity = allItemsOfProduct.reduce(
-        (total, item) => item.is_bulk ? 
-          total + (item.quantity * (item.product.bulk_quantity || 1)) : 
-          total + item.quantity, 
-        0
+      const targetItem = currentItems.find(item => 
+        item.product.id === productId && item.is_bulk === (is_bulk || false)
       );
       
-      let targetQuantity = is_bulk !== undefined && is_bulk ?
+      const otherItems = currentItems.filter(item => 
+        !(item.product.id === productId && item.is_bulk === (is_bulk || false))
+      );
+      
+      if (allItemsOfProduct.length === 0 || !targetItem) return currentItems;
+      
+      const product = targetItem.product;
+      
+      const otherQuantity = allItemsOfProduct
+        .filter(item => !(item.is_bulk === (is_bulk || false)))
+        .reduce((total, item) => {
+          if (item.is_bulk) {
+            return total + (item.quantity * (item.product.bulk_quantity || 1));
+          }
+          return total + item.quantity;
+        }, 0);
+      
+      let targetQuantity = is_bulk ? 
         quantity * (product.bulk_quantity || 1) : 
         quantity;
       
-      if (targetQuantity > product.quantity) {
-        targetQuantity = product.quantity;
+      const maxAvailable = Math.max(0, product.quantity - otherQuantity);
+      if (targetQuantity > maxAvailable) {
+        targetQuantity = maxAvailable;
       }
       
-      const newItems = [];
+      if (targetQuantity <= 0) {
+        return currentItems;
+      }
       
-      if (product.bulk_quantity && product.bulk_price && product.bulk_enabled) {
-        const bulkUnits = Math.floor(targetQuantity / product.bulk_quantity);
-        const remainingQuantity = targetQuantity % product.bulk_quantity;
-        
-        if (bulkUnits > 0) {
-          newItems.push({
-            product,
-            quantity: bulkUnits,
-            is_bulk: true,
-            unit_of_measure: product.unit_of_measure
-          });
-        }
-        
-        if (remainingQuantity > 0) {
-          newItems.push({
-            product,
-            quantity: remainingQuantity,
-            is_bulk: false,
-            unit_of_measure: product.unit_of_measure
-          });
-        }
-      } else {
-        newItems.push({
+      return [
+        ...otherItems,
+        {
           product,
-          quantity: targetQuantity,
-          is_bulk: false,
-          unit_of_measure: product.unit_of_measure
-        });
-      }
-      
-      return [...otherItems, ...newItems];
+          quantity: is_bulk ? quantity : targetQuantity,
+          is_bulk: is_bulk || false,
+          unit_of_measure: targetItem.unit_of_measure
+        }
+      ];
     });
   }, []);
 
