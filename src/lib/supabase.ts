@@ -22,7 +22,9 @@ export type Product = {
   bulk_quantity?: number;
   bulk_price?: number;
   unit_of_measure?: string;
-  is_weight_based?: boolean;
+  barcode_type?: string;
+  barcode?: string;
+  bulk_barcode?: string;
 };
 
 // Updated Category type to match the main_categories table
