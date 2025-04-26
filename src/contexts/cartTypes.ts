@@ -9,7 +9,7 @@ export type CartContextType = {
   items: CartItem[];
   addToCart: (product: Product & { price: number; quantity: number; is_bulk?: boolean }) => void;
   removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  updateQuantity: (productId: string, quantity: number, is_bulk?: boolean) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
