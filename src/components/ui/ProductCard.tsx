@@ -1,13 +1,12 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import FavoriteButton from './FavoriteButton';
 import AddToCartModal from './AddToCartModal';
-import WeightSelector from './WeightSelector';
 
 interface ProductCardProps {
   product: Product;
@@ -18,7 +17,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const { items, updateQuantity, addToCart } = useCart();
   const { toast } = useToast();
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [showWeightSelector, setShowWeightSelector] = useState(false);
+  const navigate = useNavigate();
 
   const cartItem = items.find(item => item.product.id === product.id);
   const quantity = cartItem?.quantity || 0;
@@ -31,15 +30,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
     if (!isOutOfStock) {
       if (product.unit_of_measure === 'weight') {
-        // المنتجات التي تباع بالوزن تفتح نافذة اختيار الوزن
-        setShowWeightSelector(true);
+        // للمنتجات التي تباع بالوزن، توجيه المستخدم لصفحة المنتج
+        navigate(`/product/${product.id}`);
       } else if (product.bulk_enabled) {
-        // المنتجات التي يمكن بيعها بالجملة تفتح نافذة اختيار نوع البيع
         setShowBulkModal(true);
       } else {
-        // المنتجات العادية تضاف مباشرة للسلة
         addToCart({
           ...product,
           price: product.price || 0,
@@ -109,7 +107,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
             <div className="flex justify-between mb-2 items-center">
               <div className="flex flex-col items-end">
                 {product.unit_of_measure === 'weight' ? (
-                  <span className="font-bold">{product.price} ج.م/كجم</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-gray-500">/كجم</span>
+                    <span className="font-bold">{product.price}</span>
+                    <span className="font-bold">ج.م</span>
+                  </div>
                 ) : product.offer_price ? (
                   <>
                     <span className="text-xs line-through text-gray-400">{product.price} ج.م</span>
@@ -130,24 +132,32 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 <AlertTriangle size={16} className="ml-1" />
                 غير متوفر
               </button>
+            ) : product.unit_of_measure === 'weight' ? (
+              <button
+                onClick={handleAddToCart}
+                className="add-to-cart-btn empty w-full hover-scale"
+                aria-label="تحديد الوزن"
+              >
+                <Scale size={18} />
+                تحديد الوزن
+              </button>
             ) : quantity === 0 ? (
               <button
                 onClick={handleAddToCart}
                 className="add-to-cart-btn empty w-full hover-scale"
                 aria-label="إضافة إلى السلة"
               >
+                <Plus size={18} />
                 إضافة للسلة
               </button>
             ) : (
               <div className="add-to-cart-btn has-items" onClick={(e) => e.preventDefault()}>
                 <div className="flex items-center justify-between w-full">
-                  <button onClick={handleDecreaseQuantity} aria-label="تقليل الكمية">
+                  <button onClick={(e) => handleDecreaseQuantity(e)} aria-label="تقليل الكمية">
                     <Minus size={16} color="white" />
                   </button>
-                  <span className="mx-2 text-white">
-                    {product.unit_of_measure === 'weight' ? `${quantity}g` : quantity}
-                  </span>
-                  <button onClick={handleIncreaseQuantity} aria-label="زيادة الكمية">
+                  <span className="mx-2 text-white">{quantity}</span>
+                  <button onClick={(e) => handleIncreaseQuantity(e)} aria-label="زيادة الكمية">
                     <Plus size={16} color="white" />
                   </button>
                 </div>
@@ -157,16 +167,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
         </div>
       </Link>
 
-      {/* Modals */}
       <AddToCartModal
         product={product}
         isOpen={showBulkModal}
         onClose={() => setShowBulkModal(false)}
-      />
-      <WeightSelector
-        product={product}
-        isOpen={showWeightSelector}
-        onClose={() => setShowWeightSelector(false)}
       />
     </>
   );

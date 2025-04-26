@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog';
 import { Input } from './input';
+import { Button } from './button';
 import { Scale } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
@@ -10,31 +11,33 @@ interface WeightSelectorProps {
   product: Product;
   isOpen: boolean;
   onClose: () => void;
+  onAddToCart?: () => void;
 }
 
-const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
-  const [weight, setWeight] = useState(100);
+const WeightSelector = ({ product, isOpen, onClose, onAddToCart }: WeightSelectorProps) => {
+  const [weight, setWeight] = useState<number>(100);
   const { addToCart } = useCart();
   
   const pricePerKg = product.price || 0;
-  const total = (pricePerKg * weight) / 1000; // تحويل الجرامات إلى كيلوجرام لحساب السعر
+  const total = (pricePerKg * weight) / 1000; // تحويل الوزن من جرام إلى كيلوجرام لحساب السعر
 
   const handleAddToCart = () => {
     addToCart({
       ...product,
-      price: product.price || 0,
-      quantity: weight // تخزين الوزن بالجرام
+      price: total, // السعر المحسوب بناءً على الوزن
+      quantity: weight // الوزن بالجرام
     });
     onClose();
+    if (onAddToCart) onAddToCart();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => onClose()}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle>تحديد الوزن</DialogTitle>
           <DialogDescription>
-            يرجى اختيار الوزن المطلوب بالجرام
+            يرجى تحديد الوزن المطلوب بالجرام
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 p-4">
@@ -56,17 +59,14 @@ const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
             <span className="font-bold">{pricePerKg} ج.م</span>
           </div>
 
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex justify-between items-center text-sm font-bold">
             <span>الإجمالي:</span>
-            <span className="font-bold">{total.toFixed(2)} ج.م</span>
+            <span className="text-primary">{total.toFixed(2)} ج.م</span>
           </div>
 
-          <button
-            onClick={handleAddToCart}
-            className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors"
-          >
+          <Button onClick={handleAddToCart} className="w-full">
             إضافة للسلة
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
