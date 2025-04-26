@@ -99,25 +99,25 @@ const Cart = () => {
 
   const getItemTotal = item => {
     if (item.is_bulk) {
-      return (item.product.bulk_price || 0) * item.quantity * (item.product.bulk_quantity || 1);
+      return (item.product.bulk_price || 0) * item.quantity;
     }
-    
     if (item.unit_of_measure === 'weight') {
       const pricePerKg = item.product.offer_price || item.product.price || 0;
       return pricePerKg * (item.quantity / 1000);
     }
-    
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
 
-  const formatQuantityDisplay = (item) => {
-    if (item.is_bulk) {
-      return `${item.quantity} ${item.product.bulk_quantity ? `(${item.quantity * item.product.bulk_quantity} قطعة)` : ''}`;
-    }
-    if (item.unit_of_measure === 'weight') {
-      return `${(item.quantity / 1000).toFixed(3)} كجم`;
-    }
+  const getBulkDisplayQuantity = item => {
+    if (!item.is_bulk) return null;
     return item.quantity;
+  };
+
+  const formatBulkQuantity = item => {
+    if (!item.is_bulk || !item.product.bulk_quantity) {
+      return `${item.quantity}`;
+    }
+    return `${item.product.bulk_quantity} قطعة`;
   };
 
   return <MainLayout>
@@ -183,23 +183,19 @@ const Cart = () => {
 
                   <div className="flex flex-col items-center mr-3">
                     <div className="flex items-center justify-between bg-gray-100 rounded-lg mb-2">
-                      {item.unit_of_measure === 'weight' ? (
-                        <div onClick={() => handleQuantityClick(item.product.id, item.unit_of_measure)} className="px-4 py-2 cursor-pointer flex items-center gap-2">
+                      {item.unit_of_measure === 'weight' ? <div onClick={() => handleQuantityClick(item.product.id, item.unit_of_measure)} className="px-4 py-2 cursor-pointer flex items-center gap-2">
                           <span className="font-medium">{item.quantity}جم</span>
-                        </div>
-                      ) : (
-                        <>
+                        </div> : <>
                           <button onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)} className="p-1" aria-label="تقليل الكمية">
                             <Minus size={16} />
                           </button>
                           <span className="mx-2 font-medium">
-                            {formatQuantityDisplay(item)}
+                            {item.is_bulk ? `${item.quantity}` : item.quantity}
                           </span>
                           <button onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)} className="p-1" aria-label="زيادة الكمية">
                             <Plus size={16} />
                           </button>
-                        </>
-                      )}
+                        </>}
                     </div>
                     <div className="flex items-center">
                       <button onClick={() => handleRemoveItem(item.product.id, item.is_bulk)} className="text-red-500" aria-label="حذف المنتج">

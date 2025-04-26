@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
@@ -17,12 +18,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unit_of_measure?: string;
   }) => {
     setItems(currentItems => {
+      // تحسين البحث عن المنتجات في السلة مع مراعاة نوع المنتج (جملة/عادي)
       const existingItem = currentItems.find(item => 
         item.product.id === product.id && 
         item.is_bulk === (product.is_bulk || false) && 
         item.unit_of_measure === product.unit_of_measure
       );
       
+      // حساب الكمية المتوفرة لنفس المنتج من نفس النوع فقط (جملة أو عادي)
       const sameTypeItems = currentItems.filter(item => 
         item.product.id === product.id && 
         item.is_bulk === (product.is_bulk || false) &&
@@ -33,8 +36,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return total + item.quantity;
       }, 0);
 
+      // حساب الكمية الجديدة التي سيتم إضافتها
       let newQuantity = product.quantity;
       
+      // التأكد من أن الكمية المطلوبة متوفرة
       if (product.quantity + totalExistingQuantity > product.quantity) {
         newQuantity = Math.max(0, product.quantity - totalExistingQuantity);
         
@@ -43,12 +48,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      // استبعاد المنتج الموجود من القائمة للتحديث لاحقًا
       const otherItems = currentItems.filter(item => 
         !(item.product.id === product.id && 
           item.is_bulk === (product.is_bulk || false) &&
           item.unit_of_measure === product.unit_of_measure)
       );
       
+      // إذا كان المنتج موجود بالفعل، قم بتحديث الكمية
       if (existingItem) {
         return [
           ...otherItems,
@@ -59,6 +66,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ];
       }
       
+      // إذا لم يكن المنتج موجودًا، أضفه كعنصر جديد
       return [...currentItems, {
         product: {
           ...product,
@@ -71,6 +79,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
+  // تحديث دالة removeFromCart لتأخذ في الاعتبار نوع المنتج (عادي/جملة)
   const removeFromCart = useCallback((productId: string, is_bulk?: boolean) => {
     setItems(currentItems => {
       if (is_bulk !== undefined) {
@@ -89,6 +98,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getTotalItems = useCallback(() => {
     return items.reduce((total, item) => {
       if (item.is_bulk) {
+        // For bulk items, multiply quantity by the bulk_quantity for accurate total count
         return total + (item.quantity * (item.product.bulk_quantity || 1));
       }
       return total + item.quantity;
@@ -102,16 +112,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setItems(currentItems => {
+      // أولاً، نجد العنصر المراد تحديثه بناءً على معرف المنتج ونوعه (جملة/عادي)
       const targetItem = currentItems.find(item => 
         item.product.id === productId && item.is_bulk === (is_bulk || false)
       );
       
+      // إذا لم يتم العثور على العنصر، لا نقوم بأي تغيير
       if (!targetItem) return currentItems;
       
+      // نحذف العنصر القديم من القائمة
       const otherItems = currentItems.filter(item => 
         !(item.product.id === productId && item.is_bulk === (is_bulk || false))
       );
       
+      // نضيف العنصر بعد تحديث الكمية
       return [
         ...otherItems,
         {
@@ -125,7 +139,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getTotalPrice = useCallback(() => {
     return items.reduce((total, item) => {
       if (item.is_bulk) {
-        return total + ((item.product.bulk_price || 0) * item.quantity * (item.product.bulk_quantity || 1));
+        return total + (item.product.bulk_price || 0) * item.quantity;
       }
       
       if (item.unit_of_measure === 'weight') {
