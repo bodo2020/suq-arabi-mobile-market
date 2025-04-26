@@ -31,7 +31,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     e.preventDefault();
     e.stopPropagation();
     if (!isOutOfStock) {
-      if (product.unit_of_measure === 'weight') {
+      if (product.barcode_type === 'scale') {
         setShowWeightSelector(true);
       } else if (product.bulk_enabled) {
         setShowBulkModal(true);
@@ -104,7 +104,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           <div className="mt-auto">
             <div className="flex justify-between mb-2 items-center">
               <div className="flex flex-col items-end">
-                {product.unit_of_measure === 'weight' ? (
+                {product.barcode_type === 'scale' ? (
                   <span className="font-bold">{product.price} ج.م/كجم</span>
                 ) : product.offer_price ? (
                   <>

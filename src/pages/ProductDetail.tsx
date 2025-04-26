@@ -140,7 +140,9 @@ const ProductDetail = () => {
             
             <div className="flex items-center justify-between mb-4">
               <div className="space-y-2">
-                {product.offer_price ? (
+                {product.barcode_type === 'scale' ? (
+                  <span className="text-primary font-bold text-lg block">{product.price} ج.م/كجم</span>
+                ) : product.offer_price ? (
                   <>
                     <span className="text-gray-400 line-through block">{product.price} ج.م</span>
                     <span className="text-primary font-bold text-lg block">{product.offer_price} ج.م</span>
@@ -162,28 +164,38 @@ const ProductDetail = () => {
             </div>
 
             <div className="space-y-4 mt-6">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center border rounded-lg">
-                  <button 
-                    onClick={handleDecreaseQuantity}
-                    className="p-2 hover:bg-gray-100"
-                    aria-label="تقليل الكمية"
-                  >
-                    <Minus size={16} />
-                  </button>
-                  <span className="px-4 font-medium">{quantity}</span>
-                  <button 
-                    onClick={handleIncreaseQuantity}
-                    className="p-2 hover:bg-gray-100"
-                    aria-label="زيادة الكمية"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-                <Button onClick={() => handleAddToCart(false)} className="flex-1">
-                  إضافة للسلة
+              {product.barcode_type === 'scale' ? (
+                <Button 
+                  onClick={() => setIsWeightSelectorOpen(true)}
+                  className="w-full flex items-center gap-2"
+                >
+                  <Scale className="w-4 h-4" />
+                  تحديد الوزن
                 </Button>
-              </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center border rounded-lg">
+                    <button 
+                      onClick={handleDecreaseQuantity}
+                      className="p-2 hover:bg-gray-100"
+                      aria-label="تقليل الكمية"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <span className="px-4 font-medium">{quantity}</span>
+                    <button 
+                      onClick={handleIncreaseQuantity}
+                      className="p-2 hover:bg-gray-100"
+                      aria-label="زيادة الكمية"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                  <Button onClick={() => handleAddToCart(false)} className="flex-1">
+                    إضافة للسلة
+                  </Button>
+                </div>
+              )}
 
               {product.bulk_quantity && product.bulk_price && (
                 <Button 
@@ -195,22 +207,11 @@ const ProductDetail = () => {
                   شراء جملة ({product.bulk_quantity} قطعة)
                 </Button>
               )}
-
-              {product.is_weight_based && (
-                <Button 
-                  onClick={() => setIsWeightSelectorOpen(true)}
-                  variant="secondary"
-                  className="w-full flex items-center gap-2"
-                >
-                  <Scale className="w-4 h-4" />
-                  تحديد الوزن
-                </Button>
-              )}
             </div>
           </div>
         </div>
 
-        {product.is_weight_based && (
+        {product.barcode_type === 'scale' && (
           <WeightSelector
             product={product}
             isOpen={isWeightSelectorOpen}
