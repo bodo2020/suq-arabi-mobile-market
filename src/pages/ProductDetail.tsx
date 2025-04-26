@@ -20,8 +20,16 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [isWeightSelectorOpen, setIsWeightSelectorOpen] = useState(false);
-  const { addToCart, items } = useCart();
+  const { addToCart, items, updateQuantity } = useCart();
   const { toast } = useToast();
+
+  // البحث عن المنتج في السلة (جملة وعادي)
+  const regularCartItem = items.find(item => 
+    item.product.id === id && !item.is_bulk
+  );
+  const bulkCartItem = items.find(item => 
+    item.product.id === id && item.is_bulk
+  );
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -75,36 +83,19 @@ const ProductDetail = () => {
       return;
     }
 
-    const existingItems = items.filter(item => item.product.id === product.id);
-    const totalExistingQuantity = existingItems.reduce((total, item) => {
-      if (item.is_bulk) {
-        return total + (item.quantity * (item.product.bulk_quantity || 1));
-      }
-      return total + item.quantity;
-    }, 0);
-    
-    const totalQuantity = totalExistingQuantity + quantity;
+    // تحديد العنصر الموجود بالفعل في السلة
+    const cartItem = isBulk ? bulkCartItem : regularCartItem;
 
-    if (totalQuantity > (product.quantity || 0)) {
+    // إذا كان المنتج موجود بالفعل، قم بتحديث الكمية
+    if (cartItem) {
+      updateQuantity(product.id, cartItem.quantity + quantity, isBulk);
       toast({
-        title: "تنبيه",
-        description: "الكمية المطلوبة غير متوفرة",
-        variant: "destructive"
+        title: "تم التحديث",
+        description: "تم تحديث الكمية في السلة",
       });
       return;
     }
 
-    if (isBulk) {
-      if (!product.bulk_quantity || !product.bulk_enabled || quantity < product.bulk_quantity) {
-        toast({
-          title: "تنبيه",
-          description: `الحد الأدنى للبيع بالجملة هو ${product.bulk_quantity} قطعة`,
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-    
     addToCart({
       ...product,
       price: isBulk ? (product.bulk_price || 0) : (product.price || 0),
@@ -120,26 +111,7 @@ const ProductDetail = () => {
 
   const handleIncreaseQuantity = () => {
     if (!product) return;
-    
-    const existingItems = items.filter(item => item.product.id === product.id);
-    const totalExistingQuantity = existingItems.reduce((total, item) => {
-      if (item.is_bulk) {
-        return total + (item.quantity * (item.product.bulk_quantity || 1));
-      }
-      return total + item.quantity;
-    }, 0);
-    
-    const totalQuantity = totalExistingQuantity + quantity + 1;
-    
-    if (totalQuantity <= (product.quantity || 0)) {
-      setQuantity(prev => prev + 1);
-    } else {
-      toast({
-        title: "تنبيه",
-        description: "الكمية المطلوبة غير متوفرة",
-        variant: "destructive"
-      });
-    }
+    setQuantity(prev => prev + 1);
   };
 
   const handleDecreaseQuantity = () => {
@@ -148,12 +120,46 @@ const ProductDetail = () => {
     }
   };
 
-  // Check if bulk purchase is available
+  // التحقق مما إذا كان البيع بالجملة متاحًا
   const isBulkAvailable = product && 
     product.bulk_enabled && 
     product.bulk_quantity && 
     product.bulk_price &&
     quantity >= product.bulk_quantity;
+
+  // زيادة كمية منتج موجود بالفعل في السلة
+  const handleIncreaseCartQuantity = (isProductBulk: boolean) => {
+    if (!product) return;
+    const item = isProductBulk ? bulkCartItem : regularCartItem;
+    
+    if (item) {
+      updateQuantity(product.id, item.quantity + 1, isProductBulk);
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث الكمية",
+      });
+    }
+  };
+
+  // تقليل كمية منتج موجود بالفعل في السلة
+  const handleDecreaseCartQuantity = (isProductBulk: boolean) => {
+    if (!product) return;
+    const item = isProductBulk ? bulkCartItem : regularCartItem;
+    
+    if (item && item.quantity > 1) {
+      updateQuantity(product.id, item.quantity - 1, isProductBulk);
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث الكمية",
+      });
+    } else if (item) {
+      updateQuantity(product.id, 0, isProductBulk);
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف المنتج من السلة",
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -236,6 +242,24 @@ const ProductDetail = () => {
                   <Scale className="w-4 h-4" />
                   تحديد الوزن
                 </Button>
+              ) : regularCartItem ? (
+                <div className="flex items-center justify-between bg-primary text-white rounded-lg p-2">
+                  <button 
+                    onClick={() => handleDecreaseCartQuantity(false)} 
+                    className="p-2 hover:bg-primary-foreground/10 rounded"
+                    aria-label="تقليل الكمية"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="mx-2">{regularCartItem.quantity}</span>
+                  <button 
+                    onClick={() => handleIncreaseCartQuantity(false)}
+                    className="p-2 hover:bg-primary-foreground/10 rounded"
+                    aria-label="زيادة الكمية"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
               ) : (
                 <div className="flex items-center gap-4">
                   <div className="flex items-center border rounded-lg">
@@ -268,15 +292,38 @@ const ProductDetail = () => {
               )}
 
               {isBulkAvailable && (
-                <Button 
-                  onClick={() => handleAddToCart(true)} 
-                  variant="secondary"
-                  className="w-full flex items-center gap-2 bg-[#d3ffb3] text-[#005931] hover:bg-[#c3ef93]"
-                  disabled={product.quantity < product.bulk_quantity}
-                >
-                  <Package className="w-4 h-4" />
-                  شراء جملة ({product.bulk_quantity} قطعة × {product.bulk_price} ج.م)
-                </Button>
+                bulkCartItem ? (
+                  <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-2 mt-2">
+                    <button 
+                      onClick={() => handleDecreaseCartQuantity(true)} 
+                      className="p-2 hover:bg-[#c3ef93]/50 rounded"
+                      aria-label="تقليل الكمية"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <div className="flex items-center mx-2">
+                      <Package className="w-4 h-4 ml-1" />
+                      <span>{bulkCartItem.quantity}</span>
+                    </div>
+                    <button 
+                      onClick={() => handleIncreaseCartQuantity(true)}
+                      className="p-2 hover:bg-[#c3ef93]/50 rounded"
+                      aria-label="زيادة الكمية"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <Button 
+                    onClick={() => handleAddToCart(true)} 
+                    variant="secondary"
+                    className="w-full flex items-center gap-2 bg-[#d3ffb3] text-[#005931] hover:bg-[#c3ef93]"
+                    disabled={product.quantity < product.bulk_quantity}
+                  >
+                    <Package className="w-4 h-4" />
+                    شراء جملة ({product.bulk_quantity} قطعة × {product.bulk_price} ج.م)
+                  </Button>
+                )
               )}
             </div>
           </div>

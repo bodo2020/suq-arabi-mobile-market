@@ -18,32 +18,29 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unit_of_measure?: string;
   }) => {
     setItems(currentItems => {
-      // تحسين الطريقة التي نبحث بها عن المنتجات في السلة
+      // تحسين البحث عن المنتجات في السلة مع مراعاة نوع المنتج (جملة/عادي)
       const existingItem = currentItems.find(item => 
         item.product.id === product.id && 
         item.is_bulk === (product.is_bulk || false) && 
         item.unit_of_measure === product.unit_of_measure
       );
       
-      // حساب الكمية الإجمالية المتوفرة
-      const allProductItems = currentItems.filter(item => 
-        item.product.id === product.id
+      // حساب الكمية المتوفرة لنفس المنتج من نفس النوع فقط (جملة أو عادي)
+      const sameTypeItems = currentItems.filter(item => 
+        item.product.id === product.id && 
+        item.is_bulk === (product.is_bulk || false) &&
+        item.unit_of_measure === product.unit_of_measure
       );
       
-      const totalExistingQuantity = allProductItems.reduce((total, item) => {
-        if (item.is_bulk) {
-          return total + (item.quantity * (item.product.bulk_quantity || 1));
-        }
+      const totalExistingQuantity = sameTypeItems.reduce((total, item) => {
         return total + item.quantity;
       }, 0);
 
       // حساب الكمية الجديدة التي سيتم إضافتها
-      let newQuantity = product.is_bulk ? 
-        product.bulk_quantity || 1 : // إذا كان جملة، أضف كمية الجملة كاملة
-        1; // إذا كان عادي، أضف واحد
+      let newQuantity = product.quantity;
       
       // التأكد من أن الكمية المطلوبة متوفرة
-      if (totalExistingQuantity + newQuantity > product.quantity) {
+      if (product.quantity + totalExistingQuantity > product.quantity) {
         newQuantity = Math.max(0, product.quantity - totalExistingQuantity);
         
         if (newQuantity <= 0) {
@@ -64,18 +61,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...otherItems,
           {
             ...existingItem,
-            quantity: existingItem.quantity + (product.is_bulk ? 1 : newQuantity)
+            quantity: existingItem.quantity + product.quantity
           }
         ];
       }
       
       // إذا لم يكن المنتج موجودًا، أضفه كعنصر جديد
-      return [...otherItems, {
+      return [...currentItems, {
         product: {
           ...product,
           bulk_quantity: product.bulk_quantity || 1,
         },
-        quantity: product.is_bulk ? 1 : newQuantity,
+        quantity: product.quantity,
         is_bulk: product.is_bulk || false,
         unit_of_measure: product.unit_of_measure
       }];
@@ -109,62 +106,34 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean) => {
     if (quantity <= 0) {
-      setItems(currentItems => 
-        currentItems.filter(item => 
-          !(item.product.id === productId && item.is_bulk === (is_bulk || false))
-        )
-      );
+      removeFromCart(productId, is_bulk);
       return;
     }
 
     setItems(currentItems => {
-      const allItemsOfProduct = currentItems.filter(item => item.product.id === productId);
-      
+      // أولاً، نجد العنصر المراد تحديثه بناءً على معرف المنتج ونوعه (جملة/عادي)
       const targetItem = currentItems.find(item => 
         item.product.id === productId && item.is_bulk === (is_bulk || false)
       );
       
+      // إذا لم يتم العثور على العنصر، لا نقوم بأي تغيير
+      if (!targetItem) return currentItems;
+      
+      // نحذف العنصر القديم من القائمة
       const otherItems = currentItems.filter(item => 
         !(item.product.id === productId && item.is_bulk === (is_bulk || false))
       );
       
-      if (allItemsOfProduct.length === 0 || !targetItem) return currentItems;
-      
-      const product = targetItem.product;
-      
-      const otherQuantity = allItemsOfProduct
-        .filter(item => !(item.is_bulk === (is_bulk || false)))
-        .reduce((total, item) => {
-          if (item.is_bulk) {
-            return total + (item.quantity * (item.product.bulk_quantity || 1));
-          }
-          return total + item.quantity;
-        }, 0);
-      
-      let targetQuantity = is_bulk ? 
-        quantity * (product.bulk_quantity || 1) : 
-        quantity;
-      
-      const maxAvailable = Math.max(0, product.quantity - otherQuantity);
-      if (targetQuantity > maxAvailable) {
-        targetQuantity = maxAvailable;
-      }
-      
-      if (targetQuantity <= 0) {
-        return currentItems;
-      }
-      
+      // نضيف العنصر بعد تحديث الكمية
       return [
         ...otherItems,
         {
-          product,
-          quantity: is_bulk ? quantity : targetQuantity,
-          is_bulk: is_bulk || false,
-          unit_of_measure: targetItem.unit_of_measure
+          ...targetItem,
+          quantity: quantity
         }
       ];
     });
-  }, []);
+  }, [removeFromCart]);
 
   const getTotalPrice = useCallback(() => {
     return items.reduce((total, item) => {
