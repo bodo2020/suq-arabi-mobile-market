@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -6,7 +5,6 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import WeightSelector from '@/components/ui/WeightSelector';
 
 const Cart = () => {
@@ -14,27 +12,36 @@ const Cart = () => {
   const { toast } = useToast();
   const [openWeightSelector, setOpenWeightSelector] = React.useState<string | null>(null);
 
-  const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
-    const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
-    if (item) {
-      if (unit_of_measure === 'weight') {
+  const handleQuantityClick = (productId: string, unit_of_measure?: string) => {
+    if (unit_of_measure === 'weight') {
+      const item = items.find(item => item.product.id === productId);
+      if (item) {
         setOpenWeightSelector(productId);
-      } else if (!item.is_bulk) {
-        updateQuantity(productId, item.quantity + 1, is_bulk);
       }
     }
   };
 
-  const handleDecreaseQuantity = (productId: string, is_bulk: boolean = false) => {
-    const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
-    if (item && !item.is_bulk && item.quantity > 1) {
-      updateQuantity(productId, item.quantity - 1, is_bulk);
-    } else {
-      removeFromCart(productId);
-      toast({
-        title: "تم الحذف",
-        description: "تم حذف المنتج من السلة",
-      });
+  const handleDecreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
+    if (unit_of_measure !== 'weight') {
+      const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
+      if (item && !item.is_bulk && item.quantity > 1) {
+        updateQuantity(productId, item.quantity - 1, is_bulk);
+      } else {
+        removeFromCart(productId);
+        toast({
+          title: "تم الحذف",
+          description: "تم حذف المنتج من السلة",
+        });
+      }
+    }
+  };
+
+  const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
+    if (unit_of_measure !== 'weight') {
+      const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
+      if (item && !item.is_bulk) {
+        updateQuantity(productId, item.quantity + 1, is_bulk);
+      }
     }
   };
 
@@ -66,7 +73,6 @@ const Cart = () => {
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
 
-  // تنسيق عرض الكميه للمنتجات
   const formatQuantity = (item) => {
     if (item.unit_of_measure === 'weight') {
       return `${item.quantity} جرام`;
@@ -154,27 +160,34 @@ const Cart = () => {
                   </div>
 
                   <div className="flex flex-col items-center mr-3">
-                    {!item.is_bulk ? (
+                    {!item.is_bulk && (
                       <div className="flex items-center justify-between bg-gray-100 rounded-lg mb-2">
-                        <button 
-                          onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)}
-                          className="p-1"
-                          aria-label="تقليل الكمية"
-                        >
-                          <Minus size={16} />
-                        </button>
-                        <span className="mx-2 font-medium">{formatQuantity(item)}</span>
-                        <button 
-                          onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk, item.unit_of_measure)}
-                          className="p-1"
-                          aria-label="زيادة الكمية"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="mb-2 font-medium text-sm">
-                        الكمية: 1
+                        {item.unit_of_measure === 'weight' ? (
+                          <div 
+                            onClick={() => handleQuantityClick(item.product.id, item.unit_of_measure)}
+                            className="px-4 py-2 cursor-pointer flex items-center gap-2"
+                          >
+                            <span className="font-medium">{item.quantity}جم</span>
+                          </div>
+                        ) : (
+                          <>
+                            <button 
+                              onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)}
+                              className="p-1"
+                              aria-label="تقليل الكمية"
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className="mx-2 font-medium">{item.quantity}</span>
+                            <button 
+                              onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)}
+                              className="p-1"
+                              aria-label="زيادة الكمية"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
                     <button 

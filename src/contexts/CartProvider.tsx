@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
@@ -89,7 +88,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return total + (item.product.bulk_price || 0);
       }
       
-      let price = item.product.offer_price || item.product.price || 0;
+      const price = item.product.offer_price || item.product.price || 0;
       
       if (item.unit_of_measure === 'weight') {
         // للمنتجات التي تباع بالوزن، نحسب السعر بناءً على الوزن (بالجرام) / 1000 للتحويل إلى كيلوجرام
