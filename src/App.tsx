@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Index from '@/pages/Index';
 import Cart from '@/pages/Cart';
 import Categories from '@/pages/Categories';
@@ -21,7 +22,7 @@ import BannerProducts from '@/pages/BannerProducts';
 import CompanyProducts from '@/pages/CompanyProducts';
 import NotFound from '@/pages/NotFound';
 import { CartProvider } from '@/contexts/CartProvider';
-import { UserProvider } from '@/contexts/UserProvider';
+import { UserContext, UserProvider } from '@/contexts/UserContext';
 import { Toaster } from '@/components/ui/toaster';
 import BulkProducts from '@/pages/BulkProducts';
 
