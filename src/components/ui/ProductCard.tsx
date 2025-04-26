@@ -22,9 +22,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showWeightSelector, setShowWeightSelector] = useState(false);
 
+  // تحديث الطريقة التي نبحث بها عن المنتجات في السلة
   const regularCartItem = items.find(item => item.product.id === product.id && !item.is_bulk);
   const bulkCartItem = items.find(item => item.product.id === product.id && item.is_bulk);
-  const quantity = regularCartItem?.quantity || 0;
+  
+  // استخدام الكمية المناسبة بناءً على نوع العرض
+  const quantity = showBulkQuantity && bulkCartItem ? bulkCartItem.quantity : (regularCartItem?.quantity || 0);
   const isOutOfStock = product.quantity <= 0;
 
   if (hideIfUnavailable && isOutOfStock) {
@@ -39,8 +42,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
         setShowWeightSelector(true);
       } else if (product.bulk_enabled && product.bulk_quantity && quantity >= product.bulk_quantity) {
         setShowBulkModal(true);
-      } else if (quantity < product.quantity) {
-        // If it's a bulk product page and the product has bulk settings
+      } else {
+        // إذا كانت صفحة منتجات الجملة والمنتج لديه إعدادات الجملة
         if (showBulkQuantity && product.bulk_enabled && product.bulk_quantity) {
           addToCart({
             ...product,
@@ -59,6 +62,37 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           title: "تم الإضافة",
           description: "تم إضافة المنتج إلى السلة",
         });
+      }
+    }
+  };
+
+  const handleIncreaseQuantity = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const cartItem = showBulkQuantity && product.bulk_enabled ? bulkCartItem : regularCartItem;
+    const isBulkView = showBulkQuantity && product.bulk_enabled;
+    
+    if (product.unit_of_measure === 'weight') {
+      setShowWeightSelector(true);
+    } else if (cartItem) {
+      const totalProductQuantity = items
+        .filter(i => i.product.id === product.id)
+        .reduce((total, i) => {
+          if (i.is_bulk) {
+            return total + (i.quantity * (i.product.bulk_quantity || 1));
+          }
+          return total + i.quantity;
+        }, 0);
+      
+      const additionalQuantity = isBulkView ? (product.bulk_quantity || 1) : 1;
+      
+      if ((totalProductQuantity + additionalQuantity) <= product.quantity) {
+        updateQuantity(product.id, cartItem.quantity + 1, isBulkView);
+        toast({
+          title: "تم التحديث",
+          description: "تم تحديث الكمية",
+        });
       } else {
         toast({
           title: "تنبيه",
@@ -69,37 +103,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     }
   };
 
-  const handleIncreaseQuantity = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (product.unit_of_measure === 'weight') {
-      setShowWeightSelector(true);
-    } else if (quantity < product.quantity) {
-      updateQuantity(product.id, quantity + 1, false);
-      toast({
-        title: "تم التحديث",
-        description: "تم تحديث الكمية",
-      });
-    } else {
-      toast({
-        title: "تنبيه",
-        description: "الكمية المطلوبة غير متوفرة",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleDecreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (quantity > 1) {
-      updateQuantity(product.id, quantity - 1, false);
+    
+    const cartItem = showBulkQuantity && product.bulk_enabled ? bulkCartItem : regularCartItem;
+    const isBulkView = showBulkQuantity && product.bulk_enabled;
+    
+    if (cartItem && cartItem.quantity > 1) {
+      updateQuantity(product.id, cartItem.quantity - 1, isBulkView);
       toast({
         title: "تم التحديث",
         description: "تم تحديث الكمية",
       });
-    } else {
-      updateQuantity(product.id, 0, false);
+    } else if (cartItem) {
+      // إذا كانت الكمية 1، احذف المنتج
+      updateQuantity(product.id, 0, isBulkView);
       toast({
         title: "تم الحذف",
         description: "تم حذف المنتج من السلة",
@@ -120,6 +139,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   };
 
   const discount = calcDiscount();
+  
+  // تحديد أي وضع عرض يجب استخدامه (عادي أم جملة)
+  const displayBulkView = showBulkQuantity && product.bulk_enabled && product.bulk_quantity;
+  const currentItemInCart = displayBulkView ? bulkCartItem : regularCartItem;
+  const currentQuantity = currentItemInCart?.quantity || 0;
 
   return (
     <>
@@ -134,12 +158,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
             alt={product.name}
             className="absolute top-0 right-0 w-full h-full object-contain"
           />
-          {discount > 0 && (
+          {discount > 0 && !displayBulkView && (
             <div className="absolute left-2 top-2 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full shadow animate-fade-in">
               {discount}% خصم
             </div>
           )}
-          {(showBulkQuantity && product.bulk_enabled && product.bulk_quantity) && (
+          {displayBulkView && (
             <Badge 
               variant="secondary"
               className="absolute bottom-2 right-2 flex items-center gap-1 bg-[#d3ffb3] text-[#005931] border-0"
@@ -163,7 +187,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           <div className="mt-auto">
             <div className="flex justify-between mb-2 items-center">
               <div className="flex flex-col items-end">
-                {product.barcode_type === 'scale' ? (
+                {displayBulkView ? (
+                  <span className="font-bold">{product.bulk_price} ج.م/وحدة</span>
+                ) : product.barcode_type === 'scale' ? (
                   <span className="font-bold">{product.price} ج.م/كجم</span>
                 ) : product.offer_price ? (
                   <>
@@ -185,7 +211,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 <AlertTriangle size={16} className="ml-1" />
                 نفذت الكمية
               </button>
-            ) : quantity === 0 ? (
+            ) : currentQuantity === 0 ? (
               <button
                 onClick={handleAddToCart}
                 className="w-full py-2 px-3 bg-primary text-white rounded-lg flex items-center justify-center text-sm hover:bg-primary/90 transition-colors"
@@ -202,7 +228,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 >
                   <Minus size={16} />
                 </button>
-                <span className="mx-2">{quantity}</span>
+                <span className="mx-2">{currentQuantity}</span>
                 <button 
                   onClick={handleIncreaseQuantity}
                   className="p-1 hover:bg-primary-foreground/10 rounded"

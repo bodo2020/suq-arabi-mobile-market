@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -29,7 +30,7 @@ const Cart = () => {
           if (item.quantity > 1) {
             updateQuantity(productId, item.quantity - 1, is_bulk);
           } else {
-            removeFromCart(productId);
+            removeFromCart(productId, is_bulk);
             toast({
               title: "تم الحذف",
               description: "تم حذف المنتج من السلة",
@@ -38,7 +39,7 @@ const Cart = () => {
         } else if (item.quantity > 1) {
           updateQuantity(productId, item.quantity - 1, is_bulk);
         } else {
-          removeFromCart(productId);
+          removeFromCart(productId, is_bulk);
           toast({
             title: "تم الحذف",
             description: "تم حذف المنتج من السلة",
@@ -74,8 +75,8 @@ const Cart = () => {
     }
   };
 
-  const handleRemoveItem = (productId: string) => {
-    removeFromCart(productId);
+  const handleRemoveItem = (productId: string, is_bulk: boolean = false) => {
+    removeFromCart(productId, is_bulk);
     toast({
       title: "تم الحذف",
       description: "تم حذف المنتج من السلة",
@@ -238,7 +239,7 @@ const Cart = () => {
                     </div>
                     <div className="flex items-center">
                       <button 
-                        onClick={() => handleRemoveItem(item.product.id)}
+                        onClick={() => handleRemoveItem(item.product.id, item.is_bulk)}
                         className="text-red-500"
                         aria-label="حذف المنتج"
                       >

@@ -14,7 +14,7 @@ export type CartContextType = {
     is_bulk?: boolean;
     unit_of_measure?: string;
   }) => void;
-  removeFromCart: (productId: string) => void;
+  removeFromCart: (productId: string, is_bulk?: boolean) => void;
   updateQuantity: (productId: string, quantity: number, is_bulk?: boolean) => void;
   clearCart: () => void;
   getTotalPrice: () => number;

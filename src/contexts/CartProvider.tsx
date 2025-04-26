@@ -18,10 +18,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unit_of_measure?: string;
   }) => {
     setItems(currentItems => {
+      // تحسين الطريقة التي نبحث بها عن المنتجات في السلة
       const existingItem = currentItems.find(item => 
-        item.product.id === product.id && item.is_bulk === (product.is_bulk || false)
+        item.product.id === product.id && 
+        item.is_bulk === (product.is_bulk || false) && 
+        item.unit_of_measure === product.unit_of_measure
       );
       
+      // حساب الكمية الإجمالية المتوفرة
       const allProductItems = currentItems.filter(item => 
         item.product.id === product.id
       );
@@ -33,10 +37,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return total + item.quantity;
       }, 0);
 
+      // حساب الكمية الجديدة التي سيتم إضافتها
       let newQuantity = product.is_bulk ? 
-        product.bulk_quantity || 1 : // If bulk, add full bulk quantity
-        1; // If regular, add one item
+        product.bulk_quantity || 1 : // إذا كان جملة، أضف كمية الجملة كاملة
+        1; // إذا كان عادي، أضف واحد
       
+      // التأكد من أن الكمية المطلوبة متوفرة
       if (totalExistingQuantity + newQuantity > product.quantity) {
         newQuantity = Math.max(0, product.quantity - totalExistingQuantity);
         
@@ -45,10 +51,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      // استبعاد المنتج الموجود من القائمة للتحديث لاحقًا
       const otherItems = currentItems.filter(item => 
-        !(item.product.id === product.id && item.is_bulk === (product.is_bulk || false))
+        !(item.product.id === product.id && 
+          item.is_bulk === (product.is_bulk || false) &&
+          item.unit_of_measure === product.unit_of_measure)
       );
       
+      // إذا كان المنتج موجود بالفعل، قم بتحديث الكمية
       if (existingItem) {
         return [
           ...otherItems,
@@ -59,6 +69,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ];
       }
       
+      // إذا لم يكن المنتج موجودًا، أضفه كعنصر جديد
       return [...otherItems, {
         product: {
           ...product,
@@ -71,8 +82,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const removeFromCart = useCallback((productId: string) => {
-    setItems(currentItems => currentItems.filter(item => item.product.id !== productId));
+  // تحديث دالة removeFromCart لتأخذ في الاعتبار نوع المنتج (عادي/جملة)
+  const removeFromCart = useCallback((productId: string, is_bulk?: boolean) => {
+    setItems(currentItems => {
+      if (is_bulk !== undefined) {
+        return currentItems.filter(item => 
+          !(item.product.id === productId && item.is_bulk === is_bulk)
+        );
+      }
+      return currentItems.filter(item => item.product.id !== productId);
+    });
   }, []);
 
   const clearCart = useCallback(() => {
