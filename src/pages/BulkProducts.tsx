@@ -41,10 +41,10 @@ const BulkProducts = () => {
           );
         }
 
-        // Filter by selected category
+        // Filter by selected category - Fix: Use main_category_id instead of category_id
         if (selectedCategory) {
           bulkProducts = bulkProducts.filter(product => 
-            product.category_id === selectedCategory
+            product.main_category_id === selectedCategory
           );
         }
         
