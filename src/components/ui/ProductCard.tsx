@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
@@ -22,11 +21,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showWeightSelector, setShowWeightSelector] = useState(false);
 
-  // تحديث الطريقة التي نبحث بها عن المنتجات في السلة
   const regularCartItem = items.find(item => item.product.id === product.id && !item.is_bulk);
   const bulkCartItem = items.find(item => item.product.id === product.id && item.is_bulk);
   
-  // استخدام الكمية المناسبة بناءً على نوع العرض
   const quantity = showBulkQuantity && bulkCartItem ? bulkCartItem.quantity : (regularCartItem?.quantity || 0);
   const isOutOfStock = product.quantity <= 0;
 
@@ -43,10 +40,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
       } else if (product.bulk_enabled && product.bulk_quantity && !showBulkQuantity) {
         setShowBulkModal(true);
       } else {
-        // تحديد الكمية المطلوبة بناء على نوع المنتج (عادي/جملة)
-        const quantityToAdd = 1; // دائمًا نضيف كرتونة واحدة أو منتج واحد
+        const quantityToAdd = 1;
         
-        // إذا كانت صفحة منتجات الجملة والمنتج لديه إعدادات الجملة
         if (showBulkQuantity && product.bulk_enabled && product.bulk_quantity) {
           addToCart({
             ...product,
@@ -79,8 +74,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     if (product.unit_of_measure === 'weight') {
       setShowWeightSelector(true);
     } else if (cartItem) {
-      // التحقق من توفر المنتج قبل زيادة الكمية
-      const quantityToAdd = 1; // دائمًا نضيف كرتونة واحدة أو قطعة واحدة
+      const quantityToAdd = 1;
       
       const totalProductQuantity = items
         .filter(i => i.product.id === product.id)
@@ -123,7 +117,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
         description: "تم تحديث الكمية",
       });
     } else if (cartItem) {
-      // إذا كانت الكمية 1، احذف المنتج
       updateQuantity(product.id, 0, isBulkView);
       toast({
         title: "تم الحذف",
@@ -146,7 +139,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
 
   const discount = calcDiscount();
   
-  // تحديد أي وضع عرض يجب استخدامه (عادي أم جملة)
   const displayBulkView = showBulkQuantity && product.bulk_enabled && product.bulk_quantity;
   const currentItemInCart = displayBulkView ? bulkCartItem : regularCartItem;
   const currentQuantity = currentItemInCart?.quantity || 0;
