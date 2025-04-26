@@ -114,7 +114,8 @@ const BulkProducts = () => {
                 key={product.id} 
                 product={{
                   ...product,
-                  price: product.bulk_price || 0
+                  price: product.bulk_price || 0,
+                  offer_price: undefined
                 }} 
                 hideIfUnavailable={true}
                 showBulkQuantity={true}

@@ -21,37 +21,35 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         item.product.id === product.id
       );
       
-      const totalExistingQuantity = existingItems.reduce((total, item) => 
-        total + (item.is_bulk ? item.quantity * (item.product.bulk_quantity || 1) : item.quantity)
-      , 0);
+      const totalExistingQuantity = existingItems.reduce((total, item) => {
+        if (item.is_bulk) {
+          return total + (item.quantity * (item.product.bulk_quantity || 1));
+        }
+        return total + item.quantity;
+      }, 0);
 
       let newQuantity = product.is_bulk ? 
-        (product.bulk_quantity || 1) : // If bulk, add one bulk unit
+        product.bulk_quantity || 1 : // If bulk, add full bulk quantity
         1; // If regular, add one item
       
-      // Check if adding this quantity would exceed available stock
       if (totalExistingQuantity + newQuantity > product.quantity) {
-        // If exceeding available stock, adjust to maximum available
         newQuantity = Math.max(0, product.quantity - totalExistingQuantity);
         
         if (newQuantity <= 0) {
-          // No more stock available
           return currentItems;
         }
       }
 
-      // Remove existing items with the same product ID and is_bulk status
       const otherItems = currentItems.filter(item => 
         !(item.product.id === product.id && item.is_bulk === product.is_bulk)
       );
       
-      // Add the new item
       return [...otherItems, {
         product: {
           ...product,
           bulk_quantity: product.bulk_quantity || 1,
         },
-        quantity: product.is_bulk ? 1 : newQuantity, // For bulk, always add 1 unit (represents one bulk set)
+        quantity: product.is_bulk ? 1 : newQuantity,
         is_bulk: product.is_bulk || false,
         unit_of_measure: product.unit_of_measure
       }];
@@ -91,7 +89,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const product = allItemsOfProduct[0].product;
       
-      // Calculate total existing quantity
       const totalExistingQuantity = allItemsOfProduct.reduce(
         (total, item) => item.is_bulk ? 
           total + (item.quantity * (item.product.bulk_quantity || 1)) : 
@@ -99,25 +96,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         0
       );
       
-      // Determine the target quantity
       let targetQuantity = is_bulk !== undefined && is_bulk ?
         quantity * (product.bulk_quantity || 1) : 
         quantity;
       
-      // Check if target quantity exceeds available stock
       if (targetQuantity > product.quantity) {
-        // Adjust to maximum available
         targetQuantity = product.quantity;
       }
       
       const newItems = [];
       
-      // If product has bulk pricing and is bulk enabled
       if (product.bulk_quantity && product.bulk_price && product.bulk_enabled) {
         const bulkUnits = Math.floor(targetQuantity / product.bulk_quantity);
         const remainingQuantity = targetQuantity % product.bulk_quantity;
         
-        // Add bulk items
         if (bulkUnits > 0) {
           newItems.push({
             product,
@@ -127,7 +119,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
         
-        // Add remaining items at regular price
         if (remainingQuantity > 0) {
           newItems.push({
             product,
@@ -137,7 +128,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       } else {
-        // If no bulk pricing, just update quantity
         newItems.push({
           product,
           quantity: targetQuantity,
