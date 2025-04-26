@@ -17,44 +17,50 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unit_of_measure?: string;
   }) => {
     setItems(currentItems => {
-      const idx = currentItems.findIndex(item => 
-        item.product.id === product.id && item.is_bulk === product.is_bulk
+      const existingItems = currentItems.filter(item => 
+        item.product.id === product.id
       );
       
-      if (idx > -1) {
-        const updated = [...currentItems];
-        if (product.is_bulk) {
-          updated[idx] = { 
-            ...updated[idx],
+      const totalExistingQuantity = existingItems.reduce((total, item) => total + item.quantity, 0);
+      const newTotalQuantity = totalExistingQuantity + product.quantity;
+      
+      // Remove existing items with the same product ID
+      const otherItems = currentItems.filter(item => item.product.id !== product.id);
+      
+      const bulkItems = [];
+      const regularItems = [];
+      let remainingQuantity = newTotalQuantity;
+      
+      // If bulk pricing is available and we have enough items
+      if (product.bulk_quantity && product.bulk_price) {
+        while (remainingQuantity >= product.bulk_quantity) {
+          bulkItems.push({
+            product: {
+              ...product,
+              bulk_quantity: product.bulk_quantity || 1,
+            },
+            quantity: 1, // One bulk unit
             is_bulk: true,
-            quantity: updated[idx].quantity + 1
-          };
-        } else if (product.unit_of_measure === 'weight') {
-          // للمنتجات التي تباع بالوزن، نحتفظ بالوزن الجديد
-          updated[idx] = { 
-            ...updated[idx], 
-            quantity: product.quantity,
-            unit_of_measure: 'weight'
-          };
-        } else {
-          updated[idx] = { 
-            ...updated[idx], 
-            quantity: updated[idx].quantity + (product.quantity || 1),
-            is_bulk: false
-          };
+            unit_of_measure: product.unit_of_measure
+          });
+          remainingQuantity -= product.bulk_quantity;
         }
-        return updated;
       }
       
-      return [...currentItems, { 
-        product: {
-          ...product,
-          bulk_quantity: product.bulk_quantity || 1,
-        },
-        quantity: product.is_bulk ? 1 : (product.quantity || 1),
-        is_bulk: product.is_bulk,
-        unit_of_measure: product.unit_of_measure
-      }];
+      // Add remaining items at regular price if any
+      if (remainingQuantity > 0) {
+        regularItems.push({
+          product: {
+            ...product,
+            bulk_quantity: product.bulk_quantity || 1,
+          },
+          quantity: remainingQuantity,
+          is_bulk: false,
+          unit_of_measure: product.unit_of_measure
+        });
+      }
+      
+      return [...otherItems, ...bulkItems, ...regularItems];
     });
   }, []);
 
@@ -62,34 +68,76 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(currentItems => currentItems.filter(item => item.product.id !== productId));
   }, []);
 
+  const clearCart = useCallback(() => {
+    setItems([]);
+  }, []);
+
+  const getTotalItems = useCallback(() => {
+    return items.length;
+  }, [items]);
+
   const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean) => {
     if (quantity <= 0) {
       setItems(currentItems => 
-        currentItems.filter(item => !(item.product.id === productId && item.is_bulk === is_bulk))
+        currentItems.filter(item => item.product.id !== productId)
       );
       return;
     }
-    setItems(currentItems =>
-      currentItems.map(item =>
-        item.product.id === productId && item.is_bulk === is_bulk
-          ? { ...item, quantity: quantity }
-          : item
-      )
-    );
-  }, []);
 
-  const clearCart = useCallback(() => {
-    setItems([]);
+    setItems(currentItems => {
+      const allItemsOfProduct = currentItems.filter(item => item.product.id === productId);
+      const otherItems = currentItems.filter(item => item.product.id !== productId);
+      
+      if (allItemsOfProduct.length === 0) return currentItems;
+      
+      const product = allItemsOfProduct[0].product;
+      const newItems = [];
+      
+      // If product has bulk pricing
+      if (product.bulk_quantity && product.bulk_price) {
+        const bulkUnits = Math.floor(quantity / product.bulk_quantity);
+        const remainingQuantity = quantity % product.bulk_quantity;
+        
+        // Add bulk items
+        if (bulkUnits > 0) {
+          newItems.push({
+            product,
+            quantity: bulkUnits,
+            is_bulk: true,
+            unit_of_measure: product.unit_of_measure
+          });
+        }
+        
+        // Add remaining items at regular price
+        if (remainingQuantity > 0) {
+          newItems.push({
+            product,
+            quantity: remainingQuantity,
+            is_bulk: false,
+            unit_of_measure: product.unit_of_measure
+          });
+        }
+      } else {
+        // If no bulk pricing, just update quantity
+        newItems.push({
+          product,
+          quantity,
+          is_bulk: false,
+          unit_of_measure: product.unit_of_measure
+        });
+      }
+      
+      return [...otherItems, ...newItems];
+    });
   }, []);
 
   const getTotalPrice = useCallback(() => {
     return items.reduce((total, item) => {
       if (item.is_bulk) {
-        return total + (item.product.bulk_price || 0) * item.quantity;
+        return total + (item.product.bulk_price || 0) * item.quantity * item.product.bulk_quantity;
       }
       
       if (item.unit_of_measure === 'weight') {
-        // للمنتجات التي تباع بالوزن، نحسب السعر بناءً على السعر الأصلي للكيلو مضروب في الوزن بالجرام / 1000
         const pricePerKg = item.product.offer_price || item.product.price || 0;
         return total + (pricePerKg * (item.quantity / 1000));
       }
@@ -97,10 +145,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const price = item.product.offer_price || item.product.price || 0;
       return total + (price * item.quantity);
     }, 0);
-  }, [items]);
-
-  const getTotalItems = useCallback(() => {
-    return items.length;
   }, [items]);
 
   return (
