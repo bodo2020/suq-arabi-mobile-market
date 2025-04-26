@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CartItem } from '@/contexts/cartTypes';
@@ -129,8 +130,14 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
               
               // Extract additional properties from the saved JSON metadata
               const metadata = cartItem.metadata || {};
-              const is_bulk = !!metadata.is_bulk;
-              const unit_of_measure = metadata.unit_of_measure || null;
+              // Use type assertion to ensure TypeScript understands the shape
+              const metadataObj = typeof metadata === 'object' ? metadata as {
+                is_bulk?: boolean;
+                unit_of_measure?: string | null;
+              } : { is_bulk: false, unit_of_measure: null };
+              
+              const is_bulk = !!metadataObj.is_bulk;
+              const unit_of_measure = metadataObj.unit_of_measure || null;
               
               return {
                 product: product,

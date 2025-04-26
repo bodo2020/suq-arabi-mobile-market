@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -15,6 +16,19 @@ import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
 import { getDeliveryTypes, getDeliveryPrice } from '@/utils/deliveryUtils';
 import LocationPicker from '@/components/ui/LocationPicker';
 import { CartItem } from '@/contexts/cartTypes';
+
+// Define the LocationPickerProps to match what the component expects
+interface LocationValue {
+  governorate?: string;
+  city?: string;
+  area?: string;
+  neighborhood?: string;
+}
+
+interface LocationPickerProps {
+  value: LocationValue;
+  onChange: (val: LocationValue) => void;
+}
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -34,9 +48,9 @@ const Checkout = () => {
   // For delivery
   const [deliveryTypes, setDeliveryTypes] = useState([]);
   const [selectedDeliveryType, setSelectedDeliveryType] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState<LocationValue>({});
   const [deliveryPrice, setDeliveryPrice] = useState(0);
-  const [deliveryPrices, setDeliveryPrices] = useState({});
+  const [deliveryPrices, setDeliveryPrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const loadDeliveryTypes = async () => {
@@ -91,7 +105,7 @@ const Checkout = () => {
                 governorate: addressData.governorate_id,
                 city: addressData.city_id,
                 area: addressData.area_id,
-                neighborhood: addressData.neighborhood_id || null
+                neighborhood: addressData.neighborhood_id || undefined
               });
             }
           }
@@ -107,13 +121,14 @@ const Checkout = () => {
   }, [user]);
   
   useEffect(() => {
-    if (!selectedLocation || !selectedDeliveryType) return;
+    if (!selectedLocation || !selectedLocation.area || !selectedDeliveryType) return;
     
     const updateDeliveryPrice = async () => {
       try {
         const result = await getDeliveryPrice(selectedLocation, selectedDeliveryType);
-        if (typeof result === 'object' && result !== null) {
-          const { price = 0, priceMap = {} } = result;
+        if (result !== null && typeof result === 'object') {
+          const price = result.price !== undefined ? result.price : 0;
+          const priceMap = result.priceMap !== undefined ? result.priceMap : {};
           setDeliveryPrice(price);
           setDeliveryPrices(priceMap);
         } else {
@@ -392,8 +407,8 @@ const Checkout = () => {
               <div>
                 <Label>موقع التوصيل</Label>
                 <LocationPicker 
-                  selectedLocation={selectedLocation} 
-                  setSelectedLocation={setSelectedLocation} 
+                  value={selectedLocation} 
+                  onChange={setSelectedLocation} 
                 />
               </div>
               

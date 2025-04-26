@@ -1,12 +1,18 @@
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
-type PickerValue = {government?: string; city?: string; area?: string; neighborhood?: string};
-interface LocationPickerProps {
-  value: PickerValue;
-  onChange: (val: PickerValue) => void;
+export interface LocationValue {
+  governorate?: string;
+  city?: string;
+  area?: string;
+  neighborhood?: string;
+}
+
+export interface LocationPickerProps {
+  value: LocationValue;
+  onChange: (val: LocationValue) => void;
 }
 
 const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange }) => {
@@ -14,29 +20,35 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange }) => {
   const [cities, setCities] = useState<any[]>([]);
   const [areas, setAreas] = useState<any[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
+  
   // Load governments
   useEffect(() => {
     supabase.from("governorates").select("*").then(({ data }) => setGovernments(data || []));
   }, []);
+  
   // Load cities
   useEffect(() => {
-    if (!value.government) return setCities([]);
-    supabase.from("cities").select("*").eq("governorate_id", value.government).then(({data})=> setCities(data||[]));
-  }, [value.government]);
+    if (!value.governorate) return setCities([]);
+    supabase.from("cities").select("*").eq("governorate_id", value.governorate).then(({data}) => setCities(data || []));
+  }, [value.governorate]);
+  
+  // Load areas
   useEffect(() => {
     if (!value.city) return setAreas([]);
-    supabase.from("areas").select("*").eq("city_id", value.city).then(({data})=> setAreas(data||[]));
+    supabase.from("areas").select("*").eq("city_id", value.city).then(({data}) => setAreas(data || []));
   }, [value.city]);
+  
+  // Load neighborhoods
   useEffect(() => {
     if (!value.area) return setNeighborhoods([]);
-    supabase.from("neighborhoods").select("*").eq("area_id", value.area).then(({data})=> setNeighborhoods(data||[]));
+    supabase.from("neighborhoods").select("*").eq("area_id", value.area).then(({data}) => setNeighborhoods(data || []));
   }, [value.area]);
 
   return (
     <div className="flex flex-col gap-2">
       <div>
         <label className="text-sm mb-1 block">المحافظة</label>
-        <Select value={value.government || ""} onValueChange={val => onChange({government: val, city: "", area: "", neighborhood: ""})}>
+        <Select value={value.governorate || ""} onValueChange={val => onChange({governorate: val, city: undefined, area: undefined, neighborhood: undefined})}>
           <SelectTrigger>
             <SelectValue placeholder="اختر محافظة" />
           </SelectTrigger>
@@ -49,7 +61,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange }) => {
       </div>
       <div>
         <label className="text-sm mb-1 block">المدينة</label>
-        <Select value={value.city || ""} onValueChange={val => onChange({...value, city: val, area: "", neighborhood: ""})}>
+        <Select value={value.city || ""} onValueChange={val => onChange({...value, city: val, area: undefined, neighborhood: undefined})}>
           <SelectTrigger>
             <SelectValue placeholder="اختر مدينة" />
           </SelectTrigger>
@@ -62,7 +74,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange }) => {
       </div>
       <div>
         <label className="text-sm mb-1 block">المنطقة</label>
-        <Select value={value.area || ""} onValueChange={val => onChange({...value, area: val, neighborhood: ""})}>
+        <Select value={value.area || ""} onValueChange={val => onChange({...value, area: val, neighborhood: undefined})}>
           <SelectTrigger>
             <SelectValue placeholder="اختر منطقة" />
           </SelectTrigger>
