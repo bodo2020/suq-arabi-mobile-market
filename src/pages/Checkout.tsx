@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -9,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
-import { UserContext } from '@/contexts/UserContext';
+import { useUser } from '@/contexts/UserContext';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
@@ -21,7 +20,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { items, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
-  const { user } = React.useContext(UserContext);
+  const { user } = useUser();
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -111,9 +110,21 @@ const Checkout = () => {
     if (!selectedLocation || !selectedDeliveryType) return;
     
     const updateDeliveryPrice = async () => {
-      const { price, priceMap } = await getDeliveryPrice(selectedLocation, selectedDeliveryType);
-      setDeliveryPrice(price);
-      setDeliveryPrices(priceMap);
+      try {
+        const result = await getDeliveryPrice(selectedLocation, selectedDeliveryType);
+        if (typeof result === 'object' && result !== null) {
+          const { price = 0, priceMap = {} } = result;
+          setDeliveryPrice(price);
+          setDeliveryPrices(priceMap);
+        } else {
+          setDeliveryPrice(0);
+          setDeliveryPrices({});
+        }
+      } catch (error) {
+        console.error('Error getting delivery price:', error);
+        setDeliveryPrice(0);
+        setDeliveryPrices({});
+      }
     };
     
     updateDeliveryPrice();
@@ -312,8 +323,9 @@ const Checkout = () => {
       const kgWeight = (item.quantity / 1000).toFixed(3);
       return `${kgWeight} كجم`;
     } else if (item.is_bulk) {
-      // Return the bulk quantity from the product
-      return `${item.product.bulk_quantity || 1}`;
+      // Return the bulk quantity multiplied by the quantity
+      const bulkQuantity = item.product.bulk_quantity || 1;
+      return `${bulkQuantity * item.quantity}`;
     }
     return item.quantity;
   };
@@ -400,9 +412,9 @@ const Checkout = () => {
               <div>
                 <Label>طريقة التوصيل</Label>
                 <DeliveryTypeSelector 
-                  deliveryTypes={deliveryTypes} 
-                  selectedValue={selectedDeliveryType}
-                  onChange={handleDeliveryTypeChange}
+                  options={deliveryTypes} 
+                  selectedId={selectedDeliveryType}
+                  onSelect={handleDeliveryTypeChange}
                 />
               </div>
               

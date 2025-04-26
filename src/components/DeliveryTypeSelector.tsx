@@ -4,14 +4,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface DeliveryOption {
+export interface DeliveryOption {
   id: string;
   name: string;
   description?: string;
   price: number;
 }
 
-interface DeliveryTypeSelectorProps {
+export interface DeliveryTypeSelectorProps {
   options: DeliveryOption[];
   selectedId: string;
   onSelect: (id: string) => void;

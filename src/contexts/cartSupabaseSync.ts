@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CartItem } from '@/contexts/cartTypes';
@@ -99,7 +98,7 @@ async function fetchCartItems(user: any, customerId: string | null, setItems: Re
     try {
       const { data: cartData, error: cartError } = await supabase
         .from('cart_items')
-        .select('*')
+        .select('*, metadata')
         .eq('customer_id', customerId);
 
       if (cartError) {
@@ -133,8 +132,8 @@ async function fetchCartItems(user: any, customerId: string | null, setItems: Re
             
             // Extract additional properties from the saved JSON metadata
             const metadata = cartItem.metadata || {};
-            const is_bulk = metadata.is_bulk === true;
-            const unit_of_measure = metadata.unit_of_measure;
+            const is_bulk = !!metadata.is_bulk;
+            const unit_of_measure = metadata.unit_of_measure || null;
             
             return {
               product: product,

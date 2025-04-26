@@ -15,7 +15,7 @@ interface UserContextType {
   signOut: () => Promise<void>;
 }
 
-const UserContext = createContext<UserContextType>({
+export const UserContext = createContext<UserContextType>({
   user: null,
   loading: true,
   signIn: async () => ({ error: null }),
