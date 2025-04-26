@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, MapPin, User } from 'lucide-react';
+import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
@@ -180,37 +180,14 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <span className="flex items-center text-gray-600 text-sm font-semibold">
-            <MapPin size={20} className="ml-1 text-primary" /> 
-            توصيل إلى
-          </span>
-          <span className="text-sm font-bold truncate max-w-xs">
-            {userLocation?.area || ''}{userLocation?.area && userLocation?.neighborhood && '، '}
-            {userLocation?.neighborhood || ''}
-          </span>
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <button
-                className="text-primary underline text-xs mr-auto"
-                type="button"
-                aria-label="تغيير الموقع"
-              >
-                تغيير الموقع
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="max-w-xs">
-              <div className="flex flex-col items-start">
-                <span className="mb-2 text-sm">حدد موقع التوصيل الخاص بك</span>
-                <button
-                  onClick={handleChangeLocation}
-                  className="w-full text-sm text-primary p-2 rounded bg-gray-100 hover:bg-primary/10 mb-1"
-                >
-                  الذهاب للعناوين
-                </button>
-              </div>
-            </PopoverContent>
-          </Popover>
+        <div className="flex items-center gap-2 mb-4">
+          <Link 
+            to="/bulk-products" 
+            className="w-full bg-[#d3ffb3] text-[#005931] py-3 rounded-lg flex items-center justify-center"
+          >
+            <Package className="w-4 h-4 ml-2" />
+            تسوق منتجات الجملة
+          </Link>
         </div>
 
         {banners.length > 0 && (
@@ -290,7 +267,12 @@ const Index = () => {
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {featuredProducts.map(product => 
-              <ProductCard key={product.id} product={product} hideIfUnavailable={true} />
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                hideIfUnavailable={true}
+                showBulkQuantity={true}
+              />
             )}
             {featuredProducts.length === 0 && (
               <div className="col-span-full py-8 text-center">

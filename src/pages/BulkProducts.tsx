@@ -4,26 +4,36 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Package } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
-import { Product, getProducts } from '@/lib/supabase';
+import { Product, getProducts, getSubcategories, Subcategory } from '@/lib/supabase';
+import { Badge } from '@/components/ui/badge';
 
 const BulkProducts = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const allProducts = await getProducts();
+        const [allProducts, allSubcategories] = await Promise.all([
+          getProducts(),
+          getSubcategories()
+        ]);
+        
         // Filter only products with bulk enabled
         const bulkProducts = allProducts.filter(product => 
           product.bulk_enabled && 
           product.bulk_quantity && 
           product.bulk_price &&
-          product.quantity >= product.bulk_quantity // Only show products with enough quantity
+          product.quantity >= product.bulk_quantity && // Only show products with enough quantity
+          (!selectedSubcategory || product.subcategory_id === selectedSubcategory)
         );
+        
         setProducts(bulkProducts);
+        setSubcategories(allSubcategories);
       } catch (error) {
         console.error('Error fetching bulk products:', error);
       } finally {
@@ -31,8 +41,8 @@ const BulkProducts = () => {
       }
     };
 
-    fetchProducts();
-  }, []);
+    fetchData();
+  }, [selectedSubcategory]);
 
   return (
     <MainLayout>
@@ -42,10 +52,30 @@ const BulkProducts = () => {
             <ArrowRight size={24} />
           </button>
           <h1 className="text-xl font-bold flex-1 text-center flex items-center justify-center">
-            <Package className="mr-2" size={20} />
+            <Package className="ml-2" size={20} />
             منتجات الجملة
           </h1>
           <div className="w-10"></div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+          <Badge
+            variant={selectedSubcategory === null ? "default" : "outline"}
+            className="cursor-pointer"
+            onClick={() => setSelectedSubcategory(null)}
+          >
+            الكل
+          </Badge>
+          {subcategories.map((subcat) => (
+            <Badge
+              key={subcat.id}
+              variant={selectedSubcategory === subcat.id ? "default" : "outline"}
+              className="cursor-pointer whitespace-nowrap"
+              onClick={() => setSelectedSubcategory(subcat.id)}
+            >
+              {subcat.name}
+            </Badge>
+          ))}
         </div>
 
         {loading ? (
@@ -58,7 +88,8 @@ const BulkProducts = () => {
               <ProductCard 
                 key={product.id} 
                 product={product} 
-                hideIfUnavailable={true} 
+                hideIfUnavailable={true}
+                showBulkQuantity={true}
               />
             ))}
           </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
@@ -22,8 +21,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         item.product.id === product.id
       );
       
-      const totalExistingQuantity = existingItems.reduce((total, item) => total + item.quantity, 0);
-      let newQuantity = product.quantity;
+      const totalExistingQuantity = existingItems.reduce((total, item) => 
+        total + (item.is_bulk ? item.quantity * (item.product.bulk_quantity || 1) : item.quantity)
+      , 0);
+
+      let newQuantity = product.is_bulk ? 
+        (product.bulk_quantity || 1) : // If bulk, add one bulk unit
+        1; // If regular, add one item
       
       // Check if adding this quantity would exceed available stock
       if (totalExistingQuantity + newQuantity > product.quantity) {
@@ -35,48 +39,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return currentItems;
         }
       }
+
+      // Remove existing items with the same product ID and is_bulk status
+      const otherItems = currentItems.filter(item => 
+        !(item.product.id === product.id && item.is_bulk === product.is_bulk)
+      );
       
-      const newTotalQuantity = totalExistingQuantity + newQuantity;
-      
-      // Remove existing items with the same product ID
-      const otherItems = currentItems.filter(item => item.product.id !== product.id);
-      
-      const bulkItems = [];
-      const regularItems = [];
-      let remainingQuantity = newTotalQuantity;
-      
-      // If bulk pricing is available and we have enough items
-      if (product.bulk_quantity && product.bulk_price && product.bulk_enabled) {
-        const bulkUnits = Math.floor(remainingQuantity / product.bulk_quantity);
-        
-        if (bulkUnits > 0) {
-          bulkItems.push({
-            product: {
-              ...product,
-              bulk_quantity: product.bulk_quantity || 1,
-            },
-            quantity: bulkUnits, // Number of bulk units
-            is_bulk: true,
-            unit_of_measure: product.unit_of_measure
-          });
-          remainingQuantity -= bulkUnits * product.bulk_quantity;
-        }
-      }
-      
-      // Add remaining items at regular price if any
-      if (remainingQuantity > 0) {
-        regularItems.push({
-          product: {
-            ...product,
-            bulk_quantity: product.bulk_quantity || 1,
-          },
-          quantity: remainingQuantity,
-          is_bulk: false,
-          unit_of_measure: product.unit_of_measure
-        });
-      }
-      
-      return [...otherItems, ...bulkItems, ...regularItems];
+      // Add the new item
+      return [...otherItems, {
+        product: {
+          ...product,
+          bulk_quantity: product.bulk_quantity || 1,
+        },
+        quantity: product.is_bulk ? 1 : newQuantity, // For bulk, always add 1 unit (represents one bulk set)
+        is_bulk: product.is_bulk || false,
+        unit_of_measure: product.unit_of_measure
+      }];
     });
   }, []);
 
