@@ -12,20 +12,14 @@ interface ProductCardProps {
   product: Product;
   hideAddToCart?: boolean;
   size?: 'default' | 'sm';
-  hideIfUnavailable?: boolean;
 }
 
-const ProductCard = ({ product, hideAddToCart, size = 'default', hideIfUnavailable }: ProductCardProps) => {
+const ProductCard = ({ product, hideAddToCart, size = 'default' }: ProductCardProps) => {
   const { items, addToCart } = useCart();
   
   const bulkItemInCart = items.find(item => 
     item.product.id === product.id && item.is_bulk
   );
-
-  // If product should be hidden when unavailable and quantity is 0, return null
-  if (hideIfUnavailable && product.quantity <= 0) {
-    return null;
-  }
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
