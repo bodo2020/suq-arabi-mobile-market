@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -14,21 +13,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
 import { getDeliveryTypes, getDeliveryPrice } from '@/utils/deliveryUtils';
-import LocationPicker from '@/components/ui/LocationPicker';
+import LocationPicker, { LocationValue } from '@/components/ui/LocationPicker';
 import { CartItem } from '@/contexts/cartTypes';
-
-// Define the LocationPickerProps to match what the component expects
-interface LocationValue {
-  governorate?: string;
-  city?: string;
-  area?: string;
-  neighborhood?: string;
-}
-
-interface LocationPickerProps {
-  value: LocationValue;
-  onChange: (val: LocationValue) => void;
-}
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -125,10 +111,14 @@ const Checkout = () => {
     
     const updateDeliveryPrice = async () => {
       try {
-        const result = await getDeliveryPrice(selectedLocation, selectedDeliveryType);
-        if (result !== null && typeof result === 'object') {
-          const price = result.price !== undefined ? result.price : 0;
-          const priceMap = result.priceMap !== undefined ? result.priceMap : {};
+        // Pass the area ID instead of the whole location object
+        const areaId = selectedLocation.area;
+        if (!areaId) return;
+        
+        const result = await getDeliveryPrice(areaId, selectedDeliveryType);
+        if (result !== null) {
+          const price = result?.price !== undefined ? result.price : 0;
+          const priceMap = result?.priceMap !== undefined ? result.priceMap : {};
           setDeliveryPrice(price);
           setDeliveryPrices(priceMap);
         } else {
