@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog';
 import { Input } from './input';
 import { Scale } from 'lucide-react';
 import { Product } from '@/lib/supabase';
@@ -17,13 +17,13 @@ const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
   const { addToCart } = useCart();
   
   const pricePerKg = product.price || 0;
-  const total = (pricePerKg * weight) / 1000; // Convert grams to kg for price calculation
+  const total = (pricePerKg * weight) / 1000; // تحويل الجرامات إلى كيلوجرام لحساب السعر
 
   const handleAddToCart = () => {
     addToCart({
       ...product,
       price: product.price || 0,
-      quantity: weight // Store weight in grams
+      quantity: weight // تخزين الوزن بالجرام
     });
     onClose();
   };
@@ -33,6 +33,9 @@ const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
       <DialogContent className="max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle>تحديد الوزن</DialogTitle>
+          <DialogDescription>
+            يرجى اختيار الوزن المطلوب بالجرام
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 p-4">
           <div className="flex items-center gap-2">
