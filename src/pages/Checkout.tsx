@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
 import { getDeliveryTypes, getDeliveryPrice } from '@/utils/deliveryUtils';
 import LocationPicker from '@/components/ui/LocationPicker';
+import { CartItem } from '@/contexts/cartTypes';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -273,6 +274,22 @@ const Checkout = () => {
     setDeliveryPrice(deliveryPrices[deliveryTypeId] || 0);
   };
 
+  const getItemTotal = (item) => {
+    return (item.product.offer_price || item.product.price) * item.quantity;
+  };
+
+  const formatQuantity = (item: CartItem) => {
+    if (item.unit_of_measure === 'weight') {
+      // Convert grams to kilograms with 3 decimal places
+      const kgWeight = (item.quantity / 1000).toFixed(3);
+      return `${kgWeight} كجم`;
+    } else if (item.is_bulk) {
+      // Return the bulk quantity from the product
+      return `${item.product.bulk_quantity || 1}`;
+    }
+    return item.quantity;
+  };
+
   return (
     <MainLayout>
       <div className="py-4 pb-24" dir="rtl">
@@ -400,10 +417,10 @@ const Checkout = () => {
               {items.map((item) => (
                 <div key={item.product.id} className="flex justify-between py-2 border-b last:border-b-0">
                   <div className="flex items-center">
-                    <span className="text-gray-500 ml-1">{item.quantity} ×</span>
+                    <span className="text-gray-500 ml-1">{formatQuantity(item)} ×</span>
                     <span className="font-medium">{item.product.name}</span>
                   </div>
-                  <span>{((item.product.offer_price || item.product.price) * item.quantity).toFixed(2)} ج.م</span>
+                  <span>{getItemTotal(item).toFixed(2)} ج.م</span>
                 </div>
               ))}
             </div>
