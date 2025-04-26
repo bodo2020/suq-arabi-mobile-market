@@ -90,127 +90,127 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     });
   }, [items]);
 
-  return null;
-}
+  async function fetchCartItems(user: any, customerId: string | null, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
+    if (user && customerId) {
+      try {
+        const { data: cartData, error: cartError } = await supabase
+          .from('cart_items')
+          .select('*, metadata')
+          .eq('customer_id', customerId);
 
-async function fetchCartItems(user: any, customerId: string | null, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
-  if (user && customerId) {
-    try {
-      const { data: cartData, error: cartError } = await supabase
-        .from('cart_items')
-        .select('*, metadata')
-        .eq('customer_id', customerId);
-
-      if (cartError) {
-        console.error('Error fetching cart items:', cartError);
-        toast({
-          title: "خطأ في تحميل السلة",
-          description: "حدث خطأ أثناء تحميل عناصر السلة",
-          variant: "destructive",
-        });
-        setItems([]);
-        return;
-      }
-
-      if (cartData && cartData.length > 0) {
-        const productIds = cartData.map(item => item.product_id);
-        const { data: productsData, error: productsError } = await supabase
-          .from('products')
-          .select('*')
-          .in('id', productIds);
-
-        if (productsError) {
-          console.error('Error fetching products:', productsError);
+        if (cartError) {
+          console.error('Error fetching cart items:', cartError);
+          toast({
+            title: "خطأ في تحميل السلة",
+            description: "حدث خطأ أثناء تحميل عناصر السلة",
+            variant: "destructive",
+          });
           setItems([]);
           return;
         }
 
-        if (productsData) {
-          const cartItems: CartItem[] = cartData.map(cartItem => {
-            const product = productsData.find(prod => prod.id === cartItem.product_id);
-            if (!product) return null;
+        if (cartData && cartData.length > 0) {
+          const productIds = cartData.map(item => item.product_id);
+          const { data: productsData, error: productsError } = await supabase
+            .from('products')
+            .select('*')
+            .in('id', productIds);
+
+          if (productsError) {
+            console.error('Error fetching products:', productsError);
+            setItems([]);
+            return;
+          }
+
+          if (productsData) {
+            const cartItems: CartItem[] = cartData.map(cartItem => {
+              const product = productsData.find(prod => prod.id === cartItem.product_id);
+              if (!product) return null;
+              
+              // Extract additional properties from the saved JSON metadata
+              const metadata = cartItem.metadata || {};
+              const is_bulk = !!metadata.is_bulk;
+              const unit_of_measure = metadata.unit_of_measure || null;
+              
+              return {
+                product: product,
+                quantity: cartItem.quantity,
+                is_bulk,
+                unit_of_measure
+              };
+            }).filter(Boolean) as CartItem[];
             
-            // Extract additional properties from the saved JSON metadata
-            const metadata = cartItem.metadata || {};
-            const is_bulk = !!metadata.is_bulk;
-            const unit_of_measure = metadata.unit_of_measure || null;
-            
-            return {
-              product: product,
-              quantity: cartItem.quantity,
-              is_bulk,
-              unit_of_measure
-            };
-          }).filter(Boolean) as CartItem[];
-          
-          setItems(cartItems);
+            setItems(cartItems);
+          }
+        } else {
+          setItems([]);
         }
-      } else {
+      } catch (error) {
+        console.error('Error in fetchCartItems:', error);
         setItems([]);
       }
-    } catch (error) {
-      console.error('Error in fetchCartItems:', error);
+    } else {
       setItems([]);
     }
-  } else {
-    setItems([]);
-  }
-}
-
-async function syncCartPersistence(user: any, items: CartItem[], customerId: string | null) {
-  if (!user || !customerId) {
-    return;
   }
 
-  try {
-    const { error: deleteError } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('customer_id', customerId);
-
-    if (deleteError) {
-      console.error('Error clearing cart items:', deleteError);
-      toast({
-        title: "خطأ في حفظ السلة",
-        description: "حدث خطأ أثناء حذف العناصر القديمة",
-        variant: "destructive",
-      });
+  async function syncCartPersistence(user: any, items: CartItem[], customerId: string | null) {
+    if (!user || !customerId) {
       return;
     }
 
-    if (items.length > 0) {
-      const cartItemsToInsert = items.map(item => ({
-        customer_id: customerId,
-        product_id: item.product.id,
-        quantity: item.quantity,
-        // Store additional properties as metadata
-        metadata: {
-          is_bulk: item.is_bulk || false,
-          unit_of_measure: item.unit_of_measure || null
-        }
-      }));
-
-      const { error: insertError } = await supabase
+    try {
+      const { error: deleteError } = await supabase
         .from('cart_items')
-        .insert(cartItemsToInsert);
+        .delete()
+        .eq('customer_id', customerId);
 
-      if (insertError) {
-        console.error('Error inserting cart items:', insertError);
+      if (deleteError) {
+        console.error('Error clearing cart items:', deleteError);
         toast({
           title: "خطأ في حفظ السلة",
-          description: "تعذر حفظ العناصر في قاعدة البيانات",
+          description: "حدث خطأ أثناء حذف العناصر القديمة",
           variant: "destructive",
         });
-      } else {
-        console.log('Cart items successfully synced to Supabase');
+        return;
       }
+
+      if (items.length > 0) {
+        const cartItemsToInsert = items.map(item => ({
+          customer_id: customerId,
+          product_id: item.product.id,
+          quantity: item.quantity,
+          // Store additional properties as metadata
+          metadata: {
+            is_bulk: item.is_bulk || false,
+            unit_of_measure: item.unit_of_measure || null
+          }
+        }));
+
+        const { error: insertError } = await supabase
+          .from('cart_items')
+          .insert(cartItemsToInsert);
+
+        if (insertError) {
+          console.error('Error inserting cart items:', insertError);
+          toast({
+            title: "خطأ في حفظ السلة",
+            description: "تعذر حفظ العناصر في قاعدة البيانات",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Cart items successfully synced to Supabase');
+        }
+      }
+    } catch (error) {
+      console.error('Error in syncCartPersistence:', error);
+      toast({
+        title: "خطأ في حفظ السلة",
+        description: "حدث خطأ غير متوقع أثناء حفظ السلة",
+        variant: "destructive",
+      });
     }
-  } catch (error) {
-    console.error('Error in syncCartPersistence:', error);
-    toast({
-      title: "خطأ في حفظ السلة",
-      description: "حدث خطأ غير متوقع أثناء حفظ السلة",
-      variant: "destructive",
-    });
   }
+
+  return null;
 }
