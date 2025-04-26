@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog';
 import { Input } from './input';
 import { Scale } from 'lucide-react';
@@ -13,16 +13,30 @@ interface WeightSelectorProps {
 }
 
 const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
-  const [weight, setWeight] = useState(100);
-  const { addToCart } = useCart();
+  const { items, addToCart } = useCart();
   
-  const pricePerKg = product.price || 0;
+  // Find if this product is already in cart to get initial weight
+  const existingItem = items.find(item => 
+    item.product.id === product.id && 
+    item.unit_of_measure === 'weight'
+  );
+  
+  const [weight, setWeight] = useState(existingItem ? existingItem.quantity : 100);
+  
+  useEffect(() => {
+    // Update weight if the product is already in cart
+    if (existingItem) {
+      setWeight(existingItem.quantity);
+    }
+  }, [existingItem]);
+  
+  const pricePerKg = product.offer_price || product.price || 0;
   const total = (pricePerKg * weight) / 1000; // تحويل الجرامات إلى كيلوجرام لحساب السعر
 
   const handleAddToCart = () => {
     addToCart({
       ...product,
-      price: total,
+      price: product.price, // نحتفظ بالسعر الأصلي للكيلو
       quantity: weight, // تخزين الوزن بالجرام
       unit_of_measure: 'weight' // تحديد أن هذا منتج يباع بالوزن
     });
@@ -66,7 +80,7 @@ const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
             onClick={handleAddToCart}
             className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors"
           >
-            إضافة للسلة
+            {existingItem ? 'تحديث الكمية' : 'إضافة للسلة'}
           </button>
         </div>
       </DialogContent>

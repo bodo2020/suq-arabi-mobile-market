@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -70,6 +71,12 @@ const Cart = () => {
     if (item.is_bulk) {
       return item.product.bulk_price || 0;
     }
+    
+    if (item.unit_of_measure === 'weight') {
+      const pricePerKg = item.product.offer_price || item.product.price || 0;
+      return pricePerKg * (item.quantity / 1000);
+    }
+    
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
 
@@ -141,6 +148,10 @@ const Cart = () => {
                       {item.is_bulk ? (
                         <span className="text-sm font-bold text-primary">
                           {item.product.bulk_price} ج.م (سعر الجملة)
+                        </span>
+                      ) : item.unit_of_measure === 'weight' ? (
+                        <span className="text-sm font-bold">
+                          {item.product.price} ج.م/كجم
                         </span>
                       ) : item.product.offer_price ? (
                         <>
