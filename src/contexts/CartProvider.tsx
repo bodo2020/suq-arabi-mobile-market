@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
@@ -53,6 +54,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getTotalPrice = useCallback(() => {
     return items.reduce((total, item) => {
+      // في حالة البيع بالجملة، نستخدم سعر الجملة كما هو بدون ضرب في الكمية
+      if (item.is_bulk) {
+        return total + (item.product.bulk_price || 0);
+      }
+      // في حالة البيع العادي، نضرب السعر في الكمية
       const price = item.product.offer_price || item.product.price;
       return total + price * item.quantity;
     }, 0);

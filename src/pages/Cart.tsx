@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -38,11 +37,24 @@ const Cart = () => {
     });
   };
 
-  // Get the image of a product, handling the new image_urls array
   const getProductImage = (item) => {
     return item.product.image_urls && item.product.image_urls.length > 0 
       ? item.product.image_urls[0] 
       : '/placeholder.svg';
+  };
+
+  const getItemPrice = (item) => {
+    if (item.is_bulk) {
+      return item.product.bulk_price;
+    }
+    return item.product.offer_price || item.product.price;
+  };
+
+  const getItemTotal = (item) => {
+    if (item.is_bulk) {
+      return item.product.bulk_price || 0;
+    }
+    return (item.product.offer_price || item.product.price) * item.quantity;
   };
 
   return (
@@ -81,7 +93,11 @@ const Cart = () => {
                       {item.product.name}
                     </Link>
                     <div className="flex items-center mt-1">
-                      {item.product.offer_price ? (
+                      {item.is_bulk ? (
+                        <span className="text-sm font-bold text-primary">
+                          {item.product.bulk_price} ج.م (سعر الجملة)
+                        </span>
+                      ) : item.product.offer_price ? (
                         <>
                           <span className="text-sm font-bold text-primary ml-2">
                             {item.product.offer_price} ج.م
@@ -128,7 +144,6 @@ const Cart = () => {
               ))}
             </div>
 
-            {/* Summary */}
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
               <div className="flex justify-between py-2 border-b">
@@ -145,7 +160,6 @@ const Cart = () => {
               </div>
             </div>
 
-            {/* Checkout button */}
             <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
               متابعة الطلب
             </Link>
