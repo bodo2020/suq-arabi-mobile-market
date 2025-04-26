@@ -37,25 +37,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     if (!isOutOfStock) {
       if (product.barcode_type === 'scale') {
         setShowWeightSelector(true);
-      } else if (product.bulk_enabled && product.bulk_quantity && !showBulkQuantity) {
-        setShowBulkModal(true);
       } else {
         const quantityToAdd = 1;
         
-        if (showBulkQuantity && product.bulk_enabled && product.bulk_quantity) {
-          addToCart({
-            ...product,
-            price: product.bulk_price || 0,
-            quantity: quantityToAdd,
-            is_bulk: true
-          });
-        } else {
-          addToCart({
-            ...product,
-            price: product.price || 0,
-            quantity: quantityToAdd
-          });
-        }
+        addToCart({
+          ...product,
+          price: product.price || 0,
+          quantity: quantityToAdd
+        });
         toast({
           title: "تم الإضافة",
           description: "تم إضافة المنتج إلى السلة",
@@ -209,15 +198,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 <AlertTriangle size={16} className="ml-1" />
                 نفذت الكمية
               </button>
-            ) : currentQuantity === 0 ? (
-              <button
-                onClick={handleAddToCart}
-                className="w-full py-2 px-3 bg-primary text-white rounded-lg flex items-center justify-center text-sm hover:bg-primary/90 transition-colors"
-                aria-label="إضافة إلى السلة"
-              >
-                إضافة للسلة
-              </button>
-            ) : (
+            ) : regularCartItem || (!showBulkQuantity && !product.barcode_type) ? (
               <div className="flex items-center justify-between bg-primary text-white rounded-lg p-1">
                 <button 
                   onClick={handleDecreaseQuantity} 
@@ -226,7 +207,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 >
                   <Minus size={16} />
                 </button>
-                <span className="mx-2">{currentQuantity}</span>
+                <span className="mx-2">{regularCartItem?.quantity || 0}</span>
                 <button 
                   onClick={handleIncreaseQuantity}
                   className="p-1 hover:bg-primary-foreground/10 rounded"
@@ -235,6 +216,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                   <Plus size={16} />
                 </button>
               </div>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                className="w-full py-2 px-3 bg-primary text-white rounded-lg flex items-center justify-center text-sm hover:bg-primary/90 transition-colors"
+                aria-label="إضافة إلى السلة"
+              >
+                إضافة للسلة
+              </button>
             )}
           </div>
         </div>
