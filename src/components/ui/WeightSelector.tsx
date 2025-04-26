@@ -22,6 +22,7 @@ const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
   const handleAddToCart = () => {
     addToCart({
       ...product,
+      price: product.price || 0,
       quantity: weight // Store weight in grams
     });
     onClose();

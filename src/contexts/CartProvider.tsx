@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback } from 'react';
-import { CartContextType } from './cartTypes';
-import { CartItem, Product } from '@/lib/supabase';
+import { CartContextType, CartItem } from './cartTypes';
+import { Product } from '@/lib/supabase';
 import { useCartSync } from './cartSupabaseSync';
 
 export const CartContext = React.createContext<CartContextType | undefined>(undefined);
@@ -12,15 +11,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Use the useCartSync hook for syncing with Supabase & localStorage
   useCartSync(items, setItems);
 
-  const addToCart = useCallback((product: Product) => {
+  const addToCart = useCallback((product: Product & { price: number; quantity: number; is_bulk?: boolean }) => {
     setItems(currentItems => {
       const idx = currentItems.findIndex(item => item.product.id === product.id);
       if (idx > -1) {
         const updated = [...currentItems];
-        updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + 1 };
+        updated[idx] = { 
+          ...updated[idx], 
+          quantity: updated[idx].quantity + (product.quantity || 1),
+          is_bulk: product.is_bulk
+        };
         return updated;
       }
-      return [...currentItems, { product, quantity: 1 }];
+      return [...currentItems, { 
+        product, 
+        quantity: product.quantity || 1,
+        is_bulk: product.is_bulk
+      }];
     });
   }, []);
 

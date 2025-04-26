@@ -1,9 +1,13 @@
 
-import { CartItem, Product } from "@/lib/supabase";
+import { CartItem as BaseCartItem, Product } from "@/lib/supabase";
+
+export type CartItem = BaseCartItem & {
+  is_bulk?: boolean;
+};
 
 export type CartContextType = {
   items: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product & { price: number; quantity: number; is_bulk?: boolean }) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
