@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale } from 'lucide-react';
@@ -48,7 +49,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const handleIncreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    updateQuantity(product.id, quantity + 1);
+    if (product.unit_of_measure === 'weight') {
+      setShowWeightSelector(true);
+    } else {
+      updateQuantity(product.id, quantity + 1);
+    }
   };
 
   const handleDecreaseQuantity = (e: React.MouseEvent) => {
@@ -70,6 +75,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   };
 
   const discount = calcDiscount();
+
+  // تنسيق عرض الكميه للمنتجات التي تباع بالوزن
+  const formatQuantity = () => {
+    if (cartItem?.unit_of_measure === 'weight') {
+      return `${quantity}جم`;
+    }
+    return quantity;
+  };
 
   return (
     <>
@@ -141,7 +154,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                     <Minus size={16} color="white" />
                   </button>
                   <span className="mx-2 text-white">
-                    {product.unit_of_measure === 'weight' ? `${quantity}g` : quantity}
+                    {formatQuantity()}
                   </span>
                   <button onClick={handleIncreaseQuantity} aria-label="زيادة الكمية">
                     <Plus size={16} color="white" />

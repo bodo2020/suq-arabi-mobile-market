@@ -69,6 +69,11 @@ const ProductDetail = () => {
   const handleAddToCart = (isBulk: boolean = false) => {
     if (!product) return;
     
+    if (product.barcode_type === 'scale') {
+      setIsWeightSelectorOpen(true);
+      return;
+    }
+    
     addToCart({
       ...product,
       price: product.price || 0,

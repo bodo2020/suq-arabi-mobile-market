@@ -23,7 +23,8 @@ const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
     addToCart({
       ...product,
       price: total,
-      quantity: weight // تخزين الوزن بالجرام
+      quantity: weight, // تخزين الوزن بالجرام
+      unit_of_measure: 'weight' // تحديد أن هذا منتج يباع بالوزن
     });
     onClose();
   };

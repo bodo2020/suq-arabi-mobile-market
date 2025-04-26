@@ -1,21 +1,27 @@
 
 import React from 'react';
-import { Trash2, Plus, Minus, Package } from 'lucide-react';
+import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import WeightSelector from '@/components/ui/WeightSelector';
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
   const { toast } = useToast();
+  const [openWeightSelector, setOpenWeightSelector] = React.useState<string | null>(null);
 
-  const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false) => {
+  const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
-    if (item && !item.is_bulk) {
-      updateQuantity(productId, item.quantity + 1, is_bulk);
+    if (item) {
+      if (unit_of_measure === 'weight') {
+        setOpenWeightSelector(productId);
+      } else if (!item.is_bulk) {
+        updateQuantity(productId, item.quantity + 1, is_bulk);
+      }
     }
   };
 
@@ -58,6 +64,14 @@ const Cart = () => {
       return item.product.bulk_price || 0;
     }
     return (item.product.offer_price || item.product.price) * item.quantity;
+  };
+
+  // تنسيق عرض الكميه للمنتجات
+  const formatQuantity = (item) => {
+    if (item.unit_of_measure === 'weight') {
+      return `${item.quantity} جرام`;
+    }
+    return item.quantity;
   };
 
   return (
@@ -110,6 +124,12 @@ const Cart = () => {
                           جملة
                         </Badge>
                       )}
+                      {item.unit_of_measure === 'weight' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Scale className="w-3 h-3" />
+                          وزن
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center mt-1">
                       {item.is_bulk ? (
@@ -143,9 +163,9 @@ const Cart = () => {
                         >
                           <Minus size={16} />
                         </button>
-                        <span className="mx-2 font-medium">{item.quantity}</span>
+                        <span className="mx-2 font-medium">{formatQuantity(item)}</span>
                         <button 
-                          onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)}
+                          onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk, item.unit_of_measure)}
                           className="p-1"
                           aria-label="زيادة الكمية"
                         >
@@ -165,6 +185,14 @@ const Cart = () => {
                       <Trash2 size={16} />
                     </button>
                   </div>
+                  
+                  {openWeightSelector === item.product.id && (
+                    <WeightSelector
+                      product={item.product}
+                      isOpen={true}
+                      onClose={() => setOpenWeightSelector(null)}
+                    />
+                  )}
                 </div>
               ))}
             </div>

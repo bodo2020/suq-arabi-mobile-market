@@ -11,7 +11,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useCartSync(items, setItems);
 
-  const addToCart = useCallback((product: Product & { price: number; quantity: number; is_bulk?: boolean }) => {
+  const addToCart = useCallback((product: Product & { 
+    price: number; 
+    quantity: number; 
+    is_bulk?: boolean;
+    unit_of_measure?: string;
+  }) => {
     setItems(currentItems => {
       const idx = currentItems.findIndex(item => 
         item.product.id === product.id && item.is_bulk === product.is_bulk
@@ -24,6 +29,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ...updated[idx],
             is_bulk: true,
             quantity: 1
+          };
+        } else if (product.unit_of_measure === 'weight') {
+          // للمنتجات التي تباع بالوزن، نحتفظ بالوزن الجديد
+          updated[idx] = { 
+            ...updated[idx], 
+            quantity: product.quantity,
+            unit_of_measure: 'weight'
           };
         } else {
           updated[idx] = { 
@@ -41,7 +53,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           bulk_quantity: product.bulk_quantity || 1,
         },
         quantity: product.is_bulk ? 1 : (product.quantity || 1),
-        is_bulk: product.is_bulk
+        is_bulk: product.is_bulk,
+        unit_of_measure: product.unit_of_measure
       }];
     });
   }, []);
@@ -75,13 +88,29 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (item.is_bulk) {
         return total + (item.product.bulk_price || 0);
       }
-      const price = item.product.offer_price || item.product.price;
-      return total + price * item.quantity;
+      
+      let price = item.product.offer_price || item.product.price || 0;
+      
+      if (item.unit_of_measure === 'weight') {
+        // للمنتجات التي تباع بالوزن، نحسب السعر بناءً على الوزن (بالجرام) / 1000 للتحويل إلى كيلوجرام
+        return total + (price * (item.quantity / 1000));
+      }
+      
+      return total + (price * item.quantity);
     }, 0);
   }, [items]);
 
   const getTotalItems = useCallback(() => {
-    return items.reduce((total, item) => total + (item.is_bulk ? item.product.bulk_quantity : item.quantity), 0);
+    return items.reduce((total, item) => {
+      if (item.is_bulk) {
+        return total + (item.product.bulk_quantity || 1);
+      }
+      if (item.unit_of_measure === 'weight') {
+        // للمنتجات التي تباع بالوزن، نعتبرها كوحدة واحدة في عدد المنتجات
+        return total + 1;
+      }
+      return total + item.quantity;
+    }, 0);
   }, [items]);
 
   return (
