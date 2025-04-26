@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Minus, AlertTriangle, Scale } from 'lucide-react';
+import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 import FavoriteButton from './FavoriteButton';
 import AddToCartModal from './AddToCartModal';
 import WeightSelector from './WeightSelector';
@@ -20,8 +21,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showWeightSelector, setShowWeightSelector] = useState(false);
 
-  const cartItem = items.find(item => item.product.id === product.id);
-  const quantity = cartItem?.quantity || 0;
+  const regularCartItem = items.find(item => item.product.id === product.id && !item.is_bulk);
+  const bulkCartItem = items.find(item => item.product.id === product.id && item.is_bulk);
+  const quantity = regularCartItem?.quantity || 0;
   const isOutOfStock = product.quantity <= 0;
 
   if (hideIfUnavailable && isOutOfStock) {
@@ -42,6 +44,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           price: product.price || 0,
           quantity: 1
         });
+        toast({
+          title: "تم الإضافة",
+          description: "تم إضافة المنتج إلى السلة",
+        });
       }
     }
   };
@@ -53,13 +59,29 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
       setShowWeightSelector(true);
     } else {
       updateQuantity(product.id, quantity + 1);
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث الكمية",
+      });
     }
   };
 
   const handleDecreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    updateQuantity(product.id, quantity - 1);
+    if (quantity > 1) {
+      updateQuantity(product.id, quantity - 1);
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث الكمية",
+      });
+    } else {
+      updateQuantity(product.id, 0);
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف المنتج من السلة",
+      });
+    }
   };
 
   const productImage = product.image_urls && product.image_urls.length > 0
@@ -75,14 +97,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   };
 
   const discount = calcDiscount();
-
-  // تنسيق عرض الكميه للمنتجات التي تباع بالوزن
-  const formatQuantity = () => {
-    if (cartItem?.unit_of_measure === 'weight') {
-      return `${quantity}جم`;
-    }
-    return quantity;
-  };
 
   return (
     <>
@@ -101,6 +115,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
             <div className="absolute left-2 top-2 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full shadow animate-fade-in">
               {discount}% خصم
             </div>
+          )}
+          {bulkCartItem && (
+            <Badge 
+              variant="secondary"
+              className="absolute bottom-2 right-2 flex items-center gap-1 bg-[#d3ffb3] text-[#005931] border-0"
+            >
+              <Package className="h-3 w-3" />
+              {product.bulk_quantity} قطعة
+            </Badge>
           )}
           {isOutOfStock && (
             <div className="absolute top-0 right-0 w-full h-full flex items-center justify-center bg-black/30 rounded">
@@ -137,29 +160,33 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 aria-label="غير متوفر"
               >
                 <AlertTriangle size={16} className="ml-1" />
-                غير متوفر
+                نفذت الكمية
               </button>
             ) : quantity === 0 ? (
               <button
                 onClick={handleAddToCart}
-                className="add-to-cart-btn empty w-full hover-scale"
+                className="w-full py-2 px-3 bg-primary text-white rounded-lg flex items-center justify-center text-sm hover:bg-primary/90 transition-colors"
                 aria-label="إضافة إلى السلة"
               >
                 إضافة للسلة
               </button>
             ) : (
-              <div className="add-to-cart-btn has-items" onClick={(e) => e.preventDefault()}>
-                <div className="flex items-center justify-between w-full">
-                  <button onClick={handleDecreaseQuantity} aria-label="تقليل الكمية">
-                    <Minus size={16} color="white" />
-                  </button>
-                  <span className="mx-2 text-white">
-                    {formatQuantity()}
-                  </span>
-                  <button onClick={handleIncreaseQuantity} aria-label="زيادة الكمية">
-                    <Plus size={16} color="white" />
-                  </button>
-                </div>
+              <div className="flex items-center justify-between bg-primary text-white rounded-lg p-1">
+                <button 
+                  onClick={handleDecreaseQuantity} 
+                  className="p-1 hover:bg-primary-foreground/10 rounded"
+                  aria-label="تقليل الكمية"
+                >
+                  <Minus size={16} />
+                </button>
+                <span className="mx-2">{quantity}</span>
+                <button 
+                  onClick={handleIncreaseQuantity}
+                  className="p-1 hover:bg-primary-foreground/10 rounded"
+                  aria-label="زيادة الكمية"
+                >
+                  <Plus size={16} />
+                </button>
               </div>
             )}
           </div>
