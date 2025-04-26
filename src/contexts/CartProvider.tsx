@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
@@ -9,24 +8,35 @@ export const CartContext = React.createContext<CartContextType | undefined>(unde
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // Use the useCartSync hook for syncing with Supabase & localStorage
   useCartSync(items, setItems);
 
   const addToCart = useCallback((product: Product & { price: number; quantity: number; is_bulk?: boolean }) => {
     setItems(currentItems => {
-      const idx = currentItems.findIndex(item => item.product.id === product.id);
+      const idx = currentItems.findIndex(item => 
+        item.product.id === product.id && item.is_bulk === product.is_bulk
+      );
+      
       if (idx > -1) {
         const updated = [...currentItems];
-        updated[idx] = { 
-          ...updated[idx], 
-          quantity: updated[idx].quantity + (product.quantity || 1),
-          is_bulk: product.is_bulk
-        };
+        if (product.is_bulk) {
+          updated[idx] = { 
+            ...updated[idx],
+            is_bulk: true,
+            quantity: 1
+          };
+        } else {
+          updated[idx] = { 
+            ...updated[idx], 
+            quantity: updated[idx].quantity + (product.quantity || 1),
+            is_bulk: false
+          };
+        }
         return updated;
       }
+      
       return [...currentItems, { 
         product, 
-        quantity: product.quantity || 1,
+        quantity: product.is_bulk ? 1 : (product.quantity || 1),
         is_bulk: product.is_bulk
       }];
     });
@@ -36,14 +46,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(currentItems => currentItems.filter(item => item.product.id !== productId));
   }, []);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean) => {
     if (quantity <= 0) {
-      setItems(currentItems => currentItems.filter(item => item.product.id !== productId));
+      setItems(currentItems => 
+        currentItems.filter(item => !(item.product.id === productId && item.is_bulk === is_bulk))
+      );
       return;
     }
     setItems(currentItems =>
       currentItems.map(item =>
-        item.product.id === productId ? { ...item, quantity } : item
+        item.product.id === productId && item.is_bulk === is_bulk
+          ? { ...item, quantity: item.is_bulk ? 1 : quantity }
+          : item
       )
     );
   }, []);
@@ -54,11 +68,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getTotalPrice = useCallback(() => {
     return items.reduce((total, item) => {
-      // في حالة البيع بالجملة، نستخدم سعر الجملة كما هو بدون ضرب في الكمية
       if (item.is_bulk) {
         return total + (item.product.bulk_price || 0);
       }
-      // في حالة البيع العادي، نضرب السعر في الكمية
       const price = item.product.offer_price || item.product.price;
       return total + price * item.quantity;
     }, 0);
