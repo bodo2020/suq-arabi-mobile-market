@@ -18,10 +18,11 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
   const { addToCart } = useCart();
   
   const handleAddToCart = () => {
-    // تحديد السعر بناءً على نوع البيع (استخدام سعر الجملة مباشرة)
-    const price = saleType === 'bulk' ? product.bulk_price : product.price;
+    // في حالة البيع بالجملة، نستخدم سعر الجملة دائماً، وإلا نستخدم سعر العرض إن وجد أو السعر العادي
+    const price = saleType === 'bulk' 
+      ? product.bulk_price 
+      : (product.offer_price || product.price);
     
-    // إضافة المنتج للسلة مع تحديد السعر والكمية وما إذا كان بيع بالجملة
     addToCart({
       ...product,
       price: price || 0,
@@ -32,8 +33,10 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
     onClose();
   };
 
-  // حساب السعر الإجمالي باستخدام سعر الجملة إذا تم اختياره
-  const currentPrice = saleType === 'bulk' ? product.bulk_price : product.price;
+  // حساب السعر الحالي بناءً على نوع البيع
+  const currentPrice = saleType === 'bulk' 
+    ? product.bulk_price 
+    : (product.offer_price || product.price);
   const total = (currentPrice || 0) * quantity;
 
   return (
@@ -51,7 +54,9 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="normal">قطعة</SelectItem>
-                <SelectItem value="bulk">جملة</SelectItem>
+                {product.bulk_enabled && (
+                  <SelectItem value="bulk">جملة</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
