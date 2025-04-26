@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
@@ -54,12 +55,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     }
   };
 
-  const handleIncreaseQuantity = (e: React.MouseEvent) => {
+  const handleIncreaseQuantity = (e: React.MouseEvent, isBulk: boolean = false) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const cartItem = showBulkQuantity && product.bulk_enabled ? bulkCartItem : regularCartItem;
-    const isBulkView = showBulkQuantity && product.bulk_enabled;
+    const cartItem = isBulk ? bulkCartItem : regularCartItem;
     
     if (product.unit_of_measure === 'weight') {
       setShowWeightSelector(true);
@@ -75,10 +75,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           return total + i.quantity;
         }, 0);
       
-      const additionalUnitsNeeded = isBulkView ? product.bulk_quantity || 1 : 1;
+      const additionalUnitsNeeded = isBulk ? product.bulk_quantity || 1 : 1;
       
       if ((totalProductQuantity + additionalUnitsNeeded) <= product.quantity) {
-        updateQuantity(product.id, cartItem.quantity + 1, isBulkView);
+        updateQuantity(product.id, cartItem.quantity + 1, isBulk);
         toast({
           title: "تم التحديث",
           description: "تم تحديث الكمية",
@@ -93,21 +93,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     }
   };
 
-  const handleDecreaseQuantity = (e: React.MouseEvent) => {
+  const handleDecreaseQuantity = (e: React.MouseEvent, isBulk: boolean = false) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const cartItem = showBulkQuantity && product.bulk_enabled ? bulkCartItem : regularCartItem;
-    const isBulkView = showBulkQuantity && product.bulk_enabled;
+    const cartItem = isBulk ? bulkCartItem : regularCartItem;
     
     if (cartItem && cartItem.quantity > 1) {
-      updateQuantity(product.id, cartItem.quantity - 1, isBulkView);
+      updateQuantity(product.id, cartItem.quantity - 1, isBulk);
       toast({
         title: "تم التحديث",
         description: "تم تحديث الكمية",
       });
     } else if (cartItem) {
-      updateQuantity(product.id, 0, isBulkView);
+      updateQuantity(product.id, 0, isBulk);
       toast({
         title: "تم الحذف",
         description: "تم حذف المنتج من السلة",
@@ -203,7 +202,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                   {regularCartItem || (!showBulkQuantity && !product.barcode_type) ? (
                     <div className="flex items-center justify-between bg-primary text-white rounded-lg p-1">
                       <button 
-                        onClick={handleDecreaseQuantity} 
+                        onClick={(e) => handleDecreaseQuantity(e, false)} 
                         className="p-1 hover:bg-primary-foreground/10 rounded"
                         aria-label="تقليل الكمية"
                       >
@@ -211,7 +210,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                       </button>
                       <span className="mx-2">{regularCartItem?.quantity || 0}</span>
                       <button 
-                        onClick={handleIncreaseQuantity}
+                        onClick={(e) => handleIncreaseQuantity(e, false)}
                         className="p-1 hover:bg-primary-foreground/10 rounded"
                         aria-label="زيادة الكمية"
                       >
@@ -232,11 +231,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                     bulkCartItem ? (
                       <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-1">
                         <button 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDecreaseQuantity(true);
-                          }} 
+                          onClick={(e) => handleDecreaseQuantity(e, true)} 
                           className="p-1 hover:bg-[#c3ef93]/50 rounded"
                           aria-label="تقليل الكمية"
                         >
@@ -247,11 +242,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                           <span>{bulkCartItem.quantity}</span>
                         </div>
                         <button 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleIncreaseQuantity(true);
-                          }}
+                          onClick={(e) => handleIncreaseQuantity(e, true)}
                           className="p-1 hover:bg-[#c3ef93]/50 rounded"
                           aria-label="زيادة الكمية"
                         >
