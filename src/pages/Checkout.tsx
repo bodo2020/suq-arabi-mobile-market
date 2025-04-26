@@ -117,10 +117,8 @@ const Checkout = () => {
         
         const result = await getDeliveryPrice(areaId, selectedDeliveryType);
         if (result !== null) {
-          const price = result?.price !== undefined ? result.price : 0;
-          const priceMap = result?.priceMap !== undefined ? result.priceMap : {};
-          setDeliveryPrice(price);
-          setDeliveryPrices(priceMap);
+          setDeliveryPrice(result.price);
+          setDeliveryPrices(result.priceMap);
         } else {
           setDeliveryPrice(0);
           setDeliveryPrices({});
@@ -444,7 +442,7 @@ const Checkout = () => {
               <div className="flex items-center space-x-2 space-x-reverse">
                 <RadioGroupItem value="cash" id="cash" />
                 <Label htmlFor="cash" className="font-medium">
-                  الدفع عند الاستلام
+                  الدف�� عند الاستلام
                 </Label>
               </div>
             </RadioGroup>
