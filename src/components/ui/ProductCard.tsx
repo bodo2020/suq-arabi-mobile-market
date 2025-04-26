@@ -1,11 +1,12 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Minus, Bell, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Bell, AlertTriangle, Scale } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import FavoriteButton from './FavoriteButton';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from './select';
+import { Input } from './input';
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +16,8 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = false }) => {
   const { items, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
+  const [weight, setWeight] = useState<number>(100);
+  const [saleType, setSaleType] = useState<'normal' | 'bulk'>(product.bulk_enabled ? 'normal' : 'normal');
 
   const cartItem = items.find(item => item.product.id === product.id);
   const quantity = cartItem?.quantity || 0;
@@ -28,30 +31,42 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     e.preventDefault();
     e.stopPropagation();
     if (!isOutOfStock) {
-      addToCart(product);
+      if (product.unit_of_measure === 'weight') {
+        // For products sold by weight, we'll store the weight in grams in the quantity
+        addToCart({ ...product, quantity: weight });
+      } else {
+        addToCart(product);
+      }
     }
   };
 
   const handleIncreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    updateQuantity(product.id, quantity + 1);
+    if (product.unit_of_measure === 'weight') {
+      setWeight(prev => prev + 100); // Increase by 100g
+    } else {
+      updateQuantity(product.id, quantity + 1);
+    }
   };
 
   const handleDecreaseQuantity = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    updateQuantity(product.id, quantity - 1);
+    if (product.unit_of_measure === 'weight') {
+      setWeight(prev => Math.max(100, prev - 100)); // Decrease by 100g, minimum 100g
+    } else {
+      updateQuantity(product.id, quantity - 1);
+    }
   };
 
-  const handleNotifyAvailability = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toast({
-      title: "سيتم إشعارك",
-      description: "سنقوم بإشعارك عندما يصبح المنتج متوفراً",
-      variant: "default",
-    });
+  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 100;
+    setWeight(Math.max(100, value)); // Minimum 100g
+  };
+
+  const handleSaleTypeChange = (value: string) => {
+    setSaleType(value as 'normal' | 'bulk');
   };
 
   const productImage = product.image_urls && product.image_urls.length > 0
@@ -69,13 +84,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const discount = calcDiscount();
 
   return (
-    <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale group relative">
+    <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale">
       <div className="absolute top-2 right-2 z-20">
-        <FavoriteButton 
-          productId={product.id} 
-          size="md"
-        />
+        <FavoriteButton productId={product.id} size="md" />
       </div>
+      
       <div className="relative pt-[100%] mb-3">
         <img
           src={productImage}
@@ -96,12 +109,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           </div>
         )}
       </div>
+
       <div className="text-right flex-grow flex flex-col justify-between">
         <h3 className="font-bold text-sm mb-2 line-clamp-2">{product.name}</h3>
         <div className="mt-auto">
           <div className="flex justify-between mb-2 items-center">
             <div className="flex flex-col items-end">
-              {product.offer_price ? (
+              {product.bulk_enabled && (
+                <Select value={saleType} onValueChange={handleSaleTypeChange}>
+                  <SelectTrigger className="w-[120px] h-8 text-xs">
+                    <SelectValue placeholder="نوع البيع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">عادي</SelectItem>
+                    <SelectItem value="bulk">جملة</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {saleType === 'bulk' ? (
+                <span className="font-bold text-primary">{product.bulk_price} ج.م</span>
+              ) : product.offer_price ? (
                 <>
                   <span className="text-xs line-through text-gray-400">{product.price} ج.م</span>
                   <span className="font-bold text-primary">{product.offer_price} ج.م</span>
@@ -111,14 +138,30 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
               )}
             </div>
           </div>
+
+          {product.unit_of_measure === 'weight' ? (
+            <div className="mb-2 flex items-center gap-2">
+              <Scale size={16} className="text-gray-500" />
+              <Input
+                type="number"
+                min="100"
+                step="100"
+                value={weight}
+                onChange={handleWeightChange}
+                className="w-20 h-8 text-sm text-center"
+              />
+              <span className="text-sm text-gray-500">جرام</span>
+            </div>
+          ) : null}
+
           {isOutOfStock ? (
             <button
-              onClick={handleNotifyAvailability}
-              className="w-full py-2 px-3 bg-gray-200 rounded-lg text-gray-700 flex items-center justify-center text-sm"
-              aria-label="أعلمني عندما يصبح متوفر"
+              disabled
+              className="w-full py-2 px-3 bg-gray-200 rounded-lg text-gray-500 flex items-center justify-center text-sm"
+              aria-label="غير متوفر"
             >
-              <Bell size={16} className="ml-1" />
-              إشعار عند التوفر
+              <AlertTriangle size={16} className="ml-1" />
+              غير متوفر
             </button>
           ) : quantity === 0 ? (
             <button
@@ -134,7 +177,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 <button onClick={handleDecreaseQuantity} aria-label="تقليل الكمية">
                   <Minus size={16} color="white" />
                 </button>
-                <span className="mx-2 text-white">{quantity}</span>
+                <span className="mx-2 text-white">
+                  {product.unit_of_measure === 'weight' ? `${weight}g` : quantity}
+                </span>
                 <button onClick={handleIncreaseQuantity} aria-label="زيادة الكمية">
                   <Plus size={16} color="white" />
                 </button>
