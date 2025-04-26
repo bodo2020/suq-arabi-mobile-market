@@ -6,7 +6,6 @@ import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import WeightSelector from '@/components/ui/WeightSelector';
-
 const Cart = () => {
   const {
     items,
@@ -18,7 +17,6 @@ const Cart = () => {
     toast
   } = useToast();
   const [openWeightSelector, setOpenWeightSelector] = React.useState<string | null>(null);
-
   const handleQuantityClick = (productId: string, unit_of_measure?: string) => {
     if (unit_of_measure === 'weight') {
       const item = items.find(item => item.product.id === productId);
@@ -27,7 +25,6 @@ const Cart = () => {
       }
     }
   };
-
   const handleDecreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
@@ -54,7 +51,6 @@ const Cart = () => {
       }
     }
   };
-
   const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
@@ -77,7 +73,6 @@ const Cart = () => {
       }
     }
   };
-
   const handleRemoveItem = (productId: string, is_bulk: boolean = false) => {
     removeFromCart(productId, is_bulk);
     toast({
@@ -85,18 +80,15 @@ const Cart = () => {
       description: "تم حذف المنتج من السلة"
     });
   };
-
   const getProductImage = item => {
     return item.product.image_urls && item.product.image_urls.length > 0 ? item.product.image_urls[0] : '/placeholder.svg';
   };
-
   const getItemPrice = item => {
     if (item.is_bulk) {
       return item.product.bulk_price;
     }
     return item.product.offer_price || item.product.price;
   };
-
   const getItemTotal = item => {
     if (item.is_bulk) {
       return (item.product.bulk_price || 0) * item.quantity;
@@ -107,21 +99,17 @@ const Cart = () => {
     }
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
-
   const getBulkDisplayQuantity = item => {
     if (!item.is_bulk) return null;
     return item.quantity * (item.product.bulk_quantity || 1);
   };
-
-  const formatBulkQuantity = (item) => {
+  const formatBulkQuantity = item => {
     if (!item.is_bulk || !item.product.bulk_quantity) {
       return `${item.quantity}`;
     }
-    
     const totalUnits = item.quantity * item.product.bulk_quantity;
     return `${totalUnits} قطعة`;
   };
-
   return <MainLayout>
       <div className="py-4">
         <h1 className="text-xl font-bold text-center mb-4">سلة التسوق</h1>
@@ -132,7 +120,7 @@ const Cart = () => {
               <circle cx="19" cy="21" r="1"></circle>
               <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
             </svg>
-            <h3 className="text-lg font-medium text-gray-500 mb-1">السلة فارغة</h3>
+            <h3 className="text-lg font-medium text-gray-500 mb-1">لم تقم بإضافة أي منتجات بعد</h3>
             <p className="text-sm text-gray-400 mb-4">لم ��قم بإضافة أي منتجات بعد</p>
             <div className="flex gap-2">
               <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
@@ -239,5 +227,4 @@ const Cart = () => {
       </div>
     </MainLayout>;
 };
-
 export default Cart;
