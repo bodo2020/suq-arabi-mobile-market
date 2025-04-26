@@ -21,7 +21,8 @@ export type Product = {
   bulk_enabled: boolean;
   bulk_quantity?: number;
   bulk_price?: number;
-  unit_of_measure?: string; // Added unit_of_measure property
+  unit_of_measure?: string;
+  is_weight_based?: boolean;
 };
 
 // Updated Category type to match the main_categories table
