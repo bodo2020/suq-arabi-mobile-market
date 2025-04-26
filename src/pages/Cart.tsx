@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -7,7 +6,6 @@ import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import WeightSelector from '@/components/ui/WeightSelector';
-
 const Cart = () => {
   const {
     items,
@@ -19,7 +17,6 @@ const Cart = () => {
     toast
   } = useToast();
   const [openWeightSelector, setOpenWeightSelector] = React.useState<string | null>(null);
-
   const handleQuantityClick = (productId: string, unit_of_measure?: string) => {
     if (unit_of_measure === 'weight') {
       const item = items.find(item => item.product.id === productId);
@@ -28,7 +25,6 @@ const Cart = () => {
       }
     }
   };
-
   const handleDecreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
@@ -45,7 +41,6 @@ const Cart = () => {
       }
     }
   };
-
   const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
@@ -56,10 +51,9 @@ const Cart = () => {
           }
           return total + i.quantity;
         }, 0);
-        
+
         // Calculate additional units needed
-        const additionalUnitsNeeded = is_bulk ? (item.product.bulk_quantity || 1) : 1;
-        
+        const additionalUnitsNeeded = is_bulk ? item.product.bulk_quantity || 1 : 1;
         if (totalProductQuantity + additionalUnitsNeeded <= item.product.quantity) {
           updateQuantity(productId, item.quantity + 1, is_bulk);
         } else {
@@ -72,7 +66,6 @@ const Cart = () => {
       }
     }
   };
-
   const handleRemoveItem = (productId: string, is_bulk: boolean = false) => {
     removeFromCart(productId, is_bulk);
     toast({
@@ -80,18 +73,15 @@ const Cart = () => {
       description: "تم حذف المنتج من السلة"
     });
   };
-
   const getProductImage = item => {
     return item.product.image_urls && item.product.image_urls.length > 0 ? item.product.image_urls[0] : '/placeholder.svg';
   };
-
   const getItemPrice = item => {
     if (item.is_bulk) {
       return item.product.bulk_price;
     }
     return item.product.offer_price || item.product.price;
   };
-
   const getItemTotal = item => {
     if (item.is_bulk) {
       return (item.product.bulk_price || 0) * item.quantity;
@@ -102,14 +92,12 @@ const Cart = () => {
     }
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
-
   const formatBulkQuantity = item => {
     if (item.is_bulk && item.product.bulk_quantity) {
       return `${item.product.bulk_quantity} قطعة`;
     }
     return `${item.quantity}`;
   };
-
   return <MainLayout>
       <div className="py-4">
         <h1 className="text-xl font-bold text-center mb-4">سلة التسوق</h1>
@@ -126,9 +114,7 @@ const Cart = () => {
               <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
                 تسوق الآن
               </Link>
-              <Link to="/bulk-products" className="bg-[#d3ffb3] text-[#005931] px-4 py-2 rounded-md flex items-center">
-                <Package className="w-4 h-4 mr-1" /> منتجات الجملة
-              </Link>
+              
             </div>
           </div> : <>
             <div className="bg-white rounded-lg mb-4">
@@ -195,11 +181,9 @@ const Cart = () => {
                         {getItemTotal(item).toFixed(2)} ج.م
                       </span>
                     </div>
-                    {item.is_bulk && item.product.bulk_quantity && (
-                      <div className="text-xs text-gray-500 mt-1">
+                    {item.is_bulk && item.product.bulk_quantity && <div className="text-xs text-gray-500 mt-1">
                         {item.quantity} × {item.product.bulk_quantity} = {item.quantity * item.product.bulk_quantity} قطعة
-                      </div>
-                    )}
+                      </div>}
                   </div>
                   
                   {openWeightSelector === item.product.id && <WeightSelector product={item.product} isOpen={true} onClose={() => setOpenWeightSelector(null)} />}
@@ -231,5 +215,4 @@ const Cart = () => {
       </div>
     </MainLayout>;
 };
-
 export default Cart;
