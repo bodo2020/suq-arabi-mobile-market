@@ -129,6 +129,48 @@ const AddressManager = () => {
     }
   };
 
+  const handleSetDefaultAddress = async (addressId: string) => {
+    if (!userId) return;
+    
+    try {
+      await supabase
+        .from('customer_addresses')
+        .update({ is_default: false })
+        .eq('user_id', userId);
+      
+      const { data, error } = await supabase
+        .from('customer_addresses')
+        .update({ is_default: true })
+        .eq('id', addressId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      setAddresses(addresses.map(addr => ({
+        ...addr,
+        is_default: addr.id === addressId
+      })));
+
+      if (data) {
+        localStorage.setItem('userArea', data.area_name || '');
+        localStorage.setItem('userNeighborhood', data.neighborhood_name || '');
+      }
+
+      toast({
+        title: "تم تحديث العنوان الافتراضي",
+        description: "تم تحديث العنوان الافتراضي بنجاح",
+      });
+    } catch (error) {
+      console.error('Error setting default address:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحديث العنوان الافتراضي",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatAddressDisplay = (address: Address) => {
     if (!address) return '';
     
@@ -177,11 +219,18 @@ const AddressManager = () => {
                     </span>
                     <span className="text-sm text-gray-600">{address.address}</span>
                   </div>
-                  {address.is_default && (
-                    <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded">
-                      افتراضي
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSetDefaultAddress(address.id)}
+                      className={`text-xs px-2 py-1 rounded ${
+                        address.is_default 
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {address.is_default ? 'افتراضي' : 'تعيين كافتراضي'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -223,7 +272,7 @@ const AddressManager = () => {
                 value={newAddress}
                 onChange={(e) => setNewAddress(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل تفاص��ل العنوان - الشارع، رقم المبنى، الطابق، الخ."
+                placeholder="أدخل تفاصيل العنوان - الشارع، رقم المبنى، الطابق، الخ."
                 rows={3}
                 required
               />

@@ -15,6 +15,7 @@ import LocationDisplay from "@/components/ui/LocationDisplay";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
 import AddressDisplay from '@/components/ui/AddressDisplay';
+
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
@@ -44,6 +45,7 @@ const Index = () => {
     queryKey: ['products'],
     queryFn: () => getProducts()
   });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -65,6 +67,7 @@ const Index = () => {
     };
     fetchData();
   }, []);
+
   useEffect(() => {
     if (banners.length > 1) {
       bannerIntervalRef.current = setInterval(() => {
@@ -77,6 +80,7 @@ const Index = () => {
       }
     };
   }, [banners.length]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -90,22 +94,28 @@ const Index = () => {
       setProcessingImage(false);
     }
   };
+
   const handleFocusSearchBar = () => {
     navigate('/search');
   };
+
   const handleChangeLocation = () => {
     setPopoverOpen(false);
     navigate('/account/addresses');
   };
+
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
   const availableProducts = products.filter(product => product.quantity > 0);
   const featuredProducts = availableProducts.slice(0, isMobile ? 4 : 10);
+
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
+
   const addressSection = <div className="mb-4">
       <AddressDisplay address={userAddress || ''} areaName={userLocation?.area} onEdit={handleChangeLocation} showAddressSelector={true} />
     </div>;
+
   if (categoriesLoading || productsLoading) {
     return <MainLayout>
         <div className="py-4">
@@ -133,6 +143,7 @@ const Index = () => {
         </div>
       </MainLayout>;
   }
+
   return <MainLayout>
       <div className="py-4">
         {storeInfo && <div className="flex flex-col items-center mb-4">
@@ -147,9 +158,7 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-4">
-          
-        </div>
+        {addressSection}
 
         {banners.length > 0 && <div className="mb-6 relative">
             <Carousel className="w-full" opts={{
@@ -217,4 +226,5 @@ const Index = () => {
       </div>
     </MainLayout>;
 };
+
 export default Index;

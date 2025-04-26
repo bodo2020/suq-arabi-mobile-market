@@ -75,15 +75,20 @@ const Account = () => {
                 </Button>
               </div>
 
-              {/* Quick Links */}
-              <div className="grid grid-cols-2 gap-3">
-                <Link to="/favorites" className="bg-white rounded-lg shadow-sm p-4 flex flex-col items-center justify-center hover:shadow-md transition-shadow">
-                  <Heart className="h-6 w-6 text-primary mb-2" />
-                  <span className="text-sm font-medium">المفضلة</span>
+              <div className="grid grid-cols-1 gap-3">
+                <Link to="/favorites" className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                  <div className="flex items-center">
+                    <Heart className="h-6 w-6 text-primary ml-3" />
+                    <span className="text-sm font-medium">المفضلة</span>
+                  </div>
+                  <ChevronLeft className="h-5 w-5 text-gray-400" />
                 </Link>
-                <Link to="/orders" className="bg-white rounded-lg shadow-sm p-4 flex flex-col items-center justify-center hover:shadow-md transition-shadow">
-                  <ListChecks className="h-6 w-6 text-primary mb-2" />
-                  <span className="text-sm font-medium">الطلبات</span>
+                <Link to="/orders" className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                  <div className="flex items-center">
+                    <ListChecks className="h-6 w-6 text-primary ml-3" />
+                    <span className="text-sm font-medium">الطلبات</span>
+                  </div>
+                  <ChevronLeft className="h-5 w-5 text-gray-400" />
                 </Link>
               </div>
 
