@@ -28,7 +28,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           updated[idx] = { 
             ...updated[idx],
             is_bulk: true,
-            quantity: 1
+            quantity: updated[idx].quantity + 1
           };
         } else if (product.unit_of_measure === 'weight') {
           // للمنتجات التي تباع بالوزن، نحتفظ بالوزن الجديد
@@ -73,7 +73,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(currentItems =>
       currentItems.map(item =>
         item.product.id === productId && item.is_bulk === is_bulk
-          ? { ...item, quantity: item.is_bulk ? 1 : quantity }
+          ? { ...item, quantity: quantity }
           : item
       )
     );
@@ -86,7 +86,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getTotalPrice = useCallback(() => {
     return items.reduce((total, item) => {
       if (item.is_bulk) {
-        return total + (item.product.bulk_price || 0);
+        return total + (item.product.bulk_price || 0) * item.quantity;
       }
       
       if (item.unit_of_measure === 'weight') {
@@ -103,7 +103,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getTotalItems = useCallback(() => {
     return items.reduce((total, item) => {
       if (item.is_bulk) {
-        return total + (item.product.bulk_quantity || 1);
+        return total + ((item.product.bulk_quantity || 1) * item.quantity);
       }
       if (item.unit_of_measure === 'weight') {
         // للمنتجات التي تباع بالوزن، نعتبرها كوحدة واحدة في عدد المنتجات

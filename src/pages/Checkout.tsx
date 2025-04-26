@@ -1,14 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, User, Phone, Check, Gift } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
-import { submitOrder, supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
-import { applyCoupon, getApplicableOffers, getFreeDeliveryOffer } from '@/utils/offerUtils';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
+import { UserContext } from '@/contexts/UserContext';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
 import { getDeliveryTypes, getDeliveryPrice } from '@/utils/deliveryUtils';
 import LocationPicker from '@/components/ui/LocationPicker';
@@ -17,264 +20,289 @@ import { CartItem } from '@/contexts/cartTypes';
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, getTotalPrice, clearCart } = useCart();
+  const { toast } = useToast();
+  const { user } = React.useContext(UserContext);
   
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState<any>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState({
-    name: '',
-    phone: '',
-    address: '',
-  });
-  const [couponCode, setCouponCode] = useState('');
-  const [appliedOffer, setAppliedOffer] = useState<any>(null);
-  const [discount, setDiscount] = useState(0);
-  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [availableOffers, setAvailableOffers] = useState<any[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
-  const [deliveryTypes, setDeliveryTypes] = useState<any[]>([]);
+  const [address, setAddress] = useState('');
+  const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // For delivery
+  const [deliveryTypes, setDeliveryTypes] = useState([]);
   const [selectedDeliveryType, setSelectedDeliveryType] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [deliveryPrice, setDeliveryPrice] = useState(0);
-  const [deliveryPrices, setDeliveryPrices] = useState<{[key: string]: number}>({});
-  const [freeDeliveryOffer, setFreeDeliveryOffer] = useState<any>(null);
+  const [deliveryPrices, setDeliveryPrices] = useState({});
 
   useEffect(() => {
-    if (items.length === 0) {
-      navigate('/cart');
-      return;
-    }
-
-    const loadUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        const { data: customerData } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
-        if (customerData) {
-          setName(customerData.name);
-          setPhone(customerData.phone || '');
-        } else {
-          navigate('/account/address');
-          return;
-        }
-
-        const { data: addressData } = await supabase
-          .from('customer_addresses')
-          .select(`
-            *,
-            governorates(name),
-            cities(name),
-            areas(name),
-            neighborhoods(name)
-          `)
-          .eq('user_id', user.id)
-          .eq('is_default', true)
-          .single();
-
-        if (addressData) {
-          setAddress(addressData);
-        } else {
-          navigate('/account/address');
-          return;
-        }
-      } else {
-        navigate('/account/register');
-        return;
-      }
-    };
-    
-    const loadOffers = async () => {
-      const offers = await getApplicableOffers(getTotalPrice());
-      setAvailableOffers(offers);
-    };
-
     const loadDeliveryTypes = async () => {
       const types = await getDeliveryTypes();
       setDeliveryTypes(types);
-      if (types.length > 0 && !selectedDeliveryType) {
+      if (types.length > 0) {
         setSelectedDeliveryType(types[0].id);
       }
     };
 
-    const loadFreeDeliveryOffer = async () => {
-      const offer = await getFreeDeliveryOffer(getTotalPrice());
-      setFreeDeliveryOffer(offer);
-    };
-
-    loadUserData();
-    loadOffers();
     loadDeliveryTypes();
-    loadFreeDeliveryOffer();
-  }, [items.length, navigate, getTotalPrice]);
+  }, []);
 
   useEffect(() => {
-    const updateDeliveryPrices = async () => {
-      if (address?.neighborhood_id) {
-        const newDeliveryPrices: {[key: string]: number} = {};
+    const loadUserData = async () => {
+      if (!user) return;
+      
+      try {
+        // Check if user has a customer record
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
         
-        for (const type of deliveryTypes) {
-          let price = await getDeliveryPrice(type.id, address.neighborhood_id);
+        if (customerError && customerError.code !== 'PGRST116') {
+          console.error('Error fetching customer data:', customerError);
+          return;
+        }
+        
+        if (customerData) {
+          setFirstName(customerData.first_name || '');
+          setLastName(customerData.last_name || '');
+          setEmail(customerData.email || user.email || '');
+          setPhone(customerData.phone || '');
+          setAddress(customerData.address || '');
           
-          if (freeDeliveryOffer && getTotalPrice() >= freeDeliveryOffer.min_order_amount) {
-            price = 0;
+          // Fetch saved addresses
+          const { data: addressData, error: addressError } = await supabase
+            .from('customer_addresses')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_default', true)
+            .single();
+            
+          if (!addressError && addressData) {
+            setAddress(addressData.address);
+            
+            // Set location if available
+            if (addressData.governorate_id && addressData.city_id && addressData.area_id) {
+              setSelectedLocation({
+                governorate: addressData.governorate_id,
+                city: addressData.city_id,
+                area: addressData.area_id,
+                neighborhood: addressData.neighborhood_id || null
+              });
+            }
           }
-          
-          newDeliveryPrices[type.id] = price;
+        } else {
+          setEmail(user.email || '');
         }
-        
-        setDeliveryPrices(newDeliveryPrices);
-        
-        if (selectedDeliveryType) {
-          setDeliveryPrice(newDeliveryPrices[selectedDeliveryType] || 0);
-        }
+      } catch (error) {
+        console.error('Error in loadUserData:', error);
       }
     };
     
-    if (deliveryTypes.length > 0 && address?.neighborhood_id) {
-      updateDeliveryPrices();
-    }
-  }, [deliveryTypes, address, selectedDeliveryType, freeDeliveryOffer, getTotalPrice]);
-
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  const validate = () => {
-    const newErrors = {
-      name: '',
-      phone: '',
-      address: '',
-    };
-    let isValid = true;
-
-    if (!name.trim()) {
-      newErrors.name = 'الاسم مطلوب';
-      isValid = false;
-    }
-
-    if (!phone.trim()) {
-      newErrors.phone = 'رقم الهاتف مطلوب';
-      isValid = false;
-    } else if (!/^\d{10,11}$/.test(phone.trim())) {
-      newErrors.phone = 'رقم الهاتف غير صحيح';
-      isValid = false;
-    }
-
-    if (!address) {
-      newErrors.address = 'العنوان مطلوب';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode) return;
+    loadUserData();
+  }, [user]);
+  
+  useEffect(() => {
+    if (!selectedLocation || !selectedDeliveryType) return;
     
-    setIsApplyingCoupon(true);
-    try {
-      const { offer, discount } = await applyCoupon(couponCode, getTotalPrice());
-      setAppliedOffer(offer);
-      setDiscount(discount);
-      toast.success('تم تطبيق كود الخصم بنجاح');
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setIsApplyingCoupon(false);
-    }
-  };
+    const updateDeliveryPrice = async () => {
+      const { price, priceMap } = await getDeliveryPrice(selectedLocation, selectedDeliveryType);
+      setDeliveryPrice(price);
+      setDeliveryPrices(priceMap);
+    };
+    
+    updateDeliveryPrice();
+  }, [selectedLocation, selectedDeliveryType]);
 
-  const handleSubmit = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-    if (!selectedDeliveryType) {
-      toast.error('يرجى اختيار طريقة التوصيل');
+  const handleSubmitOrder = async () => {
+    if (!validateForm()) {
       return;
     }
-
-    setIsSubmitting(true);
-
+    
+    if (items.length === 0) {
+      toast({
+        title: "السلة فارغة",
+        description: "يرجى إضافة منتجات إلى سلة التسوق أولاً",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Prepare order data
+      const customerId = user ? await getCustomerId() : null;
       
-      if (!user) {
-        toast.error('يجب تسجيل الدخول لإتمام الطلب');
-        navigate('/account/login');
-        return;
+      const orderData = {
+        items: items.map(item => ({
+          product_id: item.product.id,
+          product_name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.offer_price || item.product.price,
+          bulk_quantity: item.product.bulk_quantity,
+          is_bulk: item.is_bulk,
+          unit_of_measure: item.unit_of_measure,
+          total: getItemTotal(item)
+        })),
+        total: getTotalPrice() + deliveryPrice,
+        shipping_cost: deliveryPrice,
+        payment_method: paymentMethod,
+        customer_id: customerId,
+        shipping_address: address,
+        notes: notes,
+        delivery_location_id: selectedLocation?.area || null
+      };
+      
+      // Create order
+      const { data, error } = await supabase
+        .from('online_orders')
+        .insert([orderData])
+        .select();
+      
+      if (error) {
+        throw error;
       }
-
-      const { data: customerData } = await supabase
+      
+      // Save customer data if authenticated
+      if (user && customerId) {
+        await updateCustomerData(customerId);
+      }
+      
+      // Clear cart and navigate to success page
+      clearCart();
+      navigate('/order-success', { state: { orderId: data[0].id } });
+      
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      toast({
+        title: "حدث خطأ",
+        description: "تعذر إكمال الطلب. يرجى المحاولة مرة أخرى",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const getCustomerId = async () => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
         .from('customers')
         .select('id')
         .eq('user_id', user.id)
         .single();
-
-      if (!customerData) {
-        toast.error('لم يتم العثور على بيانات العميل');
-        return;
-      }
-
-      const formattedAddress = `${address.address}, ${address.neighborhoods?.name || ''}, ${address.areas?.name || ''}, ${address.cities?.name || ''}, ${address.governorates?.name || ''}`;
-
-      const orderData = {
-        customer_id: customerData.id,
-        items: items.map(item => ({
-          product_id: item.product.id,
-          quantity: item.quantity,
-          price: item.product.offer_price || item.product.price,
-          name: item.product.name,
-        })),
-        total: getTotalPrice() - discount + deliveryPrice,
-        shipping_address: formattedAddress,
-        shipping_cost: deliveryPrice,
-        payment_method: paymentMethod,
-        payment_status: "pending" as const,
-        status: "waiting" as const,
-        notes: `Customer Name: ${name}\nPhone: ${phone}${appliedOffer ? `\nApplied Offer: ${appliedOffer.name}` : ''}`,
-      };
-
-      await submitOrder(orderData);
-      
-      if (appliedOffer) {
-        await supabase.from('coupon_usage').insert({
-          offer_id: appliedOffer.id,
-          user_id: null,
-        });
+        
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No customer record found, create one
+          const { data: newCustomer, error: insertError } = await supabase
+            .from('customers')
+            .insert([{
+              user_id: user.id,
+              first_name: firstName,
+              last_name: lastName,
+              email: email,
+              phone: phone,
+              address: address,
+              name: `${firstName} ${lastName}`.trim()
+            }])
+            .select('id')
+            .single();
+            
+          if (insertError) throw insertError;
+          return newCustomer.id;
+        }
+        throw error;
       }
       
-      clearCart();
-      toast.success('تم تأكيد طلبك بنجاح');
-      navigate('/order-success');
+      return data.id;
     } catch (error) {
-      console.error('Error submitting order:', error);
-      toast.error('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error in getCustomerId:', error);
+      return null;
     }
   };
-
-  const getProductImage = (item) => {
-    return item.product.image_urls && item.product.image_urls.length > 0 
-      ? item.product.image_urls[0] 
-      : '/placeholder.svg';
+  
+  const updateCustomerData = async (customerId) => {
+    try {
+      await supabase
+        .from('customers')
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          phone: phone,
+          address: address,
+          name: `${firstName} ${lastName}`.trim()
+        })
+        .eq('id', customerId);
+    } catch (error) {
+      console.error('Error updating customer data:', error);
+    }
   };
-
-  const subtotal = getTotalPrice();
-  const deliveryFee = 0;
-  const total = subtotal + deliveryFee - discount + deliveryPrice;
-
-  const handleDeliveryTypeChange = (deliveryTypeId: string) => {
+  
+  const validateForm = () => {
+    if (!firstName) {
+      toast({
+        title: "الاسم الأول مطلوب",
+        description: "يرجى إدخال الاسم الأول",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!phone) {
+      toast({
+        title: "رقم الهاتف مطلوب",
+        description: "يرجى إدخال رقم الهاتف",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!address) {
+      toast({
+        title: "العنوان مطلوب",
+        description: "يرجى إدخال العنوان",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!selectedLocation || !selectedLocation.area) {
+      toast({
+        title: "منطقة التوصيل مطلوبة",
+        description: "يرجى اختيار منطقة التوصيل",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
+  const handleDeliveryTypeChange = (deliveryTypeId) => {
     setSelectedDeliveryType(deliveryTypeId);
     setDeliveryPrice(deliveryPrices[deliveryTypeId] || 0);
   };
 
   const getItemTotal = (item) => {
+    if (item.is_bulk) {
+      return item.product.bulk_price || 0;
+    }
+    
+    if (item.unit_of_measure === 'weight') {
+      const pricePerKg = item.product.offer_price || item.product.price || 0;
+      return pricePerKg * (item.quantity / 1000);
+    }
+    
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
 
@@ -293,195 +321,168 @@ const Checkout = () => {
   return (
     <MainLayout>
       <div className="py-4 pb-24" dir="rtl">
-        <div className="flex items-center mb-6">
-          <button
-            onClick={handleBack}
-            className="p-2"
-            aria-label="الرجوع"
-          >
-            <ArrowRight size={24} />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center">إتمام الطلب</h1>
-          <div className="w-10"></div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-white rounded-lg p-4">
-            <h2 className="font-bold text-lg mb-4">معلومات التوصيل</h2>
+        <h1 className="text-xl font-bold text-center mb-4">إكمال الطلب</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* بيانات المستخدم */}
+          <div className="bg-white rounded-lg p-4 mb-4 order-2 md:order-1">
+            <h3 className="text-lg font-bold mb-3">معلومات العميل</h3>
             
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <User size={18} className="ml-2 text-gray-500" />
-                <label className="font-medium">الاسم</label>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                {name}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <div className="flex items-center mb-2">
-                <Phone size={18} className="ml-2 text-gray-500" />
-                <label className="font-medium">رقم الهاتف</label>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                {phone}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label className="font-medium">العنوان</label>
-              </div>
-              {address && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-semibold mb-1">
-                    {address.governorates?.name && `${address.governorates.name}، `}
-                    {address.cities?.name && `${address.cities.name}، `}
-                    {address.areas?.name && `${address.areas.name}، `}
-                    {address.neighborhoods?.name && address.neighborhoods.name}
-                  </p>
-                  <p className="text-sm text-gray-600">{address.address}</p>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="firstName">الاسم الأول</Label>
+                  <Input 
+                    id="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="الاسم الأول"
+                  />
                 </div>
-              )}
-              {!address && (
-                <Button 
-                  type="button" 
-                  onClick={() => navigate('/account/address')}
-                  className="w-full"
-                >
-                  إضافة عنوان للتوصيل
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4">
-            <DeliveryTypeSelector
-              options={deliveryTypes.map(type => ({
-                ...type,
-                price: deliveryPrices[type.id] || 0
-              }))}
-              selectedId={selectedDeliveryType}
-              onSelect={handleDeliveryTypeChange}
-            />
-          </div>
-
-          {availableOffers.length > 0 && (
-            <div className="bg-white rounded-lg p-4">
-              <h2 className="font-bold text-lg mb-4">العروض المتاحة</h2>
-              <div className="space-y-3">
-                {availableOffers.map(offer => (
-                  <div key={offer.id} className="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <Gift size={18} className="ml-2 text-primary" />
-                    <div>
-                      <p className="font-medium">{offer.name}</p>
-                      <p className="text-sm text-gray-600">{offer.description}</p>
-                    </div>
-                  </div>
-                ))}
+                <div>
+                  <Label htmlFor="lastName">الاسم الأخير</Label>
+                  <Input 
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="الاسم الأخير"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="email">البريد الإلكتروني (اختياري)</Label>
+                <Input 
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="البريد الإلكتروني"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="phone">رقم الهاتف</Label>
+                <Input 
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="رقم الهاتف"
+                />
               </div>
             </div>
-          )}
-
-          <div className="bg-white rounded-lg p-4">
-            <h2 className="font-bold text-lg mb-4">كود الخصم</h2>
-            <div className="flex gap-2">
-              <Input
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                placeholder="أدخل كود الخصم"
-                className="text-right"
-              />
-              <Button 
-                onClick={handleApplyCoupon}
-                disabled={isApplyingCoupon || !couponCode}
-                variant="secondary"
-              >
-                تطبيق
-              </Button>
+            
+            <Separator className="my-4" />
+            
+            <h3 className="text-lg font-bold mb-3">معلومات التوصيل</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <Label>موقع التوصيل</Label>
+                <LocationPicker 
+                  selectedLocation={selectedLocation} 
+                  setSelectedLocation={setSelectedLocation} 
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="address">العنوان بالتفصيل</Label>
+                <Textarea 
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="العنوان بالتفصيل مثل: الشارع، رقم المبنى، الدور، الشقة"
+                  className="resize-none"
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <Label>طريقة التوصيل</Label>
+                <DeliveryTypeSelector 
+                  deliveryTypes={deliveryTypes} 
+                  selectedValue={selectedDeliveryType}
+                  onChange={handleDeliveryTypeChange}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="notes">ملاحظات إضافية (اختياري)</Label>
+                <Textarea 
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="أي ملاحظات إضافية تريد إعلامنا بها"
+                  className="resize-none"
+                  rows={3}
+                />
+              </div>
             </div>
-            {appliedOffer && (
-              <div className="mt-2 text-primary flex items-center">
-                <Check size={16} className="ml-1" />
-                <span>تم تطبيق كود الخصم</span>
+            
+            <Separator className="my-4" />
+            
+            <h3 className="text-lg font-bold mb-3">طريقة الدفع</h3>
+            
+            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <RadioGroupItem value="cash" id="cash" />
+                <Label htmlFor="cash" className="font-medium">
+                  الدفع عند الاستلام
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+          
+          {/* تفاصيل الطلب */}
+          <div className="bg-white rounded-lg p-4 mb-4 order-1 md:order-2">
+            <h3 className="text-lg font-bold mb-3">تفاصيل الطلب</h3>
+            
+            {items.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                السلة فارغة
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <div key={item.product.id} className="flex justify-between py-2 border-b last:border-b-0">
+                      <div className="flex items-center">
+                        <span className="text-gray-500 ml-1">{formatQuantity(item)} ×</span>
+                        <span className="font-medium">{item.product.name}</span>
+                      </div>
+                      <span>{getItemTotal(item).toFixed(2)} ج.م</span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between py-2 border-b">
+                    <span>المجموع</span>
+                    <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2 border-b">
+                    <span>التوصيل</span>
+                    <span className="font-bold">{deliveryPrice.toFixed(2)} ج.م</span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2 font-bold">
+                    <span>الإجمالي</span>
+                    <span className="text-lg">{(getTotalPrice() + deliveryPrice).toFixed(2)} ج.م</span>
+                  </div>
+                </div>
               </div>
             )}
-          </div>
-
-          <div className="bg-white rounded-lg p-4">
-            <h2 className="font-bold text-lg mb-4">ملخص الطلب</h2>
             
-            <div className="space-y-3 mb-4">
-              {items.map((item) => (
-                <div key={item.product.id} className="flex justify-between py-2 border-b last:border-b-0">
-                  <div className="flex items-center">
-                    <span className="text-gray-500 ml-1">{formatQuantity(item)} ×</span>
-                    <span className="font-medium">{item.product.name}</span>
-                  </div>
-                  <span>{getItemTotal(item).toFixed(2)} ج.م</span>
-                </div>
-              ))}
-            </div>
-            
-            <div className="border-t pt-3 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">المجموع</span>
-                <span className="font-medium">{subtotal.toFixed(2)} ج.م</span>
-              </div>
-              {discount > 0 && (
-                <div className="flex justify-between text-primary">
-                  <span>الخصم</span>
-                  <span className="font-medium">- {discount.toFixed(2)} ج.م</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-600">رسوم التوصيل</span>
-                <span className="font-medium">{deliveryPrice.toFixed(2)} ج.م</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t">
-                <span className="font-bold">الإجمالي</span>
-                <span className="font-bold text-lg">{(subtotal - discount + deliveryPrice).toFixed(2)} ج.م</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4">
-            <h2 className="font-bold text-lg mb-4">طريقة الدفع</h2>
-            
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-              <div className="bg-primary h-5 w-5 rounded-full flex items-center justify-center">
-                <Check size={14} className="text-white" />
-              </div>
-              <div className="flex items-center">
-                <span className="mr-2">الدفع عند الاستلام</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                  <rect width="20" height="12" x="2" y="6" rx="2"></rect>
-                  <circle cx="12" cy="12" r="2"></circle>
-                  <path d="M6 12h.01M18 12h.01"></path>
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t">
-            <button
-              type="submit"
-              className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center"
-              disabled={isSubmitting}
+            <Button 
+              className="w-full mt-6" 
+              onClick={handleSubmitOrder}
+              disabled={isLoading || items.length === 0}
             >
-              {isSubmitting ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  <span>تأكيد الطلب</span>
-                  <span className="mr-2">{(getTotalPrice() - discount + deliveryPrice).toFixed(2)} ج.م</span>
-                </>
-              )}
-            </button>
+              {isLoading ? "جاري إرسال الطلب..." : "تأكيد الطلب"}
+            </Button>
           </div>
-        </form>
+        </div>
       </div>
     </MainLayout>
   );

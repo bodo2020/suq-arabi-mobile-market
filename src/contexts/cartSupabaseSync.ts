@@ -1,7 +1,7 @@
 
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CartItem } from '@/lib/supabase';
+import { CartItem } from '@/contexts/cartTypes';
 import { toast } from '@/hooks/use-toast';
 
 export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
@@ -130,11 +130,20 @@ async function fetchCartItems(user: any, customerId: string | null, setItems: Re
           const cartItems: CartItem[] = cartData.map(cartItem => {
             const product = productsData.find(prod => prod.id === cartItem.product_id);
             if (!product) return null;
+            
+            // Extract additional properties from the saved JSON metadata
+            const metadata = cartItem.metadata || {};
+            const is_bulk = metadata.is_bulk === true;
+            const unit_of_measure = metadata.unit_of_measure;
+            
             return {
               product: product,
-              quantity: cartItem.quantity
+              quantity: cartItem.quantity,
+              is_bulk,
+              unit_of_measure
             };
           }).filter(Boolean) as CartItem[];
+          
           setItems(cartItems);
         }
       } else {
@@ -174,7 +183,12 @@ async function syncCartPersistence(user: any, items: CartItem[], customerId: str
       const cartItemsToInsert = items.map(item => ({
         customer_id: customerId,
         product_id: item.product.id,
-        quantity: item.quantity
+        quantity: item.quantity,
+        // Store additional properties as metadata
+        metadata: {
+          is_bulk: item.is_bulk || false,
+          unit_of_measure: item.unit_of_measure || null
+        }
       }));
 
       const { error: insertError } = await supabase

@@ -25,14 +25,26 @@ const Cart = () => {
   const handleDecreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
-      if (item && !item.is_bulk && item.quantity > 1) {
-        updateQuantity(productId, item.quantity - 1, is_bulk);
-      } else {
-        removeFromCart(productId);
-        toast({
-          title: "تم الحذف",
-          description: "تم حذف المنتج من السلة",
-        });
+      if (item) {
+        if (item.is_bulk) {
+          if (item.quantity > 1) {
+            updateQuantity(productId, item.quantity - 1, is_bulk);
+          } else {
+            removeFromCart(productId);
+            toast({
+              title: "تم الحذف",
+              description: "تم حذف المنتج من السلة",
+            });
+          }
+        } else if (item.quantity > 1) {
+          updateQuantity(productId, item.quantity - 1, is_bulk);
+        } else {
+          removeFromCart(productId);
+          toast({
+            title: "تم الحذف",
+            description: "تم حذف المنتج من السلة",
+          });
+        }
       }
     }
   };
@@ -40,7 +52,7 @@ const Cart = () => {
   const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
-      if (item && !item.is_bulk) {
+      if (item) {
         updateQuantity(productId, item.quantity + 1, is_bulk);
       }
     }
@@ -85,6 +97,11 @@ const Cart = () => {
       return `${item.quantity} جرام`;
     }
     return item.quantity;
+  };
+  
+  const getBulkDisplayQuantity = (item) => {
+    if (!item.is_bulk) return null;
+    return item.quantity * (item.product.bulk_quantity || 1);
   };
 
   return (
@@ -171,36 +188,41 @@ const Cart = () => {
                   </div>
 
                   <div className="flex flex-col items-center mr-3">
-                    {!item.is_bulk && (
-                      <div className="flex items-center justify-between bg-gray-100 rounded-lg mb-2">
-                        {item.unit_of_measure === 'weight' ? (
-                          <div 
-                            onClick={() => handleQuantityClick(item.product.id, item.unit_of_measure)}
-                            className="px-4 py-2 cursor-pointer flex items-center gap-2"
+                    <div className="flex items-center justify-between bg-gray-100 rounded-lg mb-2">
+                      {item.unit_of_measure === 'weight' ? (
+                        <div 
+                          onClick={() => handleQuantityClick(item.product.id, item.unit_of_measure)}
+                          className="px-4 py-2 cursor-pointer flex items-center gap-2"
+                        >
+                          <span className="font-medium">{item.quantity}جم</span>
+                        </div>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)}
+                            className="p-1"
+                            aria-label="تقليل الكمية"
                           >
-                            <span className="font-medium">{item.quantity}جم</span>
-                          </div>
-                        ) : (
-                          <>
-                            <button 
-                              onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)}
-                              className="p-1"
-                              aria-label="تقليل الكمية"
-                            >
-                              <Minus size={16} />
-                            </button>
-                            <span className="mx-2 font-medium">{item.quantity}</span>
-                            <button 
-                              onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)}
-                              className="p-1"
-                              aria-label="زيادة الكمية"
-                            >
-                              <Plus size={16} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
+                            <Minus size={16} />
+                          </button>
+                          <span className="mx-2 font-medium">
+                            {item.quantity}
+                            {item.is_bulk && (
+                              <span className="text-xs text-gray-500 mr-1">
+                                ({getBulkDisplayQuantity(item)} قطعة)
+                              </span>
+                            )}
+                          </span>
+                          <button 
+                            onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)}
+                            className="p-1"
+                            aria-label="زيادة الكمية"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                     <button 
                       onClick={() => handleRemoveItem(item.product.id)}
                       className="text-red-500"
