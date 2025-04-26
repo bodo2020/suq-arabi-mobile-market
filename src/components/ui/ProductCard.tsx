@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
@@ -25,7 +24,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const regularCartItem = items.find(item => item.product.id === product.id && !item.is_bulk);
   const bulkCartItem = items.find(item => item.product.id === product.id && item.is_bulk);
   
-  const quantity = showBulkQuantity ? (bulkCartItem?.quantity || 0) : (regularCartItem?.quantity || 0);
+  const quantity = showBulkQuantity && bulkCartItem ? bulkCartItem.quantity : (regularCartItem?.quantity || 0);
   const isOutOfStock = product.quantity <= 0;
 
   if (hideIfUnavailable && isOutOfStock) {
@@ -35,17 +34,28 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (!isOutOfStock) {
       if (product.barcode_type === 'scale') {
         setShowWeightSelector(true);
+      } else if (product.bulk_enabled && product.bulk_quantity && !showBulkQuantity) {
+        setShowBulkModal(true);
       } else {
-        addToCart({
-          ...product,
-          price: product.price || 0,
-          quantity: 1
-        });
+        const quantityToAdd = 1;
         
+        if (showBulkQuantity && product.bulk_enabled && product.bulk_quantity) {
+          addToCart({
+            ...product,
+            price: product.bulk_price || 0,
+            quantity: quantityToAdd,
+            is_bulk: true
+          });
+        } else {
+          addToCart({
+            ...product,
+            price: product.price || 0,
+            quantity: quantityToAdd
+          });
+        }
         toast({
           title: "تم الإضافة",
           description: "تم إضافة المنتج إلى السلة",
@@ -58,52 +68,38 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     e.preventDefault();
     e.stopPropagation();
     
-    const cartItem = showBulkQuantity ? bulkCartItem : regularCartItem;
+    const cartItem = showBulkQuantity && product.bulk_enabled ? bulkCartItem : regularCartItem;
     const isBulkView = showBulkQuantity && product.bulk_enabled;
     
-    if (product.barcode_type === 'scale') {
+    if (product.unit_of_measure === 'weight') {
       setShowWeightSelector(true);
-      return;
-    }
-    
-    if (product.bulk_enabled && product.bulk_quantity && !cartItem && !showBulkQuantity) {
-      setShowBulkModal(true);
-      return;
-    }
-
-    const totalProductQuantity = items
-      .filter(i => i.product.id === product.id)
-      .reduce((total, i) => {
-        if (i.is_bulk) {
-          return total + (i.quantity * (i.product.bulk_quantity || 1));
-        }
-        return total + i.quantity;
-      }, 0);
-
-    const additionalUnitsNeeded = isBulkView ? product.bulk_quantity || 1 : 1;
-
-    if ((totalProductQuantity + additionalUnitsNeeded) <= product.quantity) {
-      if (cartItem) {
+    } else if (cartItem) {
+      const quantityToAdd = 1;
+      
+      const totalProductQuantity = items
+        .filter(i => i.product.id === product.id)
+        .reduce((total, i) => {
+          if (i.is_bulk) {
+            return total + (i.quantity * (i.product.bulk_quantity || 1));
+          }
+          return total + i.quantity;
+        }, 0);
+      
+      const additionalUnitsNeeded = isBulkView ? product.bulk_quantity || 1 : 1;
+      
+      if ((totalProductQuantity + additionalUnitsNeeded) <= product.quantity) {
         updateQuantity(product.id, cartItem.quantity + 1, isBulkView);
+        toast({
+          title: "تم التحديث",
+          description: "تم تحديث الكمية",
+        });
       } else {
-        addToCart({
-          ...product,
-          price: isBulkView ? product.bulk_price || 0 : product.price || 0,
-          quantity: 1,
-          is_bulk: isBulkView
+        toast({
+          title: "تنبيه",
+          description: "الكمية المطلوبة غير متوفرة",
+          variant: "destructive"
         });
       }
-      
-      toast({
-        title: "تم التحديث",
-        description: "تم تحديث الكمية",
-      });
-    } else {
-      toast({
-        title: "تنبيه",
-        description: "الكمية المطلوبة غير متوفرة",
-        variant: "destructive"
-      });
     }
   };
 
@@ -111,7 +107,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     e.preventDefault();
     e.stopPropagation();
     
-    const cartItem = showBulkQuantity ? bulkCartItem : regularCartItem;
+    const cartItem = showBulkQuantity && product.bulk_enabled ? bulkCartItem : regularCartItem;
     const isBulkView = showBulkQuantity && product.bulk_enabled;
     
     if (cartItem && cartItem.quantity > 1) {
@@ -213,7 +209,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 <AlertTriangle size={16} className="ml-1" />
                 نفذت الكمية
               </button>
-            ) : quantity === 0 ? (
+            ) : currentQuantity === 0 ? (
               <button
                 onClick={handleAddToCart}
                 className="w-full py-2 px-3 bg-primary text-white rounded-lg flex items-center justify-center text-sm hover:bg-primary/90 transition-colors"
@@ -230,7 +226,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 >
                   <Minus size={16} />
                 </button>
-                <span className="mx-2">{quantity}</span>
+                <span className="mx-2">{currentQuantity}</span>
                 <button 
                   onClick={handleIncreaseQuantity}
                   className="p-1 hover:bg-primary-foreground/10 rounded"
