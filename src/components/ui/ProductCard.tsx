@@ -13,9 +13,10 @@ import WeightSelector from './WeightSelector';
 interface ProductCardProps {
   product: Product;
   hideIfUnavailable?: boolean;
+  showBulkQuantity?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = false }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = false, showBulkQuantity = false }) => {
   const { items, updateQuantity, addToCart } = useCart();
   const { toast } = useToast();
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -128,7 +129,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
               {discount}% خصم
             </div>
           )}
-          {bulkCartItem && (
+          {(showBulkQuantity && product.bulk_enabled && product.bulk_quantity) && (
             <Badge 
               variant="secondary"
               className="absolute bottom-2 right-2 flex items-center gap-1 bg-[#d3ffb3] text-[#005931] border-0"
