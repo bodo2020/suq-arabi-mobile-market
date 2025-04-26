@@ -98,6 +98,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getTotalItems = useCallback(() => {
     return items.reduce((total, item) => {
       if (item.is_bulk) {
+        // For bulk items, multiply quantity by the bulk_quantity for accurate total count
         return total + (item.quantity * (item.product.bulk_quantity || 1));
       }
       return total + item.quantity;
