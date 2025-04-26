@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -53,7 +52,24 @@ const Cart = () => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
       if (item) {
-        updateQuantity(productId, item.quantity + 1, is_bulk);
+        const totalProductQuantity = items
+          .filter(i => i.product.id === productId)
+          .reduce((total, i) => {
+            if (i.is_bulk) {
+              return total + (i.quantity * (i.product.bulk_quantity || 1));
+            }
+            return total + i.quantity;
+          }, 0);
+        
+        if (totalProductQuantity < item.product.quantity) {
+          updateQuantity(productId, item.quantity + 1, is_bulk);
+        } else {
+          toast({
+            title: "تنبيه",
+            description: "الكمية المطلوبة غير متوفرة",
+            variant: "destructive"
+          });
+        }
       }
     }
   };
@@ -81,7 +97,7 @@ const Cart = () => {
 
   const getItemTotal = (item) => {
     if (item.is_bulk) {
-      return item.product.bulk_price || 0;
+      return (item.product.bulk_price || 0) * item.quantity;
     }
     
     if (item.unit_of_measure === 'weight') {
@@ -90,13 +106,6 @@ const Cart = () => {
     }
     
     return (item.product.offer_price || item.product.price) * item.quantity;
-  };
-
-  const formatQuantity = (item) => {
-    if (item.unit_of_measure === 'weight') {
-      return `${item.quantity} جرام`;
-    }
-    return item.quantity;
   };
   
   const getBulkDisplayQuantity = (item) => {
@@ -118,9 +127,14 @@ const Cart = () => {
             </svg>
             <h3 className="text-lg font-medium text-gray-500 mb-1">السلة فارغة</h3>
             <p className="text-sm text-gray-400 mb-4">لم تقم بإضافة أي منتجات بعد</p>
-            <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
-              تسوق الآن
-            </Link>
+            <div className="flex gap-2">
+              <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
+                تسوق الآن
+              </Link>
+              <Link to="/bulk-products" className="bg-[#d3ffb3] text-[#005931] px-4 py-2 rounded-md flex items-center">
+                <Package className="w-4 h-4 mr-1" /> منتجات الجملة
+              </Link>
+            </div>
           </div>
         ) : (
           <>
@@ -146,7 +160,6 @@ const Cart = () => {
                     <div className="flex items-center gap-2">
                       <Link to={`/product/${item.product.id}`} className="font-semibold text-sm line-clamp-1">
                         {item.product.name}
-                        {item.is_bulk && ` × ${item.product.bulk_quantity}`}
                       </Link>
                       {item.is_bulk && (
                         <Badge variant="secondary" className="flex items-center gap-1">
@@ -164,7 +177,7 @@ const Cart = () => {
                     <div className="flex items-center mt-1">
                       {item.is_bulk ? (
                         <span className="text-sm font-bold text-primary">
-                          {item.product.bulk_price} ج.م (سعر الجملة)
+                          {item.product.bulk_price} ج.م (سعر الوحدة)
                         </span>
                       ) : item.unit_of_measure === 'weight' ? (
                         <span className="text-sm font-bold">
@@ -223,13 +236,18 @@ const Cart = () => {
                         </>
                       )}
                     </div>
-                    <button 
-                      onClick={() => handleRemoveItem(item.product.id)}
-                      className="text-red-500"
-                      aria-label="حذف المنتج"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center">
+                      <button 
+                        onClick={() => handleRemoveItem(item.product.id)}
+                        className="text-red-500"
+                        aria-label="حذف المنتج"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <span className="mr-2 font-semibold text-green-700">
+                        {getItemTotal(item).toFixed(2)} ج.م
+                      </span>
+                    </div>
                   </div>
                   
                   {openWeightSelector === item.product.id && (
@@ -259,9 +277,14 @@ const Cart = () => {
               </div>
             </div>
 
-            <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
-              متابعة الطلب
-            </Link>
+            <div className="flex flex-col space-y-2">
+              <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
+                متابعة الطلب
+              </Link>
+              <Link to="/bulk-products" className="bg-[#d3ffb3] text-[#005931] py-3 rounded-lg flex items-center justify-center w-full">
+                <Package className="w-4 h-4 mr-2" /> تسوق منتجات الجملة
+              </Link>
+            </div>
           </>
         )}
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Package, Scale, Plus, Minus } from 'lucide-react';
@@ -74,11 +75,15 @@ const ProductDetail = () => {
       return;
     }
 
-    const existingQuantity = items.reduce((total, item) => 
-      item.product.id === product.id ? total + item.quantity : total, 0
-    );
+    const existingItems = items.filter(item => item.product.id === product.id);
+    const totalExistingQuantity = existingItems.reduce((total, item) => {
+      if (item.is_bulk) {
+        return total + (item.quantity * (item.product.bulk_quantity || 1));
+      }
+      return total + item.quantity;
+    }, 0);
     
-    const totalQuantity = existingQuantity + quantity;
+    const totalQuantity = totalExistingQuantity + quantity;
 
     if (totalQuantity > (product.quantity || 0)) {
       toast({
@@ -90,7 +95,7 @@ const ProductDetail = () => {
     }
 
     if (isBulk) {
-      if (!product.bulk_quantity || quantity < product.bulk_quantity) {
+      if (!product.bulk_quantity || !product.bulk_enabled || quantity < product.bulk_quantity) {
         toast({
           title: "تنبيه",
           description: `الحد الأدنى للبيع بالجملة هو ${product.bulk_quantity} قطعة`,
@@ -114,7 +119,19 @@ const ProductDetail = () => {
   };
 
   const handleIncreaseQuantity = () => {
-    if (quantity < (product?.quantity || 0)) {
+    if (!product) return;
+    
+    const existingItems = items.filter(item => item.product.id === product.id);
+    const totalExistingQuantity = existingItems.reduce((total, item) => {
+      if (item.is_bulk) {
+        return total + (item.quantity * (item.product.bulk_quantity || 1));
+      }
+      return total + item.quantity;
+    }, 0);
+    
+    const totalQuantity = totalExistingQuantity + quantity + 1;
+    
+    if (totalQuantity <= (product.quantity || 0)) {
       setQuantity(prev => prev + 1);
     } else {
       toast({
@@ -131,9 +148,12 @@ const ProductDetail = () => {
     }
   };
 
-  const bulkItemInCart = product ? items.find(item => 
-    item.product.id === product.id && item.is_bulk
-  ) : null;
+  // Check if bulk purchase is available
+  const isBulkAvailable = product && 
+    product.bulk_enabled && 
+    product.bulk_quantity && 
+    product.bulk_price &&
+    quantity >= product.bulk_quantity;
 
   if (loading) {
     return (
@@ -165,12 +185,6 @@ const ProductDetail = () => {
             ) : (
               <img src="/placeholder.svg" alt="Placeholder" className="w-full rounded-lg" />
             )}
-            {bulkItemInCart && (
-              <div className="absolute bottom-2 right-2 bg-[#d3ffb3] text-[#005931] text-sm rounded-full px-3 py-1 flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                {product.bulk_quantity} قطعة
-              </div>
-            )}
           </div>
 
           <div>
@@ -190,11 +204,11 @@ const ProductDetail = () => {
                   <span className="text-primary font-bold text-lg block">{product.price} ج.م</span>
                 )}
 
-                {product.bulk_price && (
+                {product.bulk_enabled && product.bulk_price && product.bulk_quantity && (
                   <div className="flex items-center gap-2 mt-2">
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <Package className="w-3 h-3" />
-                      سعر الجملة: {product.bulk_price} ج.م
+                      سعر الجملة: {product.bulk_price} ج.م (للوحدة عند شراء {product.bulk_quantity} قطعة أو أكثر)
                     </Badge>
                   </div>
                 )}
@@ -202,11 +216,22 @@ const ProductDetail = () => {
               {company && <CompanyCard company={company} />}
             </div>
 
+            {product.quantity <= 0 ? (
+              <div className="bg-red-100 text-red-600 p-3 rounded-md mb-4">
+                هذا المنتج غير متوفر حاليًا
+              </div>
+            ) : (
+              <div className="text-green-600 mb-4">
+                متوفر: {product.quantity} قطعة
+              </div>
+            )}
+
             <div className="space-y-4 mt-6">
               {product.barcode_type === 'scale' ? (
                 <Button 
                   onClick={() => setIsWeightSelectorOpen(true)}
                   className="w-full flex items-center gap-2"
+                  disabled={product.quantity <= 0}
                 >
                   <Scale className="w-4 h-4" />
                   تحديد الوزن
@@ -218,6 +243,7 @@ const ProductDetail = () => {
                       onClick={handleDecreaseQuantity}
                       className="p-2 hover:bg-gray-100"
                       aria-label="تقليل الكمية"
+                      disabled={product.quantity <= 0}
                     >
                       <Minus size={16} />
                     </button>
@@ -226,24 +252,30 @@ const ProductDetail = () => {
                       onClick={handleIncreaseQuantity}
                       className="p-2 hover:bg-gray-100"
                       aria-label="زيادة الكمية"
+                      disabled={product.quantity <= 0}
                     >
                       <Plus size={16} />
                     </button>
                   </div>
-                  <Button onClick={() => handleAddToCart(false)} className="flex-1">
+                  <Button 
+                    onClick={() => handleAddToCart(false)} 
+                    className="flex-1"
+                    disabled={product.quantity <= 0}
+                  >
                     إضافة للسلة
                   </Button>
                 </div>
               )}
 
-              {product.bulk_quantity && product.bulk_price && quantity >= product.bulk_quantity && (
+              {isBulkAvailable && (
                 <Button 
                   onClick={() => handleAddToCart(true)} 
                   variant="secondary"
-                  className="w-full flex items-center gap-2"
+                  className="w-full flex items-center gap-2 bg-[#d3ffb3] text-[#005931] hover:bg-[#c3ef93]"
+                  disabled={product.quantity < product.bulk_quantity}
                 >
                   <Package className="w-4 h-4" />
-                  شراء جملة ({product.bulk_quantity} قطعة)
+                  شراء جملة ({product.bulk_quantity} قطعة × {product.bulk_price} ج.م)
                 </Button>
               )}
             </div>
