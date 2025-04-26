@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Plus, Trash2, Home } from 'lucide-react';
@@ -153,8 +154,9 @@ const AddressManager = () => {
       })));
 
       if (data) {
-        localStorage.setItem('userArea', data.area_name || '');
-        localStorage.setItem('userNeighborhood', data.neighborhood_name || '');
+        // Use the correct properties from the data object
+        localStorage.setItem('userArea', data.area_id || '');
+        localStorage.setItem('userNeighborhood', data.neighborhood_id || '');
       }
 
       toast({
@@ -214,8 +216,9 @@ const AddressManager = () => {
                     <span className="text-sm font-semibold">
                       {address.governorate_name && `${address.governorate_name}، `}
                       {address.city_name && `${address.city_name}، `}
-                      {address.area_name && `${address.area_name}، `}
-                      {address.neighborhood_name && `${address.neighborhood_name}`}
+                      {/* Use area_id and neighborhood_id if area_name and neighborhood_name are not available */}
+                      {(address.area_name || address.area_id) && `${address.area_name || address.area_id}، `}
+                      {address.neighborhood_name || address.neighborhood_id}
                     </span>
                     <span className="text-sm text-gray-600">{address.address}</span>
                   </div>
