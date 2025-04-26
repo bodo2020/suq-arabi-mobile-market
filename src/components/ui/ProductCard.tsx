@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale } from 'lucide-react';
@@ -33,13 +32,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     e.stopPropagation();
     if (!isOutOfStock) {
       if (product.unit_of_measure === 'weight') {
-        // المنتجات التي تباع بالوزن تفتح نافذة اختيار الوزن
         setShowWeightSelector(true);
       } else if (product.bulk_enabled) {
-        // المنتجات التي يمكن بيعها بالجملة تفتح نافذة اختيار نوع البيع
         setShowBulkModal(true);
       } else {
-        // المنتجات العادية تضاف مباشرة للسلة
         addToCart({
           ...product,
           price: product.price || 0,
@@ -157,7 +153,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
         </div>
       </Link>
 
-      {/* Modals */}
       <AddToCartModal
         product={product}
         isOpen={showBulkModal}

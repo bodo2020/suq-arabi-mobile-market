@@ -22,7 +22,7 @@ const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
   const handleAddToCart = () => {
     addToCart({
       ...product,
-      price: product.price || 0,
+      price: total,
       quantity: weight // تخزين الوزن بالجرام
     });
     onClose();
