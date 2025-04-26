@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
@@ -101,16 +100,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const getTotalItems = useCallback(() => {
-    return items.reduce((total, item) => {
-      if (item.is_bulk) {
-        return total + ((item.product.bulk_quantity || 1) * item.quantity);
-      }
-      if (item.unit_of_measure === 'weight') {
-        // للمنتجات التي تباع بالوزن، نعتبرها كوحدة واحدة في عدد المنتجات
-        return total + 1;
-      }
-      return total + item.quantity;
-    }, 0);
+    return items.length;
   }, [items]);
 
   return (
