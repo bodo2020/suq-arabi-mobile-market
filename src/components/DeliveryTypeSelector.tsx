@@ -45,7 +45,7 @@ const DeliveryTypeSelector = ({ options, selectedId, onSelect }: DeliveryTypeSel
                 </div>
               </div>
               <div className="text-left">
-                <span className="font-medium">{option.price.toFixed(2)} ج.م</span>
+                <span className="font-medium">{(option.price || 0).toFixed(2)} ج.م</span>
               </div>
             </div>
           ))}
