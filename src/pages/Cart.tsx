@@ -121,7 +121,7 @@ const Cart = () => {
               <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
             </svg>
             <h3 className="text-lg font-medium text-gray-500 mb-1">لم تقم بإضافة أي منتجات بعد</h3>
-            <p className="text-sm text-gray-400 mb-4">لم ��قم بإضافة أي منتجات بعد</p>
+            <p className="text-sm text-gray-400 mb-4">لم تقم بإضافة أي منتجات بعد</p>
             <div className="flex gap-2">
               <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
                 تسوق الآن
