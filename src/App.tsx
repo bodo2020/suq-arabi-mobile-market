@@ -22,7 +22,7 @@ import BannerProducts from '@/pages/BannerProducts';
 import CompanyProducts from '@/pages/CompanyProducts';
 import NotFound from '@/pages/NotFound';
 import { CartProvider } from '@/contexts/CartProvider';
-import { UserContext, UserProvider } from '@/contexts/UserContext';
+import { UserProvider } from '@/contexts/UserContext';
 import { Toaster } from '@/components/ui/toaster';
 import BulkProducts from '@/pages/BulkProducts';
 
@@ -32,8 +32,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <CartProvider>
-          <UserProvider>
+        <UserProvider>
+          <CartProvider>
             <Toaster />
             <Routes>
               <Route path="/" element={<Index />} />
@@ -58,8 +58,8 @@ function App() {
               <Route path="/bulk-products" element={<BulkProducts />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </UserProvider>
-        </CartProvider>
+          </CartProvider>
+        </UserProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
