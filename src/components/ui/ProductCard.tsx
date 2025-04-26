@@ -36,9 +36,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     if (!isOutOfStock) {
       if (product.barcode_type === 'scale') {
         setShowWeightSelector(true);
-      } else if (product.bulk_enabled) {
+      } else if (product.bulk_enabled && product.bulk_quantity && quantity >= product.bulk_quantity) {
         setShowBulkModal(true);
-      } else {
+      } else if (quantity < product.quantity) {
         addToCart({
           ...product,
           price: product.price || 0,
@@ -47,6 +47,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
         toast({
           title: "تم الإضافة",
           description: "تم إضافة المنتج إلى السلة",
+        });
+      } else {
+        toast({
+          title: "تنبيه",
+          description: "الكمية المطلوبة غير متوفرة",
+          variant: "destructive"
         });
       }
     }
@@ -57,12 +63,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     e.stopPropagation();
     if (product.unit_of_measure === 'weight') {
       setShowWeightSelector(true);
-    } else {
-      // Make sure we're passing the correct parameters to updateQuantity
+    } else if (quantity < product.quantity) {
       updateQuantity(product.id, quantity + 1, false);
       toast({
         title: "تم التحديث",
         description: "تم تحديث الكمية",
+      });
+    } else {
+      toast({
+        title: "تنبيه",
+        description: "الكمية المطلوبة غير متوفرة",
+        variant: "destructive"
       });
     }
   };
@@ -71,14 +82,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     e.preventDefault();
     e.stopPropagation();
     if (quantity > 1) {
-      // Make sure we're passing the correct parameters to updateQuantity
       updateQuantity(product.id, quantity - 1, false);
       toast({
         title: "تم التحديث",
         description: "تم تحديث الكمية",
       });
     } else {
-      // Make sure we're passing the correct parameters to updateQuantity
       updateQuantity(product.id, 0, false);
       toast({
         title: "تم الحذف",

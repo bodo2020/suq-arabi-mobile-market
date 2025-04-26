@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from './input';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
+import { useToast } from '@/hooks/use-toast';
 
 interface AddToCartModalProps {
   product: Product;
@@ -15,11 +16,10 @@ interface AddToCartModalProps {
 const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
   const [saleType, setSaleType] = useState<'normal' | 'bulk'>('normal');
   const [quantity, setQuantity] = useState(1);
-  const { addToCart } = useCart();
+  const { addToCart, items } = useCart();
+  const { toast } = useToast();
   
-  // تحديث الكمية عند تغيير نوع البيع
   useEffect(() => {
-    // إذا كان نوع البيع بالجملة، نضع الكمية الأدنى المطلوبة للجملة، وإلا نضع 1
     if (saleType === 'bulk' && product.bulk_quantity) {
       setQuantity(product.bulk_quantity);
     } else {
@@ -28,10 +28,33 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
   }, [saleType, product.bulk_quantity]);
 
   const handleAddToCart = () => {
-    // في حالة البيع بالجملة، نستخدم سعر الجملة فقط وليس سعر العرض
-    const price = saleType === 'bulk' 
-      ? product.bulk_price 
-      : (product.offer_price || product.price);
+    const existingQuantity = items.reduce((total, item) => 
+      item.product.id === product.id ? total + item.quantity : total, 0
+    );
+    
+    const totalQuantity = existingQuantity + quantity;
+
+    if (totalQuantity > product.quantity) {
+      toast({
+        title: "تنبيه",
+        description: "الكمية المطلوبة غير متوفرة",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (saleType === 'bulk') {
+      if (!product.bulk_quantity || quantity < product.bulk_quantity) {
+        toast({
+          title: "تنبيه",
+          description: `الحد الأدنى للبيع بالجملة هو ${product.bulk_quantity} قطعة`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    const price = saleType === 'bulk' ? product.bulk_price : (product.offer_price || product.price);
     
     addToCart({
       ...product,
