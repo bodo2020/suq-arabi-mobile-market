@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
@@ -13,14 +14,14 @@ const Cart = () => {
 
   const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false) => {
     const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
-    if (item) {
+    if (item && !item.is_bulk) {
       updateQuantity(productId, item.quantity + 1, is_bulk);
     }
   };
 
   const handleDecreaseQuantity = (productId: string, is_bulk: boolean = false) => {
     const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
-    if (item && (!item.is_bulk && item.quantity > 1)) {
+    if (item && !item.is_bulk && item.quantity > 1) {
       updateQuantity(productId, item.quantity - 1, is_bulk);
     } else {
       removeFromCart(productId);
@@ -85,11 +86,18 @@ const Cart = () => {
                   key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} 
                   className="flex items-center p-3 border-b last:border-b-0"
                 >
-                  <img 
-                    src={getProductImage(item)} 
-                    alt={item.product.name} 
-                    className="h-16 w-16 object-contain ml-3"
-                  />
+                  <div className="relative">
+                    <img 
+                      src={getProductImage(item)} 
+                      alt={item.product.name} 
+                      className="h-16 w-16 object-contain ml-3"
+                    />
+                    {item.is_bulk && (
+                      <div className="absolute bottom-0 right-0 bg-primary text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+                        {item.product.bulk_quantity}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 flex flex-col">
                     <div className="flex items-center gap-2">
                       <Link to={`/product/${item.product.id}`} className="font-semibold text-sm line-clamp-1">
@@ -126,7 +134,7 @@ const Cart = () => {
                   </div>
 
                   <div className="flex flex-col items-center mr-3">
-                    {!item.is_bulk && (
+                    {!item.is_bulk ? (
                       <div className="flex items-center justify-between bg-gray-100 rounded-lg mb-2">
                         <button 
                           onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)}
@@ -143,6 +151,10 @@ const Cart = () => {
                         >
                           <Plus size={16} />
                         </button>
+                      </div>
+                    ) : (
+                      <div className="mb-2 font-medium text-sm">
+                        الكمية: 1
                       </div>
                     )}
                     <button 

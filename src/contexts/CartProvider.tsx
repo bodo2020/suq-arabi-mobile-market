@@ -36,7 +36,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       return [...currentItems, { 
-        product, 
+        product: {
+          ...product,
+          bulk_quantity: product.bulk_quantity || 1,
+        },
         quantity: product.is_bulk ? 1 : (product.quantity || 1),
         is_bulk: product.is_bulk
       }];
@@ -78,7 +81,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const getTotalItems = useCallback(() => {
-    return items.reduce((total, item) => total + item.quantity, 0);
+    return items.reduce((total, item) => total + (item.is_bulk ? item.product.bulk_quantity : item.quantity), 0);
   }, [items]);
 
   return (
