@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LocationDisplay from "@/components/ui/LocationDisplay";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
+import AddressDisplay from '@/components/ui/AddressDisplay';
 
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
@@ -100,7 +101,7 @@ const Index = () => {
 
   const handleChangeLocation = () => {
     setPopoverOpen(false);
-    navigate('/account/address');
+    navigate('/account/addresses');
   };
 
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
@@ -110,6 +111,17 @@ const Index = () => {
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
+
+  const addressSection = (
+    <div className="mb-4">
+      <AddressDisplay
+        address={userAddress || ''}
+        areaName={userLocation?.area}
+        onEdit={handleChangeLocation}
+        showAddressSelector={true}
+      />
+    </div>
+  );
 
   if (categoriesLoading || productsLoading) {
     return (
@@ -271,7 +283,7 @@ const Index = () => {
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-lg font-bold">منتجات مميزة</h2>
             <Link to="/products" className="flex items-center text-primary text-sm">
-              عرض الكل
+              ع��ض الكل
               <ChevronLeft size={16} />
             </Link>
           </div>
