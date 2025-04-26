@@ -1,39 +1,55 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Package } from 'lucide-react';
+import { ArrowRight, Package, Search } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
-import { Product, getProducts, getSubcategories, Subcategory } from '@/lib/supabase';
+import { Product, getProducts, getCategories } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 const BulkProducts = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [allProducts, allSubcategories] = await Promise.all([
+        const [allProducts, allCategories] = await Promise.all([
           getProducts(),
-          getSubcategories()
+          getCategories()
         ]);
         
         // Filter only products with bulk enabled
-        const bulkProducts = allProducts.filter(product => 
+        let bulkProducts = allProducts.filter(product => 
           product.bulk_enabled && 
           product.bulk_quantity && 
           product.bulk_price &&
-          product.quantity >= product.bulk_quantity && // Only show products with enough quantity
-          (!selectedSubcategory || product.subcategory_id === selectedSubcategory)
+          product.quantity >= product.bulk_quantity
         );
+
+        // Filter by search query if exists
+        if (searchQuery) {
+          bulkProducts = bulkProducts.filter(product => 
+            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
+
+        // Filter by selected category
+        if (selectedCategory) {
+          bulkProducts = bulkProducts.filter(product => 
+            product.category_id === selectedCategory
+          );
+        }
         
         setProducts(bulkProducts);
-        setSubcategories(allSubcategories);
+        setCategories(allCategories);
       } catch (error) {
         console.error('Error fetching bulk products:', error);
       } finally {
@@ -42,7 +58,7 @@ const BulkProducts = () => {
     };
 
     fetchData();
-  }, [selectedSubcategory]);
+  }, [selectedCategory, searchQuery]);
 
   return (
     <MainLayout>
@@ -58,22 +74,35 @@ const BulkProducts = () => {
           <div className="w-10"></div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+        <div className="px-4 mb-4">
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="ابحث عن منتجات الجملة..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 px-4">
           <Badge
-            variant={selectedSubcategory === null ? "default" : "outline"}
+            variant={selectedCategory === null ? "default" : "outline"}
             className="cursor-pointer"
-            onClick={() => setSelectedSubcategory(null)}
+            onClick={() => setSelectedCategory(null)}
           >
             الكل
           </Badge>
-          {subcategories.map((subcat) => (
+          {categories.map((cat) => (
             <Badge
-              key={subcat.id}
-              variant={selectedSubcategory === subcat.id ? "default" : "outline"}
+              key={cat.id}
+              variant={selectedCategory === cat.id ? "default" : "outline"}
               className="cursor-pointer whitespace-nowrap"
-              onClick={() => setSelectedSubcategory(subcat.id)}
+              onClick={() => setSelectedCategory(cat.id)}
             >
-              {subcat.name}
+              {cat.name}
             </Badge>
           ))}
         </div>
@@ -83,7 +112,7 @@ const BulkProducts = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 px-4">
             {products.map((product) => (
               <ProductCard 
                 key={product.id} 

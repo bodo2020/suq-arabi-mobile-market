@@ -40,11 +40,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
       } else if (product.bulk_enabled && product.bulk_quantity && quantity >= product.bulk_quantity) {
         setShowBulkModal(true);
       } else if (quantity < product.quantity) {
-        addToCart({
-          ...product,
-          price: product.price || 0,
-          quantity: 1
-        });
+        // If it's a bulk product page and the product has bulk settings
+        if (showBulkQuantity && product.bulk_enabled && product.bulk_quantity) {
+          addToCart({
+            ...product,
+            price: product.bulk_price || 0,
+            quantity: product.bulk_quantity,
+            is_bulk: true
+          });
+        } else {
+          addToCart({
+            ...product,
+            price: product.price || 0,
+            quantity: 1
+          });
+        }
         toast({
           title: "تم الإضافة",
           description: "تم إضافة المنتج إلى السلة",
