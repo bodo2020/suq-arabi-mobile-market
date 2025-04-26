@@ -43,12 +43,15 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
     onClose();
   };
 
-  // حساب السعر الحالي بناءً على نوع البيع
+  // السعر بناءً على نوع البيع
   const currentPrice = saleType === 'bulk' 
     ? product.bulk_price 
     : (product.offer_price || product.price);
   
-  const total = (currentPrice || 0) * quantity;
+  // حساب الإجمالي - في حالة الجملة، السعر هو للكمية كاملة وليس للوحدة
+  const total = saleType === 'bulk' 
+    ? (currentPrice || 0) // سعر الجملة هو السعر الإجمالي
+    : (currentPrice || 0) * quantity; // في حالة البيع العادي، نضرب السعر × الكمية
 
   // الحد الأدنى للكمية بناءً على نوع البيع
   const minQuantity = saleType === 'bulk' ? (product.bulk_quantity || 1) : 1;
