@@ -283,7 +283,7 @@ const Index = () => {
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-lg font-bold">منتجات مميزة</h2>
             <Link to="/products" className="flex items-center text-primary text-sm">
-              ع��ض الكل
+              عرض الكل
               <ChevronLeft size={16} />
             </Link>
           </div>
