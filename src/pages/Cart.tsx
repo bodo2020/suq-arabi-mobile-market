@@ -114,11 +114,12 @@ const Cart = () => {
   };
 
   const formatBulkQuantity = (item) => {
-    if (!item.is_bulk || !item.product.bulk_quantity || item.quantity === 1) {
+    if (!item.is_bulk || !item.product.bulk_quantity) {
       return `${item.quantity}`;
     }
+    
     const totalUnits = item.quantity * item.product.bulk_quantity;
-    return `${item.quantity}×${item.product.bulk_quantity} (${totalUnits} قطعة)`;
+    return `${totalUnits} قطعة`;
   };
 
   return <MainLayout>
