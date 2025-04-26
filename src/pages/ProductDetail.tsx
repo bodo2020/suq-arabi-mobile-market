@@ -73,10 +73,36 @@ const ProductDetail = () => {
       setIsWeightSelectorOpen(true);
       return;
     }
+
+    const existingQuantity = items.reduce((total, item) => 
+      item.product.id === product.id ? total + item.quantity : total, 0
+    );
+    
+    const totalQuantity = existingQuantity + quantity;
+
+    if (totalQuantity > (product.quantity || 0)) {
+      toast({
+        title: "تنبيه",
+        description: "الكمية المطلوبة غير متوفرة",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isBulk) {
+      if (!product.bulk_quantity || quantity < product.bulk_quantity) {
+        toast({
+          title: "تنبيه",
+          description: `الحد الأدنى للبيع بالجملة هو ${product.bulk_quantity} قطعة`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
     
     addToCart({
       ...product,
-      price: product.price || 0,
+      price: isBulk ? (product.bulk_price || 0) : (product.price || 0),
       quantity: quantity,
       is_bulk: isBulk
     });
@@ -88,7 +114,15 @@ const ProductDetail = () => {
   };
 
   const handleIncreaseQuantity = () => {
-    setQuantity(prev => prev + 1);
+    if (quantity < (product?.quantity || 0)) {
+      setQuantity(prev => prev + 1);
+    } else {
+      toast({
+        title: "تنبيه",
+        description: "الكمية المطلوبة غير متوفرة",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDecreaseQuantity = () => {
@@ -202,7 +236,7 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {product.bulk_quantity && product.bulk_price && (
+              {product.bulk_quantity && product.bulk_price && quantity >= product.bulk_quantity && (
                 <Button 
                   onClick={() => handleAddToCart(true)} 
                   variant="secondary"
