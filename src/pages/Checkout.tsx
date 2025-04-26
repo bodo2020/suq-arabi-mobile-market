@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { Label } from '@/components/ui/label';
@@ -15,6 +13,12 @@ import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
 import { getDeliveryTypes, getDeliveryPrice } from '@/utils/deliveryUtils';
 import LocationPicker, { LocationValue } from '@/components/ui/LocationPicker';
 import { CartItem } from '@/contexts/cartTypes';
+import { Progress } from '@/components/ui/progress';
+import AddressDisplay from '@/components/ui/AddressDisplay';
+import OrderNotes from '@/components/ui/OrderNotes';
+import CouponInput from '@/components/ui/CouponInput';
+import { getFreeDeliveryOffer } from '@/utils/offerUtils';
+import { useNavigate } from 'react-router-dom';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -38,6 +42,11 @@ const Checkout = () => {
   const [deliveryPrice, setDeliveryPrice] = useState(0);
   const [deliveryPrices, setDeliveryPrices] = useState<Record<string, number>>({});
 
+  const [discount, setDiscount] = useState(0);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [isFreeDelivery, setIsFreeDelivery] = useState(false);
+  const [locationName, setLocationName] = useState('');
+  
   useEffect(() => {
     const loadDeliveryTypes = async () => {
       const types = await getDeliveryTypes();
@@ -132,6 +141,35 @@ const Checkout = () => {
     
     updateDeliveryPrice();
   }, [selectedLocation, selectedDeliveryType]);
+
+  // Check for free delivery threshold
+  useEffect(() => {
+    const checkFreeDelivery = async () => {
+      const freeDeliveryOffer = await getFreeDeliveryOffer(getTotalPrice());
+      setIsFreeDelivery(!!freeDeliveryOffer);
+    };
+    
+    checkFreeDelivery();
+  }, [getTotalPrice()]);
+
+  // Update location name when area is selected
+  useEffect(() => {
+    if (!selectedLocation.area) return;
+    
+    const getAreaName = async () => {
+      const { data } = await supabase
+        .from('areas')
+        .select('name')
+        .eq('id', selectedLocation.area)
+        .single();
+      
+      if (data) {
+        setLocationName(data.name);
+      }
+    };
+    
+    getAreaName();
+  }, [selectedLocation.area]);
 
   const handleSubmitOrder = async () => {
     if (!validateForm()) {
@@ -339,11 +377,14 @@ const Checkout = () => {
         <h1 className="text-xl font-bold text-center mb-4">إكمال الطلب</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* بيانات المستخدم */}
+          {/* Customer Information */}
           <div className="bg-white rounded-lg p-4 mb-4 order-2 md:order-1">
+            <Progress value={75} className="mb-6" />
+            
             <h3 className="text-lg font-bold mb-3">معلومات العميل</h3>
             
-            <div className="space-y-4">
+            {/* Personal Info */}
+            <div className="space-y-4 mb-6">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="firstName">الاسم الأول</Label>
@@ -366,17 +407,6 @@ const Checkout = () => {
               </div>
               
               <div>
-                <Label htmlFor="email">البريد الإلكتروني (اختياري)</Label>
-                <Input 
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="البريد الإلكتروني"
-                />
-              </div>
-              
-              <div>
                 <Label htmlFor="phone">رقم الهاتف</Label>
                 <Input 
                   id="phone"
@@ -391,26 +421,42 @@ const Checkout = () => {
             
             <h3 className="text-lg font-bold mb-3">معلومات التوصيل</h3>
             
+            {/* Delivery Info */}
             <div className="space-y-4">
-              <div>
-                <Label>موقع التوصيل</Label>
-                <LocationPicker 
-                  value={selectedLocation} 
-                  onChange={setSelectedLocation} 
+              {!isEditingAddress && address ? (
+                <AddressDisplay
+                  address={address}
+                  areaName={locationName}
+                  onEdit={() => setIsEditingAddress(true)}
+                  className="mb-4"
                 />
-              </div>
-              
-              <div>
-                <Label htmlFor="address">العنوان بالتفصيل</Label>
-                <Textarea 
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="العنوان بالتفصيل مثل: الشارع، رقم المبنى، الدور، الشقة"
-                  className="resize-none"
-                  rows={3}
-                />
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <Label>موقع التوصيل</Label>
+                    <LocationPicker 
+                      value={selectedLocation} 
+                      onChange={setSelectedLocation} 
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="address">العنوان بالتفصيل</Label>
+                    <Input 
+                      id="address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="العنوان بالتفصيل مثل: الشارع، رقم المبنى، الدور، الشقة"
+                    />
+                  </div>
+                  
+                  {isEditingAddress && (
+                    <Button onClick={() => setIsEditingAddress(false)} className="w-full">
+                      حفظ العنوان
+                    </Button>
+                  )}
+                </>
+              )}
               
               <div>
                 <Label>طريقة التوصيل</Label>
@@ -421,17 +467,7 @@ const Checkout = () => {
                 />
               </div>
               
-              <div>
-                <Label htmlFor="notes">ملاحظات إضافية (اختياري)</Label>
-                <Textarea 
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="أي ملاحظات إضافية تريد إعلامنا بها"
-                  className="resize-none"
-                  rows={3}
-                />
-              </div>
+              <OrderNotes value={notes} onChange={setNotes} />
             </div>
             
             <Separator className="my-4" />
@@ -442,13 +478,13 @@ const Checkout = () => {
               <div className="flex items-center space-x-2 space-x-reverse">
                 <RadioGroupItem value="cash" id="cash" />
                 <Label htmlFor="cash" className="font-medium">
-                  الدف�� عند الاستلام
+                  الدفع عند الاستلام
                 </Label>
               </div>
             </RadioGroup>
           </div>
           
-          {/* تفاصيل الطلب */}
+          {/* Order Details */}
           <div className="bg-white rounded-lg p-4 mb-4 order-1 md:order-2">
             <h3 className="text-lg font-bold mb-3">تفاصيل الطلب</h3>
             
@@ -470,20 +506,42 @@ const Checkout = () => {
                   ))}
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex justify-between py-2 border-b">
-                    <span>المجموع</span>
-                    <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
-                  </div>
+                <div className="space-y-4">
+                  <CouponInput 
+                    subtotal={getTotalPrice()} 
+                    onApply={setDiscount}
+                  />
                   
-                  <div className="flex justify-between py-2 border-b">
-                    <span>التوصيل</span>
-                    <span className="font-bold">{deliveryPrice.toFixed(2)} ج.م</span>
-                  </div>
-                  
-                  <div className="flex justify-between py-2 font-bold">
-                    <span>الإجمالي</span>
-                    <span className="text-lg">{(getTotalPrice() + deliveryPrice).toFixed(2)} ج.م</span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between py-2 border-b">
+                      <span>المجموع</span>
+                      <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
+                    </div>
+                    
+                    {discount > 0 && (
+                      <div className="flex justify-between py-2 border-b text-primary">
+                        <span>الخصم</span>
+                        <span>- {discount.toFixed(2)} ج.م</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between py-2 border-b">
+                      <span>التوصيل</span>
+                      <span className="font-bold">
+                        {isFreeDelivery ? (
+                          <span className="text-primary">مجاناً</span>
+                        ) : (
+                          `${deliveryPrice.toFixed(2)} ج.م`
+                        )}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between py-2 font-bold">
+                      <span>الإجمالي</span>
+                      <span className="text-lg">
+                        {(getTotalPrice() - discount + (isFreeDelivery ? 0 : deliveryPrice)).toFixed(2)} ج.م
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
