@@ -31,8 +31,7 @@ const Carousel = React.forwardRef<
       direction: "ltr" as const,
       skipSnaps: false,
       slidesToScroll: 1,
-      dragFree: true,
-      // Update containScroll to use a valid value from the embla types
+      dragFree: false,
       containScroll: "trimSnaps" as const,
       ...(opts || {})
     }
@@ -84,8 +83,15 @@ const Carousel = React.forwardRef<
       onSelect(api)
       api.on("reInit", onSelect)
       api.on("select", onSelect)
+      
+      // Fix for initial visibility of slides
+      const reInitTimeout = setTimeout(() => {
+        api.reInit();
+      }, 50);
+      
       return () => {
         api?.off("select", onSelect)
+        clearTimeout(reInitTimeout);
       }
     }, [api, onSelect])
 

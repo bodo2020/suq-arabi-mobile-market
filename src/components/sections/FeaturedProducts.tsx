@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -19,6 +19,15 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   const isMobile = useIsMobile();
   const availableProducts = products.filter(product => product.quantity > 0);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [api, setCarouselApi] = useState<any>(null);
+  
+  // Reset carousel when products change
+  useEffect(() => {
+    if (api) {
+      api.scrollTo(0);
+      api.reInit();
+    }
+  }, [products, api]);
   
   return (
     <div className="mb-6">
@@ -30,27 +39,17 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           <Carousel
             opts={{
               align: "start",
-              containScroll: "keepSnaps",
               loop: true,
-              dragFree: true,
+              skipSnaps: false,
+              dragFree: false,
             }}
-            setApi={(api) => {
-              if (!api) return;
-              api.on('select', () => {
-                setActiveIndex(api.selectedScrollSnap());
-              });
-              
-              // Force rerender after initialization to ensure all slides are visible
-              setTimeout(() => {
-                api.reInit();
-              }, 100);
-            }}
+            setApi={setCarouselApi}
             className="w-full"
           >
             <CarouselContent className="-ml-2 md:-ml-4">
               {availableProducts.map(product => (
                 <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
-                  <div dir="rtl" className="h-full">
+                  <div dir="rtl" className="h-full flex">
                     <ProductCard 
                       key={product.id} 
                       product={product}
@@ -70,6 +69,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
             {availableProducts.map((_, index) => (
               <button 
                 key={index}
+                onClick={() => api?.scrollTo(index)}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === activeIndex 
                     ? 'bg-primary scale-125' 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { 
@@ -29,6 +29,7 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
   };
 
   const [activeIndices, setActiveIndices] = useState<{[key: string]: number}>({});
+  const [carouselApis, setCarouselApis] = useState<{[key: string]: any}>({});
 
   const updateActiveIndex = (collectionId: string, index: number) => {
     setActiveIndices(prev => ({
@@ -36,6 +37,23 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
       [collectionId]: index
     }));
   };
+  
+  const setApiForCollection = (collectionId: string, api: any) => {
+    setCarouselApis(prev => ({
+      ...prev,
+      [collectionId]: api
+    }));
+  };
+  
+  // Reset carousels when products change
+  useEffect(() => {
+    Object.entries(carouselApis).forEach(([id, api]) => {
+      if (api) {
+        api.scrollTo(0);
+        api.reInit();
+      }
+    });
+  }, [products, collections]);
 
   return (
     <>
@@ -56,28 +74,23 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
                 <Carousel
                   opts={{
                     align: "start",
-                    containScroll: "keepSnaps",
                     loop: true,
-                    dragFree: true,
+                    skipSnaps: false,
+                    dragFree: false,
                   }}
                   setApi={(api) => {
                     if (!api) return;
-                    
+                    setApiForCollection(collection.id, api);
                     api.on('select', () => {
                       updateActiveIndex(collection.id, api.selectedScrollSnap());
                     });
-                    
-                    // Force rerender after initialization to ensure all slides are visible
-                    setTimeout(() => {
-                      api.reInit();
-                    }, 100);
                   }}
                   className="w-full"
                 >
                   <CarouselContent className="-ml-2 md:-ml-4">
                     {collectionProducts.map(product => (
                       <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
-                        <div dir="rtl" className="h-full">
+                        <div dir="rtl" className="h-full flex">
                           <ProductCard 
                             key={product.id} 
                             product={product}
@@ -96,6 +109,7 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
                   {collectionProducts.map((_, index) => (
                     <button 
                       key={index}
+                      onClick={() => carouselApis[collection.id]?.scrollTo(index)}
                       className={`w-2 h-2 rounded-full transition-all duration-300 ${
                         index === (activeIndices[collection.id] || 0)
                           ? 'bg-primary scale-125' 
