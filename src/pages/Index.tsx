@@ -254,15 +254,15 @@ const Index = () => {
                 )}
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <div className="flex flex-col space-y-3">
                 {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
                   productsByIds(collection.products).map(product => (
-                    <div key={product.id}>
+                    <div key={product.id} className="w-full">
                       <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-muted-foreground">
                     لا توجد منتجات في هذه المجموعة
                   </div>
                 )}
@@ -274,15 +274,15 @@ const Index = () => {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="flex flex-col space-y-3">
               {featuredProducts.length > 0 ? (
                 featuredProducts.map(product => (
-                  <div key={product.id}>
+                  <div key={product.id} className="w-full">
                     <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
                   </div>
                 ))
               ) : (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground">
                   لا توجد منتجات مميزة متاحة حاليًا
                 </div>
               )}
