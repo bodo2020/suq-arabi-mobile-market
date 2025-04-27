@@ -148,7 +148,8 @@ const Index = () => {
   };
 
   const carouselOptions = {
-    align: 0,
+    align: "start",
+    direction: "rtl" as const,
     containScroll: "trimSnaps" as const,
     dragFree: true,
   };
