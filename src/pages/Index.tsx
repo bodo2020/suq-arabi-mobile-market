@@ -6,15 +6,14 @@ import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
 import ProductCard from '@/components/ui/ProductCard';
 import Banner from '@/components/ui/Banner';
-import { getCategories, getProducts, getStoreInfo, supabase, MainCategory, Product } from '@/lib/supabase';
+import { getCategories, getProducts, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
-import LocationDisplay from "@/components/ui/LocationDisplay";
+import AddressDisplay from '@/components/ui/AddressDisplay';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
-import AddressDisplay from '@/components/ui/AddressDisplay';
 
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
@@ -31,6 +30,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
+
   const {
     data: categories = [],
     isLoading: categoriesLoading
@@ -38,6 +38,22 @@ const Index = () => {
     queryKey: ['categories'],
     queryFn: getCategories
   });
+
+  const {
+    data: productCollections = [],
+    isLoading: collectionsLoading
+  } = useQuery({
+    queryKey: ['productCollections'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('product_collections')
+        .select('*, products(*)')
+        .eq('active', true)
+        .order('position');
+      return data || [];
+    }
+  });
+
   const {
     data: products = [],
     isLoading: productsLoading
@@ -54,11 +70,9 @@ const Index = () => {
         setStoreInfo(storeInfoData);
         if (bannersData.data) setBanners(bannersData.data);
         
-        // Get address info from localStorage
         const savedAddress = localStorage.getItem('userAddress');
         if (savedAddress) setUserAddress(savedAddress);
         
-        // Get area and neighborhood names directly from localStorage
         const area = localStorage.getItem('userArea');
         const neighborhood = localStorage.getItem('userNeighborhood');
         if (area || neighborhood) {
@@ -128,7 +142,11 @@ const Index = () => {
       />
     </div>;
 
-  if (categoriesLoading || productsLoading) {
+  const productsByIds = (productIds: string[]) => {
+    return products.filter(product => productIds.includes(product.id));
+  };
+
+  if (categoriesLoading || productsLoading || collectionsLoading) {
     return <MainLayout>
         <div className="py-4">
           <div className="flex justify-center mb-4">
@@ -235,6 +253,29 @@ const Index = () => {
               </div>}
           </div>
         </div>
+
+        {productCollections.map((collection) => (
+          <div key={collection.id} className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-bold">{collection.title}</h2>
+              {collection.description && (
+                <p className="text-sm text-muted-foreground">{collection.description}</p>
+              )}
+            </div>
+            
+            <Carousel className="w-full">
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {productsByIds(collection.products).map((product) => (
+                  <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/5">
+                    <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex" />
+              <CarouselNext className="hidden md:flex" />
+            </Carousel>
+          </div>
+        ))}
       </div>
     </MainLayout>;
 };
