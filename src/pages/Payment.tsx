@@ -155,18 +155,12 @@ const Payment = () => {
     setIsLoading(true);
 
     try {
-      if (paymentMethod === 'wallet') {
-        setWalletDialogOpen(true);
-        setIsLoading(false);
-        return;
-      }
-      
       const customerId = user ? await getCustomerId() : null;
       
       const orderData = {
         items: items.map(item => ({
           product_id: item.product.id,
-          product_name: item.product.name,
+          barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
           quantity: item.quantity,
           price: item.product.offer_price || item.product.price,
           bulk_quantity: item.product.bulk_quantity,
@@ -178,12 +172,12 @@ const Payment = () => {
         shipping_cost: isFreeDelivery ? 0 : deliveryPrice,
         payment_method: paymentMethod,
         customer_id: customerId,
-        shipping_address: customerData.default_address.address,
+        shipping_address: customerData?.default_address.address,
         notes: '',
-        delivery_location_id: customerData.default_address.neighborhood_id || 
-                             customerData.default_address.area_id || 
-                             customerData.default_address.city_id || 
-                             customerData.default_address.governorate_id
+        delivery_location_id: customerData?.default_address?.neighborhood_id || 
+                           customerData?.default_address?.area_id || 
+                           customerData?.default_address?.city_id || 
+                           customerData?.default_address?.governorate_id
       };
 
       console.log("Submitting order data:", orderData);
@@ -224,7 +218,7 @@ const Payment = () => {
       const orderData = {
         items: items.map(item => ({
           product_id: item.product.id,
-          product_name: item.product.name,
+          barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
           quantity: item.quantity,
           price: item.product.offer_price || item.product.price,
           bulk_quantity: item.product.bulk_quantity,
@@ -236,12 +230,12 @@ const Payment = () => {
         shipping_cost: isFreeDelivery ? 0 : deliveryPrice,
         payment_method: 'wallet',
         customer_id: customerId,
-        shipping_address: customerData.default_address.address,
+        shipping_address: customerData?.default_address.address,
         notes: '',
-        delivery_location_id: customerData.default_address.neighborhood_id || 
-                               customerData.default_address.area_id || 
-                               customerData.default_address.city_id || 
-                               customerData.default_address.governorate_id
+        delivery_location_id: customerData?.default_address?.neighborhood_id || 
+                               customerData?.default_address?.area_id || 
+                               customerData?.default_address?.city_id || 
+                               customerData?.default_address?.governorate_id
       };
       
       console.log("Submitting wallet order data:", orderData);
