@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -59,7 +60,7 @@ const Cart = () => {
           governorates(name),
           cities(name),
           areas(name),
-          neighborhoods(name)
+          neighborhoods(name, price)
         `)
         .eq('user_id', user.id)
         .eq('is_default', true)
@@ -246,9 +247,14 @@ const Cart = () => {
     }
   };
 
+  // Set delivery price from the neighborhood data if available
   React.useEffect(() => {
-    if (customerData?.default_address?.neighborhoods?.price) {
-      setDeliveryPrice(customerData.default_address.neighborhoods.price);
+    // Extract the price from the neighborhoods object safely
+    const neighborhoodPrice = customerData?.default_address?.neighborhoods?.price;
+    
+    // Check if price exists and is a number before setting it
+    if (neighborhoodPrice !== undefined && neighborhoodPrice !== null) {
+      setDeliveryPrice(Number(neighborhoodPrice));
     }
   }, [customerData]);
 
@@ -383,7 +389,7 @@ const Cart = () => {
                     </p>
                     <p className="text-gray-600">{customerData.default_address.address}</p>
                     <p className="text-sm text-primary mt-2">
-                      رسوم التوصيل: {customerData.default_address.neighborhoods?.price || 0} ج.م
+                      رسوم التوصيل: {customerData.default_address.neighborhoods ? Number(customerData.default_address.neighborhoods.price || 0) : 0} ج.م
                     </p>
                   </div>
                 ) : (
