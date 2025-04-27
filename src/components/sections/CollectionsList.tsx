@@ -44,7 +44,8 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
               <Carousel
                 opts={{
                   align: "start",
-                  containScroll: false,
+                  // Update to use valid containScroll value
+                  containScroll: "trimSnaps",
                   loop: false,
                   dragFree: true,
                 }}

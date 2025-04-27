@@ -32,7 +32,8 @@ const Carousel = React.forwardRef<
       skipSnaps: false,
       slidesToScroll: 1,
       dragFree: true,
-      containScroll: false,
+      // Update containScroll to use a valid value from the embla types
+      containScroll: "trimSnaps" as const,
       ...(opts || {})
     }
 
