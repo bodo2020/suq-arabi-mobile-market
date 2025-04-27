@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -123,6 +124,37 @@ const Cart = () => {
     }
   }, [deliveryTypes]);
 
+  // Query to fetch delivery price for the default address
+  const { data: deliveryPricing } = useQuery({
+    queryKey: ['deliveryPricing', customerData?.default_address],
+    queryFn: async () => {
+      if (!customerData?.default_address) return null;
+      
+      const locationId = customerData.default_address.neighborhood_id || 
+                          customerData.default_address.area_id || 
+                          customerData.default_address.city_id || 
+                          customerData.default_address.governorate_id;
+      
+      if (!locationId) return null;
+      
+      const { data } = await supabase
+        .from('delivery_type_pricing')
+        .select('*')
+        .eq('delivery_location_id', locationId)
+        .maybeSingle();
+      
+      return data;
+    },
+    enabled: !!customerData?.default_address
+  });
+
+  // Set delivery price from the pricing data when available
+  React.useEffect(() => {
+    if (deliveryPricing?.price !== undefined) {
+      setDeliveryPrice(deliveryPricing.price);
+    }
+  }, [deliveryPricing]);
+
   React.useEffect(() => {
     const checkFreeDelivery = async () => {
       const subtotal = getTotalPrice();
@@ -233,17 +265,6 @@ const Cart = () => {
       setDeliveryPrice(selectedType.price);
     }
   };
-
-  // Set delivery price from the neighborhood data if available
-  React.useEffect(() => {
-    // Extract the price from the neighborhoods object safely
-    const neighborhoodPrice = customerData?.default_address?.neighborhoods?.price;
-    
-    // Check if price exists and is a number before setting it
-    if (neighborhoodPrice !== undefined && neighborhoodPrice !== null) {
-      setDeliveryPrice(Number(neighborhoodPrice));
-    }
-  }, [customerData]);
 
   return (
     <MainLayout>
@@ -375,7 +396,7 @@ const Cart = () => {
                       {customerData.default_address.governorates?.name}
                     </p>
                     <p className="text-gray-600">{customerData.default_address.address}</p>
-                    {deliveryTypes.length > 0 && (
+                    {deliveryPricing && (
                       <p className="text-sm text-primary mt-2">
                         رسوم التوصيل: {deliveryPrice} ج.م
                       </p>
