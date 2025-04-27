@@ -149,8 +149,9 @@ const Index = () => {
 
   const carouselOptions = {
     align: "start" as const,
+    direction: "ltr" as const,
     dragFree: true,
-    containScroll: "trimSnaps" as const,
+    skipSnaps: false,
     slidesToScroll: 1,
   };
 
@@ -262,15 +263,15 @@ const Index = () => {
               </div>
               
               <Carousel className="w-full overflow-visible" opts={carouselOptions}>
-                <CarouselContent className="-ml-2 -mr-2">
+                <CarouselContent className="-ml-4 -mr-4">
                   {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
                     productsByIds(collection.products).map(product => (
-                      <CarouselItem key={product.id} className="px-2 max-w-[180px] md:max-w-[220px]">
+                      <CarouselItem key={product.id} className="pl-4 pr-4 basis-[180px] md:basis-[220px]">
                         <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
                       </CarouselItem>
                     ))
                   ) : (
-                    <CarouselItem className="basis-full pl-2">
+                    <CarouselItem className="basis-full pl-4">
                       <div className="text-center py-8 text-muted-foreground">
                         لا توجد منتجات في هذه المجموعة
                       </div>
@@ -288,15 +289,15 @@ const Index = () => {
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
             <Carousel className="w-full overflow-visible" opts={carouselOptions}>
-              <CarouselContent className="-ml-2 -mr-2">
+              <CarouselContent className="-ml-4 -mr-4">
                 {featuredProducts.length > 0 ? (
                   featuredProducts.map(product => (
-                    <CarouselItem key={product.id} className="px-2 max-w-[180px] md:max-w-[220px]">
+                    <CarouselItem key={product.id} className="pl-4 pr-4 basis-[180px] md:basis-[220px]">
                       <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
                     </CarouselItem>
                   ))
                 ) : (
-                  <CarouselItem className="basis-full pl-2">
+                  <CarouselItem className="basis-full pl-4">
                     <div className="text-center py-8 text-muted-foreground">
                       لا توجد منتجات مميزة متاحة حاليًا
                     </div>
