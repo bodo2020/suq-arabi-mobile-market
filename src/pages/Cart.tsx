@@ -6,17 +6,36 @@ import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import WeightSelector from '@/components/ui/WeightSelector';
+import DeliveryTypeSelector from '@/components/ui/DeliveryTypeSelector';
+import { Progress } from '@/components/ui/progress';
+import CouponInput from '@/components/ui/CouponInput';
+import { getFreeDeliveryOffer } from '@/utils/offerUtils';
+
 const Cart = () => {
-  const {
-    items,
-    updateQuantity,
-    removeFromCart,
-    getTotalPrice
-  } = useCart();
-  const {
-    toast
-  } = useToast();
+  const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
+  const { toast } = useToast();
   const [openWeightSelector, setOpenWeightSelector] = React.useState<string | null>(null);
+  const [discount, setDiscount] = React.useState(0);
+  const [deliveryPrice, setDeliveryPrice] = React.useState(0);
+  const [isFreeDelivery, setIsFreeDelivery] = React.useState(false);
+  const [progressToFreeDelivery, setProgressToFreeDelivery] = React.useState(0);
+
+  React.useEffect(() => {
+    const checkFreeDelivery = async () => {
+      const subtotal = getTotalPrice();
+      const freeDeliveryOffer = await getFreeDeliveryOffer(subtotal);
+      
+      if (freeDeliveryOffer) {
+        const threshold = freeDeliveryOffer.min_order_amount;
+        const progress = (subtotal / threshold) * 100;
+        setProgressToFreeDelivery(Math.min(progress, 100));
+        setIsFreeDelivery(progress >= 100);
+      }
+    };
+
+    checkFreeDelivery();
+  }, [getTotalPrice()]);
+
   const handleQuantityClick = (productId: string, unit_of_measure?: string) => {
     if (unit_of_measure === 'weight') {
       const item = items.find(item => item.product.id === productId);
@@ -25,6 +44,7 @@ const Cart = () => {
       }
     }
   };
+
   const handleDecreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
@@ -41,6 +61,7 @@ const Cart = () => {
       }
     }
   };
+
   const handleIncreaseQuantity = (productId: string, is_bulk: boolean = false, unit_of_measure?: string) => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
@@ -52,7 +73,6 @@ const Cart = () => {
           return total + i.quantity;
         }, 0);
 
-        // Calculate additional units needed
         const additionalUnitsNeeded = is_bulk ? item.product.bulk_quantity || 1 : 1;
         if (totalProductQuantity + additionalUnitsNeeded <= item.product.quantity) {
           updateQuantity(productId, item.quantity + 1, is_bulk);
@@ -66,6 +86,7 @@ const Cart = () => {
       }
     }
   };
+
   const handleRemoveItem = (productId: string, is_bulk: boolean = false) => {
     removeFromCart(productId, is_bulk);
     toast({
@@ -73,15 +94,18 @@ const Cart = () => {
       description: "تم حذف المنتج من السلة"
     });
   };
+
   const getProductImage = item => {
     return item.product.image_urls && item.product.image_urls.length > 0 ? item.product.image_urls[0] : '/placeholder.svg';
   };
+
   const getItemPrice = item => {
     if (item.is_bulk) {
       return item.product.bulk_price;
     }
     return item.product.offer_price || item.product.price;
   };
+
   const getItemTotal = item => {
     if (item.is_bulk) {
       return (item.product.bulk_price || 0) * item.quantity;
@@ -92,17 +116,21 @@ const Cart = () => {
     }
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
+
   const formatBulkQuantity = item => {
     if (item.is_bulk && item.product.bulk_quantity) {
       return `${item.product.bulk_quantity} قطعة`;
     }
     return `${item.quantity}`;
   };
-  return <MainLayout>
-      <div className="py-4">
-        <h1 className="text-xl font-bold text-center mb-4">سلة التسوق</h1>
 
-        {items.length === 0 ? <div className="flex flex-col items-center justify-center py-12">
+  return (
+    <MainLayout>
+      <div className="py-4 pb-24" dir="rtl">
+        <h1 className="text-xl font-bold text-center mb-4">سلة التسوق</h1>
+        
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
               <circle cx="8" cy="21" r="1"></circle>
               <circle cx="19" cy="21" r="1"></circle>
@@ -110,15 +138,15 @@ const Cart = () => {
             </svg>
             <h3 className="text-lg font-medium text-gray-500 mb-1">لم تقم بإضافة أي منتجات بعد</h3>
             <p className="text-sm text-gray-400 mb-4">لم تقم بإضافة أي منتجات بعد</p>
-            <div className="flex gap-2">
-              <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
-                تسوق الآن
-              </Link>
-              
-            </div>
-          </div> : <>
-            <div className="bg-white rounded-lg mb-4">
-              {items.map(item => <div key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex items-center p-3 border-b last:border-b-0">
+            <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
+              تسوق الآن
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg mb-4 order-1">
+              {items.map((item) => (
+                <div key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex items-center p-3 border-b last:border-b-0">
                   <div className="relative">
                     <img src={getProductImage(item)} alt={item.product.name} className="h-16 w-16 object-contain ml-3" />
                     {item.is_bulk && <div className="absolute bottom-0 right-0 bg-primary text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
@@ -187,32 +215,83 @@ const Cart = () => {
                   </div>
                   
                   {openWeightSelector === item.product.id && <WeightSelector product={item.product} isOpen={true} onClose={() => setOpenWeightSelector(null)} />}
-                </div>)}
+                </div>
+              ))}
             </div>
 
-            <div className="bg-white rounded-lg p-4 mb-4">
-              <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
-              <div className="flex justify-between py-2 border-b">
-                <span>المجموع</span>
-                <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
+            <div className="space-y-4 order-2">
+              {!isFreeDelivery && progressToFreeDelivery > 0 && (
+                <div className="bg-white rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-primary font-medium">التوصيل المجاني</span>
+                    <span className="text-sm text-gray-500">{progressToFreeDelivery.toFixed(0)}%</span>
+                  </div>
+                  <Progress value={progressToFreeDelivery} className="h-2" />
+                  <p className="text-sm text-gray-500 mt-2">
+                    أضف المزيد من المنتجات للحصول على توصيل مجاني
+                  </p>
+                </div>
+              )}
+              
+              <div className="bg-white rounded-lg p-4">
+                <CouponInput 
+                  subtotal={getTotalPrice()} 
+                  onApply={setDiscount}
+                />
               </div>
-              <div className="flex justify-between py-2 border-b">
-                <span>التوصيل</span>
-                <span className="font-bold">0.00 ج.م</span>
-              </div>
-              <div className="flex justify-between py-2 mt-2">
-                <span className="font-bold">الإجمالي</span>
-                <span className="font-bold text-lg">{getTotalPrice().toFixed(2)} ج.م</span>
-              </div>
-            </div>
 
-            <div className="flex flex-col space-y-2">
+              <div className="bg-white rounded-lg p-4">
+                <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between py-2 border-b">
+                    <span>المجموع</span>
+                    <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
+                  </div>
+                  
+                  {discount > 0 && (
+                    <div className="flex justify-between py-2 border-b text-primary">
+                      <span>الخصم</span>
+                      <span>- {discount.toFixed(2)} ج.م</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between py-2 border-b">
+                    <span>التوصيل</span>
+                    <span className="font-bold">
+                      {isFreeDelivery ? (
+                        <span className="text-primary">مجاناً</span>
+                      ) : (
+                        `${deliveryPrice.toFixed(2)} ج.م`
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2 font-bold">
+                    <span>الإجمالي</span>
+                    <span className="text-lg">
+                      {(getTotalPrice() - discount + (isFreeDelivery ? 0 : deliveryPrice)).toFixed(2)} ج.م
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4">
+                <DeliveryTypeSelector 
+                  options={[]} 
+                  selectedId="" 
+                  onSelect={() => {}}
+                />
+              </div>
+
               <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
                 متابعة الطلب
               </Link>
             </div>
-          </>}
+          </div>
+        )}
       </div>
-    </MainLayout>;
+    </MainLayout>
+  );
 };
+
 export default Cart;
