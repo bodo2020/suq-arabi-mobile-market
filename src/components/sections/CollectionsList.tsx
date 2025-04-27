@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
@@ -28,10 +27,8 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
     return products.filter(product => productIds.includes(product.id));
   };
 
-  // Track active carousel index for each collection
   const [activeIndices, setActiveIndices] = useState<{[key: string]: number}>({});
 
-  // Update the active index for a specific collection
   const updateActiveIndex = (collectionId: string, index: number) => {
     setActiveIndices(prev => ({
       ...prev,
@@ -59,10 +56,11 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
                   opts={{
                     align: "start",
                     containScroll: "trimSnaps",
-                    loop: false,
+                    loop: true,
                     dragFree: true,
                   }}
                   setApi={(api) => {
+                    if (!api) return;
                     api?.on('select', () => {
                       updateActiveIndex(collection.id, api.selectedScrollSnap());
                     });
@@ -87,17 +85,16 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
                   <CarouselNext className="hidden md:flex" />
                 </Carousel>
                 
-                {/* Pagination Dots */}
-                <div className="flex justify-center mt-2 space-x-2" dir="ltr">
+                <div className="flex justify-center gap-2 mt-4" dir="ltr">
                   {collectionProducts.map((_, index) => (
                     <button 
-                      key={index} 
-                      onClick={() => {}}  // Future implementation for direct dot navigation
+                      key={index}
                       className={`w-2 h-2 rounded-full transition-all duration-300 ${
                         index === (activeIndices[collection.id] || 0)
                           ? 'bg-primary scale-125' 
                           : 'bg-gray-300 hover:bg-gray-400'
                       }`}
+                      aria-label={`Go to slide ${index + 1}`}
                     />
                   ))}
                 </div>

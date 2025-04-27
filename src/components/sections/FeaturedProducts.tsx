@@ -10,7 +10,6 @@ import {
   CarouselNext,
   CarouselPrevious
 } from "@/components/ui/carousel";
-import { CircleDot } from 'lucide-react';
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -32,10 +31,11 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
             opts={{
               align: "start",
               containScroll: "trimSnaps",
-              loop: false,
+              loop: true,
               dragFree: true,
             }}
             setApi={(api) => {
+              if (!api) return;
               api.on('select', () => {
                 setActiveIndex(api.selectedScrollSnap());
               });
@@ -61,16 +61,16 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           </Carousel>
           
           {/* Pagination Dots */}
-          <div className="flex justify-center mt-2 space-x-2" dir="ltr">
+          <div className="flex justify-center gap-2 mt-4" dir="ltr">
             {availableProducts.map((_, index) => (
               <button 
-                key={index} 
-                onClick={() => {}}  // Future implementation for direct dot navigation
+                key={index}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === activeIndex 
                     ? 'bg-primary scale-125' 
                     : 'bg-gray-300 hover:bg-gray-400'
                 }`}
+                aria-label={`Go to slide ${index + 1}`}
               />
             ))}
           </div>
