@@ -105,10 +105,10 @@ const AddressDisplay = ({ areaName, className, showAddressSelector = false, neig
 
   return (
     <div className={cn("flex items-center justify-between p-4 bg-muted/30 rounded-lg", className)}>
-      <div className="flex gap-2">
-        <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-        <div>
-          <p className="font-medium">
+      <div className="flex gap-2 items-start">
+        <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-1" />
+        <div className="text-right">
+          <p className="font-medium text-right">
             {!neighborhoodName && !areaName ? 'لا يوجد عنوان محدد' : (
               <>
                 {neighborhoodName}
@@ -126,11 +126,12 @@ const AddressDisplay = ({ areaName, className, showAddressSelector = false, neig
               تغيير العنوان
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="text-right">
             {addresses.map((addr) => (
               <DropdownMenuItem 
                 key={addr.id}
                 onClick={() => handleAddressSelect(addr.id)}
+                className="text-right"
               >
                 {addr.neighborhoods?.name}
                 {addr.neighborhoods?.name && addr.areas?.name ? '، ' : ''}
