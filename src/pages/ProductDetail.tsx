@@ -80,22 +80,32 @@ const ProductDetail = () => {
       return;
     }
 
-    // تحديد العنصر الموجود بالفعل في السلة
-    const cartItem = isBulk ? bulkCartItem : regularCartItem;
+    // Calculate total quantity in cart for this product
+    const totalInCart = items.reduce((total, item) => {
+      if (item.product.id === product.id) {
+        if (item.is_bulk) {
+          return total + (item.quantity * (item.product.bulk_quantity || 1));
+        }
+        return total + item.quantity;
+      }
+      return total;
+    }, 0);
 
-    // إذا كان المنتج موجود بالفعل، قم بتحديث الكمية
-    if (cartItem) {
-      updateQuantity(product.id, cartItem.quantity + quantity, isBulk);
+    const quantityToAdd = isBulk ? (product.bulk_quantity || 1) : quantity;
+    
+    if (totalInCart + quantityToAdd > product.quantity) {
       toast({
-        title: "تم التحديث",
-        description: "تم تحديث الكمية في السلة"
+        title: "تنبيه",
+        description: "الكمية المطلوبة غير متوفرة",
+        variant: "destructive"
       });
       return;
     }
+
     addToCart({
       ...product,
       price: isBulk ? product.bulk_price || 0 : product.price || 0,
-      quantity: quantity,
+      quantity: quantityToAdd,
       is_bulk: isBulk
     });
     toast({
@@ -121,11 +131,31 @@ const ProductDetail = () => {
     if (!product) return;
     const item = isProductBulk ? bulkCartItem : regularCartItem;
     if (item) {
-      updateQuantity(product.id, item.quantity + 1, isProductBulk);
-      toast({
-        title: "تم التحديث",
-        description: "تم تحديث الكمية"
-      });
+      const totalInCart = items.reduce((total, cartItem) => {
+        if (cartItem.product.id === product.id) {
+          if (cartItem.is_bulk) {
+            return total + (cartItem.quantity * (cartItem.product.bulk_quantity || 1));
+          }
+          return total + cartItem.quantity;
+        }
+        return total;
+      }, 0);
+
+      const quantityToAdd = isProductBulk ? (product.bulk_quantity || 1) : 1;
+
+      if (totalInCart + quantityToAdd <= product.quantity) {
+        updateQuantity(product.id, item.quantity + 1, isProductBulk);
+        toast({
+          title: "تم التحديث",
+          description: "تم تحديث الكمية"
+        });
+      } else {
+        toast({
+          title: "تنبيه",
+          description: "الكمية المطلوبة غير متوفرة",
+          variant: "destructive"
+        });
+      }
     }
   };
 
