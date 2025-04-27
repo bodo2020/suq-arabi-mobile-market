@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -45,7 +44,6 @@ const Cart = () => {
     neighborhood?: string;
   }>({});
 
-  // Update customer data query to include addresses
   const {
     data: customerData
   } = useQuery({
@@ -62,7 +60,6 @@ const Cart = () => {
           neighborhoods(name)
         `).eq('user_id', user.id).single();
 
-      // Fetch default address
       const {
         data: addresses
       } = await supabase.from('customer_addresses').select(`
@@ -80,7 +77,6 @@ const Cart = () => {
     enabled: !!user?.id
   });
 
-  // Add query for delivery types and pricing
   const {
     data: deliveryTypes = []
   } = useQuery({
@@ -119,15 +115,12 @@ const Cart = () => {
     enabled: !!selectedLocation.governorate
   });
 
-  // Update delivery price when location or selected delivery type changes
   React.useEffect(() => {
     if (deliveryTypes.length > 0) {
-      // Set the price of the first delivery type by default
       setDeliveryPrice(deliveryTypes[0].price || 0);
     }
   }, [deliveryTypes]);
 
-  // Query to fetch delivery price for the default address
   const {
     data: deliveryPricing
   } = useQuery({
@@ -144,7 +137,6 @@ const Cart = () => {
     enabled: !!customerData?.default_address
   });
 
-  // Set delivery price from the pricing data when available
   React.useEffect(() => {
     if (deliveryPricing?.price !== undefined) {
       setDeliveryPrice(deliveryPricing.price);
@@ -191,11 +183,18 @@ const Cart = () => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
       if (item) {
-        // المشكلة كانت هنا: تم تعديل طريقة حساب الكمية المتوفرة
-        // بحيث لا نأخذ في الاعتبار السلة نفسها عند زيادة الكمية
+        const currentCartQuantity = items
+          .filter(i => i.product.id === productId)
+          .reduce((total, i) => {
+            if (i.is_bulk) {
+              return total + (i.quantity * (i.product.bulk_quantity || 1));
+            }
+            return total + i.quantity;
+          }, 0);
+
+        const quantityToAdd = is_bulk ? (item.product.bulk_quantity || 1) : 1;
         
-        // نتأكد أن الكمية المتوفرة أكبر من أو تساوي 1
-        if (item.product.quantity >= 1) {
+        if (currentCartQuantity + quantityToAdd <= item.product.quantity) {
           updateQuantity(productId, item.quantity + 1, is_bulk);
         } else {
           toast({
