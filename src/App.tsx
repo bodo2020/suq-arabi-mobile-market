@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Index from '@/pages/Index';
 import Cart from '@/pages/Cart';
@@ -45,12 +45,15 @@ function App() {
               <Route path="/order-success" element={<OrderSuccess />} />
               <Route path="/account" element={<Account />} />
               <Route path="/addresses" element={<AddressManager />} />
+              <Route path="/account/addresses" element={<Navigate to="/addresses" replace />} />
               <Route path="/address/new" element={<Address />} />
               <Route path="/address/:id" element={<Address />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/edit-account" element={<EditAccount />} />
+              <Route path="/account/edit" element={<Navigate to="/edit-account" replace />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/account/register" element={<Navigate to="/register" replace />} />
               <Route path="/search" element={<Search />} />
               <Route path="/scan" element={<BarcodeScanner />} />
               <Route path="/banner/:id" element={<BannerProducts />} />

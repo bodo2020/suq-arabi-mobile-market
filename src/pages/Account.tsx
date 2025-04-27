@@ -36,36 +36,48 @@ const Account = () => {
                     <p className="text-sm text-gray-500">مرحباً بك في ماركت المعداوي</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/account/edit')}>
+                <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/edit-account')}>
                   تعديل البيانات الشخصية
                   <ChevronLeft className="mr-2 h-4 w-4" />
                 </Button>
               </div>
 
               <div className="space-y-2">
-                <Link to="/account/addresses" className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full block">
+                <Button 
+                  onClick={() => navigate('/addresses')} 
+                  variant="ghost" 
+                  className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
+                >
                   <div className="flex items-center">
                     <MapPin className="h-6 w-6 text-primary ml-3" />
                     <span className="text-sm font-medium">عناوين التوصيل</span>
                   </div>
                   <ChevronLeft className="h-5 w-5 text-gray-400" />
-                </Link>
+                </Button>
                 
-                <Link to="/favorites" className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                <Button 
+                  onClick={() => navigate('/favorites')} 
+                  variant="ghost" 
+                  className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
+                >
                   <div className="flex items-center">
                     <Heart className="h-6 w-6 text-primary ml-3" />
                     <span className="text-sm font-medium">المفضلة</span>
                   </div>
                   <ChevronLeft className="h-5 w-5 text-gray-400" />
-                </Link>
+                </Button>
                 
-                <Link to="/orders" className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                <Button 
+                  onClick={() => navigate('/orders')} 
+                  variant="ghost" 
+                  className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
+                >
                   <div className="flex items-center">
                     <ListChecks className="h-6 w-6 text-primary ml-3" />
                     <span className="text-sm font-medium">الطلبات</span>
                   </div>
                   <ChevronLeft className="h-5 w-5 text-gray-400" />
-                </Link>
+                </Button>
               </div>
 
               <Separator className="my-4" />
@@ -84,7 +96,7 @@ const Account = () => {
               <User className="h-12 w-12 mx-auto text-gray-400 mb-3" />
               <h2 className="text-xl font-semibold mb-2">مرحباً بك</h2>
               <p className="text-gray-500 mb-4">قم بتسجيل الدخول للوصول إلى حسابك</p>
-              <Button onClick={() => navigate('/account/register')} size="lg">
+              <Button onClick={() => navigate('/register')} size="lg">
                 تسجيل الدخول
               </Button>
             </div>

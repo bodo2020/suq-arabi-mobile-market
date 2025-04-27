@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Plus, Trash2, Home } from 'lucide-react';
@@ -7,10 +6,17 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase, Address, getAddresses } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
 
+interface AddressWithNames extends Address {
+  governorate_name?: string;
+  city_name?: string;
+  area_name?: string;
+  neighborhood_name?: string;
+}
+
 const AddressManager = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addresses, setAddresses] = useState<AddressWithNames[]>([]);
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState('');
   const [newLocation, setNewLocation] = useState<{
@@ -26,37 +32,41 @@ const AddressManager = () => {
     const fetchAddresses = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/account/register');
+        navigate('/register');
         return;
       }
       setUserId(user.id);
 
-      const { data: addressesData, error } = await supabase
-        .from('customer_addresses')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
-        .eq('user_id', user.id)
-        .order('is_default', { ascending: false });
+      try {
+        const { data: addressesData, error } = await supabase
+          .from('customer_addresses')
+          .select(`
+            *,
+            governorates(name),
+            cities(name),
+            areas(name),
+            neighborhoods(name)
+          `)
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false });
 
-      if (error) {
-        console.error('Error loading addresses:', error);
-        return;
+        if (error) {
+          console.error('Error loading addresses:', error);
+          return;
+        }
+
+        const enhancedAddresses = addressesData.map(addr => ({
+          ...addr,
+          governorate_name: addr.governorates?.name,
+          city_name: addr.cities?.name,
+          area_name: addr.areas?.name,
+          neighborhood_name: addr.neighborhoods?.name
+        }));
+
+        setAddresses(enhancedAddresses);
+      } catch (error) {
+        console.error('Error in address fetch:', error);
       }
-
-      const enhancedAddresses = addressesData.map(addr => ({
-        ...addr,
-        governorate_name: addr.governorates?.name,
-        city_name: addr.cities?.name,
-        area_name: addr.areas?.name,
-        neighborhood_name: addr.neighborhoods?.name
-      }));
-
-      setAddresses(enhancedAddresses);
     };
 
     fetchAddresses();
@@ -115,14 +125,15 @@ const AddressManager = () => {
       });
 
       if (isDefault) {
-        localStorage.setItem('userArea', enhancedAddress.area_name || '');
-        localStorage.setItem('userNeighborhood', enhancedAddress.neighborhood_name || '');
+        localStorage.setItem('userAddress', enhancedAddress.address || '');
+        localStorage.setItem('userArea', enhancedAddress.area_id || '');
+        localStorage.setItem('userNeighborhood', enhancedAddress.neighborhood_id || '');
       }
     } catch (error) {
       console.error('Error adding address:', error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء إضافة العنوان",
+        description: "حدث خطأ أ��ناء إضافة العنوان",
         variant: "destructive",
       });
     } finally {
@@ -148,15 +159,17 @@ const AddressManager = () => {
 
       if (error) throw error;
 
+      const selectedAddress = addresses.find(addr => addr.id === addressId);
+
       setAddresses(addresses.map(addr => ({
         ...addr,
         is_default: addr.id === addressId
       })));
 
-      if (data) {
-        // Use the correct properties from the data object
-        localStorage.setItem('userArea', data.area_id || '');
-        localStorage.setItem('userNeighborhood', data.neighborhood_id || '');
+      if (selectedAddress) {
+        localStorage.setItem('userAddress', selectedAddress.address || '');
+        localStorage.setItem('userArea', selectedAddress.area_id || '');
+        localStorage.setItem('userNeighborhood', selectedAddress.neighborhood_id || '');
       }
 
       toast({
@@ -216,7 +229,6 @@ const AddressManager = () => {
                     <span className="text-sm font-semibold">
                       {address.governorate_name && `${address.governorate_name}، `}
                       {address.city_name && `${address.city_name}، `}
-                      {/* Use area_id and neighborhood_id if area_name and neighborhood_name are not available */}
                       {(address.area_name || address.area_id) && `${address.area_name || address.area_id}، `}
                       {address.neighborhood_name || address.neighborhood_id}
                     </span>
