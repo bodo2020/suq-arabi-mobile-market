@@ -254,18 +254,22 @@ const Index = () => {
                 )}
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
-                  productsByIds(collection.products).map(product => (
-                    <div key={product.id}>
-                      <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-8 text-muted-foreground">
-                    لا توجد منتجات في هذه المجموعة
+              <div className="relative">
+                <div className="overflow-x-auto hide-scrollbar">
+                  <div className="flex gap-3 pb-4">
+                    {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
+                      productsByIds(collection.products).map(product => (
+                        <div key={product.id} className="flex-none w-[160px] md:w-[200px]">
+                          <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+                        </div>
+                      ))
+                    ) : (
+                      <div className="w-full text-center py-8 text-muted-foreground">
+                        لا توجد منتجات في هذه المجموعة
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           ))
@@ -274,18 +278,22 @@ const Index = () => {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {featuredProducts.length > 0 ? (
-                featuredProducts.map(product => (
-                  <div key={product.id}>
-                    <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  لا توجد منتجات مميزة متاحة حاليًا
+            <div className="relative">
+              <div className="overflow-x-auto hide-scrollbar">
+                <div className="flex gap-3 pb-4">
+                  {featuredProducts.length > 0 ? (
+                    featuredProducts.map(product => (
+                      <div key={product.id} className="flex-none w-[160px] md:w-[200px]">
+                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-full text-center py-8 text-muted-foreground">
+                      لا توجد منتجات مميزة متاحة حاليًا
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
