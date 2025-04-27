@@ -10,12 +10,11 @@ interface CompanyCardProps {
 
 const CompanyCard: React.FC<CompanyCardProps> = ({ company }) => {
   return (
-    <Link to={`/company-products/${company.id}`} className="flex items-center space-x-2 space-x-reverse bg-gray-100 rounded-md p-2 hover:bg-gray-200 transition-colors">
-      {company.logo_url ? (
-        <img src={company.logo_url} alt={company.name} className="w-8 h-8 rounded-full object-cover" />
-      ) : (
-        <Building className="w-8 h-8 text-gray-500" />
-      )}
+    <Link 
+      to={`/company-products/${company.id}`} 
+      className="flex items-center bg-gray-100 rounded-md p-2 hover:bg-gray-200 transition-colors w-1/2"
+    >
+      <Building className="w-4 h-4 text-gray-500 ml-2" />
       <span className="text-sm font-medium">{company.name}</span>
     </Link>
   );

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -56,8 +55,8 @@ function App() {
               <Route path="/account/register" element={<Navigate to="/register" replace />} />
               <Route path="/search" element={<Search />} />
               <Route path="/scan" element={<BarcodeScanner />} />
-              <Route path="/banner/:id" element={<BannerProducts />} />
-              <Route path="/company/:id" element={<CompanyProducts />} />
+              <Route path="/banner-products/:id" element={<BannerProducts />} />
+              <Route path="/company-products/:id" element={<CompanyProducts />} />
               <Route path="/bulk-products" element={<BulkProducts />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
