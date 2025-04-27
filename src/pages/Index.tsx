@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AddressDisplay from '@/components/ui/AddressDisplay';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
+
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
@@ -29,6 +30,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
+
   const {
     data: categories = [],
     isLoading: categoriesLoading
@@ -36,18 +38,25 @@ const Index = () => {
     queryKey: ['categories'],
     queryFn: getCategories
   });
+
   const {
     data: productCollections = [],
     isLoading: collectionsLoading
   } = useQuery({
     queryKey: ['productCollections'],
     queryFn: async () => {
-      const {
-        data
-      } = await supabase.from('product_collections').select('*, products(*)').eq('active', true).order('position');
+      const { data, error } = await supabase
+        .from('product_collections')
+        .select('*, products:products(*)')
+        .eq('active', true)
+        .order('position');
+      
+      console.log('Fetched collections:', data);
+      if (error) throw error;
       return data || [];
     }
   });
+
   const {
     data: products = [],
     isLoading: productsLoading
@@ -55,6 +64,7 @@ const Index = () => {
     queryKey: ['products'],
     queryFn: () => getProducts()
   });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -78,6 +88,7 @@ const Index = () => {
     };
     fetchData();
   }, []);
+
   useEffect(() => {
     if (banners.length > 1) {
       bannerIntervalRef.current = setInterval(() => {
@@ -90,6 +101,7 @@ const Index = () => {
       }
     };
   }, [banners.length]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -103,25 +115,29 @@ const Index = () => {
       setProcessingImage(false);
     }
   };
+
   const handleFocusSearchBar = () => {
     navigate('/search');
   };
+
   const handleChangeLocation = () => {
     setPopoverOpen(false);
     navigate('/account/addresses');
   };
+
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
   const availableProducts = products.filter(product => product.quantity > 0);
   const featuredProducts = availableProducts.slice(0, isMobile ? 4 : 10);
+
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
-  const addressSection = <div className="mb-4">
-      <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
-    </div>;
+
   const productsByIds = (productIds: string[]) => {
+    if (!productIds) return [];
     return products.filter(product => productIds.includes(product.id));
   };
+
   if (categoriesLoading || productsLoading || collectionsLoading) {
     return <MainLayout>
         <div className="py-4">
@@ -149,7 +165,11 @@ const Index = () => {
         </div>
       </MainLayout>;
   }
-  console.log('Product Collections:', productCollections);
+
+  const addressSection = <div className="mb-4">
+      <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
+    </div>;
+
   return <MainLayout>
       <div className="py-4">
         {storeInfo && <div className="flex flex-col items-center mb-4">
@@ -240,4 +260,5 @@ const Index = () => {
       </div>
     </MainLayout>;
 };
+
 export default Index;
