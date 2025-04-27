@@ -1,9 +1,9 @@
-
 import { CartItem as BaseCartItem, Product } from "@/lib/supabase";
 
 export type CartItem = BaseCartItem & {
   is_bulk?: boolean;
   unit_of_measure?: string;
+  barcode?: string;
 };
 
 export type CartContextType = {

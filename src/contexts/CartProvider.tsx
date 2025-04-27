@@ -45,6 +45,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         product: {
           ...product,
           bulk_quantity: product.bulk_quantity || 1,
+          barcode: product.is_bulk ? product.bulk_barcode : product.barcode
         },
         quantity: product.quantity,
         is_bulk: product.is_bulk || false,
