@@ -89,7 +89,7 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
                 >
                   <CarouselContent className="-ml-2 md:-ml-4">
                     {collectionProducts.map(product => (
-                      <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
+                      <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/10">
                         <div dir="rtl" className="h-full flex">
                           <ProductCard 
                             key={product.id} 

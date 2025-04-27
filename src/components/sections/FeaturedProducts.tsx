@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
@@ -21,7 +20,6 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [api, setCarouselApi] = useState<any>(null);
   
-  // Reset carousel when products change
   useEffect(() => {
     if (api) {
       api.scrollTo(0);
@@ -48,7 +46,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           >
             <CarouselContent className="-ml-2 md:-ml-4">
               {availableProducts.map(product => (
-                <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
+                <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/10">
                   <div dir="rtl" className="h-full flex">
                     <ProductCard 
                       key={product.id} 
@@ -64,7 +62,6 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
             <CarouselNext className="hidden md:flex" />
           </Carousel>
           
-          {/* Pagination Dots */}
           <div className="flex justify-center gap-2 mt-4" dir="ltr">
             {availableProducts.map((_, index) => (
               <button 
