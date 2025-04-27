@@ -14,7 +14,7 @@ export const CarouselContent = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "flex",
+          "flex w-full",
           orientation === "horizontal" ? "flex-row rtl:!flex-row-reverse" : "flex-col",
           className
         )}
@@ -34,12 +34,10 @@ export const CarouselItem = React.forwardRef<
       ref={ref}
       role="group"
       aria-roledescription="slide"
-      className={cn(
-        "min-w-0 shrink-0 grow-0",
-        className
-      )}
+      className={cn("min-w-0 shrink-0 grow-0 basis-auto", className)}
       {...props}
     />
   )
 })
 CarouselItem.displayName = "CarouselItem"
+
