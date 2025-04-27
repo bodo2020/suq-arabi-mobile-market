@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,6 +10,9 @@ import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
 import { Progress } from '@/components/ui/progress';
 import CouponInput from '@/components/ui/CouponInput';
 import { getFreeDeliveryOffer } from '@/utils/offerUtils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import LocationPicker from '@/components/ui/LocationPicker';
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
@@ -20,6 +22,12 @@ const Cart = () => {
   const [deliveryPrice, setDeliveryPrice] = React.useState(0);
   const [isFreeDelivery, setIsFreeDelivery] = React.useState(false);
   const [progressToFreeDelivery, setProgressToFreeDelivery] = React.useState(0);
+  const [selectedLocation, setSelectedLocation] = React.useState<{
+    governorate?: string;
+    city?: string;
+    area?: string;
+    neighborhood?: string;
+  }>({});
 
   React.useEffect(() => {
     const checkFreeDelivery = async () => {
@@ -123,6 +131,43 @@ const Cart = () => {
       return `${item.product.bulk_quantity} قطعة`;
     }
     return `${item.quantity}`;
+  };
+
+  const { data: deliveryTypes = [] } = useQuery({
+    queryKey: ['deliveryTypes', selectedLocation.area],
+    queryFn: async () => {
+      if (!selectedLocation.area) return [];
+      
+      const { data: pricing } = await supabase
+        .from('delivery_type_pricing')
+        .select(`
+          price,
+          estimated_time,
+          delivery_types (
+            id,
+            name,
+            description
+          )
+        `)
+        .eq('delivery_location_id', selectedLocation.area)
+        .eq('delivery_types.active', true);
+      
+      return (pricing || []).map(p => ({
+        id: p.delivery_types.id,
+        name: p.delivery_types.name,
+        description: p.delivery_types.description,
+        price: p.price,
+        estimated_time: p.estimated_time
+      }));
+    },
+    enabled: !!selectedLocation.area
+  });
+
+  const handleDeliverySelect = (id: string) => {
+    const selectedType = deliveryTypes.find(type => type.id === id);
+    if (selectedType) {
+      setDeliveryPrice(selectedType.price);
+    }
   };
 
   return (
@@ -235,6 +280,24 @@ const Cart = () => {
               )}
               
               <div className="bg-white rounded-lg p-4">
+                <h3 className="text-lg font-bold mb-3">منطقة التوصيل</h3>
+                <LocationPicker
+                  value={selectedLocation}
+                  onChange={setSelectedLocation}
+                />
+              </div>
+              
+              {selectedLocation.area && (
+                <div className="bg-white rounded-lg p-4">
+                  <DeliveryTypeSelector 
+                    options={deliveryTypes}
+                    selectedId={deliveryTypes[0]?.id || ''}
+                    onSelect={handleDeliverySelect}
+                  />
+                </div>
+              )}
+
+              <div className="bg-white rounded-lg p-4">
                 <CouponInput 
                   subtotal={getTotalPrice()} 
                   onApply={setDiscount}
@@ -276,14 +339,6 @@ const Cart = () => {
                 </div>
               </div>
               
-              <div className="bg-white rounded-lg p-4">
-                <DeliveryTypeSelector 
-                  options={[]} 
-                  selectedId="" 
-                  onSelect={() => {}}
-                />
-              </div>
-
               <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
                 متابعة الطلب
               </Link>
