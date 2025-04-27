@@ -40,11 +40,11 @@ const Payment = () => {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
 
-  const formatProductName = (item: any) => {
-    if (item.is_bulk && item.bulk_quantity) {
-      return `${item.product_name} *${item.bulk_quantity} قطعة`;
+  const formatProductName = (item: CartItem) => {
+    if (item.is_bulk && item.product.bulk_quantity) {
+      return `${item.product.name} *${item.product.bulk_quantity} قطعة`;
     }
-    return item.product_name;
+    return item.product.name;
   };
 
   const { data: customerData } = useQuery({
@@ -432,7 +432,7 @@ const Payment = () => {
                       <div className="flex items-center">
                         <span className="text-gray-500 ml-1">{formatQuantity(item)} ×</span>
                         <span className="font-medium">
-                          {item.is_bulk ? `${item.product_name} *${item.product.bulk_quantity} قطعة` : item.product_name}
+                          {formatProductName(item)}
                         </span>
                       </div>
                       <span>{getItemTotal(item).toFixed(2)} ج.م</span>
