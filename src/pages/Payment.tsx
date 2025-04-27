@@ -293,12 +293,12 @@ const Payment = () => {
           // No customer record found, create one
           const { data: newCustomer, error: insertError } = await supabase.from('customers').insert([{
             user_id: user.id,
-            first_name: customerData?.first_name || user.user_metadata?.first_name || '',
-            last_name: customerData?.last_name || user.user_metadata?.last_name || '',
+            first_name: customerData?.first_name || '',
+            last_name: customerData?.last_name || '',
             email: customerData?.email || user.email || '',
-            phone: customerData?.phone || user.user_metadata?.phone || '',
-            address: customerData?.address || user.user_metadata?.address || '',
-            name: customerData?.name || user.user_metadata?.name || `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim()
+            phone: customerData?.phone || '',
+            address: customerData?.address || '',
+            name: customerData?.name || `${customerData?.first_name || ''} ${customerData?.last_name || ''}`.trim()
           }]).select('id').single();
           
           if (insertError) throw insertError;
