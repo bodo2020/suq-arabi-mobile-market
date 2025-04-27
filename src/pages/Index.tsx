@@ -150,9 +150,9 @@ const Index = () => {
   const carouselOptions = {
     align: "start" as const,
     direction: "ltr" as const,
-    containScroll: "trimSnaps" as const,
     dragFree: true,
     skipSnaps: false,
+    slidesToScroll: 1,
   };
 
   if (categoriesLoading || productsLoading || collectionsLoading) {
@@ -266,7 +266,7 @@ const Index = () => {
                 <CarouselContent>
                   {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
                     productsByIds(collection.products).map(product => (
-                      <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px]">
+                      <CarouselItem key={product.id} className="basis-[180px] md:basis-[220px]">
                         <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
                       </CarouselItem>
                     ))
@@ -292,7 +292,7 @@ const Index = () => {
               <CarouselContent>
                 {featuredProducts.length > 0 ? (
                   featuredProducts.map(product => (
-                    <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px]">
+                    <CarouselItem key={product.id} className="basis-[180px] md:basis-[220px]">
                       <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
                     </CarouselItem>
                   ))

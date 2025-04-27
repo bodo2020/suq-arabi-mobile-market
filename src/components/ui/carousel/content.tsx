@@ -14,8 +14,8 @@ export const CarouselContent = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "flex w-full flex-nowrap rtl:!flex-row-reverse",
-          orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col",
+          "flex w-full gap-4",
+          orientation === "horizontal" ? "flex-row rtl:!flex-row-reverse" : "flex-col",
           className
         )}
         {...props}
@@ -37,8 +37,7 @@ export const CarouselItem = React.forwardRef<
       role="group"
       aria-roledescription="slide"
       className={cn(
-        "min-w-0 shrink-0 grow-0 basis-full",
-        orientation === "horizontal" ? "pl-4" : "pt-4",
+        "min-w-0 shrink-0 grow-0",
         className
       )}
       {...props}
@@ -46,3 +45,4 @@ export const CarouselItem = React.forwardRef<
   )
 })
 CarouselItem.displayName = "CarouselItem"
+
