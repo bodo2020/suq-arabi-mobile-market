@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Package, Home, ShoppingCart } from 'lucide-react';
@@ -77,6 +76,13 @@ const Orders = () => {
   ) || [];
 
   const activeOrders = activeTab === 'current' ? currentOrders : previousOrders;
+
+  const formatProductName = (item: any) => {
+    if (item.is_bulk && item.bulk_quantity) {
+      return `${item.name} *${item.bulk_quantity} قطعة`;
+    }
+    return item.name;
+  };
 
   return (
     <MainLayout>
@@ -170,7 +176,7 @@ const Orders = () => {
                         order.items.map((item: any, index: number) => (
                           <li key={index} className="bg-gray-50 p-2 rounded flex items-center justify-between">
                             <div>
-                              <div className="font-medium">{item.name}</div>
+                              <div className="font-medium">{formatProductName(item)}</div>
                               <div className="text-gray-500 text-xs mt-1">
                                 {item.quantity} قطعة × {item.price} ج.م
                               </div>
@@ -184,7 +190,7 @@ const Orders = () => {
                           Object.values(order.items).map((item: any, index: number) => (
                             <li key={index} className="bg-gray-50 p-2 rounded flex items-center justify-between">
                               <div>
-                                <div className="font-medium">{item.name}</div>
+                                <div className="font-medium">{formatProductName(item)}</div>
                                 <div className="text-gray-500 text-xs mt-1">
                                   {item.quantity} قطعة × {item.price} ج.م
                                 </div>
