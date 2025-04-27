@@ -150,7 +150,7 @@ const Index = () => {
   const carouselOptions = {
     align: "start" as const,
     dragFree: true,
-    containScroll: false,
+    containScroll: "trimSnaps" as const,
     slidesToScroll: 1,
   };
 
@@ -288,15 +288,15 @@ const Index = () => {
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
             <Carousel className="w-full overflow-visible" opts={carouselOptions}>
-              <CarouselContent className="-ml-4 -mr-4">
+              <CarouselContent className="-ml-2 -mr-2">
                 {featuredProducts.length > 0 ? (
                   featuredProducts.map(product => (
-                    <CarouselItem key={product.id} className="pl-4 pr-4 basis-[180px] md:basis-[220px]">
+                    <CarouselItem key={product.id} className="px-2 max-w-[180px] md:max-w-[220px]">
                       <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
                     </CarouselItem>
                   ))
                 ) : (
-                  <CarouselItem className="basis-full pl-4">
+                  <CarouselItem className="basis-full pl-2">
                     <div className="text-center py-8 text-muted-foreground">
                       لا توجد منتجات مميزة متاحة حاليًا
                     </div>
