@@ -2,7 +2,6 @@
 import React from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CollectionData {
   id: string;
@@ -38,9 +37,9 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
               {productsByIds(collection.products).map(product => (
                 <ProductCard 
                   key={product.id} 
-                  product={product} 
-                  hideIfUnavailable={true} 
-                  showBulkQuantity={true}
+                  product={product}
+                  hideIfUnavailable={false}
+                  showBulkQuantity={false}
                 />
               ))}
             </div>

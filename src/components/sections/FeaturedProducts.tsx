@@ -22,9 +22,9 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {featuredProducts.map(product => (
             <ProductCard 
-              key={product.id}
+              key={product.id} 
               product={product}
-              hideIfUnavailable={true}
+              hideIfUnavailable={false}
               showBulkQuantity={false}
             />
           ))}
