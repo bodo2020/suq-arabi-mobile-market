@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -174,6 +175,8 @@ const Index = () => {
       </MainLayout>;
   }
 
+  console.log('Product Collections:', productCollections);
+
   return <MainLayout>
       <div className="py-4">
         {storeInfo && <div className="flex flex-col items-center mb-4">
@@ -237,45 +240,59 @@ const Index = () => {
           </div>
         </div>
         
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-bold">منتجات مميزة</h2>
-            <Link to="/products" className="flex items-center text-primary text-sm">
-              عرض الكل
-              <ChevronLeft size={16} />
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {featuredProducts.map(product => <ProductCard key={product.id} product={product} hideIfUnavailable={true} showBulkQuantity={true} />)}
-            {featuredProducts.length === 0 && <div className="col-span-full py-8 text-center">
-                <p className="text-gray-500">لا توجد منتجات متوفرة حالياً</p>
-              </div>}
-          </div>
-        </div>
-
-        {productCollections.map((collection) => (
-          <div key={collection.id} className="mb-6">
+        {productCollections.length > 0 ? (
+          productCollections.map((collection) => (
+            <div key={collection.id} className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-lg font-bold">{collection.title}</h2>
+                {collection.description && (
+                  <p className="text-sm text-muted-foreground">{collection.description}</p>
+                )}
+              </div>
+              
+              <Carousel className="w-full">
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
+                    productsByIds(collection.products).map((product) => (
+                      <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/5">
+                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    <CarouselItem className="pl-2 md:pl-4 basis-full">
+                      <div className="text-center py-8 text-muted-foreground">
+                        لا توجد منتجات في هذه المجموعة
+                      </div>
+                    </CarouselItem>
+                  )}
+                </CarouselContent>
+                <CarouselPrevious className="hidden md:flex" />
+                <CarouselNext className="hidden md:flex" />
+              </Carousel>
+            </div>
+          ))
+        ) : (
+          <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold">{collection.title}</h2>
-              {collection.description && (
-                <p className="text-sm text-muted-foreground">{collection.description}</p>
-              )}
+              <h2 className="text-lg font-bold">منتجات مميزة</h2>
+              <Link to="/products" className="flex items-center text-primary text-sm">
+                عرض الكل
+                <ChevronLeft size={16} />
+              </Link>
             </div>
             
-            <Carousel className="w-full">
-              <CarouselContent className="-ml-2 md:-ml-4">
-                {productsByIds(collection.products).map((product) => (
-                  <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/5">
-                    <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="hidden md:flex" />
-              <CarouselNext className="hidden md:flex" />
-            </Carousel>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {featuredProducts.map(product => (
+                <ProductCard key={product.id} product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+              ))}
+              {featuredProducts.length === 0 && (
+                <div className="col-span-full py-8 text-center">
+                  <p className="text-gray-500">لا توجد منتجات متوفرة حالياً</p>
+                </div>
+              )}
+            </div>
           </div>
-        ))}
+        )}
       </div>
     </MainLayout>;
 };
