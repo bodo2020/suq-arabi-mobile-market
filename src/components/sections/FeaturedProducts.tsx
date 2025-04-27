@@ -21,6 +21,26 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [api, setCarouselApi] = useState<any>(null);
   
+  // Listen for slide changes
+  useEffect(() => {
+    if (!api) return;
+    
+    const onSelect = () => {
+      setActiveIndex(api.selectedScrollSnap());
+    };
+    
+    api.on('select', onSelect);
+    
+    // Initial selection
+    if (api.selectedScrollSnap !== undefined) {
+      setActiveIndex(api.selectedScrollSnap());
+    }
+    
+    return () => {
+      api.off('select', onSelect);
+    };
+  }, [api]);
+  
   // Reset carousel when products change
   useEffect(() => {
     if (api) {
@@ -35,20 +55,21 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
       {availableProducts.length > 0 ? (
-        <div className="relative overflow-hidden" dir="ltr">
+        <div className="relative" dir="ltr">
           <Carousel
             opts={{
               align: "start",
               loop: true,
               skipSnaps: false,
               dragFree: false,
+              containScroll: "keepSnaps",
             }}
             setApi={setCarouselApi}
             className="w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4">
+            <CarouselContent>
               {availableProducts.map(product => (
-                <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
+                <CarouselItem key={product.id} className="pl-4 basis-1/2 md:basis-1/10">
                   <div dir="rtl" className="h-full flex">
                     <ProductCard 
                       key={product.id} 
@@ -65,8 +86,8 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           </Carousel>
           
           {/* Pagination Dots */}
-          <div className="flex justify-center gap-2 mt-4" dir="ltr">
-            {availableProducts.map((_, index) => (
+          <div className="flex justify-center gap-2 mt-4">
+            {availableProducts.slice(0, Math.min(10, availableProducts.length)).map((_, index) => (
               <button 
                 key={index}
                 onClick={() => api?.scrollTo(index)}

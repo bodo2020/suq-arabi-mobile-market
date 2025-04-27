@@ -43,6 +43,11 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
       ...prev,
       [collectionId]: api
     }));
+    
+    // Set up listener for this specific carousel
+    if (api) {
+      api.on('select', () => updateActiveIndex(collectionId, api.selectedScrollSnap()));
+    }
   };
   
   // Reset carousels when products change
@@ -70,26 +75,21 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
             </div>
             
             {collectionProducts.length > 0 ? (
-              <div className="relative overflow-hidden" dir="ltr">
+              <div className="relative" dir="ltr">
                 <Carousel
                   opts={{
                     align: "start",
                     loop: true,
                     skipSnaps: false,
                     dragFree: false,
+                    containScroll: "keepSnaps",
                   }}
-                  setApi={(api) => {
-                    if (!api) return;
-                    setApiForCollection(collection.id, api);
-                    api.on('select', () => {
-                      updateActiveIndex(collection.id, api.selectedScrollSnap());
-                    });
-                  }}
+                  setApi={(api) => setApiForCollection(collection.id, api)}
                   className="w-full"
                 >
-                  <CarouselContent className="-ml-2 md:-ml-4">
+                  <CarouselContent>
                     {collectionProducts.map(product => (
-                      <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
+                      <CarouselItem key={product.id} className="pl-4 basis-1/2 md:basis-1/10">
                         <div dir="rtl" className="h-full flex">
                           <ProductCard 
                             key={product.id} 
@@ -105,8 +105,8 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
                   <CarouselNext className="hidden md:flex" />
                 </Carousel>
                 
-                <div className="flex justify-center gap-2 mt-4" dir="ltr">
-                  {collectionProducts.map((_, index) => (
+                <div className="flex justify-center gap-2 mt-4">
+                  {collectionProducts.slice(0, Math.min(10, collectionProducts.length)).map((_, index) => (
                     <button 
                       key={index}
                       onClick={() => carouselApis[collection.id]?.scrollTo(index)}
