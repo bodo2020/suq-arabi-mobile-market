@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -254,7 +255,7 @@ const Index = () => {
                 )}
               </div>
               
-              <Carousel className="w-full" opts={{ align: "start" }}>
+              <Carousel className="w-full" opts={{ align: "start", dragFree: true }}>
                 <CarouselContent className="-ml-4">
                   {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
                     productsByIds(collection.products).map(product => (
@@ -270,8 +271,8 @@ const Index = () => {
                     </CarouselItem>
                   )}
                 </CarouselContent>
-                <CarouselPrevious className="hidden md:flex -left-4" />
-                <CarouselNext className="hidden md:flex -right-4" />
+                <CarouselPrevious className="flex -left-0" />
+                <CarouselNext className="flex -right-0" />
               </Carousel>
             </div>
           ))
@@ -280,7 +281,7 @@ const Index = () => {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
-            <Carousel className="w-full" opts={{ align: "start" }}>
+            <Carousel className="w-full" opts={{ align: "start", dragFree: true }}>
               <CarouselContent className="-ml-4">
                 {featuredProducts.length > 0 ? (
                   featuredProducts.map(product => (
@@ -296,8 +297,8 @@ const Index = () => {
                   </CarouselItem>
                 )}
               </CarouselContent>
-              <CarouselPrevious className="hidden md:flex -left-4" />
-              <CarouselNext className="hidden md:flex -right-4" />
+              <CarouselPrevious className="flex -left-0" />
+              <CarouselNext className="flex -right-0" />
             </Carousel>
           </div>
         )}
