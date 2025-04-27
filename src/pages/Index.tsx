@@ -254,25 +254,19 @@ const Index = () => {
                 )}
               </div>
               
-              <Carousel className="w-full">
-                <CarouselContent className="-ml-2 md:-ml-4">
-                  {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
-                    productsByIds(collection.products).map(product => (
-                      <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/6">
-                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
-                      </CarouselItem>
-                    ))
-                  ) : (
-                    <CarouselItem className="pl-2 md:pl-4 basis-full">
-                      <div className="text-center py-8 text-muted-foreground">
-                        لا توجد منتجات في هذه المجموعة
-                      </div>
-                    </CarouselItem>
-                  )}
-                </CarouselContent>
-                <CarouselPrevious className="hidden md:flex" />
-                <CarouselNext className="hidden md:flex" />
-              </Carousel>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
+                  productsByIds(collection.products).map(product => (
+                    <div key={product.id}>
+                      <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    لا توجد منتجات في هذه المجموعة
+                  </div>
+                )}
+              </div>
             </div>
           ))
         ) : (
@@ -280,25 +274,19 @@ const Index = () => {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
-            <Carousel className="w-full">
-              <CarouselContent className="-ml-2 md:-ml-4">
-                {featuredProducts.length > 0 ? (
-                  featuredProducts.map(product => (
-                    <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/6">
-                      <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
-                    </CarouselItem>
-                  ))
-                ) : (
-                  <CarouselItem className="pl-2 md:pl-4 basis-full">
-                    <div className="text-center py-8 text-muted-foreground">
-                      لا توجد منتجات مميزة متاحة حاليًا
-                    </div>
-                  </CarouselItem>
-                )}
-              </CarouselContent>
-              <CarouselPrevious className="hidden md:flex" />
-              <CarouselNext className="hidden md:flex" />
-            </Carousel>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {featuredProducts.length > 0 ? (
+                featuredProducts.map(product => (
+                  <div key={product.id}>
+                    <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  لا توجد منتجات مميزة متاحة حاليًا
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
