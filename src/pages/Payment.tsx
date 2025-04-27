@@ -166,6 +166,8 @@ const Payment = () => {
           return {
             product_id: item.product.id,
             barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
+            name: item.product.name,
+            image_url: item.product.image_urls && item.product.image_urls.length > 0 ? item.product.image_urls[0] : null,
             quantity: quantity,
             price: item.product.offer_price || item.product.price,
             bulk_quantity: item.product.bulk_quantity,
@@ -230,6 +232,8 @@ const Payment = () => {
           return {
             product_id: item.product.id,
             barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
+            name: item.product.name,
+            image_url: item.product.image_urls && item.product.image_urls.length > 0 ? item.product.image_urls[0] : null,
             quantity: quantity,
             price: item.product.offer_price || item.product.price,
             bulk_quantity: item.product.bulk_quantity,

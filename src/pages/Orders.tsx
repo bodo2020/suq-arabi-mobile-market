@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Package, Home, ShoppingCart } from 'lucide-react';
@@ -53,6 +54,7 @@ const getStatusText = (status: string) => {
 const Orders = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('current');
+  
   const {
     data: orders,
     isLoading
@@ -69,6 +71,7 @@ const Orders = () => {
       return data;
     }
   });
+  
   const currentOrders = orders?.filter(order => ['waiting', 'ready'].includes(order.status)) || [];
   const previousOrders = orders?.filter(order => ['shipped', 'done'].includes(order.status)) || [];
   const activeOrders = activeTab === 'current' ? currentOrders : previousOrders;
@@ -129,11 +132,11 @@ const Orders = () => {
                       {Array.isArray(order.items) ? order.items.map((item: any, index: number) => (
                         <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
                           <div className="relative w-16 h-16 shrink-0">
-                            {item.image_url && (
+                            {item.image_url ? (
                               <>
                                 <img 
                                   src={item.image_url} 
-                                  alt={item.name}
+                                  alt={item.name || "منتج"}
                                   className="w-full h-full object-cover rounded"
                                 />
                                 {item.is_bulk && item.bulk_quantity && (
@@ -142,10 +145,14 @@ const Orders = () => {
                                   </div>
                                 )}
                               </>
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                                لا توجد صورة
+                              </div>
                             )}
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium">{item.name}</div>
+                            <div className="font-medium">{item.name || "منتج"}</div>
                             <div className="text-gray-500 text-xs mt-1">
                               {item.quantity} {item.unit_of_measure === 'weight' ? 'كجم' : 'قطعة'} × {item.price} ج.م
                             </div>
@@ -157,11 +164,11 @@ const Orders = () => {
                       )) : typeof order.items === 'object' ? Object.values(order.items).map((item: any, index: number) => (
                         <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
                           <div className="relative w-16 h-16 shrink-0">
-                            {item.image_url && (
+                            {item.image_url ? (
                               <>
                                 <img 
                                   src={item.image_url} 
-                                  alt={item.name}
+                                  alt={item.name || "منتج"}
                                   className="w-full h-full object-cover rounded"
                                 />
                                 {item.is_bulk && item.bulk_quantity && (
@@ -170,10 +177,14 @@ const Orders = () => {
                                   </div>
                                 )}
                               </>
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                                لا توجد صورة
+                              </div>
                             )}
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium">{item.name}</div>
+                            <div className="font-medium">{item.name || "منتج"}</div>
                             <div className="text-gray-500 text-xs mt-1">
                               {item.quantity} {item.unit_of_measure === 'weight' ? 'كجم' : 'قطعة'} × {item.price} ج.م
                             </div>
