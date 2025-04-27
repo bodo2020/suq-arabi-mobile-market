@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,18 @@ const AddressDisplay = ({ areaName, className, showAddressSelector = false }: Ad
         localStorage.setItem('userAddress', selectedAddress.address || '');
         localStorage.setItem('userArea', selectedAddress.areas?.name || '');
         localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
+        
+        // Also update the customer record in the database with location information
+        await supabase
+          .from('customers')
+          .update({
+            governorate_id: selectedAddress.governorate_id,
+            city_id: selectedAddress.city_id,
+            area_id: selectedAddress.area_id,
+            neighborhood_id: selectedAddress.neighborhood_id,
+            address: selectedAddress.address
+          })
+          .eq('user_id', user.id);
       }
 
       // Refresh addresses data
