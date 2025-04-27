@@ -21,8 +21,8 @@ const Index = () => {
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{
-    area?: string;
-    neighborhood?: string;
+    area?: string | null;
+    neighborhood?: string | null;
   } | null>(null);
   const [searchBackground, setSearchBackground] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
@@ -119,7 +119,13 @@ const Index = () => {
   };
 
   const addressSection = <div className="mb-4">
-      <AddressDisplay address={userAddress || ''} areaName={userLocation?.area} onEdit={handleChangeLocation} showAddressSelector={true} />
+      <AddressDisplay 
+        address={userAddress || ''} 
+        areaName={userLocation?.area || undefined} 
+        neighborhoodName={userLocation?.neighborhood || undefined}
+        onEdit={handleChangeLocation} 
+        showAddressSelector={true} 
+      />
     </div>;
 
   if (categoriesLoading || productsLoading) {

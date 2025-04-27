@@ -20,9 +20,10 @@ interface AddressDisplayProps {
   areaName?: string;
   className?: string;
   showAddressSelector?: boolean;
+  neighborhoodName?: string;
 }
 
-const AddressDisplay = ({ areaName, className, showAddressSelector = false }: AddressDisplayProps) => {
+const AddressDisplay = ({ areaName, className, showAddressSelector = false, neighborhoodName }: AddressDisplayProps) => {
   const { user } = useUser();
   const { toast } = useToast();
 
@@ -108,7 +109,13 @@ const AddressDisplay = ({ areaName, className, showAddressSelector = false }: Ad
         <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
         <div>
           <p className="font-medium">
-            {areaName || 'لا يوجد عنوان محدد'}
+            {!neighborhoodName && !areaName ? 'لا يوجد عنوان محدد' : (
+              <>
+                {neighborhoodName}
+                {neighborhoodName && areaName && '، '}
+                {areaName}
+              </>
+            )}
           </p>
         </div>
       </div>
