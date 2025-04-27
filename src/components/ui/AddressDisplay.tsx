@@ -107,7 +107,9 @@ const AddressDisplay = ({ areaName, className, showAddressSelector = false }: Ad
       <div className="flex gap-2">
         <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
         <div>
-          <p className="font-medium">{areaName}</p>
+          <p className="font-medium">
+            {areaName || 'لا يوجد عنوان محدد'}
+          </p>
         </div>
       </div>
       {showAddressSelector && addresses.length > 0 && (
@@ -123,9 +125,9 @@ const AddressDisplay = ({ areaName, className, showAddressSelector = false }: Ad
                 key={addr.id}
                 onClick={() => handleAddressSelect(addr.id)}
               >
-                {addr.areas?.name}
-                {addr.areas?.name && addr.neighborhoods?.name ? '، ' : ''}
                 {addr.neighborhoods?.name}
+                {addr.neighborhoods?.name && addr.areas?.name ? '، ' : ''}
+                {addr.areas?.name}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
