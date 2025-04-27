@@ -191,14 +191,11 @@ const Cart = () => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
       if (item) {
-        const totalProductQuantity = items.filter(i => i.product.id === productId).reduce((total, i) => {
-          if (i.is_bulk) {
-            return total + i.quantity * (i.product.bulk_quantity || 1);
-          }
-          return total + i.quantity;
-        }, 0);
-        const additionalUnitsNeeded = is_bulk ? item.product.bulk_quantity || 1 : 1;
-        if (totalProductQuantity + additionalUnitsNeeded <= item.product.quantity) {
+        // المشكلة كانت هنا: تم تعديل طريقة حساب الكمية المتوفرة
+        // بحيث لا نأخذ في الاعتبار السلة نفسها عند زيادة الكمية
+        
+        // نتأكد أن الكمية المتوفرة أكبر من أو تساوي 1
+        if (item.product.quantity >= 1) {
           updateQuantity(productId, item.quantity + 1, is_bulk);
         } else {
           toast({
