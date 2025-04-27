@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AddressDisplay from '@/components/ui/AddressDisplay';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
+import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
 
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
@@ -136,23 +136,9 @@ const Index = () => {
   };
 
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
-  const availableProducts = products.filter(product => product.quantity > 0);
-  const featuredProducts = availableProducts.slice(0, isMobile ? 4 : 10);
 
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
-  };
-
-  const productsByIds = (productIds: string[] | null) => {
-    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) return [];
-    return products.filter(product => productIds.includes(product.id));
-  };
-
-  const carouselOptions = {
-    align: "start" as const,
-    direction: "ltr" as const,
-    containScroll: "trimSnaps" as const,
-    dragFree: true,
   };
 
   if (categoriesLoading || productsLoading || collectionsLoading) {
@@ -186,8 +172,6 @@ const Index = () => {
   const addressSection = <div className="mb-4">
       <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
     </div>;
-
-  console.log('Product Collections on render:', productCollections);
 
   return <MainLayout>
       <div className="py-4">
@@ -252,63 +236,7 @@ const Index = () => {
           </div>
         </div>
         
-        {productCollections && productCollections.length > 0 ? (
-          productCollections.map(collection => (
-            <div key={collection.id} className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-lg font-bold">{collection.title}</h2>
-                {collection.description && (
-                  <p className="text-sm text-muted-foreground">{collection.description}</p>
-                )}
-              </div>
-              
-              <Carousel className="w-full" opts={carouselOptions}>
-                <CarouselContent>
-                  {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
-                    productsByIds(collection.products).map(product => (
-                      <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px] pl-4">
-                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
-                      </CarouselItem>
-                    ))
-                  ) : (
-                    <CarouselItem className="basis-full">
-                      <div className="text-center py-8 text-muted-foreground">
-                        لا توجد منتجات في هذه المجموعة
-                      </div>
-                    </CarouselItem>
-                  )}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            </div>
-          ))
-        ) : (
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold">منتجات مميزة</h2>
-            </div>
-            <Carousel className="w-full" opts={carouselOptions}>
-              <CarouselContent>
-                {featuredProducts.length > 0 ? (
-                  featuredProducts.map(product => (
-                    <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px] pl-4">
-                      <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
-                    </CarouselItem>
-                  ))
-                ) : (
-                  <CarouselItem className="basis-full">
-                    <div className="text-center py-8 text-muted-foreground">
-                      لا توجد منتجات مميزة متاحة حاليًا
-                    </div>
-                  </CarouselItem>
-                )}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
-          </div>
-        )}
+        <ProductCollectionsSection />
       </div>
     </MainLayout>;
 };
