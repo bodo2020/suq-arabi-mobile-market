@@ -27,7 +27,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
       {availableProducts.length > 0 ? (
-        <div className="relative">
+        <div className="relative" dir="ltr">
           <Carousel
             opts={{
               align: "start",
@@ -45,12 +45,14 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
             <CarouselContent className="-ml-2 md:-ml-4">
               {availableProducts.map(product => (
                 <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
-                  <ProductCard 
-                    key={product.id} 
-                    product={product}
-                    hideIfUnavailable={false}
-                    showBulkQuantity={false}
-                  />
+                  <div dir="rtl">
+                    <ProductCard 
+                      key={product.id} 
+                      product={product}
+                      hideIfUnavailable={false}
+                      showBulkQuantity={false}
+                    />
+                  </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -59,7 +61,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           </Carousel>
           
           {/* Pagination Dots */}
-          <div className="flex justify-center mt-2 space-x-2">
+          <div className="flex justify-center mt-2 space-x-2" dir="ltr">
             {availableProducts.map((_, index) => (
               <button 
                 key={index} 
