@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -9,7 +10,6 @@ const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productsRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -127,9 +127,14 @@ const CategoryDetail = () => {
           </div>
         </div>
 
-        <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              hideIfUnavailable={true} 
+              showBulkQuantity={true} 
+            />
           ))}
         </div>
 
