@@ -87,7 +87,7 @@ const Carousel = React.forwardRef<
       // Fix for initial visibility of slides
       const reInitTimeout = setTimeout(() => {
         api.reInit();
-      }, 50);
+      }, 150);
       
       return () => {
         api?.off("select", onSelect)

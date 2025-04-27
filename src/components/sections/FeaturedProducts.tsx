@@ -25,9 +25,29 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   useEffect(() => {
     if (api) {
       api.scrollTo(0);
-      api.reInit();
+      
+      // Force reinitialization with timeout to ensure proper rendering
+      const timer = setTimeout(() => {
+        api.reInit();
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [products, api]);
+
+  // Update active index when slide changes
+  useEffect(() => {
+    if (!api) return;
+    
+    const onSelect = () => {
+      setActiveIndex(api.selectedScrollSnap());
+    };
+    
+    api.on("select", onSelect);
+    return () => {
+      api.off("select", onSelect);
+    };
+  }, [api]);
   
   return (
     <div className="mb-6">
@@ -35,13 +55,14 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
       {availableProducts.length > 0 ? (
-        <div className="relative overflow-hidden" dir="ltr">
+        <div className="relative" dir="ltr">
           <Carousel
             opts={{
               align: "start",
               loop: true,
               skipSnaps: false,
               dragFree: false,
+              containScroll: "keepSnaps"
             }}
             setApi={setCarouselApi}
             className="w-full"

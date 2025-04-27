@@ -50,10 +50,14 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
     Object.entries(carouselApis).forEach(([id, api]) => {
       if (api) {
         api.scrollTo(0);
-        api.reInit();
+        
+        // Force reinitialization with timeout to ensure proper rendering
+        setTimeout(() => {
+          api.reInit();
+        }, 100);
       }
     });
-  }, [products, collections]);
+  }, [products, collections, carouselApis]);
 
   return (
     <>
@@ -70,17 +74,20 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
             </div>
             
             {collectionProducts.length > 0 ? (
-              <div className="relative overflow-hidden" dir="ltr">
+              <div className="relative" dir="ltr">
                 <Carousel
                   opts={{
                     align: "start",
                     loop: true,
                     skipSnaps: false,
                     dragFree: false,
+                    containScroll: "keepSnaps"
                   }}
                   setApi={(api) => {
                     if (!api) return;
                     setApiForCollection(collection.id, api);
+                    
+                    // Listen for slide changes to update active index
                     api.on('select', () => {
                       updateActiveIndex(collection.id, api.selectedScrollSnap());
                     });
