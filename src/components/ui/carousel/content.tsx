@@ -14,7 +14,7 @@ export const CarouselContent = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "flex w-full gap-4",
+          "flex",
           orientation === "horizontal" ? "flex-row rtl:!flex-row-reverse" : "flex-col",
           className
         )}
@@ -29,8 +29,6 @@ export const CarouselItem = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { orientation } = useCarousel()
-
   return (
     <div
       ref={ref}
@@ -45,4 +43,3 @@ export const CarouselItem = React.forwardRef<
   )
 })
 CarouselItem.displayName = "CarouselItem"
-
