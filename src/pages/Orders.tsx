@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Package, Home, ShoppingCart } from 'lucide-react';
@@ -78,10 +79,13 @@ const Orders = () => {
   const activeOrders = activeTab === 'current' ? currentOrders : previousOrders;
 
   const formatProductName = (item: any) => {
+    // Check if item has name property
+    const productName = item.name || item.product_name || "منتج غير معروف";
+    
     if (item.is_bulk && item.bulk_quantity) {
-      return `${item.name} *${item.bulk_quantity} قطعة`;
+      return `${productName} *${item.bulk_quantity} قطعة`;
     }
-    return item.name;
+    return productName;
   };
 
   return (
