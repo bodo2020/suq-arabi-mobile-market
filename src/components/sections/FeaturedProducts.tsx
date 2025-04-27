@@ -18,14 +18,13 @@ interface FeaturedProductsProps {
 const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   const isMobile = useIsMobile();
   const availableProducts = products.filter(product => product.quantity > 0);
-  const featuredProducts = availableProducts.slice(0, isMobile ? 4 : 10);
   
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
-      {featuredProducts.length > 0 ? (
+      {availableProducts.length > 0 ? (
         <div className="relative">
           <Carousel
             opts={{
@@ -36,7 +35,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
             className="w-full"
           >
             <CarouselContent className="-ml-2 md:-ml-4">
-              {featuredProducts.map(product => (
+              {availableProducts.map(product => (
                 <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
                   <ProductCard 
                     key={product.id} 
