@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -6,7 +7,7 @@ import Cart from '@/pages/Cart';
 import Categories from '@/pages/Categories';
 import CategoryDetail from '@/pages/CategoryDetail';
 import ProductDetail from '@/pages/ProductDetail';
-import Checkout from '@/pages/Checkout';
+import Payment from '@/pages/Payment';
 import OrderSuccess from '@/pages/OrderSuccess';
 import Account from '@/pages/Account';
 import AddressManager from '@/pages/AddressManager';
@@ -40,7 +41,8 @@ function App() {
               <Route path="/categories" element={<Categories />} />
               <Route path="/category/:id" element={<CategoryDetail />} />
               <Route path="/product/:id" element={<ProductDetail />} />
-              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/payment" element={<Payment />} />
+              <Route path="/checkout" element={<Navigate to="/payment" replace />} />
               <Route path="/order-success" element={<OrderSuccess />} />
               <Route path="/account" element={<Account />} />
               <Route path="/addresses" element={<AddressManager />} />
