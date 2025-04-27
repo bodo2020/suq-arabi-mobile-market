@@ -14,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AddressDisplay from '@/components/ui/AddressDisplay';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
-
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
@@ -30,7 +29,6 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
-
   const {
     data: categories = [],
     isLoading: categoriesLoading
@@ -38,22 +36,18 @@ const Index = () => {
     queryKey: ['categories'],
     queryFn: getCategories
   });
-
   const {
     data: productCollections = [],
     isLoading: collectionsLoading
   } = useQuery({
     queryKey: ['productCollections'],
     queryFn: async () => {
-      console.log('Fetching product collections');
       const {
         data
       } = await supabase.from('product_collections').select('*, products(*)').eq('active', true).order('position');
-      console.log('Product collections data:', data);
       return data || [];
     }
   });
-
   const {
     data: products = [],
     isLoading: productsLoading
@@ -61,7 +55,6 @@ const Index = () => {
     queryKey: ['products'],
     queryFn: () => getProducts()
   });
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -85,7 +78,6 @@ const Index = () => {
     };
     fetchData();
   }, []);
-
   useEffect(() => {
     if (banners.length > 1) {
       bannerIntervalRef.current = setInterval(() => {
@@ -98,7 +90,6 @@ const Index = () => {
       }
     };
   }, [banners.length]);
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -112,33 +103,25 @@ const Index = () => {
       setProcessingImage(false);
     }
   };
-
   const handleFocusSearchBar = () => {
     navigate('/search');
   };
-
   const handleChangeLocation = () => {
     setPopoverOpen(false);
     navigate('/account/addresses');
   };
-
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
   const availableProducts = products.filter(product => product.quantity > 0);
   const featuredProducts = availableProducts.slice(0, isMobile ? 4 : 10);
-
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
-
   const addressSection = <div className="mb-4">
       <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
     </div>;
-
   const productsByIds = (productIds: string[]) => {
-    if (!Array.isArray(productIds) || productIds.length === 0) return [];
     return products.filter(product => productIds.includes(product.id));
   };
-
   if (categoriesLoading || productsLoading || collectionsLoading) {
     return <MainLayout>
         <div className="py-4">
@@ -166,9 +149,7 @@ const Index = () => {
         </div>
       </MainLayout>;
   }
-
   console.log('Product Collections:', productCollections);
-
   return <MainLayout>
       <div className="py-4">
         {storeInfo && <div className="flex flex-col items-center mb-4">
@@ -213,7 +194,7 @@ const Index = () => {
             </Carousel>
           </div>}
 
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-lg font-bold">الأقسام</h2>
             <Link to="/categories" className="flex items-center text-primary text-sm">
@@ -232,64 +213,31 @@ const Index = () => {
           </div>
         </div>
         
-        <div className="my-6">
-          <img 
-            src="/lovable-uploads/b9da79aa-d6c1-44b3-9e29-003b5bd62dc4.png" 
-            alt="اللحوم الطازجة" 
-            className="w-full h-auto rounded-lg object-cover"
-          />
-        </div>
-        
-        {productCollections && productCollections.length > 0 ? (
-          productCollections.map(collection => (
-            <div key={collection.id} className="mb-8">
+        {productCollections.length > 0 ? productCollections.map(collection => <div key={collection.id} className="mb-6">
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-lg font-bold">{collection.title}</h2>
-                {collection.description && (
-                  <p className="text-sm text-muted-foreground">{collection.description}</p>
-                )}
+                {collection.description && <p className="text-sm text-muted-foreground">{collection.description}</p>}
               </div>
               
               <Carousel className="w-full">
                 <CarouselContent className="-ml-2 md:-ml-4">
-                  {collection.products && Array.isArray(collection.products) && productsByIds(collection.products).length > 0 ? (
-                    productsByIds(collection.products).map(product => (
-                      <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/5">
-                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={collection.title === "منتجات الجملة"} />
-                      </CarouselItem>
-                    ))
-                  ) : (
-                    <CarouselItem className="pl-2 md:pl-4 basis-full">
+                  {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? productsByIds(collection.products).map(product => <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/5">
+                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+                      </CarouselItem>) : <CarouselItem className="pl-2 md:pl-4 basis-full">
                       <div className="text-center py-8 text-muted-foreground">
                         لا توجد منتجات في هذه المجموعة
                       </div>
-                    </CarouselItem>
-                  )}
+                    </CarouselItem>}
                 </CarouselContent>
                 <CarouselPrevious className="hidden md:flex" />
                 <CarouselNext className="hidden md:flex" />
               </Carousel>
-            </div>
-          ))
-        ) : (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold">المنتجات الأكثر مبيعاً</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {featuredProducts.map(product => (
-                <ProductCard key={product.id} product={product} hideIfUnavailable={true} />
-              ))}
-              {featuredProducts.length === 0 && (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  لا توجد منتجات متوفرة حالياً
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+            </div>) : <div className="mb-6">
+            
+            
+            
+          </div>}
       </div>
     </MainLayout>;
 };
-
 export default Index;
