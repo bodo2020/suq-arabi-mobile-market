@@ -13,10 +13,12 @@ import { getFreeDeliveryOffer } from '@/utils/offerUtils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import LocationPicker from '@/components/ui/LocationPicker';
+import { useUser } from '@/contexts/UserContext';
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
   const { toast } = useToast();
+  const { user } = useUser();
   const [openWeightSelector, setOpenWeightSelector] = React.useState<string | null>(null);
   const [discount, setDiscount] = React.useState(0);
   const [deliveryPrice, setDeliveryPrice] = React.useState(0);
@@ -28,6 +30,41 @@ const Cart = () => {
     area?: string;
     neighborhood?: string;
   }>({});
+
+  // Add query to fetch customer data
+  const { data: customerData } = useQuery({
+    queryKey: ['customerData', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data } = await supabase
+        .from('customers')
+        .select(`
+          *,
+          governorates(name),
+          cities(name),
+          areas(name),
+          neighborhoods(name)
+        `)
+        .eq('user_id', user.id)
+        .single();
+      
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  // Set selected location from customer data
+  React.useEffect(() => {
+    if (customerData) {
+      setSelectedLocation({
+        governorate: customerData.governorate_id || undefined,
+        city: customerData.city_id || undefined,
+        area: customerData.area_id || undefined,
+        neighborhood: customerData.neighborhood_id || undefined
+      });
+    }
+  }, [customerData]);
 
   React.useEffect(() => {
     const checkFreeDelivery = async () => {
