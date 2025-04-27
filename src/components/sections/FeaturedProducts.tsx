@@ -29,6 +29,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           <Carousel
             opts={{
               align: "start",
+              containScroll: false,
               loop: false,
               dragFree: true,
             }}

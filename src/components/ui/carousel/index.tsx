@@ -32,7 +32,7 @@ const Carousel = React.forwardRef<
       skipSnaps: false,
       slidesToScroll: 1,
       dragFree: true,
-      containScroll: "trimSnaps" as const,
+      containScroll: false,
       ...(opts || {})
     }
 

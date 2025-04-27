@@ -44,6 +44,7 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
               <Carousel
                 opts={{
                   align: "start",
+                  containScroll: false,
                   loop: false,
                   dragFree: true,
                 }}
