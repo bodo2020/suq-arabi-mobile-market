@@ -158,22 +158,40 @@ const Orders = () => {
                   </span>
                 </div>
                 <div className="text-sm text-gray-600">
-                  <div className="mb-1">
-                    <strong>العنوان:</strong> {order.shipping_address}
-                  </div>
+                  {order.shipping_address && (
+                    <div className="mb-3">
+                      <strong>العنوان:</strong> {order.shipping_address}
+                    </div>
+                  )}
                   <div>
                     <strong>المنتجات:</strong>
-                    <ul className="list-disc list-inside mr-4 mt-1">
+                    <ul className="space-y-2 mt-2">
                       {Array.isArray(order.items) ? 
                         order.items.map((item: any, index: number) => (
-                          <li key={index}>
-                            {item.name} - {item.quantity} قطعة
+                          <li key={index} className="bg-gray-50 p-2 rounded flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">{item.name}</div>
+                              <div className="text-gray-500 text-xs mt-1">
+                                {item.quantity} قطعة × {item.price} ج.م
+                              </div>
+                            </div>
+                            <div className="font-semibold">
+                              {(item.quantity * item.price).toFixed(2)} ج.م
+                            </div>
                           </li>
                         )) : 
                         typeof order.items === 'object' ?
                           Object.values(order.items).map((item: any, index: number) => (
-                            <li key={index}>
-                              {item.name} - {item.quantity} قطعة
+                            <li key={index} className="bg-gray-50 p-2 rounded flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">{item.name}</div>
+                                <div className="text-gray-500 text-xs mt-1">
+                                  {item.quantity} قطعة × {item.price} ج.م
+                                </div>
+                              </div>
+                              <div className="font-semibold">
+                                {(item.quantity * item.price).toFixed(2)} ج.م
+                              </div>
                             </li>
                           )) : 
                           <li>لا توجد منتجات</li>
@@ -187,7 +205,10 @@ const Orders = () => {
         )}
         
         <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t flex justify-around items-center h-16">
-          <button className="flex flex-col items-center space-y-1 flex-1 text-gray-600">
+          <button 
+            onClick={() => navigate('/')}
+            className="flex flex-col items-center space-y-1 flex-1 text-gray-600"
+          >
             <Home className="h-6 w-6" />
             <span className="text-xs">الرئيسية</span>
           </button>
@@ -195,7 +216,10 @@ const Orders = () => {
             <Package className="h-6 w-6" />
             <span className="text-xs">طلباتي</span>
           </button>
-          <button className="flex flex-col items-center space-y-1 flex-1 text-gray-600">
+          <button 
+            onClick={() => navigate('/cart')}
+            className="flex flex-col items-center space-y-1 flex-1 text-gray-600"
+          >
             <ShoppingCart className="h-6 w-6" />
             <span className="text-xs">عربة التسوق</span>
           </button>
