@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import { cn } from "@/lib/utils"
@@ -31,7 +32,7 @@ const Carousel = React.forwardRef<
       skipSnaps: false,
       slidesToScroll: 1,
       dragFree: false,
-      containScroll: false,
+      containScroll: "trimSnaps" as const,  // Changed from boolean to valid string literal
       ...(opts || {})
     }
 

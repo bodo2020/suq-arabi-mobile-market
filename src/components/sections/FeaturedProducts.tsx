@@ -29,7 +29,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           <Carousel
             opts={{
               align: "start",
-              containScroll: false,
+              containScroll: "trimSnaps" as const,
               dragFree: false,
               loop: true,
             }}

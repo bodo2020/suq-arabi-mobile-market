@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
@@ -43,7 +44,7 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
               <Carousel
                 opts={{
                   align: "start",
-                  containScroll: false,
+                  containScroll: "trimSnaps" as const,
                   dragFree: false,
                   loop: true,
                 }}
