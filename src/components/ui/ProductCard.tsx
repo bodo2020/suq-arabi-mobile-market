@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
@@ -132,6 +131,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const currentItemInCart = displayBulkView ? bulkCartItem : regularCartItem;
   const currentQuantity = currentItemInCart?.quantity || 0;
 
+  const canPurchaseBulk = product.bulk_enabled && 
+    product.bulk_quantity && 
+    product.quantity >= product.bulk_quantity;
+
   return (
     <>
       <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale">
@@ -227,7 +230,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                     </button>
                   )}
 
-                  {product.bulk_enabled && product.bulk_quantity && !showBulkQuantity && (
+                  {product.bulk_enabled && product.bulk_quantity && !showBulkQuantity && canPurchaseBulk && (
                     bulkCartItem ? (
                       <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-1">
                         <button 
