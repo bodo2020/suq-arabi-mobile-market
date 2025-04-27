@@ -235,7 +235,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                       <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-1">
                         <button 
                           onClick={(e) => handleDecreaseQuantity(e, true)} 
-                          className="p-1 hover:bg-[#c3ef93]/50 rounded"
+                          className="p-2 hover:bg-[#c3ef93]/50 rounded"
                           aria-label="تقليل الكمية"
                         >
                           <Minus size={16} />
@@ -246,7 +246,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                         </div>
                         <button 
                           onClick={(e) => handleIncreaseQuantity(e, true)}
-                          className="p-1 hover:bg-[#c3ef93]/50 rounded"
+                          className="p-2 hover:bg-[#c3ef93]/50 rounded"
                           aria-label="زيادة الكمية"
                         >
                           <Plus size={16} />
@@ -259,7 +259,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                         aria-label="إضافة للجملة"
                       >
                         <Package className="w-4 h-4" />
-                        جملة ({product.bulk_quantity} قطعة)
+                        {product.bulk_price} ج.م ({product.bulk_quantity} قطعة)
                       </button>
                     )
                   )}
