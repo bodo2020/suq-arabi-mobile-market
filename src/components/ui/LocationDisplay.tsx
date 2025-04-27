@@ -11,10 +11,10 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({ area, neighborhood })
 
   return (
     <div className="flex justify-end items-center mb-4 mt-1">
-      <span className="text-sm font-semibold text-gray-700">
-        {neighborhood && <span>{neighborhood}</span>}
-        {(neighborhood && area) && <span>، </span>}
-        {area && <span>{area}</span>}
+      <span className="text-sm font-medium text-gray-700">
+        {neighborhood}
+        {neighborhood && area && <span>، </span>}
+        {area}
       </span>
     </div>
   );

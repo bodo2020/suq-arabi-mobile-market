@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { MapPin, Edit } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -22,7 +21,7 @@ interface AddressDisplayProps {
   showAddressSelector?: boolean;
 }
 
-const AddressDisplay = ({ address, onEdit, areaName, className, showAddressSelector = false }: AddressDisplayProps) => {
+const AddressDisplay = ({ areaName, className, showAddressSelector = false }: AddressDisplayProps) => {
   const { user } = useUser();
   const { toast } = useToast();
 
@@ -91,42 +90,34 @@ const AddressDisplay = ({ address, onEdit, areaName, className, showAddressSelec
   };
 
   return (
-    <div className={cn("flex items-start justify-between p-4 bg-muted/30 rounded-lg", className)}>
+    <div className={cn("flex items-center justify-between p-4 bg-muted/30 rounded-lg", className)}>
       <div className="flex gap-2">
         <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
         <div>
           <p className="font-medium">{areaName}</p>
-          <p className="text-sm text-muted-foreground">{address}</p>
         </div>
       </div>
-      <div className="flex gap-2">
-        {showAddressSelector && addresses.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                تغيير العنوان
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {addresses.map((addr) => (
-                <DropdownMenuItem 
-                  key={addr.id}
-                  onClick={() => handleAddressSelect(addr.id)}
-                >
-                  {addr.areas?.name || ''}
-                  {addr.areas?.name && addr.neighborhoods?.name ? '، ' : ''}
-                  {addr.neighborhoods?.name || ''}
-                  {(addr.areas?.name || addr.neighborhoods?.name) ? ' - ' : ''}
-                  {addr.address}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-        <Button variant="ghost" size="sm" onClick={onEdit}>
-          <Edit className="h-4 w-4" />
-        </Button>
-      </div>
+      {showAddressSelector && addresses.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-primary">
+              تغيير العنوان
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {addresses.map((addr) => (
+              <DropdownMenuItem 
+                key={addr.id}
+                onClick={() => handleAddressSelect(addr.id)}
+              >
+                {addr.areas?.name}
+                {addr.areas?.name && addr.neighborhoods?.name ? '، ' : ''}
+                {addr.neighborhoods?.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 };
