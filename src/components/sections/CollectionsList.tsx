@@ -2,6 +2,7 @@
 import React from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CollectionData {
   id: string;
