@@ -28,7 +28,7 @@ const Carousel = React.forwardRef<
     const emblaOptions = {
       align: "start" as const,
       loop: false,
-      direction: "rtl" as const,
+      direction: "ltr" as const,
       skipSnaps: false,
       slidesToScroll: 1,
       dragFree: true,
