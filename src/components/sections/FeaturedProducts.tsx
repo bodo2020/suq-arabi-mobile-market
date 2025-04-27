@@ -3,6 +3,13 @@ import React from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Carousel, 
+  CarouselContent, 
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious
+} from "@/components/ui/carousel";
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -19,15 +26,30 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
       {featuredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {featuredProducts.map(product => (
-            <ProductCard 
-              key={product.id} 
-              product={product}
-              hideIfUnavailable={false}
-              showBulkQuantity={false}
-            />
-          ))}
+        <div className="relative">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: false,
+              dragFree: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {featuredProducts.map(product => (
+                <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
+                  <ProductCard 
+                    key={product.id} 
+                    product={product}
+                    hideIfUnavailable={false}
+                    showBulkQuantity={false}
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex" />
+            <CarouselNext className="hidden md:flex" />
+          </Carousel>
         </div>
       ) : (
         <div className="text-center py-8 text-muted-foreground">
