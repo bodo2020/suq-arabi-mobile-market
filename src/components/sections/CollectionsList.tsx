@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
@@ -51,26 +52,32 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
             </div>
             
             {collectionProducts.length > 0 ? (
-              <div className="relative" dir="ltr">
+              <div className="relative overflow-hidden" dir="ltr">
                 <Carousel
                   opts={{
                     align: "start",
-                    containScroll: "trimSnaps",
+                    containScroll: "keepSnaps",
                     loop: true,
                     dragFree: true,
                   }}
                   setApi={(api) => {
                     if (!api) return;
-                    api?.on('select', () => {
+                    
+                    api.on('select', () => {
                       updateActiveIndex(collection.id, api.selectedScrollSnap());
                     });
+                    
+                    // Force rerender after initialization to ensure all slides are visible
+                    setTimeout(() => {
+                      api.reInit();
+                    }, 100);
                   }}
                   className="w-full"
                 >
                   <CarouselContent className="-ml-2 md:-ml-4">
                     {collectionProducts.map(product => (
                       <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
-                        <div dir="rtl">
+                        <div dir="rtl" className="h-full">
                           <ProductCard 
                             key={product.id} 
                             product={product}

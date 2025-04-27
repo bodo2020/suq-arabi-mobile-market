@@ -26,11 +26,11 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
       {availableProducts.length > 0 ? (
-        <div className="relative" dir="ltr">
+        <div className="relative overflow-hidden" dir="ltr">
           <Carousel
             opts={{
               align: "start",
-              containScroll: "trimSnaps",
+              containScroll: "keepSnaps",
               loop: true,
               dragFree: true,
             }}
@@ -39,13 +39,18 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
               api.on('select', () => {
                 setActiveIndex(api.selectedScrollSnap());
               });
+              
+              // Force rerender after initialization to ensure all slides are visible
+              setTimeout(() => {
+                api.reInit();
+              }, 100);
             }}
             className="w-full"
           >
             <CarouselContent className="-ml-2 md:-ml-4">
               {availableProducts.map(product => (
                 <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/5">
-                  <div dir="rtl">
+                  <div dir="rtl" className="h-full">
                     <ProductCard 
                       key={product.id} 
                       product={product}
