@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -41,21 +40,24 @@ const Payment = () => {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
 
-  // Fetch customer data with default address
+  const formatProductName = (item: any) => {
+    if (item.is_bulk && item.bulk_quantity) {
+      return `${item.product_name} *${item.bulk_quantity} قطعة`;
+    }
+    return item.product_name;
+  };
+
   const { data: customerData } = useQuery({
     queryKey: ['customerData', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       
-      // Since the customers table doesn't have relationships with location tables,
-      // we'll fetch customer data without those joins
       const { data: customer } = await supabase
         .from('customers')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      // Fetch default address
       const { data: address } = await supabase
         .from('customer_addresses')
         .select(`
@@ -77,7 +79,6 @@ const Payment = () => {
     enabled: !!user?.id
   });
 
-  // Get delivery price for the default address
   const { data: deliveryPricing } = useQuery({
     queryKey: ['deliveryPricing', customerData?.default_address],
     queryFn: async () => {
@@ -105,7 +106,6 @@ const Payment = () => {
     }
   }, [deliveryPricing]);
 
-  // Check for free delivery
   useEffect(() => {
     const checkFreeDelivery = async () => {
       const subtotal = getTotalPrice();
@@ -119,7 +119,6 @@ const Payment = () => {
     checkFreeDelivery();
   }, [getTotalPrice]);
   
-  // Generate a unique order number
   useEffect(() => {
     const generateOrderNumber = () => {
       const date = new Date();
@@ -156,14 +155,12 @@ const Payment = () => {
     setIsLoading(true);
 
     try {
-      // Show wallet dialog if electronic wallet payment method selected
       if (paymentMethod === 'wallet') {
         setWalletDialogOpen(true);
         setIsLoading(false);
         return;
       }
       
-      // Prepare order data
       const customerId = user ? await getCustomerId() : null;
       
       const orderData = {
@@ -187,12 +184,10 @@ const Payment = () => {
                              customerData.default_address.area_id || 
                              customerData.default_address.city_id || 
                              customerData.default_address.governorate_id
-        // Removed order_number field since it doesn't exist in the database schema
       };
 
       console.log("Submitting order data:", orderData);
 
-      // Create order
       const { data, error } = await supabase.from('online_orders').insert([orderData]).select();
       
       if (error) {
@@ -202,12 +197,11 @@ const Payment = () => {
 
       console.log("Order created successfully:", data);
       
-      // Clear cart and navigate to success page
       clearCart();
       navigate('/order-success', {
         state: {
           orderId: data[0].id,
-          orderNumber: orderNumber // We still keep the generated order number for display purposes
+          orderNumber: orderNumber
         }
       });
     } catch (error) {
@@ -248,12 +242,10 @@ const Payment = () => {
                                customerData.default_address.area_id || 
                                customerData.default_address.city_id || 
                                customerData.default_address.governorate_id
-        // Removed order_number field since it doesn't exist in the database schema
       };
       
       console.log("Submitting wallet order data:", orderData);
 
-      // Create order
       const { data, error } = await supabase.from('online_orders').insert([orderData]).select();
       
       if (error) {
@@ -263,13 +255,12 @@ const Payment = () => {
 
       console.log("Wallet order created successfully:", data);
       
-      // Close dialog, clear cart and navigate to success page
       setWalletDialogOpen(false);
       clearCart();
       navigate('/order-success', {
         state: {
           orderId: data[0].id,
-          orderNumber: orderNumber // We still keep the generated order number for display purposes
+          orderNumber: orderNumber
         }
       });
     } catch (error) {
@@ -290,7 +281,6 @@ const Payment = () => {
       const { data, error } = await supabase.from('customers').select('id').eq('user_id', user.id).single();
       if (error) {
         if (error.code === 'PGRST116') {
-          // No customer record found, create one
           const { data: newCustomer, error: insertError } = await supabase.from('customers').insert([{
             user_id: user.id,
             first_name: customerData?.first_name || '',
@@ -365,7 +355,6 @@ const Payment = () => {
         <h1 className="text-xl font-bold text-center mb-4">الدفع وتأكيد الطلب</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Customer Information */}
           <div className="space-y-4 order-2 md:order-1">
             <div className="bg-white rounded-lg p-4">
               <h3 className="text-lg font-bold mb-3">عنوان التوصيل</h3>
@@ -425,7 +414,6 @@ const Payment = () => {
             />
           </div>
           
-          {/* Order Details */}
           <div className="bg-white rounded-lg p-4 mb-4 order-1 md:order-2">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-bold">تفاصيل الطلب</h3>
@@ -443,7 +431,9 @@ const Payment = () => {
                     <div key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex justify-between py-2 border-b last:border-b-0">
                       <div className="flex items-center">
                         <span className="text-gray-500 ml-1">{formatQuantity(item)} ×</span>
-                        <span className="font-medium">{item.product.name}</span>
+                        <span className="font-medium">
+                          {item.is_bulk ? `${item.product_name} *${item.product.bulk_quantity} قطعة` : item.product_name}
+                        </span>
                       </div>
                       <span>{getItemTotal(item).toFixed(2)} ج.م</span>
                     </div>
@@ -487,7 +477,6 @@ const Payment = () => {
         </div>
       </div>
 
-      {/* Electronic Wallet Payment Dialog */}
       <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>
         <DialogContent>
           <DialogHeader>
