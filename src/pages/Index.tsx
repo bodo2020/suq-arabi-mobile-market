@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,6 +14,7 @@ import AddressDisplay from '@/components/ui/AddressDisplay';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
 import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
+import BannersContainer from '@/components/ui/BannersContainer';
 
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
@@ -189,27 +189,11 @@ const Index = () => {
 
         {addressSection}
 
-        {banners.length > 0 && <div className="mb-6 relative">
-            <div>
-              {banners.map((banner, index) => (
-                <div key={banner.id} className={index === activeBanner ? '' : 'hidden'}>
-                  <Banner banner={banner} />
-                </div>
-              ))}
-            </div>
-            
-            {banners.length > 1 && <div className="flex justify-center mt-2">
-                {banners.map((_, index) => <button key={index} className={`w-2 h-2 mx-1 rounded-full ${activeBanner === index ? 'bg-primary' : 'bg-gray-300'}`} onClick={() => {
-              setActiveBanner(index);
-              if (bannerIntervalRef.current) {
-                clearInterval(bannerIntervalRef.current);
-                bannerIntervalRef.current = setInterval(() => {
-                  setActiveBanner(prev => (prev + 1) % banners.length);
-                }, 5000);
-              }
-            }} aria-label={`شريحة ${index + 1}`} />)}
-                </div>}
-          </div>}
+        {banners.length > 0 && (
+          <div className="mb-6 relative">
+            <BannersContainer banners={banners} />
+          </div>
+        )}
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">

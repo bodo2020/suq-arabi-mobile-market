@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface BannerProps {
   banner: {
@@ -14,6 +15,10 @@ interface BannerProps {
   };
   hideTitle?: boolean;
   autoRotate?: boolean;
+}
+
+interface BannersContainerProps {
+  banners: BannerProps['banner'][];
 }
 
 const Banner: React.FC<BannerProps> = ({ banner, hideTitle = true, autoRotate = false }) => {
@@ -29,7 +34,7 @@ const Banner: React.FC<BannerProps> = ({ banner, hideTitle = true, autoRotate = 
 
   const renderBannerContent = () => (
     <div
-      className="relative h-40 md:h-64 w-full rounded-lg overflow-hidden cursor-pointer"
+      className="relative h-40 md:h-64 min-w-[300px] md:min-w-[400px] rounded-lg overflow-hidden cursor-pointer mx-2"
       onClick={handleClick}
       tabIndex={0}
       role="button"
@@ -54,6 +59,19 @@ const Banner: React.FC<BannerProps> = ({ banner, hideTitle = true, autoRotate = 
   );
 
   return renderBannerContent();
+};
+
+export const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
+  return (
+    <ScrollArea className="w-full whitespace-nowrap rounded-md">
+      <div className="flex w-max space-x-4">
+        {banners.map((banner) => (
+          <Banner key={banner.id} banner={banner} />
+        ))}
+      </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
+  );
 };
 
 export default Banner;
