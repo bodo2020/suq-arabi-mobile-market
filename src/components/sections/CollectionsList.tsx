@@ -38,7 +38,7 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
             
             {collectionProducts.length > 0 ? (
               <ScrollArea className="w-full whitespace-nowrap rounded-md">
-                <div className="flex w-max space-x-4 p-4">
+                <div className="flex flex-row-reverse w-max space-x-4 space-x-reverse p-4">
                   {collectionProducts.map(product => (
                     <div key={product.id} className="w-[160px] md:w-[250px] flex-shrink-0">
                       <ProductCard 
