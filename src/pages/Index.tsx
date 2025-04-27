@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -150,9 +151,8 @@ const Index = () => {
   const carouselOptions = {
     align: "start" as const,
     direction: "ltr" as const,
+    containScroll: "trimSnaps" as const,
     dragFree: true,
-    skipSnaps: false,
-    slidesToScroll: 1,
   };
 
   if (categoriesLoading || productsLoading || collectionsLoading) {
@@ -205,7 +205,7 @@ const Index = () => {
 
         {addressSection}
 
-        {banners.length > 0 && <div className="mb-6 w-full">
+        {banners.length > 0 && <div className="mb-6 relative">
             <Carousel className="w-full" opts={{
           loop: true
         }} setApi={api => {
@@ -254,7 +254,7 @@ const Index = () => {
         
         {productCollections && productCollections.length > 0 ? (
           productCollections.map(collection => (
-            <div key={collection.id} className="mb-6 w-full">
+            <div key={collection.id} className="mb-6">
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-lg font-bold">{collection.title}</h2>
                 {collection.description && (
@@ -262,50 +262,50 @@ const Index = () => {
                 )}
               </div>
               
-              <Carousel className="w-full overflow-visible" opts={carouselOptions}>
-                <CarouselContent className="-ml-4 -mr-4">
+              <Carousel className="w-full" opts={carouselOptions}>
+                <CarouselContent>
                   {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
                     productsByIds(collection.products).map(product => (
-                      <CarouselItem key={product.id} className="pl-4 pr-4 basis-[180px] md:basis-[220px]">
+                      <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px] pl-4">
                         <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
                       </CarouselItem>
                     ))
                   ) : (
-                    <CarouselItem className="basis-full pl-4">
+                    <CarouselItem className="basis-full">
                       <div className="text-center py-8 text-muted-foreground">
                         لا توجد منتجات في هذه المجموعة
                       </div>
                     </CarouselItem>
                   )}
                 </CarouselContent>
-                <CarouselPrevious className="hidden md:flex" />
-                <CarouselNext className="hidden md:flex" />
+                <CarouselPrevious />
+                <CarouselNext />
               </Carousel>
             </div>
           ))
         ) : (
-          <div className="mb-6 w-full">
+          <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
-            <Carousel className="w-full overflow-visible" opts={carouselOptions}>
-              <CarouselContent className="-ml-4 -mr-4">
+            <Carousel className="w-full" opts={carouselOptions}>
+              <CarouselContent>
                 {featuredProducts.length > 0 ? (
                   featuredProducts.map(product => (
-                    <CarouselItem key={product.id} className="pl-4 pr-4 basis-[180px] md:basis-[220px]">
+                    <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px] pl-4">
                       <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
                     </CarouselItem>
                   ))
                 ) : (
-                  <CarouselItem className="basis-full pl-4">
+                  <CarouselItem className="basis-full">
                     <div className="text-center py-8 text-muted-foreground">
                       لا توجد منتجات مميزة متاحة حاليًا
                     </div>
                   </CarouselItem>
                 )}
               </CarouselContent>
-              <CarouselPrevious className="hidden md:flex" />
-              <CarouselNext className="hidden md:flex" />
+              <CarouselPrevious />
+              <CarouselNext />
             </Carousel>
           </div>
         )}
