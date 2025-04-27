@@ -254,13 +254,17 @@ const Index = () => {
                 )}
               </div>
               
-              <div className="flex flex-col space-y-3">
+              <div className="space-y-4">
                 {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
-                  productsByIds(collection.products).map(product => (
-                    <div key={product.id} className="w-full">
-                      <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+                  <div className="overflow-x-auto hide-scrollbar">
+                    <div className="flex gap-3 pb-2">
+                      {productsByIds(collection.products).map(product => (
+                        <div key={product.id} className="min-w-[280px] max-w-[280px]">
+                          <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+                        </div>
+                      ))}
                     </div>
-                  ))
+                  </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     لا توجد منتجات في هذه المجموعة
@@ -274,13 +278,17 @@ const Index = () => {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
-            <div className="flex flex-col space-y-3">
+            <div className="space-y-4">
               {featuredProducts.length > 0 ? (
-                featuredProducts.map(product => (
-                  <div key={product.id} className="w-full">
-                    <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
+                <div className="overflow-x-auto hide-scrollbar">
+                  <div className="flex gap-3 pb-2">
+                    {featuredProducts.map(product => (
+                      <div key={product.id} className="min-w-[280px] max-w-[280px]">
+                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
+                      </div>
+                    ))}
                   </div>
-                ))
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   لا توجد منتجات مميزة متاحة حاليًا
