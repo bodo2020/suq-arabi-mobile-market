@@ -36,7 +36,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...otherItems,
           {
             ...existingItem,
-            quantity: existingItem.quantity + (product.is_bulk ? (product.bulk_quantity || 1) : product.quantity)
+            quantity: existingItem.quantity + product.quantity
           }
         ];
       }
@@ -46,7 +46,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...product,
           bulk_quantity: product.bulk_quantity || 1,
         },
-        quantity: product.is_bulk ? (product.bulk_quantity || 1) : product.quantity,
+        quantity: product.quantity,
         is_bulk: product.is_bulk || false,
         unit_of_measure: product.unit_of_measure
       }];
