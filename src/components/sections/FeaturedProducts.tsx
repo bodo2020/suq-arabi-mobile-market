@@ -2,6 +2,7 @@
 import React from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -16,16 +17,20 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
       {availableProducts.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {availableProducts.map(product => (
-            <ProductCard 
-              key={product.id} 
-              product={product}
-              hideIfUnavailable={false}
-              showBulkQuantity={false}
-            />
-          ))}
-        </div>
+        <ScrollArea className="w-full whitespace-nowrap rounded-md">
+          <div className="flex w-max space-x-4 p-4">
+            {availableProducts.map(product => (
+              <div key={product.id} className="w-[200px] md:w-[250px] flex-shrink-0">
+                <ProductCard 
+                  product={product}
+                  hideIfUnavailable={false}
+                  showBulkQuantity={false}
+                />
+              </div>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       ) : (
         <div className="text-center py-8 text-muted-foreground">
           لا توجد منتجات مميزة متاحة حاليًا
