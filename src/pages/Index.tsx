@@ -233,20 +233,9 @@ const Index = () => {
                 <CarouselNext className="hidden md:flex" />
               </Carousel>
             </div>) : <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold">منتجات مميزة</h2>
-              <Link to="/products" className="flex items-center text-primary text-sm">
-                عرض الكل
-                <ChevronLeft size={16} />
-              </Link>
-            </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {featuredProducts.map(product => <ProductCard key={product.id} product={product} hideIfUnavailable={true} showBulkQuantity={true} />)}
-              {featuredProducts.length === 0 && <div className="col-span-full py-8 text-center">
-                  <p className="text-gray-500">لا توجد منتجات متوفرة حالياً</p>
-                </div>}
-            </div>
+            
+            
           </div>}
       </div>
     </MainLayout>;
