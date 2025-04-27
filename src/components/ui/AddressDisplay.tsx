@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface AddressDisplayProps {
   address?: string;
@@ -23,8 +24,9 @@ interface AddressDisplayProps {
 
 const AddressDisplay = ({ address, onEdit, areaName, className, showAddressSelector = false }: AddressDisplayProps) => {
   const { user } = useUser();
+  const { toast } = useToast();
 
-  const { data: addresses = [] } = useQuery({
+  const { data: addresses = [], refetch } = useQuery({
     queryKey: ['addresses', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -63,11 +65,28 @@ const AddressDisplay = ({ address, onEdit, areaName, className, showAddressSelec
       // Store address information in localStorage
       const selectedAddress = addresses.find(addr => addr.id === addressId);
       if (selectedAddress) {
+        localStorage.setItem('userAddress', selectedAddress.address || '');
         localStorage.setItem('userArea', selectedAddress.areas?.name || '');
         localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
       }
+
+      // Refresh addresses data
+      await refetch();
+
+      toast({
+        title: "تم تحديث العنوان",
+        description: "تم تغيير العنوان الافتراضي بنجاح",
+      });
+
+      // Force a page reload to reflect the changes everywhere
+      window.location.reload();
     } catch (error) {
       console.error('Error updating default address:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحديث العنوان",
+      });
     }
   };
 
@@ -94,7 +113,11 @@ const AddressDisplay = ({ address, onEdit, areaName, className, showAddressSelec
                   key={addr.id}
                   onClick={() => handleAddressSelect(addr.id)}
                 >
-                  {addr.areas?.name}{addr.neighborhoods?.name ? `، ${addr.neighborhoods.name}` : ''} - {addr.address}
+                  {addr.areas?.name || ''}
+                  {addr.areas?.name && addr.neighborhoods?.name ? '، ' : ''}
+                  {addr.neighborhoods?.name || ''}
+                  {(addr.areas?.name || addr.neighborhoods?.name) ? ' - ' : ''}
+                  {addr.address}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

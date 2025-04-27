@@ -21,4 +21,3 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({ area, neighborhood })
 };
 
 export default LocationDisplay;
-

@@ -74,8 +74,7 @@ export type CartItem = {
   quantity: number;
 };
 
-// Updated Address type to match the customer_addresses table structure
-// and include display name properties
+// Updated Address type to include join data for name properties
 export type Address = {
   id: string;
   user_id: string;
@@ -87,11 +86,11 @@ export type Address = {
   is_default: boolean;
   created_at?: string;
   updated_at?: string;
-  // Additional properties for UI display (not in the DB schema)
-  governorate_name?: string;
-  city_name?: string;
-  area_name?: string;
-  neighborhood_name?: string;
+  // Join properties
+  governorates?: { name: string };
+  cities?: { name: string };
+  areas?: { name: string };
+  neighborhoods?: { name: string };
 };
 
 export type Order = {
@@ -232,17 +231,7 @@ export async function getAddresses(userId: string) {
     .eq('user_id', userId);
   
   if (error) console.error(`Error fetching addresses:`, error);
-  
-  // Map the joined data to include the name fields
-  const enhancedAddresses = data?.map(addr => ({
-    ...addr,
-    governorate_name: addr.governorates?.name,
-    city_name: addr.cities?.name,
-    area_name: addr.areas?.name,
-    neighborhood_name: addr.neighborhoods?.name
-  })) || [];
-  
-  return enhancedAddresses;
+  return data || [];
 }
 
 // Updated function to create or update a customer

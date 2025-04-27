@@ -53,14 +53,20 @@ const Index = () => {
         const bannersData = await supabase.from('banners').select('*').eq('active', true).order('position');
         setStoreInfo(storeInfoData);
         if (bannersData.data) setBanners(bannersData.data);
+        
+        // Get address info from localStorage
         const savedAddress = localStorage.getItem('userAddress');
         if (savedAddress) setUserAddress(savedAddress);
+        
+        // Get area and neighborhood names directly from localStorage
         const area = localStorage.getItem('userArea');
         const neighborhood = localStorage.getItem('userNeighborhood');
-        if (area || neighborhood) setUserLocation({
-          area,
-          neighborhood
-        });
+        if (area || neighborhood) {
+          setUserLocation({
+            area,
+            neighborhood
+          });
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }

@@ -1,16 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Plus, Trash2, Home } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
-import { supabase, Address, getAddresses } from '@/lib/supabase';
+import { supabase, Address } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
 
 interface AddressWithNames extends Address {
-  governorate_name?: string;
-  city_name?: string;
-  area_name?: string;
-  neighborhood_name?: string;
+  governorates?: { name: string };
+  cities?: { name: string };
+  areas?: { name: string };
+  neighborhoods?: { name: string };
 }
 
 const AddressManager = () => {
@@ -55,15 +56,13 @@ const AddressManager = () => {
           return;
         }
 
-        const enhancedAddresses = addressesData.map(addr => ({
-          ...addr,
-          governorate_name: addr.governorates?.name,
-          city_name: addr.cities?.name,
-          area_name: addr.areas?.name,
-          neighborhood_name: addr.neighborhoods?.name
-        }));
-
-        setAddresses(enhancedAddresses);
+        setAddresses(addressesData || []);
+        
+        // Update localStorage with default address if available
+        const defaultAddress = addressesData?.find(addr => addr.is_default);
+        if (defaultAddress) {
+          updateLocalStorageAddress(defaultAddress);
+        }
       } catch (error) {
         console.error('Error in address fetch:', error);
       }
@@ -71,6 +70,12 @@ const AddressManager = () => {
 
     fetchAddresses();
   }, [navigate]);
+
+  const updateLocalStorageAddress = (address: AddressWithNames) => {
+    localStorage.setItem('userAddress', address.address || '');
+    localStorage.setItem('userArea', address.areas?.name || '');
+    localStorage.setItem('userNeighborhood', address.neighborhoods?.name || '');
+  };
 
   const handleBack = () => {
     navigate('/account');
@@ -95,26 +100,35 @@ const AddressManager = () => {
           neighborhood_id: newLocation.neighborhood || null,
           is_default: isDefault
         })
-        .select('*')
+        .select(`
+          *,
+          governorates(name),
+          cities(name),
+          areas(name),
+          neighborhoods(name)
+        `)
         .single();
 
       if (error) throw error;
 
-      const { data: locationData, error: locationError } = await supabase
-        .from('governorates')
-        .select('name')
-        .eq('id', data.governorate_id)
-        .single();
+      if (isDefault) {
+        updateLocalStorageAddress(data);
+      }
 
-      const enhancedAddress = {
-        ...data,
-        governorate_name: locationData?.name,
-        city_name: '',
-        area_name: '',
-        neighborhood_name: ''
-      };
+      // Refresh the addresses list
+      const { data: addressesData } = await supabase
+        .from('customer_addresses')
+        .select(`
+          *,
+          governorates(name),
+          cities(name),
+          areas(name),
+          neighborhoods(name)
+        `)
+        .eq('user_id', userId)
+        .order('is_default', { ascending: false });
 
-      setAddresses([...addresses, enhancedAddress]);
+      setAddresses(addressesData || []);
       setShowNewAddressForm(false);
       setNewAddress('');
       setNewLocation({});
@@ -123,17 +137,11 @@ const AddressManager = () => {
         title: "تم إضافة العنوان",
         description: "تم إضافة العنوان بنجاح",
       });
-
-      if (isDefault) {
-        localStorage.setItem('userAddress', enhancedAddress.address || '');
-        localStorage.setItem('userArea', enhancedAddress.area_id || '');
-        localStorage.setItem('userNeighborhood', enhancedAddress.neighborhood_id || '');
-      }
     } catch (error) {
       console.error('Error adding address:', error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أ��ناء إضافة العنوان",
+        description: "حدث خطأ أثناء إضافة العنوان",
         variant: "destructive",
       });
     } finally {
@@ -145,32 +153,50 @@ const AddressManager = () => {
     if (!userId) return;
     
     try {
+      // First, update all addresses to not be default
       await supabase
         .from('customer_addresses')
         .update({ is_default: false })
         .eq('user_id', userId);
       
-      const { data, error } = await supabase
+      // Then, set the selected address as default
+      await supabase
         .from('customer_addresses')
         .update({ is_default: true })
+        .eq('id', addressId);
+
+      // Get the updated address with joined data
+      const { data: updatedAddress } = await supabase
+        .from('customer_addresses')
+        .select(`
+          *,
+          governorates(name),
+          cities(name),
+          areas(name),
+          neighborhoods(name)
+        `)
         .eq('id', addressId)
-        .select('*')
         .single();
 
-      if (error) throw error;
-
-      const selectedAddress = addresses.find(addr => addr.id === addressId);
-
-      setAddresses(addresses.map(addr => ({
-        ...addr,
-        is_default: addr.id === addressId
-      })));
-
-      if (selectedAddress) {
-        localStorage.setItem('userAddress', selectedAddress.address || '');
-        localStorage.setItem('userArea', selectedAddress.area_id || '');
-        localStorage.setItem('userNeighborhood', selectedAddress.neighborhood_id || '');
+      // Update local storage
+      if (updatedAddress) {
+        updateLocalStorageAddress(updatedAddress);
       }
+
+      // Refresh the addresses list
+      const { data: addressesData } = await supabase
+        .from('customer_addresses')
+        .select(`
+          *,
+          governorates(name),
+          cities(name),
+          areas(name),
+          neighborhoods(name)
+        `)
+        .eq('user_id', userId)
+        .order('is_default', { ascending: false });
+
+      setAddresses(addressesData || []);
 
       toast({
         title: "تم تحديث العنوان الافتراضي",
@@ -184,30 +210,6 @@ const AddressManager = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const formatAddressDisplay = (address: Address) => {
-    if (!address) return '';
-    
-    let parts = [address.address];
-    
-    if (address.governorate_id) {
-      parts.push(`المحافظة: ${address.governorate_id}`);
-    }
-    
-    if (address.city_id) {
-      parts.push(`المدينة: ${address.city_id}`);
-    }
-    
-    if (address.area_id) {
-      parts.push(`المنطقة: ${address.area_id}`);
-    }
-    
-    if (address.neighborhood_id) {
-      parts.push(`الحي: ${address.neighborhood_id}`);
-    }
-    
-    return parts.join(', ');
   };
 
   return (
@@ -227,10 +229,10 @@ const AddressManager = () => {
                 <div className="flex justify-between items-start">
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold">
-                      {address.governorate_name && `${address.governorate_name}، `}
-                      {address.city_name && `${address.city_name}، `}
-                      {(address.area_name || address.area_id) && `${address.area_name || address.area_id}، `}
-                      {address.neighborhood_name || address.neighborhood_id}
+                      {address.governorates?.name && `${address.governorates.name}، `}
+                      {address.cities?.name && `${address.cities.name}، `}
+                      {address.areas?.name && `${address.areas.name}، `}
+                      {address.neighborhoods?.name}
                     </span>
                     <span className="text-sm text-gray-600">{address.address}</span>
                   </div>
