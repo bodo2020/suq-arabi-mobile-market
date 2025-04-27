@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -60,7 +59,7 @@ const Cart = () => {
           governorates(name),
           cities(name),
           areas(name),
-          neighborhoods(name, price)
+          neighborhoods(name)
         `)
         .eq('user_id', user.id)
         .eq('is_default', true)
@@ -74,26 +73,55 @@ const Cart = () => {
     enabled: !!user?.id
   });
 
-  // Set selected location from customer data or default address
-  React.useEffect(() => {
-    if (customerData) {
-      if (customerData.default_address) {
-        setSelectedLocation({
-          governorate: customerData.default_address.governorate_id || undefined,
-          city: customerData.default_address.city_id || undefined,
-          area: customerData.default_address.area_id || undefined,
-          neighborhood: customerData.default_address.neighborhood_id || undefined
-        });
-      } else {
-        setSelectedLocation({
-          governorate: customerData.governorate_id || undefined,
-          city: customerData.city_id || undefined,
-          area: customerData.area_id || undefined,
-          neighborhood: customerData.neighborhood_id || undefined
-        });
+  // Add query for delivery types and pricing
+  const { data: deliveryTypes = [] } = useQuery({
+    queryKey: ['deliveryTypes', selectedLocation],
+    queryFn: async () => {
+      if (!selectedLocation.governorate) return [];
+      
+      const query = supabase
+        .from('delivery_type_pricing')
+        .select(`
+          price,
+          estimated_time,
+          delivery_types (
+            id,
+            name,
+            description
+          )
+        `)
+        .eq('delivery_types.active', true);
+
+      if (selectedLocation.neighborhood) {
+        query.eq('delivery_location_id', selectedLocation.neighborhood);
+      } else if (selectedLocation.area) {
+        query.eq('delivery_location_id', selectedLocation.area);
+      } else if (selectedLocation.city) {
+        query.eq('delivery_location_id', selectedLocation.city);
+      } else if (selectedLocation.governorate) {
+        query.eq('delivery_location_id', selectedLocation.governorate);
       }
+      
+      const { data: pricing } = await query;
+      
+      return (pricing || []).map(p => ({
+        id: p.delivery_types.id,
+        name: p.delivery_types.name,
+        description: p.delivery_types.description,
+        price: p.price,
+        estimated_time: p.estimated_time
+      }));
+    },
+    enabled: !!selectedLocation.governorate
+  });
+
+  // Update delivery price when location or selected delivery type changes
+  React.useEffect(() => {
+    if (deliveryTypes.length > 0) {
+      // Set the price of the first delivery type by default
+      setDeliveryPrice(deliveryTypes[0].price || 0);
     }
-  }, [customerData]);
+  }, [deliveryTypes]);
 
   React.useEffect(() => {
     const checkFreeDelivery = async () => {
@@ -198,47 +226,6 @@ const Cart = () => {
     }
     return `${item.quantity}`;
   };
-
-  const { data: deliveryTypes = [] } = useQuery({
-    queryKey: ['deliveryTypes', selectedLocation],
-    queryFn: async () => {
-      if (!selectedLocation.governorate) return [];
-      
-      const query = supabase
-        .from('delivery_type_pricing')
-        .select(`
-          price,
-          estimated_time,
-          delivery_types (
-            id,
-            name,
-            description
-          )
-        `)
-        .eq('delivery_types.active', true);
-
-      if (selectedLocation.neighborhood) {
-        query.eq('delivery_location_id', selectedLocation.neighborhood);
-      } else if (selectedLocation.area) {
-        query.eq('delivery_location_id', selectedLocation.area);
-      } else if (selectedLocation.city) {
-        query.eq('delivery_location_id', selectedLocation.city);
-      } else if (selectedLocation.governorate) {
-        query.eq('delivery_location_id', selectedLocation.governorate);
-      }
-      
-      const { data: pricing } = await query;
-      
-      return (pricing || []).map(p => ({
-        id: p.delivery_types.id,
-        name: p.delivery_types.name,
-        description: p.delivery_types.description,
-        price: p.price,
-        estimated_time: p.estimated_time
-      }));
-    },
-    enabled: !!selectedLocation.governorate
-  });
 
   const handleDeliverySelect = (id: string) => {
     const selectedType = deliveryTypes.find(type => type.id === id);
@@ -388,9 +375,11 @@ const Cart = () => {
                       {customerData.default_address.governorates?.name}
                     </p>
                     <p className="text-gray-600">{customerData.default_address.address}</p>
-                    <p className="text-sm text-primary mt-2">
-                      رسوم التوصيل: {customerData.default_address.neighborhoods ? Number(customerData.default_address.neighborhoods.price || 0) : 0} ج.م
-                    </p>
+                    {deliveryTypes.length > 0 && (
+                      <p className="text-sm text-primary mt-2">
+                        رسوم التوصيل: {deliveryPrice} ج.م
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-4">
@@ -406,13 +395,15 @@ const Cart = () => {
                 )}
               </div>
 
-              <div className="bg-white rounded-lg p-4">
-                <DeliveryTypeSelector 
-                  options={deliveryTypes}
-                  selectedId={deliveryTypes[0]?.id || ''}
-                  onSelect={handleDeliverySelect}
-                />
-              </div>
+              {customerData?.default_address && (
+                <div className="bg-white rounded-lg p-4">
+                  <DeliveryTypeSelector 
+                    options={deliveryTypes}
+                    selectedId={deliveryTypes[0]?.id || ''}
+                    onSelect={handleDeliverySelect}
+                  />
+                </div>
+              )}
 
               <div className="bg-white rounded-lg p-4">
                 <CouponInput 
