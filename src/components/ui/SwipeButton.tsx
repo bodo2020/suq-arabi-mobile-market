@@ -22,7 +22,7 @@ const SwipeButton = ({
     <Button 
       onClick={onComplete}
       className={cn(
-        "w-full",
+        "w-full text-lg py-6",
         isLoading ? "opacity-70 pointer-events-none" : "",
         className
       )}

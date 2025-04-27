@@ -46,15 +46,12 @@ const Payment = () => {
     queryKey: ['customerData', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
+      
+      // Since the customers table doesn't have relationships with location tables,
+      // we'll fetch customer data without those joins
       const { data: customer } = await supabase
         .from('customers')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .single();
 
@@ -186,12 +183,14 @@ const Payment = () => {
         customer_id: customerId,
         shipping_address: customerData.default_address.address,
         notes: '',
-        order_number: orderNumber,
         delivery_location_id: customerData.default_address.neighborhood_id || 
                              customerData.default_address.area_id || 
                              customerData.default_address.city_id || 
                              customerData.default_address.governorate_id
+        // Removed order_number field since it doesn't exist in the database schema
       };
+
+      console.log("Submitting order data:", orderData);
 
       // Create order
       const { data, error } = await supabase.from('online_orders').insert([orderData]).select();
@@ -208,11 +207,73 @@ const Payment = () => {
       navigate('/order-success', {
         state: {
           orderId: data[0].id,
-          orderNumber: orderNumber
+          orderNumber: orderNumber // We still keep the generated order number for display purposes
         }
       });
     } catch (error) {
       console.error('Error submitting order:', error);
+      toast({
+        title: "حدث خطأ",
+        description: "تعذر إكمال الطلب. يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const confirmWalletOrder = async () => {
+    setIsLoading(true);
+    try {
+      const customerId = user ? await getCustomerId() : null;
+      
+      const orderData = {
+        items: items.map(item => ({
+          product_id: item.product.id,
+          product_name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.offer_price || item.product.price,
+          bulk_quantity: item.product.bulk_quantity,
+          is_bulk: item.is_bulk,
+          unit_of_measure: item.unit_of_measure,
+          total: getItemTotal(item)
+        })),
+        total: getTotalPrice() + (isFreeDelivery ? 0 : deliveryPrice) - discount,
+        shipping_cost: isFreeDelivery ? 0 : deliveryPrice,
+        payment_method: 'wallet',
+        customer_id: customerId,
+        shipping_address: customerData.default_address.address,
+        notes: '',
+        delivery_location_id: customerData.default_address.neighborhood_id || 
+                               customerData.default_address.area_id || 
+                               customerData.default_address.city_id || 
+                               customerData.default_address.governorate_id
+        // Removed order_number field since it doesn't exist in the database schema
+      };
+      
+      console.log("Submitting wallet order data:", orderData);
+
+      // Create order
+      const { data, error } = await supabase.from('online_orders').insert([orderData]).select();
+      
+      if (error) {
+        console.error("Wallet order submission error:", error);
+        throw error;
+      }
+
+      console.log("Wallet order created successfully:", data);
+      
+      // Close dialog, clear cart and navigate to success page
+      setWalletDialogOpen(false);
+      clearCart();
+      navigate('/order-success', {
+        state: {
+          orderId: data[0].id,
+          orderNumber: orderNumber // We still keep the generated order number for display purposes
+        }
+      });
+    } catch (error) {
+      console.error('Error submitting wallet order:', error);
       toast({
         title: "حدث خطأ",
         description: "تعذر إكمال الطلب. يرجى المحاولة مرة أخرى",
@@ -232,12 +293,12 @@ const Payment = () => {
           // No customer record found, create one
           const { data: newCustomer, error: insertError } = await supabase.from('customers').insert([{
             user_id: user.id,
-            first_name: customerData.first_name,
-            last_name: customerData.last_name,
-            email: customerData.email,
-            phone: customerData.phone,
-            address: customerData.address,
-            name: customerData.name
+            first_name: customerData?.first_name || user.user_metadata?.first_name || '',
+            last_name: customerData?.last_name || user.user_metadata?.last_name || '',
+            email: customerData?.email || user.email || '',
+            phone: customerData?.phone || user.user_metadata?.phone || '',
+            address: customerData?.address || user.user_metadata?.address || '',
+            name: customerData?.name || user.user_metadata?.name || `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim()
           }]).select('id').single();
           
           if (insertError) throw insertError;
@@ -482,7 +543,7 @@ const Payment = () => {
             
             <div className="pt-4">
               <Button 
-                onClick={handleSubmitOrder} 
+                onClick={confirmWalletOrder} 
                 className="w-full"
                 disabled={isLoading}
               >
