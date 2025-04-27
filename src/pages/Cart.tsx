@@ -134,11 +134,11 @@ const Cart = () => {
   };
 
   const { data: deliveryTypes = [] } = useQuery({
-    queryKey: ['deliveryTypes', selectedLocation.area],
+    queryKey: ['deliveryTypes', selectedLocation],
     queryFn: async () => {
-      if (!selectedLocation.area) return [];
+      if (!selectedLocation.governorate) return [];
       
-      const { data: pricing } = await supabase
+      const query = supabase
         .from('delivery_type_pricing')
         .select(`
           price,
@@ -149,8 +149,19 @@ const Cart = () => {
             description
           )
         `)
-        .eq('delivery_location_id', selectedLocation.area)
         .eq('delivery_types.active', true);
+
+      if (selectedLocation.neighborhood) {
+        query.eq('delivery_location_id', selectedLocation.neighborhood);
+      } else if (selectedLocation.area) {
+        query.eq('delivery_location_id', selectedLocation.area);
+      } else if (selectedLocation.city) {
+        query.eq('delivery_location_id', selectedLocation.city);
+      } else if (selectedLocation.governorate) {
+        query.eq('delivery_location_id', selectedLocation.governorate);
+      }
+      
+      const { data: pricing } = await query;
       
       return (pricing || []).map(p => ({
         id: p.delivery_types.id,
@@ -160,7 +171,7 @@ const Cart = () => {
         estimated_time: p.estimated_time
       }));
     },
-    enabled: !!selectedLocation.area
+    enabled: !!selectedLocation.governorate
   });
 
   const handleDeliverySelect = (id: string) => {
@@ -287,7 +298,7 @@ const Cart = () => {
                 />
               </div>
               
-              {selectedLocation.area && (
+              {selectedLocation.governorate && (
                 <div className="bg-white rounded-lg p-4">
                   <DeliveryTypeSelector 
                     options={deliveryTypes}
