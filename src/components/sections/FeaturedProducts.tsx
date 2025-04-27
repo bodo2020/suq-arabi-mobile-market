@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -10,6 +10,7 @@ import {
   CarouselNext,
   CarouselPrevious
 } from "@/components/ui/carousel";
+import { CircleDot } from 'lucide-react';
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -18,6 +19,7 @@ interface FeaturedProductsProps {
 const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   const isMobile = useIsMobile();
   const availableProducts = products.filter(product => product.quantity > 0);
+  const [activeIndex, setActiveIndex] = useState(0);
   
   return (
     <div className="mb-6">
@@ -29,10 +31,14 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           <Carousel
             opts={{
               align: "start",
-              // Use a valid value for containScroll, embed-carousel accepts these values
               containScroll: "trimSnaps",
               loop: false,
               dragFree: true,
+            }}
+            setApi={(api) => {
+              api.on('select', () => {
+                setActiveIndex(api.selectedScrollSnap());
+              });
             }}
             className="w-full"
           >
@@ -51,6 +57,21 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
             <CarouselPrevious className="hidden md:flex" />
             <CarouselNext className="hidden md:flex" />
           </Carousel>
+          
+          {/* Pagination Dots */}
+          <div className="flex justify-center mt-2 space-x-2">
+            {availableProducts.map((_, index) => (
+              <button 
+                key={index} 
+                onClick={() => {}}  // Future implementation for direct dot navigation
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === activeIndex 
+                    ? 'bg-primary scale-125' 
+                    : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="text-center py-8 text-muted-foreground">
