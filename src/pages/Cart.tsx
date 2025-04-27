@@ -246,6 +246,12 @@ const Cart = () => {
     }
   };
 
+  React.useEffect(() => {
+    if (customerData?.default_address?.neighborhoods?.price) {
+      setDeliveryPrice(customerData.default_address.neighborhoods.price);
+    }
+  }, [customerData]);
+
   return (
     <MainLayout>
       <div className="py-4 pb-24" dir="rtl">
@@ -376,6 +382,9 @@ const Cart = () => {
                       {customerData.default_address.governorates?.name}
                     </p>
                     <p className="text-gray-600">{customerData.default_address.address}</p>
+                    <p className="text-sm text-primary mt-2">
+                      رسوم التوصيل: {customerData.default_address.neighborhoods?.price || 0} ج.م
+                    </p>
                   </div>
                 ) : (
                   <div className="text-center py-4">
@@ -390,16 +399,14 @@ const Cart = () => {
                   </div>
                 )}
               </div>
-              
-              {selectedLocation.governorate && (
-                <div className="bg-white rounded-lg p-4">
-                  <DeliveryTypeSelector 
-                    options={deliveryTypes}
-                    selectedId={deliveryTypes[0]?.id || ''}
-                    onSelect={handleDeliverySelect}
-                  />
-                </div>
-              )}
+
+              <div className="bg-white rounded-lg p-4">
+                <DeliveryTypeSelector 
+                  options={deliveryTypes}
+                  selectedId={deliveryTypes[0]?.id || ''}
+                  onSelect={handleDeliverySelect}
+                />
+              </div>
 
               <div className="bg-white rounded-lg p-4">
                 <CouponInput 
