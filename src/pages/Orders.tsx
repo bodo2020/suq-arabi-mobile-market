@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/lib/supabase';
+
 type TabType = 'current' | 'previous';
 
 // Helper function to format date
@@ -48,6 +49,7 @@ const getStatusText = (status: string) => {
       return 'غير معروف';
   }
 };
+
 const Orders = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('current');
@@ -70,6 +72,7 @@ const Orders = () => {
   const currentOrders = orders?.filter(order => ['waiting', 'ready'].includes(order.status)) || [];
   const previousOrders = orders?.filter(order => ['shipped', 'done'].includes(order.status)) || [];
   const activeOrders = activeTab === 'current' ? currentOrders : previousOrders;
+
   return <MainLayout>
       <div className="py-4 px-4 max-w-lg mx-auto">
         <div className="flex items-center mb-6">
@@ -92,14 +95,13 @@ const Orders = () => {
         {isLoading ? <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div> : activeOrders.length === 0 ? <div className="flex flex-col items-center justify-center py-12 text-center">
-            
             <h3 className="text-xl font-bold text-gray-800 mb-2">
               {activeTab === 'current' ? 'لا يوجد طلبات حالية' : 'لا يوجد طلبات سابقة'}
             </h3>
             <p className="text-gray-500 mb-8">
               ليس لديك طلبات حالية، تسوق الآن و تتبع طلباتك بسهولة
             </p>
-            <Button onClick={() => navigate('/')} className="w-full bg-gray-900 hover:bg-gray-800 text-white py-6 rounded-xl text-lg">
+            <Button onClick={() => navigate('/')} className="w-full bg-primary hover:bg-primary/90 text-white py-6 rounded-xl text-lg">
               تسوق الآن
             </Button>
           </div> : <div className="space-y-4">
@@ -168,4 +170,5 @@ const Orders = () => {
       </div>
     </MainLayout>;
 };
+
 export default Orders;
