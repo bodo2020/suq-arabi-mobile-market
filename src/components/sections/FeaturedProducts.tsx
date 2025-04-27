@@ -1,105 +1,30 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { 
-  Carousel, 
-  CarouselContent, 
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious
-} from "@/components/ui/carousel";
 
 interface FeaturedProductsProps {
   products: Product[];
 }
 
 const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
-  const isMobile = useIsMobile();
   const availableProducts = products.filter(product => product.quantity > 0);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [api, setCarouselApi] = useState<any>(null);
-  
-  // Listen for slide changes
-  useEffect(() => {
-    if (!api) return;
-    
-    const onSelect = () => {
-      setActiveIndex(api.selectedScrollSnap());
-    };
-    
-    api.on('select', onSelect);
-    
-    // Initial selection
-    if (api.selectedScrollSnap !== undefined) {
-      setActiveIndex(api.selectedScrollSnap());
-    }
-    
-    return () => {
-      api.off('select', onSelect);
-    };
-  }, [api]);
-  
-  // Reset carousel when products change
-  useEffect(() => {
-    if (api) {
-      api.scrollTo(0);
-      api.reInit();
-    }
-  }, [products, api]);
-  
+
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
       {availableProducts.length > 0 ? (
-        <div className="relative" dir="ltr">
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-              skipSnaps: false,
-              dragFree: false,
-              containScroll: "keepSnaps",
-            }}
-            setApi={setCarouselApi}
-            className="w-full"
-          >
-            <CarouselContent>
-              {availableProducts.map(product => (
-                <CarouselItem key={product.id} className="pl-4 basis-1/2 md:basis-1/10">
-                  <div dir="rtl" className="h-full flex">
-                    <ProductCard 
-                      key={product.id} 
-                      product={product}
-                      hideIfUnavailable={false}
-                      showBulkQuantity={false}
-                    />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex" />
-            <CarouselNext className="hidden md:flex" />
-          </Carousel>
-          
-          {/* Pagination Dots */}
-          <div className="flex justify-center gap-2 mt-4">
-            {availableProducts.slice(0, Math.min(10, availableProducts.length)).map((_, index) => (
-              <button 
-                key={index}
-                onClick={() => api?.scrollTo(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === activeIndex 
-                    ? 'bg-primary scale-125' 
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {availableProducts.map(product => (
+            <ProductCard 
+              key={product.id} 
+              product={product}
+              hideIfUnavailable={false}
+              showBulkQuantity={false}
+            />
+          ))}
         </div>
       ) : (
         <div className="text-center py-8 text-muted-foreground">
