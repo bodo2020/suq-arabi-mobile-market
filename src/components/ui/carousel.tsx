@@ -57,24 +57,25 @@ const Carousel = React.forwardRef<
     },
     ref
   ) => {
-    // Set default options for properly displaying items
-    const defaultOptions = {
-      align: "start" as const, // Use "start" with as const to ensure correct type
-      containScroll: "trimSnaps" as const,
+    const emblaOptions = {
+      align: "start",
+      loop: false,
+      skipSnaps: false,
       slidesToScroll: 1,
       dragFree: true,
-    }
+      containScroll: "trimSnaps",
+      ...(opts || {})
+    };
 
     const [carouselRef, api] = useEmblaCarousel(
       {
-        ...defaultOptions,
-        ...opts,
+        ...emblaOptions,
         axis: orientation === "horizontal" ? "x" : "y",
       },
       plugins
     )
     const [canScrollPrev, setCanScrollPrev] = React.useState(false)
-    const [canScrollNext, setCanScrollNext] = React.useState(true) // Default to true to show the next button initially
+    const [canScrollNext, setCanScrollNext] = React.useState(true) 
 
     const onSelect = React.useCallback((api: CarouselApi) => {
       if (!api) {
@@ -220,7 +221,6 @@ const CarouselPrevious = React.forwardRef<
           : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
-      disabled={!canScrollPrev}
       onClick={scrollPrev}
       {...props}
     >
@@ -249,7 +249,6 @@ const CarouselNext = React.forwardRef<
           : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
-      disabled={!canScrollNext}
       onClick={scrollNext}
       {...props}
     >
