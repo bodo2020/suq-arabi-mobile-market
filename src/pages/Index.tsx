@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -258,7 +259,7 @@ const Index = () => {
                 <CarouselContent className="-ml-2 md:-ml-4">
                   {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
                     productsByIds(collection.products).map(product => (
-                      <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/5">
+                      <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/6">
                         <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
                       </CarouselItem>
                     ))
@@ -284,7 +285,7 @@ const Index = () => {
               <CarouselContent className="-ml-2 md:-ml-4">
                 {featuredProducts.length > 0 ? (
                   featuredProducts.map(product => (
-                    <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/5">
+                    <CarouselItem key={product.id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/4 lg:basis-1/6">
                       <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
                     </CarouselItem>
                   ))
