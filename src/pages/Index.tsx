@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -153,6 +152,7 @@ const Index = () => {
     direction: "ltr" as const,
     containScroll: "trimSnaps" as const,
     dragFree: true,
+    skipSnaps: false,
   };
 
   if (categoriesLoading || productsLoading || collectionsLoading) {
@@ -266,7 +266,7 @@ const Index = () => {
                 <CarouselContent>
                   {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
                     productsByIds(collection.products).map(product => (
-                      <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px] pl-4">
+                      <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px]">
                         <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
                       </CarouselItem>
                     ))
@@ -292,7 +292,7 @@ const Index = () => {
               <CarouselContent>
                 {featuredProducts.length > 0 ? (
                   featuredProducts.map(product => (
-                    <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px] pl-4">
+                    <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px]">
                       <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
                     </CarouselItem>
                   ))
