@@ -120,7 +120,7 @@ const Payment = () => {
       }
     };
     checkFreeDelivery();
-  }, [getTotalPrice()]);
+  }, [getTotalPrice]);
   
   // Generate a unique order number
   useEffect(() => {
@@ -195,10 +195,14 @@ const Payment = () => {
 
       // Create order
       const { data, error } = await supabase.from('online_orders').insert([orderData]).select();
+      
       if (error) {
+        console.error("Order submission error:", error);
         throw error;
       }
 
+      console.log("Order created successfully:", data);
+      
       // Clear cart and navigate to success page
       clearCart();
       navigate('/order-success', {
