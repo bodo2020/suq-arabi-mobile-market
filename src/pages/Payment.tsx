@@ -158,16 +158,22 @@ const Payment = () => {
       const customerId = user ? await getCustomerId() : null;
       
       const orderData = {
-        items: items.map(item => ({
-          product_id: item.product.id,
-          barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
-          quantity: item.quantity,
-          price: item.product.offer_price || item.product.price,
-          bulk_quantity: item.product.bulk_quantity,
-          is_bulk: item.is_bulk,
-          unit_of_measure: item.unit_of_measure,
-          total: getItemTotal(item)
-        })),
+        items: items.map(item => {
+          const quantity = item.unit_of_measure === 'weight' 
+            ? item.quantity / 1000  // Convert grams to kilograms
+            : item.quantity;
+
+          return {
+            product_id: item.product.id,
+            barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
+            quantity: quantity,
+            price: item.product.offer_price || item.product.price,
+            bulk_quantity: item.product.bulk_quantity,
+            is_bulk: item.is_bulk,
+            unit_of_measure: item.unit_of_measure,
+            total: getItemTotal(item)
+          };
+        }),
         total: getTotalPrice() + (isFreeDelivery ? 0 : deliveryPrice) - discount,
         shipping_cost: isFreeDelivery ? 0 : deliveryPrice,
         payment_method: paymentMethod,
@@ -216,16 +222,22 @@ const Payment = () => {
       const customerId = user ? await getCustomerId() : null;
       
       const orderData = {
-        items: items.map(item => ({
-          product_id: item.product.id,
-          barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
-          quantity: item.quantity,
-          price: item.product.offer_price || item.product.price,
-          bulk_quantity: item.product.bulk_quantity,
-          is_bulk: item.is_bulk,
-          unit_of_measure: item.unit_of_measure,
-          total: getItemTotal(item)
-        })),
+        items: items.map(item => {
+          const quantity = item.unit_of_measure === 'weight' 
+            ? item.quantity / 1000  // Convert grams to kilograms
+            : item.quantity;
+
+          return {
+            product_id: item.product.id,
+            barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
+            quantity: quantity,
+            price: item.product.offer_price || item.product.price,
+            bulk_quantity: item.product.bulk_quantity,
+            is_bulk: item.is_bulk,
+            unit_of_measure: item.unit_of_measure,
+            total: getItemTotal(item)
+          };
+        }),
         total: getTotalPrice() + (isFreeDelivery ? 0 : deliveryPrice) - discount,
         shipping_cost: isFreeDelivery ? 0 : deliveryPrice,
         payment_method: 'wallet',
