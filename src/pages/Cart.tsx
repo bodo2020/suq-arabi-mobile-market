@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import WeightSelector from '@/components/ui/WeightSelector';
-import DeliveryTypeSelector from '@/components/ui/DeliveryTypeSelector';
+import DeliveryTypeSelector from '@/components/DeliveryTypeSelector';
 import { Progress } from '@/components/ui/progress';
 import CouponInput from '@/components/ui/CouponInput';
 import { getFreeDeliveryOffer } from '@/utils/offerUtils';
