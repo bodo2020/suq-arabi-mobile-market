@@ -148,7 +148,8 @@ const Index = () => {
   };
 
   const carouselOptions = {
-    slidesToScroll: 1,
+    align: 0,
+    containScroll: "trimSnaps" as const,
     dragFree: true,
   };
 
@@ -259,7 +260,7 @@ const Index = () => {
                 )}
               </div>
               
-              <Carousel className="w-full">
+              <Carousel className="w-full" opts={carouselOptions}>
                 <CarouselContent>
                   {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
                     productsByIds(collection.products).map(product => (
@@ -285,7 +286,7 @@ const Index = () => {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
-            <Carousel className="w-full">
+            <Carousel className="w-full" opts={carouselOptions}>
               <CarouselContent>
                 {featuredProducts.length > 0 ? (
                   featuredProducts.map(product => (
