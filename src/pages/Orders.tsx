@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Package, Home, ShoppingCart } from 'lucide-react';
@@ -8,6 +9,47 @@ import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/lib/supabase';
 
 type TabType = 'current' | 'previous';
+
+// Helper function to format date
+const formatDate = (dateString: string) => {
+  try {
+    return format(new Date(dateString), 'yyyy/MM/dd - HH:mm');
+  } catch (error) {
+    return 'تاريخ غير معروف';
+  }
+};
+
+// Helper function to get status color
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'waiting':
+      return 'bg-amber-100 text-amber-800';
+    case 'ready':
+      return 'bg-blue-100 text-blue-800';
+    case 'shipped':
+      return 'bg-purple-100 text-purple-800';
+    case 'done':
+      return 'bg-green-100 text-green-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Helper function to get status text in Arabic
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'waiting':
+      return 'قيد الانتظار';
+    case 'ready':
+      return 'جاهز للشحن';
+    case 'shipped':
+      return 'تم الشحن';
+    case 'done':
+      return 'تم التسليم';
+    default:
+      return 'غير معروف';
+  }
+};
 
 const Orders = () => {
   const navigate = useNavigate();
