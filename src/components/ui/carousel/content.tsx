@@ -14,7 +14,7 @@ export const CarouselContent = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "flex",
+          "flex w-full flex-nowrap rtl:!flex-row-reverse",
           orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col",
           className
         )}
