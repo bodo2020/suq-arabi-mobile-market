@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
@@ -7,8 +8,9 @@ export const CartContext = React.createContext<CartContextType | undefined>(unde
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  useCartSync(items, setItems);
+  useCartSync(items, setItems, isInitialized, setIsInitialized);
 
   const addToCart = useCallback((product: Product & { 
     price: number; 
@@ -121,7 +123,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateQuantity,
       clearCart,
       getTotalPrice,
-      getTotalItems
+      getTotalItems,
+      isInitialized
     }}>
       {children}
     </CartContext.Provider>

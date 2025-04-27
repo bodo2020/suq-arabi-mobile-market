@@ -2,16 +2,20 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CartItem } from '@/contexts/cartTypes';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
-export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
-  const isInitializedRef = useRef(false);
+export function useCartSync(
+  items: CartItem[], 
+  setItems: React.Dispatch<React.SetStateAction<CartItem[]>>, 
+  isInitialized: boolean,
+  setIsInitialized: React.Dispatch<React.SetStateAction<boolean>>
+) {
   const needsSyncRef = useRef(false);
   const customerIdRef = useRef<string | null>(null);
+  const { toast } = useToast();
 
+  // Handle auth state changes and initial cart loading
   useEffect(() => {
-    let user: any = null;
-    let isLoading = true;
     let authListener: any = null;
 
     async function checkCustomerId(userId: string): Promise<string | null> {
@@ -35,11 +39,8 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     }
 
     async function updateCartForUser(sessionUser: any) {
-      user = sessionUser;
-      isLoading = true;
-
-      if (user) {
-        const customerId = await checkCustomerId(user.id);
+      if (sessionUser) {
+        const customerId = await checkCustomerId(sessionUser.id);
         customerIdRef.current = customerId;
 
         if (!customerId) {
@@ -49,27 +50,32 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
             description: "لم نتمكن من ربط حسابك بملف العميل.",
             variant: "destructive",
           });
+          setIsInitialized(true);
+          return;
         }
+        
+        // Load cart items from database
+        await fetchCartItems(customerId, setItems);
+        setIsInitialized(true);
       } else {
         customerIdRef.current = null;
+        setItems([]);
+        setIsInitialized(true);
       }
-
-      fetchCartItems(user, customerIdRef.current, setItems).finally(() => {
-        isLoading = false;
-        isInitializedRef.current = true;
-      });
     }
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
         updateCartForUser(session?.user || null);
       } else if (event === 'SIGNED_OUT') {
-        updateCartForUser(null);
+        customerIdRef.current = null;
         setItems([]);
+        setIsInitialized(true);
       }
     });
     authListener = listener;
 
+    // Check current session on component mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       updateCartForUser(session?.user || null);
     });
@@ -77,86 +83,90 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     return () => {
       authListener?.subscription?.unsubscribe();
     };
-  }, [setItems]);
+  }, [setItems, setIsInitialized, toast]);
 
+  // Sync cart changes to database
   useEffect(() => {
-    if (!isInitializedRef.current && !needsSyncRef.current) return;
+    if (!isInitialized) return;
 
-    let user: any;
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      user = session?.user || null;
-      syncCartPersistence(user, items, customerIdRef.current).then(() => {
-        if (needsSyncRef.current) needsSyncRef.current = false;
-      });
-    });
-  }, [items]);
-
-  async function fetchCartItems(user: any, customerId: string | null, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
-    if (user && customerId) {
-      try {
-        const { data: cartData, error: cartError } = await supabase
-          .from('cart_items')
-          .select('*, metadata')
-          .eq('customer_id', customerId);
-
-        if (cartError) {
-          console.error('Error fetching cart items:', cartError);
-          toast({
-            title: "خطأ في تحميل السلة",
-            description: "حدث خطأ أثناء تحميل عناصر السلة",
-            variant: "destructive",
+    needsSyncRef.current = true;
+    
+    const syncTimeout = setTimeout(() => {
+      if (needsSyncRef.current) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          const user = session?.user || null;
+          syncCartPersistence(user, items, customerIdRef.current).then(() => {
+            if (needsSyncRef.current) needsSyncRef.current = false;
           });
+        });
+      }
+    }, 500); // Debounce updates
+    
+    return () => clearTimeout(syncTimeout);
+  }, [items, isInitialized]);
+
+  async function fetchCartItems(customerId: string, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
+    try {
+      const { data: cartData, error: cartError } = await supabase
+        .from('cart_items')
+        .select('*, metadata')
+        .eq('customer_id', customerId);
+
+      if (cartError) {
+        console.error('Error fetching cart items:', cartError);
+        toast({
+          title: "خطأ في تحميل السلة",
+          description: "حدث خطأ أثناء تحميل عناصر السلة",
+          variant: "destructive",
+        });
+        setItems([]);
+        return;
+      }
+
+      if (cartData && cartData.length > 0) {
+        const productIds = cartData.map(item => item.product_id);
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds);
+
+        if (productsError) {
+          console.error('Error fetching products:', productsError);
           setItems([]);
           return;
         }
 
-        if (cartData && cartData.length > 0) {
-          const productIds = cartData.map(item => item.product_id);
-          const { data: productsData, error: productsError } = await supabase
-            .from('products')
-            .select('*')
-            .in('id', productIds);
-
-          if (productsError) {
-            console.error('Error fetching products:', productsError);
-            setItems([]);
-            return;
-          }
-
-          if (productsData) {
-            const cartItems: CartItem[] = cartData.map(cartItem => {
-              const product = productsData.find(prod => prod.id === cartItem.product_id);
-              if (!product) return null;
-              
-              // Extract additional properties from the saved JSON metadata
-              const metadata = cartItem.metadata || {};
-              // Use type assertion to ensure TypeScript understands the shape
-              const metadataObj = typeof metadata === 'object' ? metadata as {
-                is_bulk?: boolean;
-                unit_of_measure?: string | null;
-              } : { is_bulk: false, unit_of_measure: null };
-              
-              const is_bulk = !!metadataObj.is_bulk;
-              const unit_of_measure = metadataObj.unit_of_measure || null;
-              
-              return {
-                product: product,
-                quantity: cartItem.quantity,
-                is_bulk,
-                unit_of_measure
-              };
-            }).filter(Boolean) as CartItem[];
+        if (productsData) {
+          const cartItems: CartItem[] = cartData.map(cartItem => {
+            const product = productsData.find(prod => prod.id === cartItem.product_id);
+            if (!product) return null;
             
-            setItems(cartItems);
-          }
-        } else {
-          setItems([]);
+            // Extract additional properties from the saved JSON metadata
+            const metadata = cartItem.metadata || {};
+            // Use type assertion to ensure TypeScript understands the shape
+            const metadataObj = typeof metadata === 'object' ? metadata as {
+              is_bulk?: boolean;
+              unit_of_measure?: string | null;
+            } : { is_bulk: false, unit_of_measure: null };
+            
+            const is_bulk = !!metadataObj.is_bulk;
+            const unit_of_measure = metadataObj.unit_of_measure || null;
+            
+            return {
+              product: product,
+              quantity: cartItem.quantity,
+              is_bulk,
+              unit_of_measure
+            };
+          }).filter(Boolean) as CartItem[];
+          
+          setItems(cartItems);
         }
-      } catch (error) {
-        console.error('Error in fetchCartItems:', error);
+      } else {
         setItems([]);
       }
-    } else {
+    } catch (error) {
+      console.error('Error in fetchCartItems:', error);
       setItems([]);
     }
   }

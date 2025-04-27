@@ -11,43 +11,10 @@ import { Separator } from "@/components/ui/separator";
 const Account = () => {
   const { user, signOut } = useUser();
   const navigate = useNavigate();
-  const [address, setAddress] = useState<Address | null>(null);
-
-  useEffect(() => {
-    const fetchAddress = async () => {
-      if (user) {
-        try {
-          const addresses = await getAddresses(user.id);
-          const defaultAddress = addresses?.find(addr => addr.is_default);
-          setAddress(defaultAddress || null);
-        } catch (error) {
-          console.error('Error fetching address:', error);
-        }
-      }
-    };
-
-    fetchAddress();
-  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
-  };
-
-  const formatAddressDisplay = (address: Address) => {
-    if (!address) return '';
-    
-    let parts = [address.address];
-    
-    if (address.neighborhood_id) {
-      parts.push(`الحي: ${address.neighborhood_id}`);
-    }
-    
-    if (address.area_id) {
-      parts.push(`المنطقة: ${address.area_id}`);
-    }
-    
-    return parts.join(', ');
   };
 
   return (
@@ -75,7 +42,15 @@ const Account = () => {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="space-y-2">
+                <Link to="/account/addresses" className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full block">
+                  <div className="flex items-center">
+                    <MapPin className="h-6 w-6 text-primary ml-3" />
+                    <span className="text-sm font-medium">عناوين التوصيل</span>
+                  </div>
+                  <ChevronLeft className="h-5 w-5 text-gray-400" />
+                </Link>
+                
                 <Link to="/favorites" className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow">
                   <div className="flex items-center">
                     <Heart className="h-6 w-6 text-primary ml-3" />
@@ -83,6 +58,7 @@ const Account = () => {
                   </div>
                   <ChevronLeft className="h-5 w-5 text-gray-400" />
                 </Link>
+                
                 <Link to="/orders" className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow">
                   <div className="flex items-center">
                     <ListChecks className="h-6 w-6 text-primary ml-3" />
@@ -92,31 +68,7 @@ const Account = () => {
                 </Link>
               </div>
 
-              {/* Address Section */}
-              <div className="bg-white rounded-lg shadow-sm p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold flex items-center">
-                    <MapPin className="h-5 w-5 ml-2 text-primary" />
-                    عنوان التوصيل
-                  </h3>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/account/addresses')}>
-                    إدارة العناوين
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                  </Button>
-                </div>
-                {address ? (
-                  <p className="text-sm text-gray-600">{formatAddressDisplay(address)}</p>
-                ) : (
-                  <div className="text-center py-3">
-                    <p className="text-sm text-gray-500 mb-2">لا يوجد عنوان محفوظ</p>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/account/addresses')}>
-                      إضافة عنوان جديد
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
+              <Separator className="my-4" />
 
               {/* Logout Button */}
               <Button 

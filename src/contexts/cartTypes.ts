@@ -19,4 +19,5 @@ export type CartContextType = {
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
+  isInitialized: boolean;
 };
