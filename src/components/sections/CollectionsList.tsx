@@ -44,9 +44,10 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
               <Carousel
                 opts={{
                   align: "start",
-                  containScroll: "trimSnaps" as const,
-                  dragFree: false,
-                  loop: true,
+                  // Update to use valid containScroll value
+                  containScroll: "trimSnaps",
+                  loop: false,
+                  dragFree: true,
                 }}
                 className="w-full"
               >

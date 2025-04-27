@@ -27,12 +27,13 @@ const Carousel = React.forwardRef<
   ) => {
     const emblaOptions = {
       align: "start" as const,
-      loop: true,
+      loop: false,
       direction: "ltr" as const,
       skipSnaps: false,
       slidesToScroll: 1,
-      dragFree: false,
-      containScroll: "trimSnaps" as const,  // Changed from boolean to valid string literal
+      dragFree: true,
+      // Update containScroll to use a valid value from the embla types
+      containScroll: "trimSnaps" as const,
       ...(opts || {})
     }
 
