@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -149,7 +148,7 @@ const Index = () => {
   };
 
   const carouselOptions = {
-    align: 0, // Using 0 instead of "start"
+    align: "start" as const,
     containScroll: "trimSnaps" as const,
     dragFree: true,
   };
