@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
@@ -14,8 +14,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import LocationPicker from '@/components/ui/LocationPicker';
 import { useUser } from '@/contexts/UserContext';
+import { Button } from '@/components/ui/button';
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
   const { toast } = useToast();
   const { user } = useUser();
@@ -31,13 +33,13 @@ const Cart = () => {
     neighborhood?: string;
   }>({});
 
-  // Add query to fetch customer data
+  // Update customer data query to include addresses
   const { data: customerData } = useQuery({
     queryKey: ['customerData', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       
-      const { data } = await supabase
+      const { data: customer } = await supabase
         .from('customers')
         .select(`
           *,
@@ -49,20 +51,46 @@ const Cart = () => {
         .eq('user_id', user.id)
         .single();
       
-      return data;
+      // Fetch default address
+      const { data: addresses } = await supabase
+        .from('customer_addresses')
+        .select(`
+          *,
+          governorates(name),
+          cities(name),
+          areas(name),
+          neighborhoods(name)
+        `)
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .maybeSingle();
+      
+      return {
+        ...customer,
+        default_address: addresses
+      };
     },
     enabled: !!user?.id
   });
 
-  // Set selected location from customer data
+  // Set selected location from customer data or default address
   React.useEffect(() => {
     if (customerData) {
-      setSelectedLocation({
-        governorate: customerData.governorate_id || undefined,
-        city: customerData.city_id || undefined,
-        area: customerData.area_id || undefined,
-        neighborhood: customerData.neighborhood_id || undefined
-      });
+      if (customerData.default_address) {
+        setSelectedLocation({
+          governorate: customerData.default_address.governorate_id || undefined,
+          city: customerData.default_address.city_id || undefined,
+          area: customerData.default_address.area_id || undefined,
+          neighborhood: customerData.default_address.neighborhood_id || undefined
+        });
+      } else {
+        setSelectedLocation({
+          governorate: customerData.governorate_id || undefined,
+          city: customerData.city_id || undefined,
+          area: customerData.area_id || undefined,
+          neighborhood: customerData.neighborhood_id || undefined
+        });
+      }
     }
   }, [customerData]);
 
@@ -328,11 +356,39 @@ const Cart = () => {
               )}
               
               <div className="bg-white rounded-lg p-4">
-                <h3 className="text-lg font-bold mb-3">منطقة التوصيل</h3>
-                <LocationPicker
-                  value={selectedLocation}
-                  onChange={setSelectedLocation}
-                />
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-bold">عنوان التوصيل</h3>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate('/addresses')}
+                    className="text-primary"
+                  >
+                    {customerData?.default_address ? 'تغيير العنوان' : 'إضافة عنوان'}
+                  </Button>
+                </div>
+                
+                {customerData?.default_address ? (
+                  <div className="text-sm space-y-1">
+                    <p className="font-medium">
+                      {customerData.default_address.neighborhoods?.name && `${customerData.default_address.neighborhoods.name}، `}
+                      {customerData.default_address.areas?.name && `${customerData.default_address.areas.name}، `}
+                      {customerData.default_address.cities?.name && `${customerData.default_address.cities.name}، `}
+                      {customerData.default_address.governorates?.name}
+                    </p>
+                    <p className="text-gray-600">{customerData.default_address.address}</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 mb-2">لا يوجد عنوان للتوصيل</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate('/addresses')}
+                      className="text-primary border-primary hover:bg-primary/10"
+                    >
+                      إضافة عنوان جديد
+                    </Button>
+                  </div>
+                )}
               </div>
               
               {selectedLocation.governorate && (
