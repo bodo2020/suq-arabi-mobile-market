@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Product } from '@/lib/supabase';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import ProductCard from '@/components/ui/ProductCard';
 
 interface CollectionData {
@@ -22,13 +21,6 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
     return products.filter(product => productIds.includes(product.id));
   };
 
-  const carouselOptions = {
-    align: "start" as const,
-    dragFree: true,
-    containScroll: "trimSnaps" as const,
-    slidesToScroll: 1
-  };
-
   return (
     <>
       {collections.map(collection => (
@@ -40,25 +32,22 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
             )}
           </div>
           
-          <Carousel className="w-full" opts={carouselOptions}>
-            <CarouselContent>
-              {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
-                productsByIds(collection.products).map(product => (
-                  <CarouselItem key={product.id} className="basis-[160px] md:basis-[200px] pl-4">
-                    <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
-                  </CarouselItem>
-                ))
-              ) : (
-                <CarouselItem className="basis-full">
-                  <div className="text-center py-8 text-muted-foreground">
-                    لا توجد منتجات في هذه المجموعة
-                  </div>
-                </CarouselItem>
-              )}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
+          {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {productsByIds(collection.products).map(product => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  hideIfUnavailable={true} 
+                  showBulkQuantity={true}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              لا توجد منتجات في هذه المجموعة
+            </div>
+          )}
         </div>
       ))}
     </>
