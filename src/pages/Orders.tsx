@@ -126,27 +126,63 @@ const Orders = () => {
                   <div>
                     <strong>المنتجات:</strong>
                     <ul className="space-y-2 mt-2">
-                      {Array.isArray(order.items) ? order.items.map((item: any, index: number) => <li key={index} className="bg-gray-50 p-2 rounded flex items-center justify-between">
-                            <div>
-                              <div className="font-medium">{item.name}</div>
-                              <div className="text-gray-500 text-xs mt-1">
-                                {item.quantity} قطعة × {item.price} ج.م
-                              </div>
+                      {Array.isArray(order.items) ? order.items.map((item: any, index: number) => (
+                        <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
+                          <div className="relative w-16 h-16 shrink-0">
+                            {item.image_url && (
+                              <>
+                                <img 
+                                  src={item.image_url} 
+                                  alt={item.name}
+                                  className="w-full h-full object-cover rounded"
+                                />
+                                {item.is_bulk && item.bulk_quantity && (
+                                  <div className="absolute top-0 right-0 bg-primary text-white text-xs px-1 rounded-bl">
+                                    {item.bulk_quantity}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-gray-500 text-xs mt-1">
+                              {item.quantity} {item.unit_of_measure === 'weight' ? 'كجم' : 'قطعة'} × {item.price} ج.م
                             </div>
-                            <div className="font-semibold">
-                              {(item.quantity * item.price).toFixed(2)} ج.م
+                          </div>
+                          <div className="font-semibold">
+                            {(item.quantity * item.price).toFixed(2)} ج.م
+                          </div>
+                        </li>
+                      )) : typeof order.items === 'object' ? Object.values(order.items).map((item: any, index: number) => (
+                        <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
+                          <div className="relative w-16 h-16 shrink-0">
+                            {item.image_url && (
+                              <>
+                                <img 
+                                  src={item.image_url} 
+                                  alt={item.name}
+                                  className="w-full h-full object-cover rounded"
+                                />
+                                {item.is_bulk && item.bulk_quantity && (
+                                  <div className="absolute top-0 right-0 bg-primary text-white text-xs px-1 rounded-bl">
+                                    {item.bulk_quantity}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-gray-500 text-xs mt-1">
+                              {item.quantity} {item.unit_of_measure === 'weight' ? 'كجم' : 'قطعة'} × {item.price} ج.م
                             </div>
-                          </li>) : typeof order.items === 'object' ? Object.values(order.items).map((item: any, index: number) => <li key={index} className="bg-gray-50 p-2 rounded flex items-center justify-between">
-                              <div>
-                                <div className="font-medium">{item.name}</div>
-                                <div className="text-gray-500 text-xs mt-1">
-                                  {item.quantity} قطعة × {item.price} ج.م
-                                </div>
-                              </div>
-                              <div className="font-semibold">
-                                {(item.quantity * item.price).toFixed(2)} ج.م
-                              </div>
-                            </li>) : <li>لا توجد منتجات</li>}
+                          </div>
+                          <div className="font-semibold">
+                            {(item.quantity * item.price).toFixed(2)} ج.م
+                          </div>
+                        </li>
+                      )) : <li>لا توجد منتجات</li>}
                     </ul>
                   </div>
                 </div>
