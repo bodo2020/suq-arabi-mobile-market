@@ -59,8 +59,8 @@ const Carousel = React.forwardRef<
   ) => {
     // Set default options for properly displaying items
     const defaultOptions = {
-      align: "start",
-      containScroll: "trimSnaps",
+      align: 0, // Using 0 instead of "start" string
+      containScroll: "trimSnaps" as const,
       slidesToScroll: 1,
       dragFree: true,
     }
