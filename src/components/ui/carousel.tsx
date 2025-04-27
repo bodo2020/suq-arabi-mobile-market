@@ -58,7 +58,7 @@ const Carousel = React.forwardRef<
     ref
   ) => {
     const emblaOptions: CarouselOptions = {
-      align: "start",
+      align: 0,
       loop: false,
       direction: "rtl" as const,
       skipSnaps: false,
