@@ -23,7 +23,13 @@ interface AddressDisplayProps {
   neighborhoodName?: string;
 }
 
-const AddressDisplay = ({ areaName, className, showAddressSelector = false, neighborhoodName }: AddressDisplayProps) => {
+const AddressDisplay = ({ 
+  areaName, 
+  className, 
+  showAddressSelector = false, 
+  neighborhoodName,
+  onEdit
+}: AddressDisplayProps) => {
   const { user } = useUser();
   const { toast } = useToast();
 
