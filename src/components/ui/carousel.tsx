@@ -57,16 +57,24 @@ const Carousel = React.forwardRef<
     },
     ref
   ) => {
+    // Set default options for properly displaying items
+    const defaultOptions = {
+      align: "start",
+      containScroll: "trimSnaps",
+      slidesToScroll: 1,
+      dragFree: true,
+    }
+
     const [carouselRef, api] = useEmblaCarousel(
       {
+        ...defaultOptions,
         ...opts,
         axis: orientation === "horizontal" ? "x" : "y",
-        dragFree: true,
       },
       plugins
     )
     const [canScrollPrev, setCanScrollPrev] = React.useState(false)
-    const [canScrollNext, setCanScrollNext] = React.useState(false)
+    const [canScrollNext, setCanScrollNext] = React.useState(true) // Default to true to show the next button initially
 
     const onSelect = React.useCallback((api: CarouselApi) => {
       if (!api) {
