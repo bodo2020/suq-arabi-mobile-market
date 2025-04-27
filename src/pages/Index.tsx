@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,7 +10,6 @@ import Banner from '@/components/ui/Banner';
 import { getCategories, getProducts, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import AddressDisplay from '@/components/ui/AddressDisplay';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -190,21 +190,16 @@ const Index = () => {
         {addressSection}
 
         {banners.length > 0 && <div className="mb-6 relative">
-            <Carousel className="w-full" opts={{
-          loop: true
-        }} setApi={api => {
-          if (api && banners.length > 1) {
-            api.scrollTo(activeBanner);
-          }
-        }}>
-              <CarouselContent>
-                {banners.map((banner, index) => <CarouselItem key={banner.id}>
-                    <Banner banner={banner} />
-                  </CarouselItem>)}
-              </CarouselContent>
-              
-              {banners.length > 1 && <div className="flex justify-center mt-2">
-                  {banners.map((_, index) => <button key={index} className={`w-2 h-2 mx-1 rounded-full ${activeBanner === index ? 'bg-primary' : 'bg-gray-300'}`} onClick={() => {
+            <div>
+              {banners.map((banner, index) => (
+                <div key={banner.id} className={index === activeBanner ? '' : 'hidden'}>
+                  <Banner banner={banner} />
+                </div>
+              ))}
+            </div>
+            
+            {banners.length > 1 && <div className="flex justify-center mt-2">
+                {banners.map((_, index) => <button key={index} className={`w-2 h-2 mx-1 rounded-full ${activeBanner === index ? 'bg-primary' : 'bg-gray-300'}`} onClick={() => {
               setActiveBanner(index);
               if (bannerIntervalRef.current) {
                 clearInterval(bannerIntervalRef.current);
@@ -214,7 +209,6 @@ const Index = () => {
               }
             }} aria-label={`شريحة ${index + 1}`} />)}
                 </div>}
-            </Carousel>
           </div>}
 
         <div className="mb-6">
