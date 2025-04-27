@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import { cn } from "@/lib/utils"
@@ -27,13 +26,12 @@ const Carousel = React.forwardRef<
   ) => {
     const emblaOptions = {
       align: "start" as const,
-      loop: false,
+      loop: true,
       direction: "ltr" as const,
       skipSnaps: false,
       slidesToScroll: 1,
-      dragFree: true,
-      // Update containScroll to use a valid value from the embla types
-      containScroll: "trimSnaps" as const,
+      dragFree: false,
+      containScroll: false,
       ...(opts || {})
     }
 

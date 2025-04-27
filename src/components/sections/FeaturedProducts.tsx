@@ -29,10 +29,9 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           <Carousel
             opts={{
               align: "start",
-              // Use a valid value for containScroll, embed-carousel accepts these values
-              containScroll: "trimSnaps",
-              loop: false,
-              dragFree: true,
+              containScroll: false,
+              dragFree: false,
+              loop: true,
             }}
             className="w-full"
           >
