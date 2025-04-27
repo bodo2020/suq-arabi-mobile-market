@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,6 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import LocationPicker from '@/components/ui/LocationPicker';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
+import LocationDisplay from '@/components/ui/LocationDisplay';
+import AddressDisplay from '@/components/ui/AddressDisplay';
+
 const Cart = () => {
   const navigate = useNavigate();
   const {
@@ -353,7 +357,8 @@ const Cart = () => {
                   </Button>
                 </div>
                 
-                {customerData?.default_address ? <div className="text-sm space-y-1">
+                {customerData?.default_address ? (
+                  <div className="text-sm space-y-1">
                     <p className="font-medium">
                       {customerData.default_address.neighborhoods?.name && `${customerData.default_address.neighborhoods.name}، `}
                       {customerData.default_address.areas?.name && `${customerData.default_address.areas.name}، `}
@@ -361,18 +366,21 @@ const Cart = () => {
                       {customerData.default_address.governorates?.name}
                     </p>
                     <p className="text-gray-600">{customerData.default_address.address}</p>
-                    {deliveryPricing && <p className="text-sm text-primary mt-2">
-                        رسوم التوصيل: {deliveryPrice} ج.م
-                      </p>}
-                  </div> : <div className="text-center py-4">
+                    {deliveryPricing && (
+                      <p className="text-sm text-primary mt-2">
+                        رسوم التوصيل: {deliveryPricing.price} ج.م
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
                     <p className="text-gray-500 mb-2">لا يوجد عنوان للتوصيل</p>
                     <Button variant="outline" onClick={() => navigate('/addresses')} className="text-primary border-primary hover:bg-primary/10">
                       إضافة عنوان جديد
                     </Button>
-                  </div>}
+                  </div>
+                )}
               </div>
-
-              {customerData?.default_address}
 
               <div className="bg-white rounded-lg p-4">
                 <CouponInput subtotal={getTotalPrice()} onApply={setDiscount} />
