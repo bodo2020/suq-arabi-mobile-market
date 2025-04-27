@@ -254,23 +254,25 @@ const Index = () => {
                 )}
               </div>
               
-              <div className="relative">
-                <div className="overflow-x-auto hide-scrollbar">
-                  <div className="flex gap-3 pb-4">
-                    {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
-                      productsByIds(collection.products).map(product => (
-                        <div key={product.id} className="flex-none w-[160px] md:w-[200px]">
-                          <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
-                        </div>
-                      ))
-                    ) : (
-                      <div className="w-full text-center py-8 text-muted-foreground">
+              <Carousel className="w-full" opts={{ align: "start" }}>
+                <CarouselContent className="-ml-4">
+                  {collection.products && Array.isArray(collection.products) && collection.products.length > 0 ? (
+                    productsByIds(collection.products).map(product => (
+                      <CarouselItem key={product.id} className="pl-4 basis-[160px] md:basis-[200px]">
+                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={true} />
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    <CarouselItem className="pl-4 basis-full">
+                      <div className="text-center py-8 text-muted-foreground">
                         لا توجد منتجات في هذه المجموعة
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                    </CarouselItem>
+                  )}
+                </CarouselContent>
+                <CarouselPrevious className="hidden md:flex -left-4" />
+                <CarouselNext className="hidden md:flex -right-4" />
+              </Carousel>
             </div>
           ))
         ) : (
@@ -278,23 +280,25 @@ const Index = () => {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">منتجات مميزة</h2>
             </div>
-            <div className="relative">
-              <div className="overflow-x-auto hide-scrollbar">
-                <div className="flex gap-3 pb-4">
-                  {featuredProducts.length > 0 ? (
-                    featuredProducts.map(product => (
-                      <div key={product.id} className="flex-none w-[160px] md:w-[200px]">
-                        <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="w-full text-center py-8 text-muted-foreground">
+            <Carousel className="w-full" opts={{ align: "start" }}>
+              <CarouselContent className="-ml-4">
+                {featuredProducts.length > 0 ? (
+                  featuredProducts.map(product => (
+                    <CarouselItem key={product.id} className="pl-4 basis-[160px] md:basis-[200px]">
+                      <ProductCard product={product} hideIfUnavailable={true} showBulkQuantity={false} />
+                    </CarouselItem>
+                  ))
+                ) : (
+                  <CarouselItem className="pl-4 basis-full">
+                    <div className="text-center py-8 text-muted-foreground">
                       لا توجد منتجات مميزة متاحة حاليًا
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
+                  </CarouselItem>
+                )}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex -left-4" />
+              <CarouselNext className="hidden md:flex -right-4" />
+            </Carousel>
           </div>
         )}
       </div>
