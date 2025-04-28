@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
@@ -17,13 +18,27 @@ const PhoneVerify = () => {
   const [step, setStep] = useState<'phone' | 'verification'>('phone');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    phone: "",
+    code: ""
+  });
   
   const formatPhoneNumber = (phoneNumber: string) => {
     return phoneNumber;
   };
   
   const handleSendCode = async () => {
-    if (!phone || !phone.startsWith('+20')) {
+    if (!phone) {
+      toast({
+        title: "خطأ في رقم الهاتف",
+        description: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!phone.startsWith('+20')) {
+      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20" }));
       toast({
         title: "خطأ في رقم الهاتف",
         description: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20",
@@ -140,6 +155,9 @@ const PhoneVerify = () => {
                 <p className="text-xs text-gray-500 mt-1 text-right">
                   أدخل رقم الهاتف مع إضافة +20 في البداية ({phone || '+20xxxxxxxxxx'})
                 </p>
+                {errors.phone && (
+                  <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                )}
               </div>
               
               <Button
@@ -183,6 +201,9 @@ const PhoneVerify = () => {
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
+                {errors.code && (
+                  <p className="text-red-500 text-sm mt-1 text-center">{errors.code}</p>
+                )}
               </div>
               
               <Button
