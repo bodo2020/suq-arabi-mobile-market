@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, Mail, KeyRound, Map } from "lucide-react";
@@ -56,14 +55,14 @@ const Register = () => {
   });
 
   const formatPhoneNumber = (phoneNumber: string) => {
-    // Remove any non-digit characters
     const digitsOnly = phoneNumber.replace(/\D/g, '');
-    
-    // Remove leading zero if present
     const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
     
-    // Add country code (updated to +20 for Egypt)
-    return `+20${cleanPhone}`;
+    if (cleanPhone.length === 10) {
+      return `+20${cleanPhone}`;
+    } else {
+      return cleanPhone.startsWith('20') ? `+${cleanPhone}` : `+20${cleanPhone}`;
+    }
   };
 
   const handleSendVerification = async () => {
@@ -79,7 +78,6 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      // Use Supabase's built-in phone auth
       const { error } = await signInWithPhone(phone);
       
       if (error) {

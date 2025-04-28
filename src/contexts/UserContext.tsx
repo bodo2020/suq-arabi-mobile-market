@@ -90,8 +90,14 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     // Remove leading zero if present
     const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
     
-    // Add country code (updated to +20 for Egypt)
-    return `+20${cleanPhone}`;
+    // Ensure we have the correct country code format for Egypt (+20)
+    if (cleanPhone.length === 10) { // Egyptian mobile numbers are 10 digits after removing the leading 0
+      return `+20${cleanPhone}`;
+    } else {
+      // If it's already properly formatted or doesn't match the expected pattern,
+      // just ensure it has the country code
+      return cleanPhone.startsWith('20') ? `+${cleanPhone}` : `+20${cleanPhone}`;
+    }
   };
   
   const signInWithPhone = async (phone: string) => {

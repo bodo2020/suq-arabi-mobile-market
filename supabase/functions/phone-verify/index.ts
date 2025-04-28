@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -12,8 +11,8 @@ function generateVerificationCode() {
 }
 
 function isValidPhoneNumber(phone: string) {
-  // Check if phone number starts with +2 (Egypt) and followed by digits
-  return /^\+2\d+$/.test(phone);
+  // Update the validation to look for the correct +20 prefix (Egypt) and followed by digits
+  return /^\+20\d+$/.test(phone);
 }
 
 serve(async (req) => {
@@ -32,7 +31,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "Invalid phone number format. Must start with +2 followed by digits." 
+          message: "Invalid phone number format. Must start with +20 followed by digits." 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
