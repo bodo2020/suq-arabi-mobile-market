@@ -26,7 +26,6 @@ const PhoneLogin = () => {
   });
   const [isRegisteredUser, setIsRegisteredUser] = useState(false);
   const [phoneFormatted, setPhoneFormatted] = useState('');
-  const [customerData, setCustomerData] = useState<any>(null);
   
   // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
@@ -111,7 +110,6 @@ const PhoneLogin = () => {
       } else {
         // User exists
         console.log("User found:", data);
-        setCustomerData(data);
         setIsRegisteredUser(true);
         setLoading(false); // Important: stop loading here
       }
@@ -167,19 +165,23 @@ const PhoneLogin = () => {
     setLoginLoading(true);
     
     try {
-      if (!customerData?.email) {
-        throw new Error("لا توجد بيانات للمستخدم");
+      // Get the email address for the phone number
+      const { data, error: fetchError } = await supabase
+        .from('customers')
+        .select('email')
+        .eq('phone', phoneFormatted)
+        .single();
+      
+      if (fetchError || !data?.email) {
+        throw new Error("لم نتمكن من العثور على بريدك الإلكتروني المرتبط برقم الهاتف");
       }
       
-      // Use the email from the customer data
-      const email = customerData.email;
-      console.log("Attempting to sign in with email:", email);
+      const email = data.email;
       
       // Sign in with email and password
       const { error } = await signIn(email, password);
       
       if (error) {
-        console.error("Login error:", error);
         throw error;
       }
       
@@ -194,7 +196,7 @@ const PhoneLogin = () => {
       console.error('Error signing in:', error);
       toast({
         title: "فشل تسجيل الدخول",
-        description: "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى",
+        description: error.message || "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
     } finally {
@@ -240,7 +242,6 @@ const PhoneLogin = () => {
                   setPhone(e.target.value);
                   setErrors(prev => ({ ...prev, phone: "" }));
                   setIsRegisteredUser(false);
-                  setCustomerData(null);
                 }}
                 className="text-right ltr flex-1"
                 placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
@@ -273,13 +274,6 @@ const PhoneLogin = () => {
             </Button>
           ) : (
             <div className="space-y-6">
-              {customerData && (
-                <div className="text-center">
-                  <p className="font-medium mb-1">مرحباً بك</p>
-                  <p className="text-lg font-bold">{customerData.name || `${customerData.first_name || ''} ${customerData.last_name || ''}`}</p>
-                </div>
-              )}
-              
               <div>
                 <div className="flex items-center mb-2">
                   <KeyRound size={18} className="ml-2 text-gray-500" />
@@ -322,7 +316,6 @@ const PhoneLogin = () => {
                   onClick={() => {
                     setIsRegisteredUser(false);
                     setPassword('');
-                    setCustomerData(null);
                   }}
                   className="text-primary"
                   type="button"
