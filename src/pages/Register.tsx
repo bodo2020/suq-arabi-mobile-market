@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, Mail, KeyRound, Map } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useUser } from "@/contexts/UserContext";
@@ -12,9 +12,11 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import CountryCodeSelector, { Country } from "@/components/ui/CountryCodeSelector";
+import { Check } from "lucide-react";
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     signInWithPhone,
     verifyPhone
@@ -22,16 +24,31 @@ const Register = () => {
   const {
     toast
   } = useToast();
-  const [phone, setPhone] = useState("");
+  
+  const queryParams = new URLSearchParams(location.search);
+  const phoneFromQuery = queryParams.get('phone') || '';
+  const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
+  const isVerified = queryParams.get('verified') === 'true';
+  
+  const [phone, setPhone] = useState(phoneFromQuery);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
-  const [isVerified, setIsVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(isVerified);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [address, setAddress] = useState("");
-  const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
+  const [countryCode, setCountryCode] = useState<Country>(() => {
+    const countries = [
+      { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' },
+      { name: 'السعودية', code: 'SA', dialCode: '+966', flag: '🇸🇦' },
+      { name: 'الإمارات', code: 'AE', dialCode: '+971', flag: '🇦🇪' },
+      // ... keep existing code (other countries)
+    ];
+    return countries.find(c => c.code === countryCodeFromQuery) || 
+      { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' };
+  });
   const [location, setLocation] = useState<LocationValue>({
     governorate: "",
     city: "",
@@ -344,6 +361,15 @@ const Register = () => {
                 <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="text-right" placeholder="******" />
                 {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
               </div>
+              
+              {isVerified && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center">
+                    <Check size={18} className="ml-2 text-green-500" />
+                    <p className="text-green-700">تم التحقق من رقم الهاتف: {countryCode.dialCode} {phone}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <Button type="submit" disabled={isSubmitting} className="w-full bg-primary text-white py-3">

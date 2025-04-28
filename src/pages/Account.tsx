@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -9,8 +8,37 @@ import { Address, getAddresses } from '@/lib/supabase';
 import { Separator } from "@/components/ui/separator";
 
 const Account = () => {
-  const { user, signOut } = useUser();
+  const { user, loading, signOut } = useUser();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/phone-login');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center h-[60vh] px-4">
+          <h1 className="text-xl font-bold mb-4">يرجى تسجيل الدخول</h1>
+          <Button onClick={() => navigate('/phone-login')} className="bg-primary text-white">
+            تسجيل الدخول
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   const handleSignOut = async () => {
     await signOut();

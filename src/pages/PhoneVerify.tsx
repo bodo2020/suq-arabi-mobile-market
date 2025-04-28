@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -12,44 +11,51 @@ import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelecto
 
 const PhoneVerify = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user, signInWithPhone, verifyPhone } = useUser();
   
-  const [phone, setPhone] = useState('');
-  const [step, setStep] = useState<'phone' | 'verification'>('phone');
+  const queryParams = new URLSearchParams(location.search);
+  const phoneFromQuery = queryParams.get('phone') || '';
+  const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
+  
+  const [phone, setPhone] = useState(phoneFromQuery);
+  const [step, setStep] = useState<'phone' | 'verification'>(phoneFromQuery ? 'verification' : 'phone');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
+  const [countryCode, setCountryCode] = useState<Country>(() => {
+    const countries = [
+      { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' },
+      { name: 'السعودية', code: 'SA', dialCode: '+966', flag: '🇸🇦' },
+      { name: 'الإمارات', code: 'AE', dialCode: '+971', flag: '🇦🇪' },
+      // ... keep existing code (other countries)
+    ];
+    return countries.find(c => c.code === countryCodeFromQuery) || 
+      { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' };
+  });
   const [errors, setErrors] = useState({
     phone: "",
     code: ""
   });
   
-  // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
-    // First remove all non-digit characters
     const digits = phoneNumber.replace(/\D/g, '');
     
-    // If it's Egypt, validate it starts with 0
     if (country.code === 'EG' && digits.length > 0) {
-      // If phone starts with 0, remove it for international format
       return digits.startsWith('0') ? digits.substring(1) : digits;
     }
     
     return digits;
   };
 
-  // Format full international phone number
   const formatInternationalPhone = (phoneNumber: string, country: Country) => {
     const formattedNumber = formatPhoneNumber(phoneNumber, country);
-    // Remove the + from the dial code
     const dialCode = country.dialCode.replace('+', '');
     
     return `${dialCode}${formattedNumber}`;
   };
   
   const validateEgyptianPhone = (phone: string) => {
-    // For Egyptian numbers, they should start with 1 and be 10 digits
     return phone.startsWith('1') && phone.length === 10;
   };
   
@@ -66,7 +72,6 @@ const PhoneVerify = () => {
       return;
     }
     
-    // For Egypt, validate Egyptian phone format
     if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
       setErrors(prev => ({ 
         ...prev, 
@@ -83,7 +88,6 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      // Create full international format
       const fullPhone = formatInternationalPhone(phone, countryCode);
       console.log("Sending verification for phone:", fullPhone);
       
@@ -126,7 +130,6 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      // Create full international format
       const fullPhone = formatInternationalPhone(phone, countryCode);
       console.log("Verifying code for phone:", fullPhone);
       
@@ -142,7 +145,11 @@ const PhoneVerify = () => {
         description: "تم التحقق من رقم هاتفك بنجاح"
       });
       
-      navigate('/account');
+      if (!user) {
+        navigate(`/register?phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode.code)}&verified=true`);
+      } else {
+        navigate('/account');
+      }
     } catch (error: any) {
       console.error('Error verifying code:', error);
       toast({
