@@ -71,6 +71,11 @@ const CompanyProducts = () => {
     setProducts(sortProducts(allProducts, value));
   };
 
+  // منع انتشار الحدث عند النقر على أي جزء من ProductFilters
+  const handleFiltersClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <MainLayout>
       <div className="py-4">
@@ -85,11 +90,13 @@ const CompanyProducts = () => {
         </div>
 
         {!loading && (
-          <ProductFilters
-            onSortChange={handleSortChange}
-            sortOptions={sortOptions}
-            currentSort={currentSort}
-          />
+          <div onClick={handleFiltersClick}>
+            <ProductFilters
+              onSortChange={handleSortChange}
+              sortOptions={sortOptions}
+              currentSort={currentSort}
+            />
+          </div>
         )}
 
         {loading ? (

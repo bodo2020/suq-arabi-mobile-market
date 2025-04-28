@@ -100,6 +100,11 @@ const CategoryDetail = () => {
     setProducts(sortProducts(products, value));
   };
 
+  // منع انتشار الحدث عند النقر على أي عنصر في قسم التصفية والترتيب
+  const handleFiltersClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -125,9 +130,12 @@ const CategoryDetail = () => {
 
         <div className="sticky top-0 z-10 mb-4 bg-white">
           <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 p-2 whitespace-nowrap min-w-max">
+            <div className="flex gap-2 p-2 whitespace-nowrap min-w-max" onClick={handleFiltersClick}>
               <button
-                onClick={() => handleSubcategorySelect(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubcategorySelect(null);
+                }}
                 className={`px-4 py-2 rounded-full text-sm ${
                   selectedSubcategory === null 
                     ? 'bg-[#d3ffb3] text-[#005931]' 
@@ -139,7 +147,10 @@ const CategoryDetail = () => {
               {subcategories.map(subcat => (
                 <button
                   key={subcat.id}
-                  onClick={() => handleSubcategorySelect(subcat.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSubcategorySelect(subcat.id);
+                  }}
                   className={`px-4 py-2 rounded-full text-sm ${
                     selectedSubcategory === subcat.id 
                       ? 'bg-[#d3ffb3] text-[#005931]' 
@@ -152,11 +163,13 @@ const CategoryDetail = () => {
             </div>
           </div>
 
-          <ProductFilters
-            onSortChange={handleSortChange}
-            sortOptions={sortOptions}
-            currentSort={currentSort}
-          />
+          <div onClick={handleFiltersClick}>
+            <ProductFilters
+              onSortChange={handleSortChange}
+              sortOptions={sortOptions}
+              currentSort={currentSort}
+            />
+          </div>
         </div>
 
         <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
