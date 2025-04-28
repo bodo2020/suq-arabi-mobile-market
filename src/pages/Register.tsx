@@ -54,8 +54,12 @@ const Register = () => {
   });
 
   const formatPhoneNumber = (phoneNumber: string) => {
+    // Remove any non-digit characters
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    
     // Remove leading zero if present
-    const cleanPhone = phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber;
+    const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+    
     // Add country code
     return `+2${cleanPhone}`;
   };
@@ -153,8 +157,6 @@ const Register = () => {
     setErrors(prev => ({ ...prev, server: "" }));
 
     try {
-      const formattedPhone = `002${phone.startsWith("0") ? phone.substring(1) : phone}`;
-
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -162,7 +164,7 @@ const Register = () => {
           data: {
             first_name: firstName,
             last_name: lastName,
-            phone: formattedPhone,
+            phone: phone, // Store local format in metadata
             name: `${firstName} ${lastName}`.trim(),
             address,
             location

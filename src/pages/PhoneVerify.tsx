@@ -20,8 +20,12 @@ const PhoneVerify = () => {
   const [loading, setLoading] = useState(false);
   
   const formatPhoneNumber = (phoneNumber: string) => {
+    // Remove any non-digit characters
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    
     // Remove leading zero if present
-    const cleanPhone = phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber;
+    const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+    
     // Add country code
     return `+2${cleanPhone}`;
   };
@@ -94,9 +98,6 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      // Use the same formatting function for consistency
-      const formattedPhone = formatPhoneNumber(phone);
-      
       const { error } = await verifyPhone(phone, code);
       
       if (error) {

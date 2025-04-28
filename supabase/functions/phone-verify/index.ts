@@ -50,24 +50,40 @@ serve(async (req) => {
       const verificationCode = generateVerificationCode();
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
       
-      // Store verification code in database
-      const { error: dbError } = await supabase
-        .from("verification_codes")
-        .insert({
-          phone,
-          code: verificationCode,
-          expires_at: expiresAt.toISOString(),
-        });
-      
-      if (dbError) {
-        console.error("Database error:", dbError);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: "Failed to store verification code" 
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-        );
+      try {
+        // First check if verification_codes table exists
+        const { error: checkError } = await supabase
+          .from("verification_codes")
+          .select("id")
+          .limit(1);
+        
+        if (checkError && checkError.message.includes("does not exist")) {
+          // Create the verification_codes table if it doesn't exist
+          await supabase.rpc("create_verification_codes_table");
+          console.log("Created verification_codes table");
+        }
+        
+        // Store verification code in database
+        const { error: dbError } = await supabase
+          .from("verification_codes")
+          .insert({
+            phone,
+            code: verificationCode,
+            expires_at: expiresAt.toISOString(),
+          });
+        
+        if (dbError) {
+          console.error("Database error:", dbError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: "Failed to store verification code" 
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+      } catch (err) {
+        console.error("Error checking or creating verification_codes table:", err);
       }
       
       // Development mode - return code if Twilio credentials aren't set
@@ -117,43 +133,51 @@ serve(async (req) => {
       }
     } 
     else if (action === "verify") {
-      // Check if code exists and is valid
-      const { data, error } = await supabase
-        .from("verification_codes")
-        .select("*")
-        .eq("phone", phone)
-        .eq("code", code)
-        .gt("expires_at", new Date().toISOString())
-        .eq("verified", false)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (error || !data) {
+      try {
+        // Check if code exists and is valid
+        const { data, error } = await supabase
+          .from("verification_codes")
+          .select("*")
+          .eq("phone", phone)
+          .eq("code", code)
+          .gt("expires_at", new Date().toISOString())
+          .eq("verified", false)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (error || !data) {
+          return new Response(
+            JSON.stringify({ success: false, message: "Invalid or expired code" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+        
+        // Mark code as verified
+        const { error: updateError } = await supabase
+          .from("verification_codes")
+          .update({ verified: true })
+          .eq("id", data.id);
+        
+        if (updateError) {
+          console.error("Error updating verification status:", updateError);
+          return new Response(
+            JSON.stringify({ success: false, message: "Failed to verify code" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+        
         return new Response(
-          JSON.stringify({ success: false, message: "Invalid or expired code" }),
+          JSON.stringify({ success: true, message: "Phone verified successfully" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
-      }
-      
-      // Mark code as verified
-      const { error: updateError } = await supabase
-        .from("verification_codes")
-        .update({ verified: true })
-        .eq("id", data.id);
-      
-      if (updateError) {
-        console.error("Error updating verification status:", updateError);
+      } catch (error) {
+        console.error("Error verifying code:", error);
         return new Response(
           JSON.stringify({ success: false, message: "Failed to verify code" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
       }
-      
-      return new Response(
-        JSON.stringify({ success: true, message: "Phone verified successfully" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
     }
     
     return new Response(

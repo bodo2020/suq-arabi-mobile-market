@@ -82,8 +82,12 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
   
   const formatPhoneNumber = (phoneNumber: string) => {
+    // Remove any non-digit characters
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    
     // Remove leading zero if present
-    const cleanPhone = phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber;
+    const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+    
     // Add country code
     return `+2${cleanPhone}`;
   };
