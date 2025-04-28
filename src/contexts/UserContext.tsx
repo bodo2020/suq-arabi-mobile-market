@@ -7,6 +7,7 @@ type UserContextType = {
   user: User | null;
   session: Session | null;
   authLoading: boolean;
+  loading: boolean; // Added this property to match what's used in Account.tsx
   signIn: (email: string, password?: string) => Promise<any>;
   signUp: (email: string, password?: string, additionalData?: any) => Promise<any>;
   signOut: () => Promise<void>;
@@ -31,6 +32,7 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Added this state for consistency with Account.tsx
 
   useEffect(() => {
     const getSession = async () => {
@@ -38,6 +40,7 @@ export const UserProvider = ({ children }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
+      setLoading(false); // Update loading state once session is fetched
     };
 
     getSession();
@@ -50,6 +53,7 @@ export const UserProvider = ({ children }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
+      setLoading(false); // Update loading state on auth change
     });
   }, []);
 
@@ -248,6 +252,7 @@ export const UserProvider = ({ children }) => {
         user,
         session,
         authLoading,
+        loading, // Add loading to the context value
         signIn,
         signUp,
         signOut,
