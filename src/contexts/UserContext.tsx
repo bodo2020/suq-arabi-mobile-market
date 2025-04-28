@@ -85,16 +85,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     // Strip ALL non-digit characters completely
     const digits = phoneNumber.replace(/\D/g, '');
     
-    // If the number starts with "01", add "+2" prefix for Egyptian numbers
-    if (digits.startsWith('01')) {
-      return "+2" + digits;
-    }
-    
-    // If it already has the +2 prefix, return as is
-    if (phoneNumber.startsWith('+2')) {
-      return phoneNumber;
-    }
-    
+    // Return the cleaned digits without adding any prefix
     return digits;
   };
   

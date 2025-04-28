@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -13,28 +12,16 @@ function generateVerificationCode() {
 
 function formatPhoneNumber(phone: string) {
   // Strip ALL non-digit characters completely
-  const digits = phone.replace(/\D/g, '');
-  
-  // If the number starts with "01", add "+2" prefix for Egyptian numbers
-  if (digits.startsWith('01')) {
-    return "+2" + digits;
-  }
-  
-  // If it already has the +2 prefix, return as is
-  if (phone.startsWith('+2')) {
-    return phone;
-  }
-  
-  return digits;
+  // Just return the cleaned digits without adding any prefix
+  return phone.replace(/\D/g, '');
 }
 
 function isValidPhoneNumber(phone: string) {
   // Strip any non-digit characters for validation
   const digits = phone.replace(/\D/g, '');
   
-  // Validate Egyptian phone number format
-  // Either starting with +201 or just 01
-  return /^\+201\d{9}$/.test(phone) || /^01\d{9}$/.test(digits);
+  // Validate Egyptian phone number format - just check for 01 prefix and length
+  return digits.startsWith('01') && digits.length === 11;
 }
 
 serve(async (req) => {
@@ -56,7 +43,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "Invalid phone number format. Must be an Egyptian mobile number starting with 01 or +201." 
+          message: "Invalid phone number format. Must be an Egyptian mobile number starting with 01." 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );

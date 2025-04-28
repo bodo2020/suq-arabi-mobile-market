@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
@@ -25,14 +24,7 @@ const PhoneVerify = () => {
   
   const formatPhoneNumber = (phoneNumber: string) => {
     // Strip ALL non-digit characters completely
-    const digits = phoneNumber.replace(/\D/g, '');
-    
-    // If the number starts with "01", add "+2" prefix
-    if (digits.startsWith('01')) {
-      return "+2" + digits;
-    }
-    
-    return digits;
+    return phoneNumber.replace(/\D/g, '');
   };
   
   const handleSendCode = async () => {

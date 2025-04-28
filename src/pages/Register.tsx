@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, Mail, KeyRound, Map } from "lucide-react";
@@ -56,22 +55,10 @@ const Register = () => {
   });
 
   const formatPhoneNumber = (phoneNumber: string) => {
-    // Strip ALL non-digit characters completely
-    const digits = phoneNumber.replace(/\D/g, '');
-    
-    if (digits.startsWith('01')) {
-      return "+2" + digits;
-    }
-    
-    if (phoneNumber.startsWith('+2')) {
-      return phoneNumber;
-    }
-    
-    return digits;
+    return phoneNumber.replace(/\D/g, '');
   };
 
   const handleSendVerification = async () => {
-    // First strip any non-digit characters for validation
     const cleanPhone = phone.replace(/\D/g, '');
     
     if (!cleanPhone.trim()) {
