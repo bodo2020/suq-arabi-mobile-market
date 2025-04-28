@@ -18,6 +18,7 @@ const PhoneLogin = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
   const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
   const [errors, setErrors] = useState({
     phone: "",
@@ -55,6 +56,8 @@ const PhoneLogin = () => {
   };
   
   const checkPhoneExists = async () => {
+    if (loading) return; // Prevent multiple clicks
+    
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
     if (!cleanPhone) {
@@ -108,6 +111,7 @@ const PhoneLogin = () => {
         // User exists
         console.log("User found:", data);
         setIsRegisteredUser(true);
+        setLoading(false); // Important: stop loading here
       }
       
     } catch (error: any) {
@@ -151,12 +155,14 @@ const PhoneLogin = () => {
   };
   
   const handlePasswordLogin = async () => {
+    if (loginLoading) return; // Prevent multiple clicks
+    
     if (!password) {
       setErrors(prev => ({ ...prev, password: "يرجى إدخال كلمة المرور" }));
       return;
     }
     
-    setLoading(true);
+    setLoginLoading(true);
     
     try {
       // Get the email address for the phone number
@@ -193,7 +199,8 @@ const PhoneLogin = () => {
         description: error.message || "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
-      setLoading(false);
+    } finally {
+      setLoginLoading(false);
     }
   };
   
@@ -239,7 +246,7 @@ const PhoneLogin = () => {
                 className="text-right ltr flex-1"
                 placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
                 dir="ltr"
-                disabled={isRegisteredUser && loading}
+                disabled={isRegisteredUser}
               />
             </div>
             
@@ -295,10 +302,10 @@ const PhoneLogin = () => {
               
               <Button
                 onClick={handlePasswordLogin}
-                disabled={loading}
+                disabled={loginLoading}
                 className="w-full"
               >
-                {loading ? (
+                {loginLoading ? (
                   <Loader size={16} className="animate-spin mr-2" />
                 ) : null}
                 تسجيل الدخول
@@ -306,7 +313,10 @@ const PhoneLogin = () => {
               
               <div className="flex justify-between text-sm">
                 <button
-                  onClick={() => setIsRegisteredUser(false)}
+                  onClick={() => {
+                    setIsRegisteredUser(false);
+                    setPassword('');
+                  }}
                   className="text-primary"
                   type="button"
                 >
