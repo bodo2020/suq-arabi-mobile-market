@@ -59,6 +59,12 @@ double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = false
 
+# Phone auth settings
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+template = "Your verification code is {{ .Code }}"
+
 # Use an external OAuth provider. The full list of providers are: "apple", "azure", "bitbucket",
 # "discord", "facebook", "github", "gitlab", "google", "keycloak", "linkedin", "notion", "twitch",
 # "twitter", "slack", "spotify", "workos", "zoom".
@@ -197,3 +203,4 @@ key_file = ""
 [functions]
 create-verification-table = { verify_jwt = false }
 phone-verify = { verify_jwt = false }
+
