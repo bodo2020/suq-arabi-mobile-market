@@ -54,7 +54,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
     const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
-    const twilioWhatsappNumber = Deno.env.get("TWILIO_WHATSAPP_NUMBER") ?? "";
+    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") ?? "";
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
@@ -99,7 +99,7 @@ serve(async (req) => {
       }
       
       // Always return the code in development mode
-      const isDevelopment = !twilioAccountSid || !twilioAuthToken || !twilioWhatsappNumber;
+      const isDevelopment = !twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber;
       
       // Even if we try to send via Twilio, include the code in response during development
       const responseObject: any = { 
@@ -117,16 +117,14 @@ serve(async (req) => {
       }
       
       try {
-        // IMPORTANT: Always use WhatsApp for sending verification codes
-        // Format for WhatsApp requires whatsapp: prefix, and ensuring + before the country code
-        const whatsappDestination = `whatsapp:+${formattedPhone}`;
+        // IMPORTANT: Use regular SMS instead of WhatsApp
+        console.log("Sending SMS to:", formattedPhone);
+        
         const twilioEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
         
-        console.log("Sending WhatsApp message to:", whatsappDestination);
-        
         const twilioBody = new URLSearchParams({
-          From: `whatsapp:${twilioWhatsappNumber}`,
-          To: whatsappDestination,
+          From: twilioPhoneNumber,
+          To: `+${formattedPhone}`,
           Body: `Your verification code is: ${verificationCode}`,
         });
         
@@ -163,7 +161,7 @@ serve(async (req) => {
         }
         
         return new Response(
-          JSON.stringify({ success: true, message: "Verification code sent via WhatsApp" }),
+          JSON.stringify({ success: true, message: "Verification code sent via SMS" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
       } catch (error) {
@@ -173,7 +171,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: "Failed to send verification code via WhatsApp. Please try again later.", 
+            message: "Failed to send verification code. Please try again later.", 
             code: verificationCode // Include code so testing can continue
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
