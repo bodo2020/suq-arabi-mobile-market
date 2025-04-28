@@ -1,15 +1,24 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
+import ProductFilters from '@/components/ui/ProductFilters';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
+
+const sortOptions = [
+  { label: "الأحدث", value: "newest" },
+  { label: "السعر: من الأقل للأعلى", value: "price_asc" },
+  { label: "السعر: من الأعلى للأقل", value: "price_desc" },
+  { label: "أبجدياً: أ-ي", value: "name_asc" },
+  { label: "أبجدياً: ي-أ", value: "name_desc" },
+];
 
 const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productsRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -17,6 +26,7 @@ const CategoryDetail = () => {
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [currentSort, setCurrentSort] = useState("newest");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,20 +61,43 @@ const CategoryDetail = () => {
     setSelectedSubcategory(subcatId);
     
     if (!subcatId) {
-      setProducts(allProducts);
+      setProducts(sortProducts(allProducts, currentSort));
     } else {
       const subcategoryProducts = allProducts.filter(
         product => product.subcategory_id === subcatId
       );
-      setProducts(subcategoryProducts);
+      setProducts(sortProducts(subcategoryProducts, currentSort));
     }
 
-    // Smooth scroll to products after data is loaded
     if (productsRef.current) {
       setTimeout(() => {
         productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }
+  };
+
+  const sortProducts = (productsToSort: Product[], sortType: string) => {
+    const sortedProducts = [...productsToSort];
+    switch (sortType) {
+      case "price_asc":
+        return sortedProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
+      case "price_desc":
+        return sortedProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
+      case "name_asc":
+        return sortedProducts.sort((a, b) => a.name.localeCompare(b.name));
+      case "name_desc":
+        return sortedProducts.sort((a, b) => b.name.localeCompare(a.name));
+      case "newest":
+      default:
+        return sortedProducts.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+    }
+  };
+
+  const handleSortChange = (value: string) => {
+    setCurrentSort(value);
+    setProducts(sortProducts(products, value));
   };
 
   if (loading) {
@@ -91,14 +124,7 @@ const CategoryDetail = () => {
         </div>
 
         <div className="sticky top-0 z-10 mb-4 bg-white">
-          <div 
-            className="overflow-x-auto scrollbar-hide" 
-            style={{ 
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-            }}
-          >
+          <div className="overflow-x-auto scrollbar-hide">
             <div className="flex gap-2 p-2 whitespace-nowrap min-w-max">
               <button
                 onClick={() => handleSubcategorySelect(null)}
@@ -125,6 +151,12 @@ const CategoryDetail = () => {
               ))}
             </div>
           </div>
+
+          <ProductFilters
+            onSortChange={handleSortChange}
+            sortOptions={sortOptions}
+            currentSort={currentSort}
+          />
         </div>
 
         <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

@@ -4,7 +4,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
+import ProductFilters from '@/components/ui/ProductFilters';
 import { Product, Company, getProductsByCompany, getCompanyById } from '@/lib/supabase';
+
+const sortOptions = [
+  { label: "الأحدث", value: "newest" },
+  { label: "السعر: من الأقل للأعلى", value: "price_asc" },
+  { label: "السعر: من الأعلى للأقل", value: "price_desc" },
+  { label: "أبجدياً: أ-ي", value: "name_asc" },
+  { label: "أبجدياً: ي-أ", value: "name_desc" },
+];
 
 const CompanyProducts = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +21,8 @@ const CompanyProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentSort, setCurrentSort] = useState("newest");
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,7 +35,8 @@ const CompanyProducts = () => {
         ]);
         
         setCompany(companyData as Company);
-        setProducts(productsData as Product[]);
+        setAllProducts(productsData as Product[]);
+        setProducts(sortProducts(productsData as Product[], currentSort));
       } catch (error) {
         console.error('Error fetching company products:', error);
       } finally {
@@ -35,27 +47,50 @@ const CompanyProducts = () => {
     fetchData();
   }, [id]);
 
-  const handleBack = () => {
-    navigate(-1);
+  const sortProducts = (productsToSort: Product[], sortType: string) => {
+    const sortedProducts = [...productsToSort];
+    switch (sortType) {
+      case "price_asc":
+        return sortedProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
+      case "price_desc":
+        return sortedProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
+      case "name_asc":
+        return sortedProducts.sort((a, b) => a.name.localeCompare(b.name));
+      case "name_desc":
+        return sortedProducts.sort((a, b) => b.name.localeCompare(a.name));
+      case "newest":
+      default:
+        return sortedProducts.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+    }
+  };
+
+  const handleSortChange = (value: string) => {
+    setCurrentSort(value);
+    setProducts(sortProducts(allProducts, value));
   };
 
   return (
     <MainLayout>
       <div className="py-4">
-        {/* Header with back button */}
         <div className="flex items-center mb-4">
-          <button
-            onClick={handleBack}
-            className="p-2"
-            aria-label="الرجوع"
-          >
+          <button onClick={() => navigate(-1)} className="p-2">
             <ArrowRight size={24} />
           </button>
           <h1 className="text-xl font-bold flex-1 text-center">
             {loading ? 'جاري التحميل...' : company ? company.name : 'الشركة'}
           </h1>
-          <div className="w-10"></div> {/* Spacer for alignment */}
+          <div className="w-10"></div>
         </div>
+
+        {!loading && (
+          <ProductFilters
+            onSortChange={handleSortChange}
+            sortOptions={sortOptions}
+            currentSort={currentSort}
+          />
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center h-40">
