@@ -1,23 +1,33 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from "@/components/ui/button"
 import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft } from 'lucide-react';
-import { Address, getAddresses } from '@/lib/supabase';
 import { Separator } from "@/components/ui/separator";
 
 const Account = () => {
   const { user, loading, signOut } = useUser();
   const navigate = useNavigate();
-
+  const [loadingComplete, setLoadingComplete] = useState(false);
+  
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/phone-login');
-    }
-  }, [user, loading, navigate]);
+    // Set a timeout to prevent infinite loading state
+    const timer = setTimeout(() => {
+      setLoadingComplete(true);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (loading) {
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  // Show loading state only for a limited time
+  if (loading && !loadingComplete) {
     return (
       <MainLayout>
         <div className="flex justify-center items-center h-[60vh]">
@@ -26,24 +36,6 @@ const Account = () => {
       </MainLayout>
     );
   }
-
-  if (!user) {
-    return (
-      <MainLayout>
-        <div className="flex flex-col items-center justify-center h-[60vh] px-4">
-          <h1 className="text-xl font-bold mb-4">يرجى تسجيل الدخول</h1>
-          <Button onClick={() => navigate('/phone-login')} className="bg-primary text-white">
-            تسجيل الدخول
-          </Button>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
 
   return (
     <MainLayout>
@@ -124,9 +116,21 @@ const Account = () => {
               <User className="h-12 w-12 mx-auto text-gray-400 mb-3" />
               <h2 className="text-xl font-semibold mb-2">مرحباً بك</h2>
               <p className="text-gray-500 mb-4">قم بتسجيل الدخول للوصول إلى حسابك</p>
-              <Button onClick={() => navigate('/register')} size="lg">
-                تسجيل الدخول
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => navigate('/phone-login')} 
+                  className="w-full"
+                >
+                  تسجيل الدخول
+                </Button>
+                <Button 
+                  onClick={() => navigate('/register')} 
+                  variant="outline"
+                  className="w-full"
+                >
+                  إنشاء حساب جديد
+                </Button>
+              </div>
             </div>
           )}
         </div>
