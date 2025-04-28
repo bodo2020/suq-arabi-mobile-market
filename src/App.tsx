@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -21,6 +22,7 @@ import BarcodeScanner from '@/pages/BarcodeScanner';
 import BannerProducts from '@/pages/BannerProducts';
 import CompanyProducts from '@/pages/CompanyProducts';
 import NotFound from '@/pages/NotFound';
+import PhoneVerify from '@/pages/PhoneVerify';
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -64,6 +66,7 @@ function App() {
               <Route path="/banner-products/:id" element={<BannerProducts />} />
               <Route path="/company-products/:id" element={<CompanyProducts />} />
               <Route path="/bulk-products" element={<BulkProducts />} />
+              <Route path="/phone-verify" element={<PhoneVerify />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CartProvider>

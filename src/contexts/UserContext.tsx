@@ -13,6 +13,7 @@ interface UserContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  verifyPhone: (phone: string, code: string) => Promise<{ error: any }>;
 }
 
 export const UserContext = createContext<UserContextType>({
@@ -21,6 +22,7 @@ export const UserContext = createContext<UserContextType>({
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signOut: async () => {},
+  verifyPhone: async () => ({ error: null }),
 });
 
 export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
@@ -78,9 +80,42 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     await supabase.auth.signOut();
     setUser(null);
   };
+  
+  const verifyPhone = async (phone: string, code: string) => {
+    try {
+      const result = await supabase.functions.invoke('phone-verify', {
+        body: { action: 'verify', phone, code }
+      });
+      
+      if (result.error) {
+        return { error: result.error };
+      }
+      
+      // If user is logged in, update their phone number in the database
+      if (user) {
+        // Extract the phone number without the country code
+        const localPhone = phone.startsWith('+2') ? phone.substring(2) : phone;
+        
+        const { error: updateError } = await supabase
+          .from('customers')
+          .update({ phone: localPhone })
+          .eq('user_id', user.id);
+        
+        if (updateError) {
+          console.error('Error updating phone number:', updateError);
+          return { error: updateError };
+        }
+      }
+      
+      return { error: null };
+    } catch (error) {
+      console.error('Error verifying phone:', error);
+      return { error };
+    }
+  };
 
   return (
-    <UserContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <UserContext.Provider value={{ user, loading, signIn, signUp, signOut, verifyPhone }}>
       {children}
     </UserContext.Provider>
   );
