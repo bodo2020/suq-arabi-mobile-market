@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useLocation } from '@/hooks/useLocation';
 import Index from '@/pages/Index';
 import Cart from '@/pages/Cart';
 import Categories from '@/pages/Categories';
@@ -29,6 +29,10 @@ import BulkProducts from '@/pages/BulkProducts';
 const queryClient = new QueryClient();
 
 function App() {
+  const location = useLocation();
+  
+  console.log('Current location:', location);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
