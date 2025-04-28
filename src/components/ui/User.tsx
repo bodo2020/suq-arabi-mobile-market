@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { UserIcon } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
 
 interface UserProps {
   size?: number;

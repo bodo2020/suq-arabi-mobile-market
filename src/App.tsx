@@ -26,6 +26,7 @@ import PhoneLogin from './pages/PhoneLogin';
 import BarcodeScanner from './pages/BarcodeScanner';
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
+import { UserProvider } from '@/contexts/UserContext';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -38,37 +39,39 @@ function App() {
   }, []);
   
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/category/:id" element={<CategoryDetail />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/payment" element={<Payment />} />
-          <Route path="/order-success" element={<OrderSuccess />} />
-          <Route path="/company/:id" element={<CompanyProducts />} />
-          <Route path="/banner/:id" element={<BannerProducts />} />
-          <Route path="/account" element={<Account />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/phone-verify" element={<PhoneVerify />} />
-          <Route path="/phone-login" element={<PhoneLogin />} />
-          <Route path="/address-manager" element={<AddressManager />} />
-          <Route path="/edit-account" element={<EditAccount />} />
-          <Route path="/add-address" element={<Address />} />
-          <Route path="/edit-address/:id" element={<Address />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/bulk-products" element={<BulkProducts />} />
-          <Route path="/favorites" element={<Favorites />} />
-          <Route path="/scanner" element={<BarcodeScanner />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </BrowserRouter>
-    </CartProvider>
+    <UserProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/category/:id" element={<CategoryDetail />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment" element={<Payment />} />
+            <Route path="/order-success" element={<OrderSuccess />} />
+            <Route path="/company/:id" element={<CompanyProducts />} />
+            <Route path="/banner/:id" element={<BannerProducts />} />
+            <Route path="/account" element={<Account />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/phone-verify" element={<PhoneVerify />} />
+            <Route path="/phone-login" element={<PhoneLogin />} />
+            <Route path="/address-manager" element={<AddressManager />} />
+            <Route path="/edit-account" element={<EditAccount />} />
+            <Route path="/add-address" element={<Address />} />
+            <Route path="/edit-address/:id" element={<Address />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/bulk-products" element={<BulkProducts />} />
+            <Route path="/favorites" element={<Favorites />} />
+            <Route path="/scanner" element={<BarcodeScanner />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </BrowserRouter>
+      </CartProvider>
+    </UserProvider>
   );
 }
 

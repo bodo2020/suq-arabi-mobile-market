@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -116,21 +115,12 @@ const Account = () => {
               <User className="h-12 w-12 mx-auto text-gray-400 mb-3" />
               <h2 className="text-xl font-semibold mb-2">مرحباً بك</h2>
               <p className="text-gray-500 mb-4">قم بتسجيل الدخول للوصول إلى حسابك</p>
-              <div className="space-y-3">
-                <Button 
-                  onClick={() => navigate('/phone-login')} 
-                  className="w-full"
-                >
-                  تسجيل الدخول
-                </Button>
-                <Button 
-                  onClick={() => navigate('/register')} 
-                  variant="outline"
-                  className="w-full"
-                >
-                  إنشاء حساب جديد
-                </Button>
-              </div>
+              <Button 
+                onClick={() => navigate('/phone-login')} 
+                className="w-full"
+              >
+                تسجيل الدخول
+              </Button>
             </div>
           )}
         </div>
