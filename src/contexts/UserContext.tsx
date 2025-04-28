@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -81,7 +82,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
   
   const formatPhoneNumber = (phoneNumber: string) => {
-    // Strip any non-digit characters
+    // Strip ALL non-digit characters completely
     const digits = phoneNumber.replace(/\D/g, '');
     
     // If the number starts with "01", add "+2" prefix for Egyptian numbers

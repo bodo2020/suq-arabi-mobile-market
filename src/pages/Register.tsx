@@ -56,6 +56,7 @@ const Register = () => {
   });
 
   const formatPhoneNumber = (phoneNumber: string) => {
+    // Strip ALL non-digit characters completely
     const digits = phoneNumber.replace(/\D/g, '');
     
     if (digits.startsWith('01')) {
@@ -70,12 +71,15 @@ const Register = () => {
   };
 
   const handleSendVerification = async () => {
-    if (!phone.trim()) {
+    // First strip any non-digit characters for validation
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    if (!cleanPhone.trim()) {
       setErrors(prev => ({ ...prev, phone: "رقم الهاتف مطلوب" }));
       return;
     }
 
-    if (!phone.startsWith('01') || phone.length !== 11) {
+    if (!cleanPhone.startsWith('01') || cleanPhone.length !== 11) {
       setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)" }));
       return;
     }

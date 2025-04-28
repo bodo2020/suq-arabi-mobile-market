@@ -24,7 +24,7 @@ const PhoneVerify = () => {
   });
   
   const formatPhoneNumber = (phoneNumber: string) => {
-    // Strip any non-digit characters the user might have entered
+    // Strip ALL non-digit characters completely
     const digits = phoneNumber.replace(/\D/g, '');
     
     // If the number starts with "01", add "+2" prefix
@@ -36,7 +36,10 @@ const PhoneVerify = () => {
   };
   
   const handleSendCode = async () => {
-    if (!phone) {
+    // First strip any non-digit characters for validation
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    if (!cleanPhone) {
       setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري" }));
       toast({
         title: "خطأ في رقم الهاتف",
@@ -47,7 +50,7 @@ const PhoneVerify = () => {
     }
     
     // Validate that the phone starts with 01 and has correct length
-    if (!phone.startsWith('01') || phone.length !== 11) {
+    if (!cleanPhone.startsWith('01') || cleanPhone.length !== 11) {
       setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)" }));
       toast({
         title: "خطأ في رقم الهاتف",
@@ -61,7 +64,6 @@ const PhoneVerify = () => {
     
     try {
       console.log("Sending verification for phone:", phone);
-      // Format the phone number before sending it
       const { error } = await signInWithPhone(phone);
       
       if (error) {

@@ -12,7 +12,7 @@ function generateVerificationCode() {
 }
 
 function formatPhoneNumber(phone: string) {
-  // Strip any non-digit characters
+  // Strip ALL non-digit characters completely
   const digits = phone.replace(/\D/g, '');
   
   // If the number starts with "01", add "+2" prefix for Egyptian numbers
@@ -29,9 +29,12 @@ function formatPhoneNumber(phone: string) {
 }
 
 function isValidPhoneNumber(phone: string) {
+  // Strip any non-digit characters for validation
+  const digits = phone.replace(/\D/g, '');
+  
   // Validate Egyptian phone number format
   // Either starting with +201 or just 01
-  return /^\+201\d{9}$/.test(phone) || /^01\d{9}$/.test(phone);
+  return /^\+201\d{9}$/.test(phone) || /^01\d{9}$/.test(digits);
 }
 
 serve(async (req) => {
