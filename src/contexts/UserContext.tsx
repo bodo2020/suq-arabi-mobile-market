@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -87,14 +86,8 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
         body: { action: 'verify', phone, code }
       });
       
-      if (result.error) {
-        return { error: result.error };
-      }
-      
-      const data = result.data;
-      
-      if (!data.success) {
-        return { error: new Error(data.message || "Verification failed") };
+      if (!result.data.success) {
+        return { error: new Error(result.data.message || "Verification failed") };
       }
       
       // If user is logged in, update their phone number in the database
