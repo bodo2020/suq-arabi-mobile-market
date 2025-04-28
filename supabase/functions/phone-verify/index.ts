@@ -39,16 +39,27 @@ async function sendWhatsAppMessage(phone: string, code: string): Promise<{ succe
       };
     }
 
-    // Format the phone number with WhatsApp prefix
+    // Format the phone number with WhatsApp prefix for recipient
     const formattedPhone = `whatsapp:+${phone}`;
-    const formattedFromNumber = `whatsapp:+${twilioWhatsappNumber}`;
     
-    console.log(`Sending WhatsApp message from ${formattedFromNumber} to ${formattedPhone}`);
+    // Check if we're using a Messaging Service SID or a phone number
+    let fromIdentifier;
+    if (twilioWhatsappNumber.startsWith("MG")) {
+      // Using a Messaging Service SID - use it directly
+      fromIdentifier = twilioWhatsappNumber;
+      console.log(`Using Messaging Service SID: ${fromIdentifier}`);
+    } else {
+      // Using a phone number - add WhatsApp prefix
+      fromIdentifier = `whatsapp:+${twilioWhatsappNumber}`;
+      console.log(`Using WhatsApp phone number: ${fromIdentifier}`);
+    }
+    
+    console.log(`Sending WhatsApp message from ${fromIdentifier} to ${formattedPhone}`);
 
     const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
     
     const formData = new URLSearchParams();
-    formData.append("From", formattedFromNumber);
+    formData.append("From", fromIdentifier);
     formData.append("To", formattedPhone);
     formData.append("Body", `Your verification code is: ${code}`);
     
