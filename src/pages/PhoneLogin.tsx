@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Loader, KeyRound } from 'lucide-react';
@@ -30,38 +29,30 @@ const PhoneLogin = () => {
   const [codeForTesting, setCodeForTesting] = useState<string | null>(null);
   const [blockedNumber, setBlockedNumber] = useState(false);
   
-  // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
-    // First remove all non-digit characters
     const digits = phoneNumber.replace(/\D/g, '');
     
-    // If it's Egypt, validate it starts with 0
     if (country.code === 'EG' && digits.length > 0) {
-      // If phone starts with 0, remove it for international format
       return digits.startsWith('0') ? digits.substring(1) : digits;
     }
     
     return digits;
   };
 
-  // Format full international phone number
   const formatInternationalPhone = (phoneNumber: string, country: Country) => {
     const formattedNumber = formatPhoneNumber(phoneNumber, country);
-    // Remove the + from the dial code
     const dialCode = country.dialCode.replace('+', '');
     
     return `${dialCode}${formattedNumber}`;
   };
   
   const validateEgyptianPhone = (phone: string) => {
-    // For Egyptian numbers, they should start with 1 and be 10 digits
     return phone.startsWith('1') && phone.length === 10;
   };
   
   const checkPhoneExists = async () => {
-    if (loading) return; // Prevent multiple clicks
+    if (loading) return;
     
-    // Reset state
     setRateLimitError(false);
     setBlockedNumber(false);
     setCodeForTesting(null);
@@ -78,7 +69,6 @@ const PhoneLogin = () => {
       return;
     }
     
-    // For Egypt, validate Egyptian phone format
     if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
       setErrors(prev => ({ 
         ...prev, 
@@ -95,12 +85,10 @@ const PhoneLogin = () => {
     setLoading(true);
     
     try {
-      // Create full international format
       const fullPhone = formatInternationalPhone(phone, countryCode);
       setPhoneFormatted(fullPhone);
       console.log("Checking phone:", fullPhone);
       
-      // Check if the phone exists in the customers table
       const { data, error: supabaseError } = await supabase
         .from('customers')
         .select('*')
@@ -108,7 +96,7 @@ const PhoneLogin = () => {
         .single();
       
       if (supabaseError) {
-        if (supabaseError.code === 'PGRST116') { // No rows returned
+        if (supabaseError.code === 'PGRST116') {
           console.log("User not found, sending verification code");
           setIsRegisteredUser(false);
           handleSendCode(fullPhone);
@@ -116,10 +104,9 @@ const PhoneLogin = () => {
           throw supabaseError;
         }
       } else {
-        // User exists
         console.log("User found:", data);
         setIsRegisteredUser(true);
-        setLoading(false); // Important: stop loading here
+        setLoading(false);
       }
       
     } catch (error: any) {
@@ -140,7 +127,6 @@ const PhoneLogin = () => {
       if (error) {
         console.error("Error sending verification code:", error);
         
-        // Check for rate limit error
         if (error.status === 429 || error.code === 'over_sms_send_rate_limit') {
           setRateLimitError(true);
           toast({
@@ -151,10 +137,8 @@ const PhoneLogin = () => {
           return;
         }
         
-        // Check for blocked number error from our custom function
         if (data?.blockedNumber) {
           setBlockedNumber(true);
-          // If we're in development mode, show the verification code
           if (data.code) {
             setCodeForTesting(data.code);
           }
@@ -169,17 +153,15 @@ const PhoneLogin = () => {
         throw error;
       }
       
-      // Check if we got a code for development purposes
       if (data?.code) {
         setCodeForTesting(data.code);
       }
       
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إرسال رمز التحقق إلى واتساب الخاص بك"
+        description: "تم إظهار رمز التحقق في التطبيق"
       });
       
-      // Navigate to verify page with the phone number
       navigate(`/phone-verify?phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode.code)}`);
       
     } catch (error: any) {
@@ -195,7 +177,7 @@ const PhoneLogin = () => {
   };
   
   const handlePasswordLogin = async () => {
-    if (loginLoading) return; // Prevent multiple clicks
+    if (loginLoading) return;
     
     if (!password) {
       setErrors(prev => ({ ...prev, password: "يرجى إدخال كلمة المرور" }));
@@ -205,7 +187,6 @@ const PhoneLogin = () => {
     setLoginLoading(true);
     
     try {
-      // Get the email address for the phone number
       const { data, error: fetchError } = await supabase
         .from('customers')
         .select('email')
@@ -218,7 +199,6 @@ const PhoneLogin = () => {
       
       const email = data.email;
       
-      // Sign in with email and password
       const { error } = await signIn(email, password);
       
       if (error) {

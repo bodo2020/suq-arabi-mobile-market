@@ -101,82 +101,21 @@ serve(async (req) => {
       // Always return the code in development mode
       const isDevelopment = !twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber;
       
-      // Even if we try to send via Twilio, include the code in response during development
+      // Display verification code directly in the app
       const responseObject: any = { 
         success: true,
-        message: isDevelopment ? "Verification code sent (simulated)" : "Verification code sent"
+        message: "رمز التحقق للتطوير",
+        code: verificationCode // Provide code directly for display in the app
       };
       
-      if (isDevelopment) {
-        responseObject.code = verificationCode; // Only in development mode!
-        console.log("Development mode: Returning verification code", verificationCode);
-        return new Response(
-          JSON.stringify(responseObject),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-        );
-      }
+      console.log("Development mode: Returning verification code", verificationCode);
+      return new Response(
+        JSON.stringify(responseObject),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
       
-      try {
-        // IMPORTANT: Use regular SMS instead of WhatsApp
-        console.log("Sending SMS to:", formattedPhone);
-        
-        const twilioEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-        
-        const twilioBody = new URLSearchParams({
-          From: twilioPhoneNumber,
-          To: `+${formattedPhone}`,
-          Body: `Your verification code is: ${verificationCode}`,
-        });
-        
-        const twilioResponse = await fetch(twilioEndpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization: "Basic " + btoa(`${twilioAccountSid}:${twilioAuthToken}`),
-          },
-          body: twilioBody,
-        });
-        
-        if (!twilioResponse.ok) {
-          const errorData = await twilioResponse.json();
-          console.error("Twilio API error:", JSON.stringify(errorData, null, 2));
-          
-          // Check for blocked number error (error code 60410)
-          if (errorData.code === 60410 || (errorData.more_info && errorData.more_info.includes("60410"))) {
-            console.error("Phone number blocked by Twilio:", formattedPhone);
-            
-            // In case of blocked number, return the code in the response for development purposes
-            return new Response(
-              JSON.stringify({
-                success: false,
-                message: "This phone number has been temporarily blocked by Twilio. Please try a different number or contact support.",
-                blockedNumber: true,
-                code: verificationCode // Include code so testing can continue
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-            );
-          }
-          
-          throw new Error(JSON.stringify(errorData));
-        }
-        
-        return new Response(
-          JSON.stringify({ success: true, message: "Verification code sent via SMS" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-        );
-      } catch (error) {
-        console.error("Twilio error:", error);
-        
-        // Return the verification code even on error for development purposes
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: "Failed to send verification code. Please try again later.", 
-            code: verificationCode // Include code so testing can continue
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-        );
-      }
+      // Remove the Twilio SMS sending code since we're not using it anymore
+      // We're now showing the verification code directly in the app
     } 
     else if (action === "verify") {
       try {
