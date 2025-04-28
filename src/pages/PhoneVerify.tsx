@@ -37,12 +37,18 @@ const PhoneVerify = () => {
       const formattedPhone = `+2${phone}`;
       
       // Call the edge function to send the verification code
-      const result = await supabase.functions.invoke('phone-verify', {
+      const response = await supabase.functions.invoke('phone-verify', {
         body: { action: 'send', phone: formattedPhone }
       });
       
-      if (result.error) {
-        throw new Error(result.error);
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      const data = response.data;
+      
+      if (!data.success) {
+        throw new Error(data.message || "Failed to send verification code");
       }
       
       toast({
@@ -50,8 +56,16 @@ const PhoneVerify = () => {
         description: "تم إرسال رمز التحقق إلى رقم الواتساب الخاص بك"
       });
       
+      // For development purposes, if we have a simulated code, show it in a toast
+      if (data.code) {
+        toast({
+          title: "رمز التحقق للتطوير",
+          description: `الرمز هو: ${data.code}`,
+        });
+      }
+      
       setStep('verification');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending verification code:', error);
       toast({
         title: "حدث خطأ",
@@ -79,12 +93,18 @@ const PhoneVerify = () => {
       const formattedPhone = `+2${phone}`;
       
       // Call the edge function to verify the code
-      const result = await supabase.functions.invoke('phone-verify', {
+      const response = await supabase.functions.invoke('phone-verify', {
         body: { action: 'verify', phone: formattedPhone, code }
       });
       
-      if (result.error || !result.data?.success) {
-        throw new Error(result.error || 'Invalid verification code');
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      const data = response.data;
+      
+      if (!data.success) {
+        throw new Error(data.message || "Invalid verification code");
       }
       
       // If verification is successful and user is logged in, update their phone number
@@ -106,7 +126,7 @@ const PhoneVerify = () => {
       }
       
       navigate('/account');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error verifying code:', error);
       toast({
         title: "حدث خطأ",

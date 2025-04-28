@@ -91,6 +91,12 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
         return { error: result.error };
       }
       
+      const data = result.data;
+      
+      if (!data.success) {
+        return { error: new Error(data.message || "Verification failed") };
+      }
+      
       // If user is logged in, update their phone number in the database
       if (user) {
         // Extract the phone number without the country code

@@ -71,17 +71,33 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.functions.invoke('phone-verify', {
+      const response = await supabase.functions.invoke('phone-verify', {
         body: { action: 'send', phone: formattedPhone }
       });
       
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      const data = response.data;
+      
+      if (!data.success) {
+        throw new Error(data.message || "حدث خطأ أثناء إرسال رمز التحقق");
+      }
       
       setIsVerifying(true);
       toast({
         title: "تم إرسال رمز التحقق",
         description: "تم إرسال رمز التحقق إلى واتساب الخاص بك",
       });
+      
+      // For development purposes, if we have a simulated code, show it in a toast
+      if (data.code) {
+        toast({
+          title: "رمز التحقق للتطوير",
+          description: `الرمز هو: ${data.code}`,
+        });
+      }
     } catch (err: any) {
       toast({
         title: "خطأ في إرسال رمز التحقق",
@@ -110,9 +126,19 @@ const Register = () => {
         `+2${phone.substring(1)}` : 
         `+2${phone}`;
 
-      const { error } = await verifyPhone(formattedPhone, verificationCode);
+      const response = await supabase.functions.invoke('phone-verify', {
+        body: { action: 'verify', phone: formattedPhone, code: verificationCode }
+      });
       
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      const data = response.data;
+      
+      if (!data.success) {
+        throw new Error(data.message || "الرمز غير صحيح أو منتهي الصلاحية");
+      }
       
       setIsVerified(true);
       setIsVerifying(false);
