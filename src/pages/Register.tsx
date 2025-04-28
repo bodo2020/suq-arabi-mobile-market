@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, Mail, KeyRound, Map } from "lucide-react";
@@ -57,7 +58,7 @@ const Register = () => {
   const formatPhoneNumber = (phoneNumber: string) => {
     const digits = phoneNumber.replace(/\D/g, '');
     
-    if (digits.startsWith('01') && digits.length >= 11) {
+    if (digits.startsWith('01')) {
       return "+2" + digits;
     }
     
@@ -81,10 +82,11 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const formattedPhone = formatPhoneNumber(phone);
-      const { error } = await signInWithPhone(formattedPhone);
+      console.log("Sending verification for phone:", phone);
+      const { error } = await signInWithPhone(phone);
       
       if (error) {
+        console.error("Error response from signInWithPhone:", error);
         throw new Error(error.message || "حدث خطأ أثناء إرسال رمز التحقق");
       }
       
@@ -116,10 +118,11 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const formattedPhone = formatPhoneNumber(phone);
-      const { error } = await verifyPhone(formattedPhone, verificationCode);
+      console.log("Verifying code for phone:", phone);
+      const { error } = await verifyPhone(phone, verificationCode);
       
       if (error) {
+        console.error("Error verifying code:", error);
         throw new Error(error.message || "الرمز غير صحيح أو منتهي الصلاحية");
       }
       

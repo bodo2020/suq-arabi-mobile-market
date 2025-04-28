@@ -28,7 +28,7 @@ const PhoneVerify = () => {
     const digits = phoneNumber.replace(/\D/g, '');
     
     // If the number starts with "01", add "+2" prefix
-    if (digits.startsWith('01') && digits.length >= 11) {
+    if (digits.startsWith('01')) {
       return "+2" + digits;
     }
     
@@ -60,11 +60,12 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
+      console.log("Sending verification for phone:", phone);
       // Format the phone number before sending it
-      const formattedPhone = formatPhoneNumber(phone);
-      const { error } = await signInWithPhone(formattedPhone);
+      const { error } = await signInWithPhone(phone);
       
       if (error) {
+        console.error("Error sending verification code:", error);
         throw error;
       }
       
@@ -100,11 +101,11 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      // Format the phone number before sending it
-      const formattedPhone = formatPhoneNumber(phone);
-      const { error } = await verifyPhone(formattedPhone, code);
+      console.log("Verifying code for phone:", phone);
+      const { error } = await verifyPhone(phone, code);
       
       if (error) {
+        console.error("Error verifying code:", error);
         throw error;
       }
       

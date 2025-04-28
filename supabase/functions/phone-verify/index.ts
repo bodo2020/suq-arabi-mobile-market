@@ -16,7 +16,7 @@ function formatPhoneNumber(phone: string) {
   const digits = phone.replace(/\D/g, '');
   
   // If the number starts with "01", add "+2" prefix for Egyptian numbers
-  if (digits.startsWith('01') && digits.length >= 11) {
+  if (digits.startsWith('01')) {
     return "+2" + digits;
   }
   

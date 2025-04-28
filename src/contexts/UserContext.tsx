@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -86,7 +85,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     const digits = phoneNumber.replace(/\D/g, '');
     
     // If the number starts with "01", add "+2" prefix for Egyptian numbers
-    if (digits.startsWith('01') && digits.length >= 11) {
+    if (digits.startsWith('01')) {
       return "+2" + digits;
     }
     
