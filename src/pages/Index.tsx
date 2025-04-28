@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -16,8 +15,6 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { useQuery } from '@tanstack/react-query';
 import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
 import BannersContainer from '@/components/ui/BannersContainer';
-import User from '@/components/ui/User';
-import { useUser } from '@/contexts/UserContext';
 
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
@@ -34,7 +31,6 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const { user } = useUser();
 
   const {
     data: categories = [],
@@ -177,27 +173,12 @@ const Index = () => {
       <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
     </div>;
 
-  return (
-    <MainLayout>
-      <div className="mb-16 pb-16">
-        <div className="relative">
-          {banners.length > 0 && <BannersContainer banners={banners} />}
-        </div>
-        
-        <div className="px-4 py-2 flex justify-end">
-          <Link 
-            to={user ? "/account" : "/phone-login"} 
-            className="flex items-center text-primary"
-          >
-            <span className="ml-1">{user ? "حسابي" : "تسجيل الدخول"}</span>
-            <User size={18} />
-          </Link>
-        </div>
-
-        <div className="flex flex-col items-center mb-4">
-          <img src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" alt={storeInfo?.name} className="h-16 w-16 mb-1" />
+  return <MainLayout>
+      <div className="py-4">
+        {storeInfo && <div className="flex flex-col items-center mb-4">
+          <img src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" alt={storeInfo.name} className="h-16 w-16 mb-1" />
           <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
-        </div>
+        </div>}
 
         <div className="relative mb-2">
           <SearchBar backgroundImage={searchBackground} onFocus={handleFocusSearchBar} readOnly />
@@ -235,8 +216,7 @@ const Index = () => {
         
         <ProductCollectionsSection />
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 };
 
 export default Index;

@@ -1,40 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from "@/components/ui/button"
 import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft } from 'lucide-react';
+import { Address, getAddresses } from '@/lib/supabase';
 import { Separator } from "@/components/ui/separator";
 
 const Account = () => {
-  const { user, loading, signOut } = useUser();
+  const { user, signOut } = useUser();
   const navigate = useNavigate();
-  const [loadingComplete, setLoadingComplete] = useState(false);
-  
-  useEffect(() => {
-    // Set a timeout to prevent infinite loading state
-    const timer = setTimeout(() => {
-      setLoadingComplete(true);
-    }, 1500);
-    
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
-
-  // Show loading state only for a limited time
-  if (loading && !loadingComplete) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-[60vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -115,10 +96,7 @@ const Account = () => {
               <User className="h-12 w-12 mx-auto text-gray-400 mb-3" />
               <h2 className="text-xl font-semibold mb-2">مرحباً بك</h2>
               <p className="text-gray-500 mb-4">قم بتسجيل الدخول للوصول إلى حسابك</p>
-              <Button 
-                onClick={() => navigate('/phone-login')} 
-                className="w-full"
-              >
+              <Button onClick={() => navigate('/register')} size="lg">
                 تسجيل الدخول
               </Button>
             </div>
