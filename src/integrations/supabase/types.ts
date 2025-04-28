@@ -1613,6 +1613,10 @@ export type Database = {
         Args: { bucket_name: string }
         Returns: undefined
       }
+      create_verification_codes_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_admin_role: {
         Args: Record<PropertyKey, never>
         Returns: string
