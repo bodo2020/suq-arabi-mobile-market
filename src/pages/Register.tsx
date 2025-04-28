@@ -6,7 +6,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import LocationPicker from "@/components/ui/LocationPicker";
+import LocationPicker, { LocationValue } from "@/components/ui/LocationPicker";
 import { Input } from "@/components/ui/input";
 import { 
   Dialog,
@@ -37,7 +37,8 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [address, setAddress] = useState("");
-  const [location, setLocation] = useState({
+  // Modified: Use LocationValue type for location state
+  const [location, setLocation] = useState<LocationValue>({
     governorate: "",
     city: "",
     area: "",
