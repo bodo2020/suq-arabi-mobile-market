@@ -7,30 +7,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import LocationPicker, { LocationValue } from "@/components/ui/LocationPicker";
 import { Input } from "@/components/ui/input";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { 
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-
 const Register = () => {
   const navigate = useNavigate();
-  const { signInWithPhone, verifyPhone } = useUser();
-  const { toast } = useToast();
-  
+  const {
+    signInWithPhone,
+    verifyPhone
+  } = useUser();
+  const {
+    toast
+  } = useToast();
   const [phone, setPhone] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [isVerified, setIsVerified] = useState(false);
-  
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,7 +36,6 @@ const Register = () => {
     neighborhood: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [errors, setErrors] = useState({
     phone: "",
     firstName: "",
@@ -53,38 +45,39 @@ const Register = () => {
     location: "",
     server: ""
   });
-
   const formatPhoneNumber = (phoneNumber: string) => {
     return phoneNumber.replace(/\D/g, '');
   };
-
   const handleSendVerification = async () => {
     const cleanPhone = phone.replace(/\D/g, '');
-    
     if (!cleanPhone.trim()) {
-      setErrors(prev => ({ ...prev, phone: "رقم الهاتف مطلوب" }));
+      setErrors(prev => ({
+        ...prev,
+        phone: "رقم الهاتف مطلوب"
+      }));
       return;
     }
-
     if (!cleanPhone.startsWith('01') || cleanPhone.length !== 11) {
-      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)" }));
+      setErrors(prev => ({
+        ...prev,
+        phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)"
+      }));
       return;
     }
-
     setIsSubmitting(true);
     try {
       console.log("Sending verification for phone:", phone);
-      const { error } = await signInWithPhone(phone);
-      
+      const {
+        error
+      } = await signInWithPhone(phone);
       if (error) {
         console.error("Error response from signInWithPhone:", error);
         throw new Error(error.message || "حدث خطأ أثناء إرسال رمز التحقق");
       }
-      
       setIsVerifying(true);
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك",
+        description: "تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك"
       });
     } catch (err: any) {
       toast({
@@ -96,7 +89,6 @@ const Register = () => {
       setIsSubmitting(false);
     }
   };
-
   const handleVerifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
       toast({
@@ -106,22 +98,21 @@ const Register = () => {
       });
       return;
     }
-
     setIsSubmitting(true);
     try {
       console.log("Verifying code for phone:", phone);
-      const { error } = await verifyPhone(phone, verificationCode);
-      
+      const {
+        error
+      } = await verifyPhone(phone, verificationCode);
       if (error) {
         console.error("Error verifying code:", error);
         throw new Error(error.message || "الرمز غير صحيح أو منتهي الصلاحية");
       }
-      
       setIsVerified(true);
       setIsVerifying(false);
       toast({
         title: "تم التحقق بنجاح",
-        description: "يمكنك الآن إكمال عملية التسجيل",
+        description: "يمكنك الآن إكمال عملية التسجيل"
       });
     } catch (err: any) {
       toast({
@@ -133,16 +124,19 @@ const Register = () => {
       setIsSubmitting(false);
     }
   };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
     setIsSubmitting(true);
-    setErrors(prev => ({ ...prev, server: "" }));
-
+    setErrors(prev => ({
+      ...prev,
+      server: ""
+    }));
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const {
+        data,
+        error
+      } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         phone: formatPhoneNumber(phone),
@@ -150,21 +144,19 @@ const Register = () => {
           data: {
             first_name: firstName,
             last_name: lastName,
-            phone: phone, // Store local format in metadata
+            phone: phone,
+            // Store local format in metadata
             name: `${firstName} ${lastName}`.trim(),
             address,
             location
           }
         }
       });
-
       if (error) throw error;
-
       toast({
         title: "تم التسجيل بنجاح",
-        description: "مرحباً بك! تم تسجيل حسابك بنجاح.",
+        description: "مرحباً بك! تم تسجيل حسابك بنجاح."
       });
-
       navigate("/account");
     } catch (err: any) {
       setErrors(prev => ({
@@ -180,7 +172,6 @@ const Register = () => {
       setIsSubmitting(false);
     }
   };
-
   const validateForm = () => {
     let valid = true;
     const newErrors = {
@@ -192,7 +183,6 @@ const Register = () => {
       location: "",
       server: ""
     };
-
     if (!firstName.trim()) {
       newErrors.firstName = "الاسم الأول مطلوب";
       valid = false;
@@ -213,13 +203,10 @@ const Register = () => {
       newErrors.location = "يرجى اختيار المحافظة والمدينة والمنطقة";
       valid = false;
     }
-
     setErrors(newErrors);
     return valid;
   };
-
-  return (
-    <MainLayout>
+  return <MainLayout>
       <div className="py-4 px-4 max-w-md mx-auto">
         <div className="flex items-center mb-6">
           <button onClick={() => navigate(-1)} className="p-2" aria-label="الرجوع">
@@ -229,63 +216,36 @@ const Register = () => {
           <div className="w-10" />
         </div>
 
-        {!isVerified ? (
-          <div className="space-y-4">
+        {!isVerified ? <div className="space-y-4">
             <div className="bg-white rounded-lg p-4">
               <div className="mb-4">
                 <div className="flex items-center mb-2">
                   <Phone size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
                 </div>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(e.target.value);
-                    setErrors(prev => ({ ...prev, phone: "" }));
-                  }}
-                  className="text-right ltr"
-                  placeholder="01xxxxxxxxx"
-                  dir="ltr"
-                />
-                <p className="text-xs text-gray-500 mt-1 text-right">
-                  أدخل رقم الهاتف المصري الذي يبدأ بـ 01 ({phone || '01xxxxxxxxx'})
-                </p>
-                {errors.phone && (
-                  <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-                )}
+                <Input id="phone" type="tel" value={phone} onChange={e => {
+              setPhone(e.target.value);
+              setErrors(prev => ({
+                ...prev,
+                phone: ""
+              }));
+            }} className="text-right ltr" placeholder="01xxxxxxxxx" dir="ltr" />
+                
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
               </div>
-              <Button
-                onClick={handleSendVerification}
-                disabled={isSubmitting}
-                className="w-full bg-primary text-white"
-              >
-                {isSubmitting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                ) : "إرسال رمز التحقق"}
+              <Button onClick={handleSendVerification} disabled={isSubmitting} className="w-full bg-primary text-white">
+                {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" /> : "إرسال رمز التحقق"}
               </Button>
             </div>
-          </div>
-        ) : (
-          <form onSubmit={handleRegister} className="space-y-4">
+          </div> : <form onSubmit={handleRegister} className="space-y-4">
             <div className="bg-white rounded-lg p-4">
               <div className="mb-4">
                 <div className="flex items-center mb-2">
                   <User size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="firstName" className="font-medium">الاسم الأول</label>
                 </div>
-                <Input
-                  id="firstName"
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="text-right"
-                  placeholder="أدخل الاسم الأول"
-                />
-                {errors.firstName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
-                )}
+                <Input id="firstName" type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="text-right" placeholder="أدخل الاسم الأول" />
+                {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
               </div>
 
               <div className="mb-4">
@@ -293,17 +253,8 @@ const Register = () => {
                   <User size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="lastName" className="font-medium">اسم العائلة</label>
                 </div>
-                <Input
-                  id="lastName"
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="text-right"
-                  placeholder="أدخل اسم العائلة"
-                />
-                {errors.lastName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
-                )}
+                <Input id="lastName" type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="text-right" placeholder="أدخل اسم العائلة" />
+                {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
               </div>
 
               <div className="mb-4">
@@ -311,18 +262,8 @@ const Register = () => {
                   <Mail size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
                 </div>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="text-right ltr"
-                  placeholder="you@example.com"
-                  dir="ltr"
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                )}
+                <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="text-right ltr" placeholder="you@example.com" dir="ltr" />
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
 
               <div className="mb-4">
@@ -330,13 +271,8 @@ const Register = () => {
                   <Map size={18} className="ml-2 text-gray-500" />
                   <label className="font-medium">الموقع</label>
                 </div>
-                <LocationPicker
-                  value={location}
-                  onChange={setLocation}
-                />
-                {errors.location && (
-                  <p className="text-red-500 text-sm mt-1">{errors.location}</p>
-                )}
+                <LocationPicker value={location} onChange={setLocation} />
+                {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
               </div>
 
               <div className="mb-4">
@@ -344,14 +280,7 @@ const Register = () => {
                   <MapPin size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="address" className="font-medium">تفاصيل العنوان</label>
                 </div>
-                <Textarea
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-right resize-none"
-                  placeholder="اكتب تفاصيل عنوانك هنا"
-                  rows={3}
-                />
+                <Textarea id="address" value={address} onChange={e => setAddress(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-right resize-none" placeholder="اكتب تفاصيل عنوانك هنا" rows={3} />
               </div>
 
               <div className="mb-4">
@@ -359,31 +288,15 @@ const Register = () => {
                   <KeyRound size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="password" className="font-medium">كلمة المرور</label>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="text-right"
-                  placeholder="******"
-                />
-                {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-                )}
+                <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="text-right" placeholder="******" />
+                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-primary text-white py-3"
-            >
-              {isSubmitting ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-              ) : "تسجيل"}
+            <Button type="submit" disabled={isSubmitting} className="w-full bg-primary text-white py-3">
+              {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" /> : "تسجيل"}
             </Button>
-          </form>
-        )}
+          </form>}
 
         <Dialog open={isVerifying} onOpenChange={setIsVerifying}>
           <DialogContent>
@@ -396,11 +309,7 @@ const Register = () => {
                 <br />
                 <span className="font-bold">{phone}</span>
               </p>
-              <InputOTP
-                value={verificationCode}
-                onChange={setVerificationCode}
-                maxLength={6}
-              >
+              <InputOTP value={verificationCode} onChange={setVerificationCode} maxLength={6}>
                 <InputOTPGroup>
                   <InputOTPSlot index={0} />
                   <InputOTPSlot index={1} />
@@ -410,21 +319,13 @@ const Register = () => {
                   <InputOTPSlot index={5} />
                 </InputOTPGroup>
               </InputOTP>
-              <Button
-                onClick={handleVerifyCode}
-                disabled={isSubmitting || verificationCode.length !== 6}
-                className="w-full bg-primary text-white py-3"
-              >
-                {isSubmitting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                ) : "تحقق"}
+              <Button onClick={handleVerifyCode} disabled={isSubmitting || verificationCode.length !== 6} className="w-full bg-primary text-white py-3">
+                {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" /> : "تحقق"}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 };
-
 export default Register;
