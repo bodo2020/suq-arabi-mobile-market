@@ -203,4 +203,3 @@ key_file = ""
 [functions]
 create-verification-table = { verify_jwt = false }
 phone-verify = { verify_jwt = false }
-

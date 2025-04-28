@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
@@ -100,7 +101,7 @@ const PhoneVerify = () => {
       
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك"
+        description: "تم إرسال رمز التحقق إلى واتساب الخاص بك"
       });
       
       setStep('verification');
@@ -183,7 +184,7 @@ const PhoneVerify = () => {
           {step === 'phone' ? (
             <>
               <p className="text-center mb-6">
-                سيتم إرسال رمز تحقق إلى رقم الهاتف الخاص بك
+                سيتم إرسال رمز تحقق إلى واتساب الخاص بك
               </p>
               
               <div className="mb-6">
@@ -237,7 +238,7 @@ const PhoneVerify = () => {
           ) : (
             <>
               <p className="text-center mb-6">
-                تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك
+                تم إرسال رمز التحقق إلى واتساب الخاص بك
                 <br />
                 <span className="font-bold">{countryCode.dialCode} {phone}</span>
               </p>

@@ -112,7 +112,7 @@ serve(async (req) => {
       }
       
       try {
-        // The phone should already have the country code included at this point
+        // IMPORTANT: Always use WhatsApp for sending verification codes
         // Format for WhatsApp requires whatsapp: prefix, and ensuring + before the country code
         const whatsappDestination = `whatsapp:+${formattedPhone}`;
         const twilioEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
@@ -141,13 +141,13 @@ serve(async (req) => {
         }
         
         return new Response(
-          JSON.stringify({ success: true, message: "Verification code sent" }),
+          JSON.stringify({ success: true, message: "Verification code sent via WhatsApp" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
       } catch (error) {
         console.error("Twilio error:", error);
         return new Response(
-          JSON.stringify({ success: false, message: "Failed to send verification code" }),
+          JSON.stringify({ success: false, message: "Failed to send verification code via WhatsApp" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
       }

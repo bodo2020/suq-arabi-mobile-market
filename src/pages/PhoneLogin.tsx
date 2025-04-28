@@ -136,7 +136,7 @@ const PhoneLogin = () => {
       
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك"
+        description: "تم إرسال رمز التحقق إلى واتساب الخاص بك"
       });
       
       // Navigate to verify page with the phone number
