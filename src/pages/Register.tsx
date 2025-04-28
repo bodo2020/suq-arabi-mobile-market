@@ -16,7 +16,7 @@ import { Check } from "lucide-react";
 
 const Register = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const locationRouter = useLocation();
   const {
     signInWithPhone,
     verifyPhone
@@ -25,15 +25,15 @@ const Register = () => {
     toast
   } = useToast();
   
-  const queryParams = new URLSearchParams(location.search);
+  const queryParams = new URLSearchParams(locationRouter.search);
   const phoneFromQuery = queryParams.get('phone') || '';
   const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
-  const isVerified = queryParams.get('verified') === 'true';
+  const verifiedFromQuery = queryParams.get('verified') === 'true';
   
   const [phone, setPhone] = useState(phoneFromQuery);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
-  const [isVerified, setIsVerified] = useState(isVerified);
+  const [isVerified, setIsVerified] = useState(verifiedFromQuery);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -49,7 +49,7 @@ const Register = () => {
     return countries.find(c => c.code === countryCodeFromQuery) || 
       { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' };
   });
-  const [location, setLocation] = useState<LocationValue>({
+  const [locationValue, setLocationValue] = useState<LocationValue>({
     governorate: "",
     city: "",
     area: "",
@@ -195,7 +195,7 @@ const Register = () => {
             countryCode: countryCode.code,
             name: `${firstName} ${lastName}`.trim(),
             address,
-            location
+            location: locationValue
           }
         }
       });
@@ -247,7 +247,7 @@ const Register = () => {
       newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف أو أكثر";
       valid = false;
     }
-    if (!location.governorate || !location.city || !location.area) {
+    if (!locationValue.governorate || !locationValue.city || !locationValue.area) {
       newErrors.location = "يرجى اختيار المحافظة والمدينة والمنطقة";
       valid = false;
     }
@@ -341,7 +341,7 @@ const Register = () => {
                   <Map size={18} className="ml-2 text-gray-500" />
                   <label className="font-medium">الموقع</label>
                 </div>
-                <LocationPicker value={location} onChange={setLocation} />
+                <LocationPicker value={locationValue} onChange={setLocationValue} />
                 {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
               </div>
 
