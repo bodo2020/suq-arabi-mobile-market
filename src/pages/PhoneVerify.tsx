@@ -145,7 +145,7 @@ const PhoneVerify = () => {
       
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إظهار رمز التحقق في التطبيق"
+        description: data?.message || "تم إرسال رمز التحقق عبر واتساب"
       });
       
       setStep('verification');
@@ -217,7 +217,7 @@ const PhoneVerify = () => {
       
       toast({
         title: "تم إعادة إرسال رمز التحقق",
-        description: "تم إظهار رمز التحقق الجديد في التطبيق"
+        description: data?.message || "تم إرسال رمز التحقق عبر واتساب"
       });
       
     } catch (error: any) {
@@ -302,7 +302,7 @@ const PhoneVerify = () => {
           {step === 'phone' ? (
             <>
               <p className="text-center mb-6">
-                سيتم عرض رمز التحقق داخل التطبيق
+                سيتم إرسال رمز التحقق عبر واتساب
               </p>
               
               <div className="mb-6">
@@ -364,7 +364,7 @@ const PhoneVerify = () => {
           ) : (
             <>
               <p className="text-center mb-6">
-                تم عرض رمز التحقق في التطبيق
+                تم إرسال رمز التحقق عبر واتساب إلى
                 <br />
                 <span className="font-bold">{countryCode.dialCode} {phone}</span>
               </p>
@@ -384,6 +384,7 @@ const PhoneVerify = () => {
                 <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                   <p className="text-yellow-700 text-sm font-medium">رمز التحقق للتطوير:</p>
                   <p className="text-yellow-800 text-lg font-bold text-center mt-1 font-mono">{codeForTesting}</p>
+                  <p className="text-yellow-600 text-xs mt-1">يظهر هذا الرمز فقط في بيئة التطوير أو عند فشل إرسال الرسالة عبر واتساب</p>
                 </div>
               )}
               
