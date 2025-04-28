@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
@@ -20,7 +19,6 @@ const PhoneVerify = () => {
   const [loading, setLoading] = useState(false);
   
   const handleSendCode = async () => {
-    // Validate phone number (simple Egyptian format check)
     if (!phone || !/^01\d{9}$/.test(phone)) {
       toast({
         title: "خطأ في رقم الهاتف",
@@ -33,10 +31,8 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      // Format phone number for international use
-      const formattedPhone = `+2${phone}`;
+      const formattedPhone = `002${phone}`;
       
-      // Call the edge function to send the verification code
       const response = await supabase.functions.invoke('phone-verify', {
         body: { action: 'send', phone: formattedPhone }
       });
@@ -56,7 +52,6 @@ const PhoneVerify = () => {
         description: "تم إرسال رمز التحقق إلى رقم الواتساب الخاص بك"
       });
       
-      // For development purposes, if we have a simulated code, show it in a toast
       if (data.code) {
         toast({
           title: "رمز التحقق للتطوير",
@@ -90,9 +85,8 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      const formattedPhone = `+2${phone}`;
+      const formattedPhone = `002${phone}`;
       
-      // Call the edge function to verify the code
       const response = await supabase.functions.invoke('phone-verify', {
         body: { action: 'verify', phone: formattedPhone, code }
       });
@@ -107,7 +101,6 @@ const PhoneVerify = () => {
         throw new Error(data.message || "Invalid verification code");
       }
       
-      // If verification is successful and user is logged in, update their phone number
       if (user) {
         await supabase
           .from('customers')

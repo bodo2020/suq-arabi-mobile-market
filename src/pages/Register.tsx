@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, Mail, KeyRound, Map } from "lucide-react";
@@ -25,19 +24,16 @@ const Register = () => {
   const { verifyPhone } = useUser();
   const { toast } = useToast();
   
-  // State for phone verification
   const [phone, setPhone] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   
-  // State for registration form
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [address, setAddress] = useState("");
-  // Modified: Use LocationValue type for location state
   const [location, setLocation] = useState<LocationValue>({
     governorate: "",
     city: "",
@@ -46,7 +42,6 @@ const Register = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fix initialization of error states
   const [errors, setErrors] = useState({
     phone: "",
     firstName: "",
@@ -57,17 +52,13 @@ const Register = () => {
     server: ""
   });
 
-  // Function to send verification code
   const handleSendVerification = async () => {
     if (!phone.trim()) {
       setErrors(prev => ({ ...prev, phone: "رقم الهاتف مطلوب" }));
       return;
     }
 
-    // Format phone number for Egypt
-    const formattedPhone = phone.startsWith("0") ? 
-      `+2${phone.substring(1)}` : 
-      `+2${phone}`;
+    const formattedPhone = `002${phone.startsWith("0") ? phone.substring(1) : phone}`;
 
     setIsSubmitting(true);
     try {
@@ -91,7 +82,6 @@ const Register = () => {
         description: "تم إرسال رمز التحقق إلى واتساب الخاص بك",
       });
       
-      // For development purposes, if we have a simulated code, show it in a toast
       if (data.code) {
         toast({
           title: "رمز التحقق للتطوير",
@@ -109,7 +99,6 @@ const Register = () => {
     }
   };
 
-  // Function to verify code
   const handleVerifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
       toast({
@@ -122,9 +111,7 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const formattedPhone = phone.startsWith("0") ? 
-        `+2${phone.substring(1)}` : 
-        `+2${phone}`;
+      const formattedPhone = `002${phone.startsWith("0") ? phone.substring(1) : phone}`;
 
       const response = await supabase.functions.invoke('phone-verify', {
         body: { action: 'verify', phone: formattedPhone, code: verificationCode }
@@ -157,7 +144,6 @@ const Register = () => {
     }
   };
 
-  // Registration handler
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -166,9 +152,7 @@ const Register = () => {
     setErrors(prev => ({ ...prev, server: "" }));
 
     try {
-      const formattedPhone = phone.startsWith("0") ? 
-        `+2${phone.substring(1)}` : 
-        `+2${phone}`;
+      const formattedPhone = `002${phone.startsWith("0") ? phone.substring(1) : phone}`;
 
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -208,7 +192,6 @@ const Register = () => {
     }
   };
 
-  // Validation function
   const validateForm = () => {
     let valid = true;
     const newErrors = {
@@ -413,7 +396,6 @@ const Register = () => {
           </form>
         )}
 
-        {/* Verification Code Dialog */}
         <Dialog open={isVerifying} onOpenChange={setIsVerifying}>
           <DialogContent>
             <DialogHeader>

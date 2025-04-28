@@ -82,8 +82,11 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   
   const verifyPhone = async (phone: string, code: string) => {
     try {
+      // Format phone number with 002 prefix
+      const formattedPhone = `002${phone.startsWith("0") ? phone.substring(1) : phone}`;
+      
       const result = await supabase.functions.invoke('phone-verify', {
-        body: { action: 'verify', phone, code }
+        body: { action: 'verify', phone: formattedPhone, code }
       });
       
       if (!result.data.success) {
@@ -93,7 +96,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
       // If user is logged in, update their phone number in the database
       if (user) {
         // Extract the phone number without the country code
-        const localPhone = phone.startsWith('+2') ? phone.substring(2) : phone;
+        const localPhone = phone.startsWith('+') ? phone.substring(2) : phone;
         
         const { error: updateError } = await supabase
           .from('customers')
