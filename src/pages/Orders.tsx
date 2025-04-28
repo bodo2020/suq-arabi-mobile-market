@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Package, Home, ShoppingCart } from 'lucide-react';
@@ -6,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/lib/supabase';
+
 type TabType = 'current' | 'previous';
 
 // Helper function to format date
@@ -48,9 +50,11 @@ const getStatusText = (status: string) => {
       return 'غير معروف';
   }
 };
+
 const Orders = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('current');
+  
   const {
     data: orders,
     isLoading
@@ -67,9 +71,11 @@ const Orders = () => {
       return data;
     }
   });
+  
   const currentOrders = orders?.filter(order => ['waiting', 'ready'].includes(order.status)) || [];
   const previousOrders = orders?.filter(order => ['shipped', 'done'].includes(order.status)) || [];
   const activeOrders = activeTab === 'current' ? currentOrders : previousOrders;
+
   return <MainLayout>
       <div className="py-4 px-4 max-w-lg mx-auto">
         <div className="flex items-center mb-6">
@@ -123,16 +129,27 @@ const Orders = () => {
                   <div>
                     <strong>المنتجات:</strong>
                     <ul className="space-y-2 mt-2">
-                      {Array.isArray(order.items) ? order.items.map((item: any, index: number) => <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
+                      {Array.isArray(order.items) ? order.items.map((item: any, index: number) => (
+                        <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
                           <div className="relative w-16 h-16 shrink-0">
-                            {item.image_url ? <>
-                                <img src={item.image_url} alt={item.name || "منتج"} className="w-full h-full object-cover rounded" />
-                                {item.is_bulk && item.bulk_quantity && <div className="absolute top-0 right-0 bg-primary text-white text-xs px-1 rounded-bl">
+                            {item.image_url ? (
+                              <>
+                                <img 
+                                  src={item.image_url} 
+                                  alt={item.name || "منتج"}
+                                  className="w-full h-full object-cover rounded"
+                                />
+                                {item.is_bulk && item.bulk_quantity && (
+                                  <div className="absolute top-0 right-0 bg-primary text-white text-xs px-1 rounded-bl">
                                     {item.bulk_quantity}
-                                  </div>}
-                              </> : <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
                                 لا توجد صورة
-                              </div>}
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1">
                             <div className="font-medium">{item.name || "منتج"}</div>
@@ -143,16 +160,28 @@ const Orders = () => {
                           <div className="font-semibold">
                             {(item.quantity * item.price).toFixed(2)} ج.م
                           </div>
-                        </li>) : typeof order.items === 'object' ? Object.values(order.items).map((item: any, index: number) => <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
+                        </li>
+                      )) : typeof order.items === 'object' ? Object.values(order.items).map((item: any, index: number) => (
+                        <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
                           <div className="relative w-16 h-16 shrink-0">
-                            {item.image_url ? <>
-                                <img src={item.image_url} alt={item.name || "منتج"} className="w-full h-full object-cover rounded" />
-                                {item.is_bulk && item.bulk_quantity && <div className="absolute top-0 right-0 bg-primary text-white text-xs px-1 rounded-bl">
+                            {item.image_url ? (
+                              <>
+                                <img 
+                                  src={item.image_url} 
+                                  alt={item.name || "منتج"}
+                                  className="w-full h-full object-cover rounded"
+                                />
+                                {item.is_bulk && item.bulk_quantity && (
+                                  <div className="absolute top-0 right-0 bg-primary text-white text-xs px-1 rounded-bl">
                                     {item.bulk_quantity}
-                                  </div>}
-                              </> : <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
                                 لا توجد صورة
-                              </div>}
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1">
                             <div className="font-medium">{item.name || "منتج"}</div>
@@ -163,15 +192,30 @@ const Orders = () => {
                           <div className="font-semibold">
                             {(item.quantity * item.price).toFixed(2)} ج.م
                           </div>
-                        </li>) : <li>لا توجد منتجات</li>}
+                        </li>
+                      )) : <li>لا توجد منتجات</li>}
                     </ul>
                   </div>
                 </div>
               </div>)}
           </div>}
         
-        
+        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t flex justify-around items-center h-16">
+          <button onClick={() => navigate('/')} className="flex flex-col items-center space-y-1 flex-1 text-gray-600">
+            <Home className="h-6 w-6" />
+            <span className="text-xs">الرئيسية</span>
+          </button>
+          <button className="flex flex-col items-center space-y-1 flex-1 text-red-600">
+            <Package className="h-6 w-6" />
+            <span className="text-xs">طلباتي</span>
+          </button>
+          <button onClick={() => navigate('/cart')} className="flex flex-col items-center space-y-1 flex-1 text-gray-600">
+            <ShoppingCart className="h-6 w-6" />
+            <span className="text-xs">عربة التسوق</span>
+          </button>
+        </div>
       </div>
     </MainLayout>;
 };
+
 export default Orders;

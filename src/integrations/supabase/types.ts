@@ -1568,33 +1568,6 @@ export type Database = {
         }
         Relationships: []
       }
-      verification_codes: {
-        Row: {
-          code: string
-          created_at: string | null
-          expires_at: string
-          id: string
-          phone: string
-          verified: boolean | null
-        }
-        Insert: {
-          code: string
-          created_at?: string | null
-          expires_at: string
-          id?: string
-          phone: string
-          verified?: boolean | null
-        }
-        Update: {
-          code?: string
-          created_at?: string | null
-          expires_at?: string
-          id?: string
-          phone?: string
-          verified?: boolean | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -1611,10 +1584,6 @@ export type Database = {
       }
       create_bucket_if_not_exists: {
         Args: { bucket_name: string }
-        Returns: undefined
-      }
-      create_verification_codes_table: {
-        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       get_admin_role: {

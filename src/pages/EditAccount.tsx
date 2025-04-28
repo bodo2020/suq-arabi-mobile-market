@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, User, Phone, MapPin, Plus, Lock, ChevronLeft } from 'lucide-react';
@@ -161,14 +160,9 @@ const EditAccount = () => {
               />
             </div>
             <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <Link to="/phone-verify" className="text-primary text-sm">
-                  التحقق من رقم الهاتف
-                </Link>
-                <div className="flex items-center">
-                  <Phone size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
-                </div>
+              <div className="flex items-center mb-2">
+                <Phone size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
               </div>
               <input
                 type="tel"
