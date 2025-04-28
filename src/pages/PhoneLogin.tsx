@@ -26,6 +26,7 @@ const PhoneLogin = () => {
   });
   const [isRegisteredUser, setIsRegisteredUser] = useState(false);
   const [phoneFormatted, setPhoneFormatted] = useState('');
+  const [rateLimitError, setRateLimitError] = useState(false);
   
   // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
@@ -57,6 +58,9 @@ const PhoneLogin = () => {
   
   const checkPhoneExists = async () => {
     if (loading) return; // Prevent multiple clicks
+    
+    // Reset rate limit error state
+    setRateLimitError(false);
     
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
@@ -131,6 +135,18 @@ const PhoneLogin = () => {
       
       if (error) {
         console.error("Error sending verification code:", error);
+        
+        // Check for rate limit error
+        if (error.status === 429 || error.code === 'over_sms_send_rate_limit') {
+          setRateLimitError(true);
+          toast({
+            title: "تم تجاوز الحد المسموح",
+            description: "لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى بعد قليل.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         throw error;
       }
       
@@ -242,6 +258,7 @@ const PhoneLogin = () => {
                   setPhone(e.target.value);
                   setErrors(prev => ({ ...prev, phone: "" }));
                   setIsRegisteredUser(false);
+                  setRateLimitError(false);
                 }}
                 className="text-right ltr flex-1"
                 placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
@@ -259,12 +276,18 @@ const PhoneLogin = () => {
             {errors.phone && (
               <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
             )}
+            
+            {rateLimitError && (
+              <p className="text-amber-600 text-sm mt-1">
+                لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم الفني.
+              </p>
+            )}
           </div>
           
           {!isRegisteredUser ? (
             <Button
               onClick={checkPhoneExists}
-              disabled={loading}
+              disabled={loading || rateLimitError}
               className="w-full"
             >
               {loading ? (

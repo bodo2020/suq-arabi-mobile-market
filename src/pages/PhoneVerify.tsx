@@ -24,6 +24,8 @@ const PhoneVerify = () => {
   const [step, setStep] = useState<'phone' | 'verification'>(phoneFromQuery ? 'verification' : 'phone');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [rateLimitError, setRateLimitError] = useState(false);
   const [countryCode, setCountryCode] = useState<Country>(() => {
     const countries = [
       { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' },
@@ -63,6 +65,9 @@ const PhoneVerify = () => {
   const handleSendCode = async () => {
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
+    // Reset rate limit error state
+    setRateLimitError(false);
+    
     if (!cleanPhone) {
       setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف" }));
       toast({
@@ -96,6 +101,18 @@ const PhoneVerify = () => {
       
       if (error) {
         console.error("Error sending verification code:", error);
+        
+        // Check for rate limit error
+        if (error.status === 429 || error.code === 'over_sms_send_rate_limit') {
+          setRateLimitError(true);
+          toast({
+            title: "تم تجاوز الحد المسموح",
+            description: "لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى بعد قليل.",
+            variant: "destructive"
+          });
+          throw error;
+        }
+        
         throw error;
       }
       
@@ -107,13 +124,65 @@ const PhoneVerify = () => {
       setStep('verification');
     } catch (error: any) {
       console.error('Error sending verification code:', error);
-      toast({
-        title: "حدث خطأ",
-        description: error.message || "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
-        variant: "destructive"
-      });
+      
+      if (!error.status || error.status !== 429) {
+        toast({
+          title: "حدث خطأ",
+          description: error.message || "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleResendCode = async () => {
+    if (resendLoading) return;
+    
+    setResendLoading(true);
+    setRateLimitError(false);
+    
+    try {
+      const fullPhone = formatInternationalPhone(phone, countryCode);
+      console.log("Resending verification for phone:", fullPhone);
+      
+      const { error } = await signInWithPhone(fullPhone);
+      
+      if (error) {
+        console.error("Error resending verification code:", error);
+        
+        // Check for rate limit error
+        if (error.status === 429 || error.code === 'over_sms_send_rate_limit') {
+          setRateLimitError(true);
+          toast({
+            title: "تم تجاوز الحد المسموح",
+            description: "لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى بعد قليل.",
+            variant: "destructive"
+          });
+          throw error;
+        }
+        
+        throw error;
+      }
+      
+      toast({
+        title: "تم إعادة إرسال رمز التحقق",
+        description: "تم إرسال رمز التحقق الجديد إلى واتساب الخاص بك"
+      });
+      
+    } catch (error: any) {
+      console.error('Error resending verification code:', error);
+      
+      if (!error.status || error.status !== 429) {
+        toast({
+          title: "حدث خطأ",
+          description: error.message || "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setResendLoading(false);
     }
   };
   
@@ -206,6 +275,7 @@ const PhoneVerify = () => {
                     onChange={(e) => {
                       setPhone(e.target.value);
                       setErrors(prev => ({ ...prev, phone: "" }));
+                      setRateLimitError(false);
                     }}
                     className="text-right ltr flex-1"
                     placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
@@ -222,11 +292,17 @@ const PhoneVerify = () => {
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                 )}
+                
+                {rateLimitError && (
+                  <p className="text-amber-600 text-sm mt-1">
+                    لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم الفني.
+                  </p>
+                )}
               </div>
               
               <Button
                 onClick={handleSendCode}
-                disabled={loading}
+                disabled={loading || rateLimitError}
                 className="w-full"
               >
                 {loading ? (
@@ -284,13 +360,31 @@ const PhoneVerify = () => {
                 التحقق من الرمز
               </Button>
               
-              <div className="mt-4 text-center">
+              <div className="mt-4 text-center space-y-2">
                 <button
-                  onClick={() => setStep('phone')}
-                  className="text-primary text-sm"
+                  onClick={handleResendCode}
+                  className={`text-primary text-sm ${
+                    resendLoading || rateLimitError ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  disabled={resendLoading || rateLimitError}
                 >
-                  تغيير رقم الهاتف
+                  {resendLoading ? "جاري إعادة الإرسال..." : "إعادة إرسال الرمز"}
                 </button>
+                
+                {rateLimitError && (
+                  <p className="text-amber-600 text-sm">
+                    لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى لاحقاً.
+                  </p>
+                )}
+                
+                <div>
+                  <button
+                    onClick={() => setStep('phone')}
+                    className="text-primary text-sm"
+                  >
+                    تغيير رقم الهاتف
+                  </button>
+                </div>
               </div>
             </>
           )}
