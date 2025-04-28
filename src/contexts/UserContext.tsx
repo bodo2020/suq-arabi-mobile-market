@@ -85,7 +85,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     // Strip ALL non-digit characters completely
     const digits = phoneNumber.replace(/\D/g, '');
     
-    // Return the cleaned digits without adding any prefix
+    // Return the cleaned digits - should already have country code
     return digits;
   };
   

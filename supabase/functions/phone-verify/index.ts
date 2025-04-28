@@ -18,11 +18,11 @@ function formatPhoneNumber(phone: string) {
 }
 
 function isValidPhoneNumber(phone: string) {
-  // Strip any non-digit characters for validation
+  // Since we're supporting international numbers, just validate there are digits
   const digits = phone.replace(/\D/g, '');
   
-  // Validate Egyptian phone number format - just check for 01 prefix and length
-  return digits.startsWith('01') && digits.length === 11;
+  // Basic validation - should have at least 8 digits
+  return digits.length >= 8;
 }
 
 serve(async (req) => {
@@ -44,7 +44,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "Invalid phone number format. Must be an Egyptian mobile number starting with 01." 
+          message: "Invalid phone number format. Phone number must have at least 8 digits." 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
@@ -112,10 +112,16 @@ serve(async (req) => {
       }
       
       try {
+        // The phone should already have the country code included at this point
+        // Format for WhatsApp requires whatsapp: prefix, and ensuring + before the country code
+        const whatsappDestination = `whatsapp:+${formattedPhone}`;
         const twilioEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+        
+        console.log("Sending WhatsApp message to:", whatsappDestination);
+        
         const twilioBody = new URLSearchParams({
           From: `whatsapp:${twilioWhatsappNumber}`,
-          To: `whatsapp:${formattedPhone}`,
+          To: whatsappDestination,
           Body: `Your verification code is: ${verificationCode}`,
         });
         
@@ -129,7 +135,9 @@ serve(async (req) => {
         });
         
         if (!twilioResponse.ok) {
-          throw new Error(await twilioResponse.text());
+          const errorText = await twilioResponse.text();
+          console.error("Twilio API error:", errorText);
+          throw new Error(errorText);
         }
         
         return new Response(

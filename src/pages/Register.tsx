@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import CountryCodeSelector, { Country } from "@/components/ui/CountryCodeSelector";
+
 const Register = () => {
   const navigate = useNavigate();
   const {
@@ -29,6 +31,7 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [address, setAddress] = useState("");
+  const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
   const [location, setLocation] = useState<LocationValue>({
     governorate: "",
     city: "",
@@ -45,11 +48,24 @@ const Register = () => {
     location: "",
     server: ""
   });
-  const formatPhoneNumber = (phoneNumber: string) => {
-    return phoneNumber.replace(/\D/g, '');
+
+  const formatPhoneNumber = (phoneNumber: string, country: Country) => {
+    const digits = phoneNumber.replace(/\D/g, '');
+    if (country.code === 'EG' && digits.length > 0) {
+      return digits.startsWith('0') ? digits.substring(1) : digits;
+    }
+    return digits;
   };
+
+  const formatInternationalPhone = (phoneNumber: string, country: Country) => {
+    const formattedNumber = formatPhoneNumber(phoneNumber, country);
+    const dialCode = country.dialCode.replace('+', '');
+    return `${dialCode}${formattedNumber}`;
+  };
+
   const handleSendVerification = async () => {
-    const cleanPhone = phone.replace(/\D/g, '');
+    const cleanPhone = formatPhoneNumber(phone, countryCode);
+    
     if (!cleanPhone.trim()) {
       setErrors(prev => ({
         ...prev,
@@ -57,19 +73,23 @@ const Register = () => {
       }));
       return;
     }
-    if (!cleanPhone.startsWith('01') || cleanPhone.length !== 11) {
+
+    if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
       setErrors(prev => ({
         ...prev,
-        phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)"
+        phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام بدون 0)"
       }));
       return;
     }
+    
     setIsSubmitting(true);
     try {
-      console.log("Sending verification for phone:", phone);
+      const fullPhone = formatInternationalPhone(phone, countryCode);
+      console.log("Sending verification for phone:", fullPhone);
+      
       const {
         error
-      } = await signInWithPhone(phone);
+      } = await signInWithPhone(fullPhone);
       if (error) {
         console.error("Error response from signInWithPhone:", error);
         throw new Error(error.message || "حدث خطأ أثناء إرسال رمز التحقق");
@@ -89,6 +109,11 @@ const Register = () => {
       setIsSubmitting(false);
     }
   };
+
+  const validateEgyptianPhone = (phone: string) => {
+    return phone.startsWith('1') && phone.length === 10;
+  };
+
   const handleVerifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
       toast({
@@ -100,10 +125,12 @@ const Register = () => {
     }
     setIsSubmitting(true);
     try {
-      console.log("Verifying code for phone:", phone);
+      const fullPhone = formatInternationalPhone(phone, countryCode);
+      console.log("Verifying code for phone:", fullPhone);
+      
       const {
         error
-      } = await verifyPhone(phone, verificationCode);
+      } = await verifyPhone(fullPhone, verificationCode);
       if (error) {
         console.error("Error verifying code:", error);
         throw new Error(error.message || "الرمز غير صحيح أو منتهي الصلاحية");
@@ -124,6 +151,7 @@ const Register = () => {
       setIsSubmitting(false);
     }
   };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -133,19 +161,21 @@ const Register = () => {
       server: ""
     }));
     try {
+      const fullPhone = formatInternationalPhone(phone, countryCode);
+      
       const {
         data,
         error
       } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        phone: formatPhoneNumber(phone),
+        phone: fullPhone,
         options: {
           data: {
             first_name: firstName,
             last_name: lastName,
-            phone: phone,
-            // Store local format in metadata
+            phone: fullPhone,
+            countryCode: countryCode.code,
             name: `${firstName} ${lastName}`.trim(),
             address,
             location
@@ -172,6 +202,7 @@ const Register = () => {
       setIsSubmitting(false);
     }
   };
+
   const validateForm = () => {
     let valid = true;
     const newErrors = {
@@ -206,6 +237,7 @@ const Register = () => {
     setErrors(newErrors);
     return valid;
   };
+
   return <MainLayout>
       <div className="py-4 px-4 max-w-md mx-auto">
         <div className="flex items-center mb-6">
@@ -223,13 +255,34 @@ const Register = () => {
                   <Phone size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
                 </div>
-                <Input id="phone" type="tel" value={phone} onChange={e => {
-              setPhone(e.target.value);
-              setErrors(prev => ({
-                ...prev,
-                phone: ""
-              }));
-            }} className="text-right ltr" placeholder="01xxxxxxxxx" dir="ltr" />
+                <div className="flex gap-2 items-center">
+                  <CountryCodeSelector 
+                    value={countryCode}
+                    onChange={setCountryCode}
+                    className="min-w-[80px]"
+                  />
+                  <Input 
+                    id="phone" 
+                    type="tel" 
+                    value={phone} 
+                    onChange={e => {
+                      setPhone(e.target.value);
+                      setErrors(prev => ({
+                        ...prev,
+                        phone: ""
+                      }));
+                    }} 
+                    className="text-right ltr flex-1" 
+                    placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"} 
+                    dir="ltr"
+                  />
+                </div>
+                
+                <p className="text-xs text-gray-500 mt-1 text-right">
+                  {countryCode.code === 'EG' 
+                    ? 'أدخل رقم الهاتف المصري الذي يبدأ بـ 1 (مثال: 1xxxxxxxxx)' 
+                    : 'أدخل رقم الهاتف بدون رمز الدولة'}
+                </p>
                 
                 {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
               </div>
@@ -307,7 +360,7 @@ const Register = () => {
               <p className="text-sm text-gray-500 text-center">
                 تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك
                 <br />
-                <span className="font-bold">{phone}</span>
+                <span className="font-bold">{countryCode.dialCode} {phone}</span>
               </p>
               <InputOTP value={verificationCode} onChange={setVerificationCode} maxLength={6}>
                 <InputOTPGroup>
@@ -328,4 +381,5 @@ const Register = () => {
       </div>
     </MainLayout>;
 };
+
 export default Register;

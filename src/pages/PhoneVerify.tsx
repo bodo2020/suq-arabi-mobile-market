@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
@@ -7,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Input } from '@/components/ui/input';
+import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
 
 const PhoneVerify = () => {
   const navigate = useNavigate();
@@ -17,36 +19,62 @@ const PhoneVerify = () => {
   const [step, setStep] = useState<'phone' | 'verification'>('phone');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
   const [errors, setErrors] = useState({
     phone: "",
     code: ""
   });
   
-  const formatPhoneNumber = (phoneNumber: string) => {
-    // Strip ALL non-digit characters completely
-    return phoneNumber.replace(/\D/g, '');
+  // Format phone number based on country
+  const formatPhoneNumber = (phoneNumber: string, country: Country) => {
+    // First remove all non-digit characters
+    const digits = phoneNumber.replace(/\D/g, '');
+    
+    // If it's Egypt, validate it starts with 0
+    if (country.code === 'EG' && digits.length > 0) {
+      // If phone starts with 0, remove it for international format
+      return digits.startsWith('0') ? digits.substring(1) : digits;
+    }
+    
+    return digits;
+  };
+
+  // Format full international phone number
+  const formatInternationalPhone = (phoneNumber: string, country: Country) => {
+    const formattedNumber = formatPhoneNumber(phoneNumber, country);
+    // Remove the + from the dial code
+    const dialCode = country.dialCode.replace('+', '');
+    
+    return `${dialCode}${formattedNumber}`;
+  };
+  
+  const validateEgyptianPhone = (phone: string) => {
+    // For Egyptian numbers, they should start with 1 and be 10 digits
+    return phone.startsWith('1') && phone.length === 10;
   };
   
   const handleSendCode = async () => {
-    // First strip any non-digit characters for validation
-    const cleanPhone = phone.replace(/\D/g, '');
+    const cleanPhone = formatPhoneNumber(phone, countryCode);
     
     if (!cleanPhone) {
-      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري" }));
+      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف" }));
       toast({
         title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري يبدأ بـ 01",
+        description: "يرجى إدخال رقم هاتف",
         variant: "destructive"
       });
       return;
     }
     
-    // Validate that the phone starts with 01 and has correct length
-    if (!cleanPhone.startsWith('01') || cleanPhone.length !== 11) {
-      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)" }));
+    // For Egypt, validate Egyptian phone format
+    if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
+      setErrors(prev => ({ 
+        ...prev, 
+        phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)"
+      }));
       toast({
         title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)",
+        description: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)",
         variant: "destructive"
       });
       return;
@@ -55,8 +83,11 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      console.log("Sending verification for phone:", phone);
-      const { error } = await signInWithPhone(phone);
+      // Create full international format
+      const fullPhone = formatInternationalPhone(phone, countryCode);
+      console.log("Sending verification for phone:", fullPhone);
+      
+      const { error } = await signInWithPhone(fullPhone);
       
       if (error) {
         console.error("Error sending verification code:", error);
@@ -95,8 +126,11 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      console.log("Verifying code for phone:", phone);
-      const { error } = await verifyPhone(phone, code);
+      // Create full international format
+      const fullPhone = formatInternationalPhone(phone, countryCode);
+      console.log("Verifying code for phone:", fullPhone);
+      
+      const { error } = await verifyPhone(fullPhone, code);
       
       if (error) {
         console.error("Error verifying code:", error);
@@ -150,21 +184,33 @@ const PhoneVerify = () => {
                   <Phone size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
                 </div>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(e.target.value);
-                    setErrors(prev => ({ ...prev, phone: "" }));
-                  }}
-                  className="text-right ltr"
-                  placeholder="01xxxxxxxxx"
-                  dir="ltr"
-                />
+                
+                <div className="flex gap-2 items-center">
+                  <CountryCodeSelector 
+                    value={countryCode}
+                    onChange={setCountryCode}
+                    className="min-w-[80px]"
+                  />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      setErrors(prev => ({ ...prev, phone: "" }));
+                    }}
+                    className="text-right ltr flex-1"
+                    placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
+                    dir="ltr"
+                  />
+                </div>
+                
                 <p className="text-xs text-gray-500 mt-1 text-right">
-                  أدخل رقم الهاتف المصري الذي يبدأ بـ 01 ({phone || '01xxxxxxxxx'})
+                  {countryCode.code === 'EG' 
+                    ? 'أدخل رقم الهاتف المصري الذي يبدأ بـ 1 (مثال: 1xxxxxxxxx)' 
+                    : 'أدخل رقم الهاتف بدون رمز الدولة'}
                 </p>
+                
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                 )}
@@ -186,7 +232,7 @@ const PhoneVerify = () => {
               <p className="text-center mb-6">
                 تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك
                 <br />
-                <span className="font-bold">{phone}</span>
+                <span className="font-bold">{countryCode.dialCode} {phone}</span>
               </p>
               
               <div className="mb-6">
