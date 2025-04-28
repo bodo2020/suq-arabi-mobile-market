@@ -27,6 +27,8 @@ const PhoneLogin = () => {
   const [isRegisteredUser, setIsRegisteredUser] = useState(false);
   const [phoneFormatted, setPhoneFormatted] = useState('');
   const [rateLimitError, setRateLimitError] = useState(false);
+  const [codeForTesting, setCodeForTesting] = useState<string | null>(null);
+  const [blockedNumber, setBlockedNumber] = useState(false);
   
   // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
@@ -59,8 +61,10 @@ const PhoneLogin = () => {
   const checkPhoneExists = async () => {
     if (loading) return; // Prevent multiple clicks
     
-    // Reset rate limit error state
+    // Reset state
     setRateLimitError(false);
+    setBlockedNumber(false);
+    setCodeForTesting(null);
     
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
@@ -131,7 +135,7 @@ const PhoneLogin = () => {
   
   const handleSendCode = async (fullPhone: string) => {
     try {
-      const { error } = await signInWithPhone(fullPhone);
+      const { data, error } = await signInWithPhone(fullPhone);
       
       if (error) {
         console.error("Error sending verification code:", error);
@@ -147,7 +151,27 @@ const PhoneLogin = () => {
           return;
         }
         
+        // Check for blocked number error from our custom function
+        if (data?.blockedNumber) {
+          setBlockedNumber(true);
+          // If we're in development mode, show the verification code
+          if (data.code) {
+            setCodeForTesting(data.code);
+          }
+          toast({
+            title: "تم حظر رقم الهاتف",
+            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار أو تجربة رقم آخر.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         throw error;
+      }
+      
+      // Check if we got a code for development purposes
+      if (data?.code) {
+        setCodeForTesting(data.code);
       }
       
       toast({
@@ -259,6 +283,8 @@ const PhoneLogin = () => {
                   setErrors(prev => ({ ...prev, phone: "" }));
                   setIsRegisteredUser(false);
                   setRateLimitError(false);
+                  setBlockedNumber(false);
+                  setCodeForTesting(null);
                 }}
                 className="text-right ltr flex-1"
                 placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
@@ -281,6 +307,31 @@ const PhoneLogin = () => {
               <p className="text-amber-600 text-sm mt-1">
                 لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم الفني.
               </p>
+            )}
+            
+            {blockedNumber && (
+              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm font-medium">
+                  تم حظر هذا الرقم مؤقتًا بواسطة Twilio بسبب نشاط مشبوه
+                </p>
+                <p className="text-red-500 text-xs mt-1">
+                  يرجى استخدام رقم هاتف آخر أو التواصل مع الدعم الفني
+                </p>
+                {codeForTesting && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-yellow-700 text-sm font-medium">رمز التحقق للاختبار فقط:</p>
+                    <p className="text-yellow-800 text-lg font-bold text-center mt-1 font-mono">{codeForTesting}</p>
+                    <p className="text-yellow-600 text-xs mt-1">استخدم هذا الرمز في صفحة التحقق</p>
+                    <Button
+                      onClick={() => navigate(`/phone-verify?phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode.code)}&testCode=${codeForTesting}`)}
+                      className="w-full mt-2 bg-yellow-600 hover:bg-yellow-700"
+                      size="sm"
+                    >
+                      الانتقال إلى صفحة التحقق
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           

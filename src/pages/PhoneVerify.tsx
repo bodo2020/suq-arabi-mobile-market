@@ -19,13 +19,16 @@ const PhoneVerify = () => {
   const queryParams = new URLSearchParams(location.search);
   const phoneFromQuery = queryParams.get('phone') || '';
   const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
+  const testCodeFromQuery = queryParams.get('testCode') || '';
   
   const [phone, setPhone] = useState(phoneFromQuery);
   const [step, setStep] = useState<'phone' | 'verification'>(phoneFromQuery ? 'verification' : 'phone');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(testCodeFromQuery);
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [rateLimitError, setRateLimitError] = useState(false);
+  const [blockedNumber, setBlockedNumber] = useState(false);
+  const [codeForTesting, setCodeForTesting] = useState<string | null>(testCodeFromQuery || null);
   const [countryCode, setCountryCode] = useState<Country>(() => {
     const countries = [
       { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' },
@@ -65,8 +68,10 @@ const PhoneVerify = () => {
   const handleSendCode = async () => {
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
-    // Reset rate limit error state
+    // Reset state
     setRateLimitError(false);
+    setBlockedNumber(false);
+    setCodeForTesting(null);
     
     if (!cleanPhone) {
       setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف" }));
@@ -97,7 +102,7 @@ const PhoneVerify = () => {
       const fullPhone = formatInternationalPhone(phone, countryCode);
       console.log("Sending verification for phone:", fullPhone);
       
-      const { error } = await signInWithPhone(fullPhone);
+      const { data, error } = await signInWithPhone(fullPhone);
       
       if (error) {
         console.error("Error sending verification code:", error);
@@ -113,7 +118,29 @@ const PhoneVerify = () => {
           throw error;
         }
         
+        // Check for blocked number error from our custom function
+        if (data?.blockedNumber) {
+          setBlockedNumber(true);
+          // If we're in development mode, show the verification code
+          if (data.code) {
+            setCodeForTesting(data.code);
+          }
+          toast({
+            title: "تم حظر رقم الهاتف",
+            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار.",
+            variant: "destructive"
+          });
+          setStep('verification');
+          setLoading(false);
+          return;
+        }
+        
         throw error;
+      }
+      
+      // Check if we got a code for development purposes
+      if (data?.code) {
+        setCodeForTesting(data.code);
       }
       
       toast({
@@ -142,12 +169,14 @@ const PhoneVerify = () => {
     
     setResendLoading(true);
     setRateLimitError(false);
+    setBlockedNumber(false);
+    setCodeForTesting(null);
     
     try {
       const fullPhone = formatInternationalPhone(phone, countryCode);
       console.log("Resending verification for phone:", fullPhone);
       
-      const { error } = await signInWithPhone(fullPhone);
+      const { data, error } = await signInWithPhone(fullPhone);
       
       if (error) {
         console.error("Error resending verification code:", error);
@@ -163,7 +192,27 @@ const PhoneVerify = () => {
           throw error;
         }
         
+        // Check for blocked number error from our custom function
+        if (data?.blockedNumber) {
+          setBlockedNumber(true);
+          // If we're in development mode, show the verification code
+          if (data.code) {
+            setCodeForTesting(data.code);
+          }
+          toast({
+            title: "تم حظر رقم الهاتف",
+            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         throw error;
+      }
+      
+      // Check if we got a code for development purposes
+      if (data?.code) {
+        setCodeForTesting(data.code);
       }
       
       toast({
@@ -276,6 +325,7 @@ const PhoneVerify = () => {
                       setPhone(e.target.value);
                       setErrors(prev => ({ ...prev, phone: "" }));
                       setRateLimitError(false);
+                      setBlockedNumber(false);
                     }}
                     className="text-right ltr flex-1"
                     placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
@@ -318,6 +368,24 @@ const PhoneVerify = () => {
                 <br />
                 <span className="font-bold">{countryCode.dialCode} {phone}</span>
               </p>
+              
+              {blockedNumber && (
+                <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-red-600 text-sm font-medium">
+                    تم حظر هذا الرقم مؤقتًا بواسطة Twilio بسبب نشاط مشبوه
+                  </p>
+                  <p className="text-red-500 text-xs mt-1">
+                    يرجى استخدام رقم هاتف آخر أو التواصل مع الدعم الفني
+                  </p>
+                </div>
+              )}
+              
+              {codeForTesting && (
+                <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-yellow-700 text-sm font-medium">رمز التحقق للاختبار فقط:</p>
+                  <p className="text-yellow-800 text-lg font-bold text-center mt-1 font-mono">{codeForTesting}</p>
+                </div>
+              )}
               
               <div className="mb-6">
                 <div className="flex items-center mb-2">
