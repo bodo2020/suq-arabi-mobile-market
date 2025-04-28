@@ -25,7 +25,7 @@ function isValidPhoneNumber(phone: string) {
   return digits.length >= 8;
 }
 
-async function sendWhatsAppMessage(phone: string, code: string): Promise<{ success: boolean; message: string }> {
+async function sendWhatsAppMessage(phone: string, code: string): Promise<{ success: boolean; message: string; blockedNumber?: boolean }> {
   try {
     const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
     const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
@@ -41,13 +41,14 @@ async function sendWhatsAppMessage(phone: string, code: string): Promise<{ succe
 
     // Format the phone number with WhatsApp prefix
     const formattedPhone = `whatsapp:+${phone}`;
+    const formattedFromNumber = `whatsapp:+${twilioWhatsappNumber}`;
     
-    console.log(`Sending WhatsApp message to ${formattedPhone}`);
+    console.log(`Sending WhatsApp message from ${formattedFromNumber} to ${formattedPhone}`);
 
     const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
     
     const formData = new URLSearchParams();
-    formData.append("From", `whatsapp:${twilioWhatsappNumber}`);
+    formData.append("From", formattedFromNumber);
     formData.append("To", formattedPhone);
     formData.append("Body", `Your verification code is: ${code}`);
     
@@ -69,6 +70,16 @@ async function sendWhatsAppMessage(phone: string, code: string): Promise<{ succe
       return { success: true, message: "WhatsApp message sent successfully" };
     } else {
       console.error("Failed to send WhatsApp message:", result);
+      
+      // Check for Twilio error codes related to blocked/invalid numbers
+      if (result.code === 21610 || result.code === 21614 || result.code === 21608) {
+        return { 
+          success: false, 
+          message: `Failed to send WhatsApp message: ${result.message || JSON.stringify(result)}`,
+          blockedNumber: true
+        };
+      }
+      
       return { 
         success: false, 
         message: `Failed to send WhatsApp message: ${result.message || JSON.stringify(result)}` 
@@ -164,6 +175,10 @@ serve(async (req) => {
           "تم إرسال رمز التحقق عبر واتساب" : 
           "تعذر إرسال الرسالة عبر واتساب، تم عرض الرمز في التطبيق"
       };
+      
+      if (whatsappResult.blockedNumber) {
+        responseObject.blockedNumber = true;
+      }
       
       // Always include code for development purposes or if WhatsApp fails
       if (isDevelopment || !whatsappResult.success) {
