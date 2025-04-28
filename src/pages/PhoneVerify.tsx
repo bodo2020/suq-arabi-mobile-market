@@ -5,14 +5,14 @@ import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Input } from '@/components/ui/input';
 
 const PhoneVerify = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, verifyPhone } = useUser();
+  const { user, signInWithPhone, verifyPhone } = useUser();
   
   const [phone, setPhone] = useState('');
   const [step, setStep] = useState<'phone' | 'verification'>('phone');
@@ -43,41 +43,24 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      const formattedPhone = formatPhoneNumber(phone);
-      console.log("Sending verification to formatted phone:", formattedPhone);
+      // Use Supabase's built-in phone auth
+      const { error } = await signInWithPhone(phone);
       
-      const response = await supabase.functions.invoke('phone-verify', {
-        body: { action: 'send', phone: formattedPhone }
-      });
-      
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-      
-      const data = response.data;
-      
-      if (!data.success) {
-        throw new Error(data.message || "Failed to send verification code");
+      if (error) {
+        throw error;
       }
       
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إرسال رمز التحقق إلى رقم الواتساب الخاص بك"
+        description: "تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك"
       });
-      
-      if (data.code) {
-        toast({
-          title: "رمز التحقق للتطوير",
-          description: `الرمز هو: ${data.code}`,
-        });
-      }
       
       setStep('verification');
     } catch (error: any) {
       console.error('Error sending verification code:', error);
       toast({
         title: "حدث خطأ",
-        description: "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
+        description: error.message || "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
     } finally {
@@ -114,7 +97,7 @@ const PhoneVerify = () => {
       console.error('Error verifying code:', error);
       toast({
         title: "حدث خطأ",
-        description: "الرمز غير صحيح أو منتهي الصلاحية",
+        description: error.message || "الرمز غير صحيح أو منتهي الصلاحية",
         variant: "destructive"
       });
     } finally {
@@ -143,7 +126,7 @@ const PhoneVerify = () => {
           {step === 'phone' ? (
             <>
               <p className="text-center mb-6">
-                سيتم إرسال رمز تحقق إلى رقم الواتساب الخاص بك
+                سيتم إرسال رمز تحقق إلى رقم الهاتف الخاص بك
               </p>
               
               <div className="mb-6">
@@ -151,15 +134,23 @@ const PhoneVerify = () => {
                   <Phone size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
                 </div>
-                <input
+                <Input
                   id="phone"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-right"
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 11) {
+                      setPhone(value);
+                    }
+                  }}
+                  className="text-right ltr"
                   placeholder="01xxxxxxxxx"
                   dir="ltr"
                 />
+                <p className="text-xs text-gray-500 mt-1 text-right">
+                  سيتم إضافة +2 تلقائياً ({formatPhoneNumber(phone || '01xxxxxxxxx')})
+                </p>
               </div>
               
               <Button
@@ -176,7 +167,7 @@ const PhoneVerify = () => {
           ) : (
             <>
               <p className="text-center mb-6">
-                تم إرسال رمز التحقق إلى رقم الواتساب الخاص بك
+                تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك
                 <br />
                 <span className="font-bold">{formatPhoneNumber(phone)}</span>
               </p>

@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, Mail, KeyRound, Map } from "lucide-react";
+import { ArrowRight, User, Phone, MapPin, Mail, KeyRound, Map } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,10 +19,12 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 const Register = () => {
   const navigate = useNavigate();
-  const { verifyPhone } = useUser();
+  const { signInWithPhone, verifyPhone } = useUser();
   const { toast } = useToast();
   
   const [phone, setPhone] = useState("");
@@ -70,37 +72,25 @@ const Register = () => {
       return;
     }
 
-    const formattedPhone = formatPhoneNumber(phone);
-    console.log("Sending verification to formatted phone:", formattedPhone);
+    if (!/^01\d{9}$/.test(phone)) {
+      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري صحيح (01xxxxxxxxx)" }));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const response = await supabase.functions.invoke('phone-verify', {
-        body: { action: 'send', phone: formattedPhone }
-      });
+      // Use Supabase's built-in phone auth
+      const { error } = await signInWithPhone(phone);
       
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-      
-      const data = response.data;
-      
-      if (!data.success) {
-        throw new Error(data.message || "حدث خطأ أثناء إرسال رمز التحقق");
+      if (error) {
+        throw new Error(error.message || "حدث خطأ أثناء إرسال رمز التحقق");
       }
       
       setIsVerifying(true);
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إرسال رمز التحقق إلى واتساب الخاص بك",
+        description: "تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك",
       });
-      
-      if (data.code) {
-        toast({
-          title: "رمز التحقق للتطوير",
-          description: `الرمز هو: ${data.code}`,
-        });
-      }
     } catch (err: any) {
       toast({
         title: "خطأ في إرسال رمز التحقق",
@@ -124,8 +114,6 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const formattedPhone = formatPhoneNumber(phone);
-
       const { error } = await verifyPhone(phone, verificationCode);
       
       if (error) {
@@ -160,6 +148,7 @@ const Register = () => {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        phone: formatPhoneNumber(phone),
         options: {
           data: {
             first_name: firstName,
@@ -266,19 +255,22 @@ const Register = () => {
                   placeholder="01xxxxxxxxx"
                   dir="ltr"
                 />
+                <p className="text-xs text-gray-500 mt-1 text-right">
+                  سيتم إضافة +2 تلقائياً ({formatPhoneNumber(phone || '01xxxxxxxxx')})
+                </p>
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                 )}
               </div>
-              <button
+              <Button
                 onClick={handleSendVerification}
                 disabled={isSubmitting}
-                className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center"
+                className="w-full bg-primary text-white"
               >
                 {isSubmitting ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                 ) : "إرسال رمز التحقق"}
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -358,7 +350,7 @@ const Register = () => {
                   <MapPin size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="address" className="font-medium">تفاصيل العنوان</label>
                 </div>
-                <textarea
+                <Textarea
                   id="address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -387,15 +379,15 @@ const Register = () => {
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center"
+              className="w-full bg-primary text-white py-3"
             >
               {isSubmitting ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
               ) : "تسجيل"}
-            </button>
+            </Button>
           </form>
         )}
 
@@ -406,7 +398,7 @@ const Register = () => {
             </DialogHeader>
             <div className="flex flex-col items-center space-y-4">
               <p className="text-sm text-gray-500 text-center">
-                تم إرسال رمز التحقق إلى واتساب الخاص بك
+                تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك
                 <br />
                 <span className="font-bold">{formatPhoneNumber(phone)}</span>
               </p>
@@ -424,15 +416,15 @@ const Register = () => {
                   <InputOTPSlot index={5} />
                 </InputOTPGroup>
               </InputOTP>
-              <button
+              <Button
                 onClick={handleVerifyCode}
                 disabled={isSubmitting || verificationCode.length !== 6}
-                className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center mt-4"
+                className="w-full bg-primary text-white py-3"
               >
                 {isSubmitting ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                 ) : "تحقق"}
-              </button>
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

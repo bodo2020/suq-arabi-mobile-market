@@ -14,6 +14,7 @@ interface UserContextType {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   verifyPhone: (phone: string, code: string) => Promise<{ error: any }>;
+  signInWithPhone: (phone: string) => Promise<{ error: any }>;
 }
 
 export const UserContext = createContext<UserContextType>({
@@ -23,6 +24,7 @@ export const UserContext = createContext<UserContextType>({
   signUp: async () => ({ error: null }),
   signOut: async () => {},
   verifyPhone: async () => ({ error: null }),
+  signInWithPhone: async () => ({ error: null }),
 });
 
 export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
@@ -92,18 +94,37 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     return `+2${cleanPhone}`;
   };
   
+  const signInWithPhone = async (phone: string) => {
+    try {
+      const formattedPhone = formatPhoneNumber(phone);
+      console.log("Signing in with formatted phone:", formattedPhone);
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
+      
+      return { error };
+    } catch (error) {
+      console.error("Error signing in with phone:", error);
+      return { error };
+    }
+  };
+  
   const verifyPhone = async (phone: string, code: string) => {
     try {
       // Format phone number with +2 prefix (for Egypt)
       const formattedPhone = formatPhoneNumber(phone);
-      console.log("Verifying phone:", formattedPhone);
+      console.log("Verifying phone with Supabase:", formattedPhone);
       
-      const result = await supabase.functions.invoke('phone-verify', {
-        body: { action: 'verify', phone: formattedPhone, code }
+      // Use Supabase's built-in phone verification
+      const { error } = await supabase.auth.verifyOtp({
+        phone: formattedPhone,
+        token: code,
+        type: 'sms'
       });
       
-      if (!result.data?.success) {
-        return { error: new Error(result.data?.message || "Verification failed") };
+      if (error) {
+        return { error };
       }
       
       // If user is logged in, update their phone number in the database
@@ -128,7 +149,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, signIn, signUp, signOut, verifyPhone }}>
+    <UserContext.Provider value={{ user, loading, signIn, signUp, signOut, verifyPhone, signInWithPhone }}>
       {children}
     </UserContext.Provider>
   );
