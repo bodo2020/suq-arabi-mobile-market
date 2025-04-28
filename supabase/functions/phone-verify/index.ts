@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -11,7 +12,7 @@ function generateVerificationCode() {
 }
 
 function isValidPhoneNumber(phone: string) {
-  // Update the validation to look for the correct +20 prefix (Egypt) and followed by digits
+  // Validate that the phone number starts with +20 (Egypt prefix)
   return /^\+20\d+$/.test(phone);
 }
 

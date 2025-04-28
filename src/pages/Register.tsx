@@ -55,14 +55,7 @@ const Register = () => {
   });
 
   const formatPhoneNumber = (phoneNumber: string) => {
-    const digitsOnly = phoneNumber.replace(/\D/g, '');
-    const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
-    
-    if (cleanPhone.length === 10) {
-      return `+20${cleanPhone}`;
-    } else {
-      return cleanPhone.startsWith('20') ? `+${cleanPhone}` : `+20${cleanPhone}`;
-    }
+    return phoneNumber;
   };
 
   const handleSendVerification = async () => {
@@ -71,8 +64,8 @@ const Register = () => {
       return;
     }
 
-    if (!/^01\d{9}$/.test(phone)) {
-      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري صحيح (01xxxxxxxxx)" }));
+    if (!phone.startsWith('+20')) {
+      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20" }));
       return;
     }
 
@@ -243,18 +236,15 @@ const Register = () => {
                   type="tel"
                   value={phone}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    if (value.length <= 11) {
-                      setPhone(value);
-                      setErrors(prev => ({ ...prev, phone: "" }));
-                    }
+                    setPhone(e.target.value);
+                    setErrors(prev => ({ ...prev, phone: "" }));
                   }}
                   className="text-right ltr"
-                  placeholder="01xxxxxxxxx"
+                  placeholder="+20xxxxxxxxxx"
                   dir="ltr"
                 />
                 <p className="text-xs text-gray-500 mt-1 text-right">
-                  سيتم إضافة +20 تلقائياً ({formatPhoneNumber(phone || '01xxxxxxxxx')})
+                  أدخل رقم الهاتف مع إضافة +20 في البداية ({phone || '+20xxxxxxxxxx'})
                 </p>
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
@@ -398,7 +388,7 @@ const Register = () => {
               <p className="text-sm text-gray-500 text-center">
                 تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك
                 <br />
-                <span className="font-bold">{formatPhoneNumber(phone)}</span>
+                <span className="font-bold">{phone}</span>
               </p>
               <InputOTP
                 value={verificationCode}

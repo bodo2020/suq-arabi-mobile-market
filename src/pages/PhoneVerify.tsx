@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
@@ -20,25 +19,14 @@ const PhoneVerify = () => {
   const [loading, setLoading] = useState(false);
   
   const formatPhoneNumber = (phoneNumber: string) => {
-    // Remove any non-digit characters
-    const digitsOnly = phoneNumber.replace(/\D/g, '');
-    
-    // Remove leading zero if present
-    const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
-    
-    // Ensure we have the correct country code format for Egypt (+20)
-    if (cleanPhone.length === 10) {
-      return `+20${cleanPhone}`;
-    } else {
-      return cleanPhone.startsWith('20') ? `+${cleanPhone}` : `+20${cleanPhone}`;
-    }
+    return phoneNumber;
   };
   
   const handleSendCode = async () => {
-    if (!phone || !/^01\d{9}$/.test(phone)) {
+    if (!phone || !phone.startsWith('+20')) {
       toast({
         title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري صحيح (01xxxxxxxxx)",
+        description: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20",
         variant: "destructive"
       });
       return;
@@ -47,7 +35,6 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      // Use Supabase's built-in phone auth
       const { error } = await signInWithPhone(phone);
       
       if (error) {
@@ -143,17 +130,15 @@ const PhoneVerify = () => {
                   type="tel"
                   value={phone}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    if (value.length <= 11) {
-                      setPhone(value);
-                    }
+                    setPhone(e.target.value);
+                    setErrors(prev => ({ ...prev, phone: "" }));
                   }}
                   className="text-right ltr"
-                  placeholder="01xxxxxxxxx"
+                  placeholder="+20xxxxxxxxxx"
                   dir="ltr"
                 />
                 <p className="text-xs text-gray-500 mt-1 text-right">
-                  سيتم إضافة +20 تلقائياً ({formatPhoneNumber(phone || '01xxxxxxxxx')})
+                  أدخل رقم الهاتف مع إضافة +20 في البداية ({phone || '+20xxxxxxxxxx'})
                 </p>
               </div>
               

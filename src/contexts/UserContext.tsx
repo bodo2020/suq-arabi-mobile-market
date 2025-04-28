@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -32,7 +31,6 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
     const checkUser = async () => {
       const { data } = await supabase.auth.getSession();
       
@@ -48,7 +46,6 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     
     checkUser();
 
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session?.user) {
@@ -84,26 +81,13 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
   
   const formatPhoneNumber = (phoneNumber: string) => {
-    // Remove any non-digit characters
-    const digitsOnly = phoneNumber.replace(/\D/g, '');
-    
-    // Remove leading zero if present
-    const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
-    
-    // Ensure we have the correct country code format for Egypt (+20)
-    if (cleanPhone.length === 10) { // Egyptian mobile numbers are 10 digits after removing the leading 0
-      return `+20${cleanPhone}`;
-    } else {
-      // If it's already properly formatted or doesn't match the expected pattern,
-      // just ensure it has the country code
-      return cleanPhone.startsWith('20') ? `+${cleanPhone}` : `+20${cleanPhone}`;
-    }
+    return phoneNumber.replace(/\s/g, '');
   };
   
   const signInWithPhone = async (phone: string) => {
     try {
       const formattedPhone = formatPhoneNumber(phone);
-      console.log("Signing in with formatted phone:", formattedPhone);
+      console.log("Signing in with phone:", formattedPhone);
       
       const { error } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
@@ -118,11 +102,9 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   
   const verifyPhone = async (phone: string, code: string) => {
     try {
-      // Format phone number with +20 prefix (for Egypt)
       const formattedPhone = formatPhoneNumber(phone);
       console.log("Verifying phone with Supabase:", formattedPhone);
       
-      // Use Supabase's built-in phone verification
       const { error } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
         token: code,
@@ -133,9 +115,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
         return { error };
       }
       
-      // If user is logged in, update their phone number in the database
       if (user) {
-        // Store the local phone format in the database
         const { error: updateError } = await supabase
           .from('customers')
           .update({ phone: phone })
