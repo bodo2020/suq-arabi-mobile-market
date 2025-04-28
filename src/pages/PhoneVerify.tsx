@@ -26,8 +26,8 @@ const PhoneVerify = () => {
     // Remove leading zero if present
     const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
     
-    // Add country code
-    return `+2${cleanPhone}`;
+    // Add country code (updated to +20 for Egypt)
+    return `+20${cleanPhone}`;
   };
   
   const handleSendCode = async () => {
@@ -149,7 +149,7 @@ const PhoneVerify = () => {
                   dir="ltr"
                 />
                 <p className="text-xs text-gray-500 mt-1 text-right">
-                  سيتم إضافة +2 تلقائياً ({formatPhoneNumber(phone || '01xxxxxxxxx')})
+                  سيتم إضافة +20 تلقائياً ({formatPhoneNumber(phone || '01xxxxxxxxx')})
                 </p>
               </div>
               

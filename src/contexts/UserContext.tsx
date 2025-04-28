@@ -90,8 +90,8 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     // Remove leading zero if present
     const cleanPhone = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
     
-    // Add country code
-    return `+2${cleanPhone}`;
+    // Add country code (updated to +20 for Egypt)
+    return `+20${cleanPhone}`;
   };
   
   const signInWithPhone = async (phone: string) => {
@@ -112,7 +112,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   
   const verifyPhone = async (phone: string, code: string) => {
     try {
-      // Format phone number with +2 prefix (for Egypt)
+      // Format phone number with +20 prefix (for Egypt)
       const formattedPhone = formatPhoneNumber(phone);
       console.log("Verifying phone with Supabase:", formattedPhone);
       
