@@ -5,13 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 type User = {
   id: string;
   email: string;
+  phone?: string;
 };
 
 interface UserContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (phone: string, password: string) => Promise<{ error: any }>;
+  signUp: (phone: string, password: string, userData: object) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -36,6 +37,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
         setUser({
           id: data.session.user.id,
           email: data.session.user.email || '',
+          phone: data.session.user.phone || '',
         });
       }
       
@@ -51,6 +53,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
           setUser({
             id: session.user.id,
             email: session.user.email || '',
+            phone: session.user.phone || '',
           });
         } else {
           setUser(null);
@@ -64,14 +67,54 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+  const signIn = async (phone: string, password: string) => {
+    // First try to identify if this is an email or phone number
+    const isEmail = phone.includes('@');
+    
+    let result;
+    if (isEmail) {
+      // If it's an email, use email login
+      result = await supabase.auth.signInWithPassword({ 
+        email: phone, 
+        password 
+      });
+    } else {
+      // If it's a phone number, format it properly and use phone login
+      // Make sure phone starts with +
+      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+      result = await supabase.auth.signInWithPassword({ 
+        phone: formattedPhone, 
+        password 
+      });
+    }
+    
+    return { error: result.error };
   };
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error };
+  const signUp = async (phone: string, password: string, userData: object) => {
+    // First try to identify if this is an email or phone number
+    const isEmail = phone.includes('@');
+    
+    let result;
+    if (isEmail) {
+      // If it's an email, use email signup
+      result = await supabase.auth.signUp({
+        email: phone,
+        password,
+        options: { data: userData }
+      });
+    } else {
+      // If it's a phone number, format it properly and use phone signup
+      // Make sure phone starts with +
+      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+      result = await supabase.auth.signUp({
+        phone: formattedPhone,
+        password,
+        options: { data: userData }
+      });
+    }
+    
+    return { error: result.error };
   };
 
   const signOut = async () => {

@@ -1,18 +1,20 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, Mail, KeyRound, Map } from "lucide-react";
+import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, KeyRound, Map } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, signUp } = useUser();
 
   const [mode, setMode] = useState<"register" | "login">("register");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [address, setAddress] = useState("");
@@ -34,7 +36,6 @@ const Register = () => {
     firstName: "",
     lastName: "",
     phone: "",
-    email: "",
     password: "",
     location: "",
     server: ""
@@ -104,7 +105,7 @@ const Register = () => {
     const hood = neighborhoods.find((n) => n.id === selectedNeighborhood)?.name;
     loc = [gov, city, area, hood].filter(Boolean).join(" > ");
     setLocation(loc);
-  }, [selectedGovernorate, selectedCity, selectedArea, selectedNeighborhood]);
+  }, [selectedGovernorate, selectedCity, selectedArea, selectedNeighborhood, governorates, cities, areas, neighborhoods]);
 
   // Validation functions
   const validateRegister = () => {
@@ -113,7 +114,6 @@ const Register = () => {
       firstName: "",
       lastName: "",
       phone: "",
-      email: "",
       password: "",
       location: "",
       server: ""
@@ -131,16 +131,12 @@ const Register = () => {
       newErrors.location = "الموقع مطلوب (يجب اختيار المحافظة، المدينة، والمنطقة)";
       valid = false;
     }
-    if (!email.trim() || !/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/.test(email.trim())) {
-      newErrors.email = "يرجى إدخال بريد إلكتروني صحيح";
+    if (!phone.trim() || !/^01\d{9}$/.test(phone.trim())) {
+      newErrors.phone = "رقم الهاتف غير صحيح (يجب أن يكون مصريا من 11 رقم)";
       valid = false;
     }
     if (!password || password.length < 6) {
       newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف أو أكثر";
-      valid = false;
-    }
-    if (!/^01\d{9}$/.test(phone.trim())) {
-      newErrors.phone = "رقم الهاتف غير صحيح (يجب أن يكون مصريا من 11 رقم)";
       valid = false;
     }
     setErrors(newErrors);
@@ -153,13 +149,12 @@ const Register = () => {
       firstName: "",
       lastName: "",
       phone: "",
-      email: "",
       password: "",
       location: "",
       server: ""
     };
-    if (!email.trim() || !/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/.test(email.trim())) {
-      newErrors.email = "يرجى إدخال بريد إلكتروني صحيح";
+    if (!phone.trim() || !/^01\d{9}$/.test(phone.trim())) {
+      newErrors.phone = "رقم الهاتف غير صحيح";
       valid = false;
     }
     if (!password || password.length < 6) {
@@ -178,25 +173,27 @@ const Register = () => {
     setErrors((prev) => ({ ...prev, server: "" }));
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+      // Format phone with Egypt country code if not present
+      const formattedPhone = phone.startsWith('+') ? phone : `+20${phone.replace(/^0/, '')}`;
+      
+      const { error } = await signUp(
+        formattedPhone,
         password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            phone: phone.trim(),
-            name: `${firstName} ${lastName}`.trim(),
-            address,
-            location // PASS LOCATION TO SUPABASE
-          }
+        {
+          first_name: firstName,
+          last_name: lastName,
+          phone: formattedPhone,
+          name: `${firstName} ${lastName}`.trim(),
+          address,
+          location
         }
-      });
+      );
+      
       if (error) throw error;
 
       toast({
         title: "تم التسجيل بنجاح",
-        description: "تم إرسال بريد التفعيل. يرجى تفعيل بريدك الإلكتروني.",
+        description: "يمكنك الآن تسجيل الدخول بحسابك الجديد",
       });
       setMode("login");
     } catch (err: any) {
@@ -222,10 +219,10 @@ const Register = () => {
     setErrors((prev) => ({ ...prev, server: "" }));
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password
-      });
+      // Format phone with Egypt country code if not present
+      const formattedPhone = phone.startsWith('+') ? phone : `+20${phone.replace(/^0/, '')}`;
+      
+      const { error } = await signIn(formattedPhone, password);
       if (error) throw error;
 
       toast({
@@ -237,7 +234,7 @@ const Register = () => {
     } catch (err: any) {
       setErrors((prev) => ({
         ...prev,
-        server: err?.message || "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+        server: err?.message || "رقم الهاتف أو كلمة المرور غير صحيحة"
       }));
       toast({
         title: "خطأ أثناء تسجيل الدخول",
@@ -259,14 +256,12 @@ const Register = () => {
       firstName: "",
       lastName: "",
       phone: "",
-      email: "",
       password: "",
       location: "",
       server: ""
     });
     setFirstName("");
     setLastName("");
-    setEmail("");
     setPhone("");
     setPassword("");
     setAddress("");
@@ -349,21 +344,6 @@ const Register = () => {
               </div>
               <div className="mb-4">
                 <div className="flex items-center mb-2">
-                  <Phone size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
-                </div>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className={`w-full p-3 border rounded-lg text-right ${errors.phone ? "border-red-500" : "border-gray-300"}`}
-                  placeholder="01xxxxxxxxx"
-                />
-                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-              </div>
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
                   <Map size={18} className="ml-2 text-gray-500" />
                   <label className="font-medium">
                     الموقع <span className="text-red-500">*</span>
@@ -425,18 +405,18 @@ const Register = () => {
           )}
             <div className="mb-4">
               <div className="flex items-center mb-2">
-                <Mail size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
+                <Phone size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
               </div>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full p-3 border rounded-lg text-right ${errors.email ? "border-red-500" : "border-gray-300"}`}
-                placeholder="you@email.com"
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className={`w-full p-3 border rounded-lg text-right ${errors.phone ? "border-red-500" : "border-gray-300"}`}
+                placeholder="01xxxxxxxxx"
               />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
             <div className="mb-4">
               <div className="flex items-center mb-2">
@@ -458,7 +438,7 @@ const Register = () => {
               <div className="mb-4">
                 <div className="flex items-center mb-2">
                   <MapPin size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="address" className="font-medium">address details</label>
+                  <label htmlFor="address" className="font-medium">تفاصيل العنوان</label>
                 </div>
                 <textarea
                   id="address"
