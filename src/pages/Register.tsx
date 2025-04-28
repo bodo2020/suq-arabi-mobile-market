@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, LogIn, UserPlus, Mail, KeyRound, Map } from "lucide-react";
@@ -52,13 +53,21 @@ const Register = () => {
     server: ""
   });
 
+  const formatPhoneNumber = (phoneNumber: string) => {
+    // Remove leading zero if present
+    const cleanPhone = phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber;
+    // Add country code
+    return `+2${cleanPhone}`;
+  };
+
   const handleSendVerification = async () => {
     if (!phone.trim()) {
       setErrors(prev => ({ ...prev, phone: "رقم الهاتف مطلوب" }));
       return;
     }
 
-    const formattedPhone = `002${phone.startsWith("0") ? phone.substring(1) : phone}`;
+    const formattedPhone = formatPhoneNumber(phone);
+    console.log("Sending verification to formatted phone:", formattedPhone);
 
     setIsSubmitting(true);
     try {
@@ -111,20 +120,12 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const formattedPhone = `002${phone.startsWith("0") ? phone.substring(1) : phone}`;
+      const formattedPhone = formatPhoneNumber(phone);
 
-      const response = await supabase.functions.invoke('phone-verify', {
-        body: { action: 'verify', phone: formattedPhone, code: verificationCode }
-      });
+      const { error } = await verifyPhone(phone, verificationCode);
       
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-      
-      const data = response.data;
-      
-      if (!data.success) {
-        throw new Error(data.message || "الرمز غير صحيح أو منتهي الصلاحية");
+      if (error) {
+        throw new Error(error.message || "الرمز غير صحيح أو منتهي الصلاحية");
       }
       
       setIsVerified(true);
@@ -404,6 +405,8 @@ const Register = () => {
             <div className="flex flex-col items-center space-y-4">
               <p className="text-sm text-gray-500 text-center">
                 تم إرسال رمز التحقق إلى واتساب الخاص بك
+                <br />
+                <span className="font-bold">{formatPhoneNumber(phone)}</span>
               </p>
               <InputOTP
                 value={verificationCode}

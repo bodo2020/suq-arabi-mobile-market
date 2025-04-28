@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
@@ -11,12 +12,19 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 const PhoneVerify = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user, verifyPhone } = useUser();
   
   const [phone, setPhone] = useState('');
   const [step, setStep] = useState<'phone' | 'verification'>('phone');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const formatPhoneNumber = (phoneNumber: string) => {
+    // Remove leading zero if present
+    const cleanPhone = phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber;
+    // Add country code
+    return `+2${cleanPhone}`;
+  };
   
   const handleSendCode = async () => {
     if (!phone || !/^01\d{9}$/.test(phone)) {
@@ -31,7 +39,8 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      const formattedPhone = `002${phone}`;
+      const formattedPhone = formatPhoneNumber(phone);
+      console.log("Sending verification to formatted phone:", formattedPhone);
       
       const response = await supabase.functions.invoke('phone-verify', {
         body: { action: 'send', phone: formattedPhone }
@@ -85,38 +94,19 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      const formattedPhone = `002${phone}`;
+      // Use the same formatting function for consistency
+      const formattedPhone = formatPhoneNumber(phone);
       
-      const response = await supabase.functions.invoke('phone-verify', {
-        body: { action: 'verify', phone: formattedPhone, code }
+      const { error } = await verifyPhone(phone, code);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "تم التحقق بنجاح",
+        description: "تم التحقق من رقم هاتفك بنجاح"
       });
-      
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-      
-      const data = response.data;
-      
-      if (!data.success) {
-        throw new Error(data.message || "Invalid verification code");
-      }
-      
-      if (user) {
-        await supabase
-          .from('customers')
-          .update({ phone })
-          .eq('user_id', user.id);
-        
-        toast({
-          title: "تم التحقق بنجاح",
-          description: "تم التحقق من رقم هاتفك بنجاح وتحديث بياناتك"
-        });
-      } else {
-        toast({
-          title: "تم التحقق بنجاح",
-          description: "تم التحقق من رقم هاتفك بنجاح"
-        });
-      }
       
       navigate('/account');
     } catch (error: any) {
@@ -187,7 +177,7 @@ const PhoneVerify = () => {
               <p className="text-center mb-6">
                 تم إرسال رمز التحقق إلى رقم الواتساب الخاص بك
                 <br />
-                <span className="font-bold">+2{phone}</span>
+                <span className="font-bold">{formatPhoneNumber(phone)}</span>
               </p>
               
               <div className="mb-6">

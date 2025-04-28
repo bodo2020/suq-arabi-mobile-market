@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -80,27 +81,33 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
     setUser(null);
   };
   
+  const formatPhoneNumber = (phoneNumber: string) => {
+    // Remove leading zero if present
+    const cleanPhone = phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber;
+    // Add country code
+    return `+2${cleanPhone}`;
+  };
+  
   const verifyPhone = async (phone: string, code: string) => {
     try {
-      // Format phone number with 002 prefix
-      const formattedPhone = `002${phone.startsWith("0") ? phone.substring(1) : phone}`;
+      // Format phone number with +2 prefix (for Egypt)
+      const formattedPhone = formatPhoneNumber(phone);
+      console.log("Verifying phone:", formattedPhone);
       
       const result = await supabase.functions.invoke('phone-verify', {
         body: { action: 'verify', phone: formattedPhone, code }
       });
       
-      if (!result.data.success) {
-        return { error: new Error(result.data.message || "Verification failed") };
+      if (!result.data?.success) {
+        return { error: new Error(result.data?.message || "Verification failed") };
       }
       
       // If user is logged in, update their phone number in the database
       if (user) {
-        // Extract the phone number without the country code
-        const localPhone = phone.startsWith('+') ? phone.substring(2) : phone;
-        
+        // Store the local phone format in the database
         const { error: updateError } = await supabase
           .from('customers')
-          .update({ phone: localPhone })
+          .update({ phone: phone })
           .eq('user_id', user.id);
         
         if (updateError) {

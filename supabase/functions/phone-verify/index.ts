@@ -11,6 +11,11 @@ function generateVerificationCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function isValidPhoneNumber(phone: string) {
+  // Check if phone number starts with +2 (Egypt) and followed by digits
+  return /^\+2\d+$/.test(phone);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,6 +25,18 @@ serve(async (req) => {
     const { action, phone, code } = await req.json();
     
     console.log("Request received:", { action, phone, code });
+    
+    // Validate phone format
+    if (!isValidPhoneNumber(phone)) {
+      console.error("Invalid phone number format:", phone);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: "Invalid phone number format. Must start with +2 followed by digits." 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
