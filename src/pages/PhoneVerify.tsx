@@ -24,24 +24,34 @@ const PhoneVerify = () => {
   });
   
   const formatPhoneNumber = (phoneNumber: string) => {
-    return phoneNumber;
+    // Strip any non-digit characters the user might have entered
+    const digits = phoneNumber.replace(/\D/g, '');
+    
+    // If the number starts with "01", add "+2" prefix
+    if (digits.startsWith('01') && digits.length >= 11) {
+      return "+2" + digits;
+    }
+    
+    return digits;
   };
   
   const handleSendCode = async () => {
     if (!phone) {
+      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري" }));
       toast({
         title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20",
+        description: "يرجى إدخال رقم هاتف مصري يبدأ بـ 01",
         variant: "destructive"
       });
       return;
     }
     
-    if (!phone.startsWith('+20')) {
-      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20" }));
+    // Validate that the phone starts with 01 and has correct length
+    if (!phone.startsWith('01') || phone.length !== 11) {
+      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)" }));
       toast({
         title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20",
+        description: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)",
         variant: "destructive"
       });
       return;
@@ -50,7 +60,9 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      const { error } = await signInWithPhone(phone);
+      // Format the phone number before sending it
+      const formattedPhone = formatPhoneNumber(phone);
+      const { error } = await signInWithPhone(formattedPhone);
       
       if (error) {
         throw error;
@@ -76,6 +88,7 @@ const PhoneVerify = () => {
   
   const handleVerifyCode = async () => {
     if (!code || code.length !== 6) {
+      setErrors(prev => ({ ...prev, code: "يرجى إدخال الرمز المكون من 6 أرقام" }));
       toast({
         title: "خطأ في الرمز",
         description: "يرجى إدخال الرمز المكون من 6 أرقام",
@@ -87,7 +100,9 @@ const PhoneVerify = () => {
     setLoading(true);
     
     try {
-      const { error } = await verifyPhone(phone, code);
+      // Format the phone number before sending it
+      const formattedPhone = formatPhoneNumber(phone);
+      const { error } = await verifyPhone(formattedPhone, code);
       
       if (error) {
         throw error;
@@ -149,11 +164,11 @@ const PhoneVerify = () => {
                     setErrors(prev => ({ ...prev, phone: "" }));
                   }}
                   className="text-right ltr"
-                  placeholder="+20xxxxxxxxxx"
+                  placeholder="01xxxxxxxxx"
                   dir="ltr"
                 />
                 <p className="text-xs text-gray-500 mt-1 text-right">
-                  أدخل رقم الهاتف مع إضافة +20 في البداية ({phone || '+20xxxxxxxxxx'})
+                  أدخل رقم الهاتف المصري الذي يبدأ بـ 01 ({phone || '01xxxxxxxxx'})
                 </p>
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
@@ -176,7 +191,7 @@ const PhoneVerify = () => {
               <p className="text-center mb-6">
                 تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك
                 <br />
-                <span className="font-bold">{formatPhoneNumber(phone)}</span>
+                <span className="font-bold">{phone}</span>
               </p>
               
               <div className="mb-6">
@@ -188,7 +203,10 @@ const PhoneVerify = () => {
                   <InputOTP
                     maxLength={6}
                     value={code}
-                    onChange={setCode}
+                    onChange={(value) => {
+                      setCode(value);
+                      setErrors(prev => ({ ...prev, code: "" }));
+                    }}
                     dir="ltr"
                   >
                     <InputOTPGroup>

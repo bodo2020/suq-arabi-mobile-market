@@ -55,7 +55,17 @@ const Register = () => {
   });
 
   const formatPhoneNumber = (phoneNumber: string) => {
-    return phoneNumber;
+    const digits = phoneNumber.replace(/\D/g, '');
+    
+    if (digits.startsWith('01') && digits.length >= 11) {
+      return "+2" + digits;
+    }
+    
+    if (phoneNumber.startsWith('+2')) {
+      return phoneNumber;
+    }
+    
+    return digits;
   };
 
   const handleSendVerification = async () => {
@@ -64,14 +74,15 @@ const Register = () => {
       return;
     }
 
-    if (!phone.startsWith('+20')) {
-      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري يبدأ بـ +20" }));
+    if (!phone.startsWith('01') || phone.length !== 11) {
+      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 01 (11 رقم)" }));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const { error } = await signInWithPhone(phone);
+      const formattedPhone = formatPhoneNumber(phone);
+      const { error } = await signInWithPhone(formattedPhone);
       
       if (error) {
         throw new Error(error.message || "حدث خطأ أثناء إرسال رمز التحقق");
@@ -105,7 +116,8 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const { error } = await verifyPhone(phone, verificationCode);
+      const formattedPhone = formatPhoneNumber(phone);
+      const { error } = await verifyPhone(formattedPhone, verificationCode);
       
       if (error) {
         throw new Error(error.message || "الرمز غير صحيح أو منتهي الصلاحية");
@@ -240,11 +252,11 @@ const Register = () => {
                     setErrors(prev => ({ ...prev, phone: "" }));
                   }}
                   className="text-right ltr"
-                  placeholder="+20xxxxxxxxxx"
+                  placeholder="01xxxxxxxxx"
                   dir="ltr"
                 />
                 <p className="text-xs text-gray-500 mt-1 text-right">
-                  أدخل رقم الهاتف مع إضافة +20 في البداية ({phone || '+20xxxxxxxxxx'})
+                  أدخل رقم الهاتف المصري الذي يبدأ بـ 01 ({phone || '01xxxxxxxxx'})
                 </p>
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>

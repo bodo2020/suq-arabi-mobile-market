@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -81,7 +82,20 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
   
   const formatPhoneNumber = (phoneNumber: string) => {
-    return phoneNumber.replace(/\s/g, '');
+    // Strip any non-digit characters
+    const digits = phoneNumber.replace(/\D/g, '');
+    
+    // If the number starts with "01", add "+2" prefix for Egyptian numbers
+    if (digits.startsWith('01') && digits.length >= 11) {
+      return "+2" + digits;
+    }
+    
+    // If it already has the +2 prefix, return as is
+    if (phoneNumber.startsWith('+2')) {
+      return phoneNumber;
+    }
+    
+    return digits;
   };
   
   const signInWithPhone = async (phone: string) => {
@@ -118,7 +132,7 @@ export const UserProvider: React.FC<{children: React.ReactNode}> = ({ children }
       if (user) {
         const { error: updateError } = await supabase
           .from('customers')
-          .update({ phone: phone })
+          .update({ phone: formattedPhone })
           .eq('user_id', user.id);
         
         if (updateError) {

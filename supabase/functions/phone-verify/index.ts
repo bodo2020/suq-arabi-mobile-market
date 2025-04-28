@@ -11,9 +11,27 @@ function generateVerificationCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function formatPhoneNumber(phone: string) {
+  // Strip any non-digit characters
+  const digits = phone.replace(/\D/g, '');
+  
+  // If the number starts with "01", add "+2" prefix for Egyptian numbers
+  if (digits.startsWith('01') && digits.length >= 11) {
+    return "+2" + digits;
+  }
+  
+  // If it already has the +2 prefix, return as is
+  if (phone.startsWith('+2')) {
+    return phone;
+  }
+  
+  return digits;
+}
+
 function isValidPhoneNumber(phone: string) {
-  // Validate that the phone number starts with +20 (Egypt prefix)
-  return /^\+20\d+$/.test(phone);
+  // Validate Egyptian phone number format
+  // Either starting with +201 or just 01
+  return /^\+201\d{9}$/.test(phone) || /^01\d{9}$/.test(phone);
 }
 
 serve(async (req) => {
@@ -26,13 +44,16 @@ serve(async (req) => {
     
     console.log("Request received:", { action, phone, code });
     
+    // Format the phone number to ensure consistency
+    const formattedPhone = formatPhoneNumber(phone);
+    
     // Validate phone format
-    if (!isValidPhoneNumber(phone)) {
+    if (!isValidPhoneNumber(formattedPhone) && !isValidPhoneNumber(phone)) {
       console.error("Invalid phone number format:", phone);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "Invalid phone number format. Must start with +20 followed by digits." 
+          message: "Invalid phone number format. Must be an Egyptian mobile number starting with 01 or +201." 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
@@ -63,11 +84,11 @@ serve(async (req) => {
           console.log("Created verification_codes table");
         }
         
-        // Store verification code in database
+        // Store verification code in database with the formatted phone number
         const { error: dbError } = await supabase
           .from("verification_codes")
           .insert({
-            phone,
+            phone: formattedPhone,
             code: verificationCode,
             expires_at: expiresAt.toISOString(),
           });
@@ -103,7 +124,7 @@ serve(async (req) => {
         const twilioEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
         const twilioBody = new URLSearchParams({
           From: `whatsapp:${twilioWhatsappNumber}`,
-          To: `whatsapp:${phone}`,
+          To: `whatsapp:${formattedPhone}`,
           Body: `Your verification code is: ${verificationCode}`,
         });
         
@@ -134,11 +155,11 @@ serve(async (req) => {
     } 
     else if (action === "verify") {
       try {
-        // Check if code exists and is valid
+        // Check if code exists and is valid using the formatted phone number
         const { data, error } = await supabase
           .from("verification_codes")
           .select("*")
-          .eq("phone", phone)
+          .eq("phone", formattedPhone)
           .eq("code", code)
           .gt("expires_at", new Date().toISOString())
           .eq("verified", false)
