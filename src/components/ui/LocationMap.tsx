@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         return;
       }
 
-      const mapOptions = {
+      const mapOptions: google.maps.MapOptions = {
         center: { lat: initialLat, lng: initialLng },
         zoom: 15,
         mapTypeControl: false,
