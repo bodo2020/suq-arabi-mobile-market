@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, MapPin, Check } from 'lucide-react';
+import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Script from '@/components/ui/Script';
-import '@/types/google-maps.d.ts';
 
 const FullMapView: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +26,97 @@ const FullMapView: React.FC = () => {
   const initialLng = parseFloat(queryParams.get('lng') || '31.2357');
   const addressId = queryParams.get('addressId');
 
+  // Dark mode map style
+  const darkMapStyle = [
+    {
+      elementType: "geometry",
+      stylers: [{ color: "#242f3e" }]
+    },
+    {
+      elementType: "labels.text.stroke",
+      stylers: [{ color: "#242f3e" }]
+    },
+    {
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#746855" }]
+    },
+    {
+      featureType: "administrative.locality",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#d59563" }]
+    },
+    {
+      featureType: "poi",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#d59563" }]
+    },
+    {
+      featureType: "poi.park",
+      elementType: "geometry",
+      stylers: [{ color: "#263c3f" }]
+    },
+    {
+      featureType: "poi.park",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#6b9a76" }]
+    },
+    {
+      featureType: "road",
+      elementType: "geometry",
+      stylers: [{ color: "#38414e" }]
+    },
+    {
+      featureType: "road",
+      elementType: "geometry.stroke",
+      stylers: [{ color: "#212a37" }]
+    },
+    {
+      featureType: "road",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#9ca5b3" }]
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry",
+      stylers: [{ color: "#746855" }]
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry.stroke",
+      stylers: [{ color: "#1f2835" }]
+    },
+    {
+      featureType: "road.highway",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#f3d19c" }]
+    },
+    {
+      featureType: "transit",
+      elementType: "geometry",
+      stylers: [{ color: "#2f3948" }]
+    },
+    {
+      featureType: "transit.station",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#d59563" }]
+    },
+    {
+      featureType: "water",
+      elementType: "geometry",
+      stylers: [{ color: "#17263c" }]
+    },
+    {
+      featureType: "water",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#515c6d" }]
+    },
+    {
+      featureType: "water",
+      elementType: "labels.text.stroke",
+      stylers: [{ color: "#17263c" }]
+    }
+  ];
+
   // Initialize the map
   useEffect(() => {
     if (!mapRef.current) return;
@@ -42,10 +132,14 @@ const FullMapView: React.FC = () => {
         
         const mapOptions: google.maps.MapOptions = {
           center: { lat: initialLat, lng: initialLng },
-          zoom: 15,
+          zoom: 9, // More zoomed out view (lower number = more zoomed out)
           mapTypeControl: false,
           streetViewControl: false,
-          fullscreenControl: false
+          fullscreenControl: false,
+          styles: darkMapStyle, // Apply dark style
+          backgroundColor: '#242f3e', // Dark background color
+          zoomControl: true, // Enable zoom controls for manual zooming
+          gestureHandling: 'greedy' // Makes the map easier to use on mobile
         };
 
         const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
@@ -88,7 +182,6 @@ const FullMapView: React.FC = () => {
     const checkGoogleMapsLoaded = setInterval(() => {
       if (initMap()) {
         clearInterval(checkGoogleMapsLoaded);
-        getUserLocation();
       }
     }, 500);
 
@@ -114,7 +207,7 @@ const FullMapView: React.FC = () => {
           };
           
           map.setCenter(userLocation);
-          map.setZoom(17);
+          map.setZoom(14); // More zoomed in when finding user location
           marker.setPosition(userLocation);
           
           reverseGeocode(userLocation.lat, userLocation.lng);
@@ -144,6 +237,15 @@ const FullMapView: React.FC = () => {
         description: "يرجى تحديد موقعك يدويًا",
         variant: "destructive"
       });
+    }
+  };
+
+  // Zoom in to the map
+  const zoomIn = () => {
+    if (!map) return;
+    const currentZoom = map.getZoom();
+    if (currentZoom !== undefined) {
+      map.setZoom(currentZoom + 1);
     }
   };
 
@@ -184,14 +286,14 @@ const FullMapView: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col z-50">
+    <div className="fixed inset-0 bg-[#222222] flex flex-col z-50">
       <Script 
         src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places`}
         onLoad={() => console.log("Google Maps script loaded")} 
       />
       
       {/* Header */}
-      <div className="p-4 border-b flex items-center justify-between bg-white">
+      <div className="p-4 border-b border-gray-700 flex items-center justify-between bg-[#222222] text-white">
         <button
           onClick={handleBack}
           className="p-2"
@@ -206,20 +308,33 @@ const FullMapView: React.FC = () => {
       {/* Map takes up most of the screen */}
       <div 
         ref={mapRef} 
-        className="flex-1 w-full"
-      ></div>
+        className="flex-1 w-full relative"
+      >
+        {/* Zoom in button overlay */}
+        <div className="absolute top-4 end-4 z-10">
+          <Button
+            onClick={zoomIn}
+            variant="secondary"
+            size="icon"
+            className="bg-black/50 text-white hover:bg-black/70"
+            aria-label="تكبير"
+          >
+            <ZoomIn size={18} />
+          </Button>
+        </div>
+      </div>
       
       {/* Footer */}
-      <div className="p-4 bg-white border-t">
+      <div className="p-4 bg-[#222222] border-t border-gray-700 text-white">
         {selectedLocation && (
-          <div className="mb-4 text-sm text-gray-600">{selectedLocation.address}</div>
+          <div className="mb-4 text-sm text-gray-300">{selectedLocation.address}</div>
         )}
         
         <div className="flex space-x-3 space-x-reverse">
           <Button
             onClick={getUserLocation}
             variant="outline"
-            className="flex-1"
+            className="flex-1 border-gray-600 text-gray-200 hover:bg-gray-800"
           >
             <MapPin size={16} className="ml-2" />
             تحديد موقعي
@@ -227,7 +342,7 @@ const FullMapView: React.FC = () => {
           
           <Button
             onClick={handleConfirmLocation}
-            className="flex-1"
+            className="flex-1 bg-primary hover:bg-primary/90"
           >
             <Check size={16} className="ml-2" />
             تأكيد الموقع

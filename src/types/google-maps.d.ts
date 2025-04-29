@@ -9,6 +9,9 @@ declare namespace google {
       setZoom(zoom: number): void;
       getZoom(): number;
       addListener(eventName: string, handler: Function): MapsEventListener;
+      setOptions(options: MapOptions): void;
+      setMapTypeId(mapTypeId: string | MapTypeId): void;
+      setStyles(styles: MapTypeStyle[]): void;
     }
     
     class Marker {
@@ -31,6 +34,20 @@ declare namespace google {
       mapTypeControl?: boolean;
       streetViewControl?: boolean;
       fullscreenControl?: boolean;
+      zoomControl?: boolean;
+      styles?: MapTypeStyle[];
+      backgroundColor?: string;
+      gestureHandling?: string;
+    }
+    
+    interface MapTypeStyle {
+      elementType?: string;
+      featureType?: string;
+      stylers: MapTypeStyler[];
+    }
+    
+    interface MapTypeStyler {
+      [key: string]: string | number | null;
     }
     
     interface MarkerOptions {
@@ -39,6 +56,27 @@ declare namespace google {
       title?: string;
       animation?: Animation | null;
       draggable?: boolean;
+      icon?: string | Icon;
+    }
+    
+    interface Icon {
+      url: string;
+      size?: Size;
+      scaledSize?: Size;
+      origin?: Point;
+      anchor?: Point;
+    }
+    
+    class Size {
+      constructor(width: number, height: number);
+      width: number;
+      height: number;
+    }
+    
+    class Point {
+      constructor(x: number, y: number);
+      x: number;
+      y: number;
     }
     
     interface GeocoderRequest {
