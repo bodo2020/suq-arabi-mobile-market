@@ -66,7 +66,6 @@ const Register = () => {
     location: "",
     server: ""
   });
-  const [codeForTesting, setCodeForTesting] = useState<string | null>(null);
 
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
     const digits = phoneNumber.replace(/\D/g, '');
@@ -107,25 +106,16 @@ const Register = () => {
       console.log("Sending verification for phone:", fullPhone);
       
       const {
-        data,
         error
       } = await signInWithPhone(fullPhone);
-      
       if (error) {
         console.error("Error response from signInWithPhone:", error);
         throw new Error(error.message || "حدث خطأ أثناء إرسال رمز التحقق");
       }
-      
-      // If we received a code for development purposes or due to WhatsApp failure
-      if (data?.code) {
-        console.log("Received test code:", data.code);
-        setCodeForTesting(data.code);
-      }
-      
       setIsVerifying(true);
       toast({
         title: "تم إرسال رمز التحقق",
-        description: data?.message || "تم إرسال رمز التحقق عبر واتساب"
+        description: "تم إظهار رمز التحقق في التطبيق"
       });
     } catch (err: any) {
       toast({
@@ -381,12 +371,6 @@ const Register = () => {
                   </div>
                 </div>
               )}
-              
-              {errors.server && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-700">{errors.server}</p>
-                </div>
-              )}
             </div>
 
             <Button type="submit" disabled={isSubmitting} className="w-full bg-primary text-white py-3">
@@ -401,19 +385,10 @@ const Register = () => {
             </DialogHeader>
             <div className="flex flex-col items-center space-y-4">
               <p className="text-sm text-gray-500 text-center">
-                تم إرسال رمز التحقق عبر واتساب إلى
+                تم عرض رمز التحقق في التطبيق
                 <br />
                 <span className="font-bold">{countryCode.dialCode} {phone}</span>
               </p>
-              
-              {codeForTesting && (
-                <div className="w-full p-3 bg-yellow-50 border border-yellow-200 rounded-md mb-2">
-                  <p className="text-yellow-700 text-sm font-medium text-center">رمز التحقق للتطوير:</p>
-                  <p className="text-yellow-800 text-lg font-bold text-center mt-1 font-mono">{codeForTesting}</p>
-                  <p className="text-yellow-600 text-xs text-center mt-1">يظهر هذا الرمز فقط في بيئة التطوير أو عند فشل إرسال الرسالة عبر واتساب</p>
-                </div>
-              )}
-              
               <InputOTP value={verificationCode} onChange={setVerificationCode} maxLength={6}>
                 <InputOTPGroup>
                   <InputOTPSlot index={0} />
