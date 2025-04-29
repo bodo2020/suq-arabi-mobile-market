@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Plus, Trash2, Home } from 'lucide-react';
@@ -7,12 +6,13 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase, Address } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
 
-// Modified to match the Address type structure
-interface AddressWithNames extends Omit<Address, 'governorates' | 'cities' | 'areas' | 'neighborhoods'> {
-  governorates?: { id: string; name: string };
-  cities?: { id: string; name: string };
-  areas?: { id: string; name: string };
-  neighborhoods?: { id: string; name: string };
+interface AddressWithNames extends Address {
+  governorates?: { name: string };
+  cities?: { name: string };
+  areas?: { name: string };
+  neighborhoods?: { name: string };
+  latitude?: number;
+  longitude?: number;
 }
 
 const AddressManager = () => {
