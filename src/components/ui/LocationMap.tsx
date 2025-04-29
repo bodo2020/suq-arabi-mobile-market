@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 
-// Make sure this is at the top of the file to ensure types are loaded
+// Import our type definitions
 import '@/types/google-maps.d.ts';
 
 interface LocationMapProps {
@@ -188,7 +188,19 @@ const LocationMap: React.FC<LocationMapProps> = ({
       <div 
         ref={mapRef} 
         className="h-[300px] w-full rounded-lg mb-3 bg-gray-100"
-      ></div>
+      >
+        {(!window.google || !window.google.maps) && (
+          <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+            <div className="bg-gray-400 rounded-full p-3 mb-2">
+              <MapPin size={24} className="text-white" />
+            </div>
+            <h3 className="text-xl font-medium mb-2">تحميل الخريطة...</h3>
+            <p className="text-gray-500 text-sm">
+              إذا استمرت المشكلة، تحقق من اتصال الإنترنت الخاص بك
+            </p>
+          </div>
+        )}
+      </div>
       
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">

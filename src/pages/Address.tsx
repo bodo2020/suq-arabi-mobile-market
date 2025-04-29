@@ -9,7 +9,8 @@ import { useUser } from '@/contexts/UserContext';
 import LocationMap from '@/components/ui/LocationMap';
 import LocationPicker from '@/components/ui/LocationPicker';
 import Script from '@/components/ui/Script';
-// Import types correctly with .d.ts extension
+
+// Import our Google Maps type definitions
 import '@/types/google-maps.d.ts';
 
 const Address = () => {
@@ -214,7 +215,7 @@ const Address = () => {
   return (
     <MainLayout>
       <Script 
-        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&loading=async`}
         onLoad={() => setMapsLoaded(true)} 
       />
       
