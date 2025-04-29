@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
+
+// Import the declaration file
 import '@/types/google-maps.d.ts';
 
 interface LocationMapProps {
