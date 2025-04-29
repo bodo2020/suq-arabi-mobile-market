@@ -5,9 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
-
-// Make sure this is at the top of the file to ensure types are loaded
-import '@/types/google-maps.d.ts';
+import Script from '@/components/ui/Script';
 
 interface LocationMapProps {
   onLocationSelect: (lat: number, lng: number, addressText: string) => void;
@@ -29,11 +27,18 @@ const LocationMap: React.FC<LocationMapProps> = ({
   const { toast } = useToast();
   const { user } = useUser();
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
+
+  // Handle Google Maps script loading
+  const handleMapScriptLoad = () => {
+    console.log("Google Maps script loaded");
+    setMapScriptLoaded(true);
+  };
 
   // Initialize the map
   useEffect(() => {
-    // Only proceed if the map element exists
-    if (!mapRef.current) return;
+    // Only proceed if the map element exists and script is loaded
+    if (!mapRef.current || !mapScriptLoaded) return;
 
     // Function to initialize Google Maps
     const initMap = () => {
@@ -95,21 +100,12 @@ const LocationMap: React.FC<LocationMapProps> = ({
       }
     };
 
-    // Try to initialize the map once the script is loaded
-    const checkGoogleMapsLoaded = setInterval(() => {
-      if (initMap()) {
-        clearInterval(checkGoogleMapsLoaded);
-        getUserLocation();
-      }
-    }, 500);
-
-    // Clear interval on component unmount
-    return () => clearInterval(checkGoogleMapsLoaded);
-  }, [initialLat, initialLng]);
+    initMap();
+  }, [initialLat, initialLng, mapScriptLoaded]);
 
   // Get user's current location
   const getUserLocation = () => {
-    if (!map || !marker || !window.google) return;
+    if (!map || !marker || !window.google || !window.google.maps) return;
 
     if (navigator.geolocation) {
       // Show toast to inform user about location request
@@ -240,16 +236,35 @@ const LocationMap: React.FC<LocationMapProps> = ({
 
   return (
     <div className="flex flex-col">
+      <Script 
+        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype`}
+        onLoad={handleMapScriptLoad} 
+      />
+      
       <div 
         ref={mapRef} 
         className="h-[300px] w-full rounded-lg mb-3 bg-gray-100"
-      ></div>
+      >
+        {!mapLoaded && (
+          <div className="flex items-center justify-center h-full bg-gray-100">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
+          </div>
+        )}
+      </div>
       
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">
           <MapPin size={16} className="ml-1 text-primary" />
           <span className="text-sm">حرك المؤشر لتحديد موقعك بدقة</span>
         </div>
+        <Button
+          onClick={getUserLocation}
+          size="sm"
+          variant="outline"
+          className="ml-2 text-xs"
+        >
+          تحديد موقعي
+        </Button>
         <Button
           onClick={saveLocationToDatabase}
           disabled={loading}

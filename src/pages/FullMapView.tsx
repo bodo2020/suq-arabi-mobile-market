@@ -6,6 +6,12 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Script from '@/components/ui/Script';
 
+interface SelectedLocation {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
 const FullMapView: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,11 +21,8 @@ const FullMapView: React.FC = () => {
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
   const [loading, setLoading] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{
-    lat: number;
-    lng: number;
-    address: string;
-  } | null>(null);
+  const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   
   const queryParams = new URLSearchParams(location.search);
   const initialLat = parseFloat(queryParams.get('lat') || '30.0444');
@@ -117,28 +120,30 @@ const FullMapView: React.FC = () => {
     }
   ];
 
-  // Initialize the map
+  // Handle Google Maps script loading
+  const handleMapScriptLoad = () => {
+    console.log("Google Maps script loaded");
+    setMapScriptLoaded(true);
+  };
+  
+  // Initialize the map once the script is loaded
   useEffect(() => {
-    if (!mapRef.current) return;
-
-    const initMap = () => {
-      try {
-        if (!window.google || !window.google.maps) {
-          console.log("Google Maps not loaded yet, waiting...");
-          return false;
-        }
-
-        console.log("Initializing Google Maps");
-        
+    if (!mapRef.current || !mapScriptLoaded) return;
+    
+    try {
+      console.log("Initializing Google Maps");
+      
+      // Check if Google Maps API is available
+      if (window.google && window.google.maps) {
         const mapOptions: google.maps.MapOptions = {
           center: { lat: initialLat, lng: initialLng },
-          zoom: 9, // More zoomed out view (lower number = more zoomed out)
+          zoom: 9, // More zoomed out view
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
           styles: darkMapStyle, // Apply dark style
           backgroundColor: '#242f3e', // Dark background color
-          zoomControl: true, // Enable zoom controls for manual zooming
+          zoomControl: true, // Enable zoom controls
           gestureHandling: 'greedy' // Makes the map easier to use on mobile
         };
 
@@ -153,14 +158,16 @@ const FullMapView: React.FC = () => {
         });
         setMarker(newMarker);
         
+        // Get initial location address
+        reverseGeocode(initialLat, initialLng);
+        
         setMapLoaded(true);
 
         // Add click event to the map
         newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
-          const latLng = e.latLng;
-          if (latLng) {
-            newMarker.setPosition(latLng);
-            reverseGeocode(latLng.lat(), latLng.lng());
+          if (e.latLng) {
+            newMarker.setPosition(e.latLng);
+            reverseGeocode(e.latLng.lat(), e.latLng.lng());
           }
         });
 
@@ -171,26 +178,34 @@ const FullMapView: React.FC = () => {
             reverseGeocode(position.lat(), position.lng());
           }
         });
-        
-        return true;
-      } catch (error) {
-        console.error("Error initializing map:", error);
-        return false;
+      } else {
+        console.error("Google Maps API not available");
+        toast({
+          title: "خطأ",
+          description: "لم يتم تحميل خرائط Google بشكل صحيح",
+          variant: "destructive"
+        });
       }
-    };
-
-    const checkGoogleMapsLoaded = setInterval(() => {
-      if (initMap()) {
-        clearInterval(checkGoogleMapsLoaded);
-      }
-    }, 500);
-
-    return () => clearInterval(checkGoogleMapsLoaded);
-  }, [initialLat, initialLng]);
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل الخريطة",
+        variant: "destructive"
+      });
+    }
+  }, [initialLat, initialLng, mapScriptLoaded, toast]);
 
   // Get user's current location
   const getUserLocation = () => {
-    if (!map || !marker || !window.google) return;
+    if (!window.google || !window.google.maps || !map || !marker) {
+      toast({
+        title: "خطأ",
+        description: "الخريطة غير جاهزة بعد",
+        variant: "destructive"
+      });
+      return;
+    }
 
     if (navigator.geolocation) {
       toast({
@@ -250,21 +265,30 @@ const FullMapView: React.FC = () => {
   };
 
   // Reverse geocode to get address from coordinates
-  const reverseGeocode = async (lat: number, lng: number) => {
+  const reverseGeocode = (lat: number, lng: number) => {
     if (!window.google || !window.google.maps) {
       console.error("Google Maps not loaded");
       return;
     }
 
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-      if (status === "OK" && results && results[0]) {
-        const addressText = results[0].formatted_address;
-        setSelectedLocation({ lat, lng, address: addressText });
-      } else {
-        console.error("Geocoder failed due to: " + status);
-      }
-    });
+    try {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          const addressText = results[0].formatted_address;
+          setSelectedLocation({ lat, lng, address: addressText });
+        } else {
+          console.error("Geocoder failed due to: " + status);
+          toast({
+            title: "خطأ",
+            description: "تعذر الحصول على العنوان لهذا الموقع",
+            variant: "destructive"
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Geocoder error:", error);
+    }
   };
 
   const handleBack = () => {
@@ -288,8 +312,8 @@ const FullMapView: React.FC = () => {
   return (
     <div className="fixed inset-0 bg-[#222222] flex flex-col z-50">
       <Script 
-        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places`}
-        onLoad={() => console.log("Google Maps script loaded")} 
+        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype`}
+        onLoad={handleMapScriptLoad}
       />
       
       {/* Header */}
@@ -310,6 +334,11 @@ const FullMapView: React.FC = () => {
         ref={mapRef} 
         className="flex-1 w-full relative"
       >
+        {!mapLoaded && (
+          <div className="absolute inset-0 bg-[#1a1f25] flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+        )}
         {/* Zoom in button overlay */}
         <div className="absolute top-4 end-4 z-10">
           <Button
@@ -330,7 +359,7 @@ const FullMapView: React.FC = () => {
           <div className="mb-4 text-sm text-gray-300">{selectedLocation.address}</div>
         )}
         
-        <div className="flex space-x-3 space-x-reverse">
+        <div className="flex space-x-3 space-x-reverse rtl:space-x-reverse">
           <Button
             onClick={getUserLocation}
             variant="outline"
