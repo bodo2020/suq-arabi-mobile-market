@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 
