@@ -15,18 +15,15 @@ const FullMapView: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
-  const [loading, setLoading] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   
-  // Store references to map objects for cleanup
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markerInstanceRef = useRef<google.maps.Marker | null>(null);
-  const mapListenersRef = useRef<google.maps.MapsEventListener[]>([]);
+  // Refs for Google Maps objects
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
+  const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
   
   const queryParams = new URLSearchParams(location.search);
   const initialLat = parseFloat(queryParams.get('lat') || '30.0444');
@@ -75,7 +72,7 @@ const FullMapView: React.FC = () => {
     {
       featureType: "road",
       elementType: "geometry.stroke",
-      stylers: [{ color: "#212a37" }]
+      stylers: [{ color: "#212835" }]
     },
     {
       featureType: "road",
@@ -134,97 +131,94 @@ const FullMapView: React.FC = () => {
   useEffect(() => {
     return () => {
       // Clear all listeners
-      if (mapListenersRef.current.length > 0) {
-        mapListenersRef.current.forEach(listener => {
+      if (listenersRef.current.length > 0) {
+        listenersRef.current.forEach(listener => {
           if (listener) {
-            listener.remove();
+            try {
+              listener.remove();
+            } catch (e) {
+              console.error("Error removing listener:", e);
+            }
           }
         });
-        mapListenersRef.current = [];
+        listenersRef.current = [];
       }
       
       // Remove marker from map
-      if (markerInstanceRef.current) {
-        markerInstanceRef.current.setMap(null);
-        markerInstanceRef.current = null;
+      if (markerRef.current) {
+        try {
+          markerRef.current.setMap(null);
+        } catch (e) {
+          console.error("Error removing marker:", e);
+        }
+        markerRef.current = null;
       }
       
-      // Clear map instance reference
-      mapInstanceRef.current = null;
+      mapRef.current = null;
     };
   }, []);
   
-  // Initialize the map once the script is loaded
+  // Initialize the map once the script is loaded and the container is ready
   useEffect(() => {
-    if (!mapRef.current || !mapScriptLoaded) return;
+    if (!mapContainerRef.current || !mapScriptLoaded || !window.google || !window.google.maps) {
+      return;
+    }
     
     try {
       console.log("Initializing Google Maps");
       
-      // Check if Google Maps API is available
-      if (window.google && window.google.maps) {
-        // Create map options
-        const mapOptions: google.maps.MapOptions = {
-          center: { lat: initialLat, lng: initialLng },
-          zoom: 9, // More zoomed out view
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          styles: darkMapStyle, // Apply dark style
-          backgroundColor: '#242f3e', // Dark background color
-          zoomControl: true, // Enable zoom controls
-          gestureHandling: 'greedy' // Makes the map easier to use on mobile
-        };
+      // Create map options
+      const mapOptions: google.maps.MapOptions = {
+        center: { lat: initialLat, lng: initialLng },
+        zoom: 9, // More zoomed out view
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        styles: darkMapStyle, // Apply dark style
+        backgroundColor: '#242f3e', // Dark background color
+        zoomControl: true, // Enable zoom controls
+        gestureHandling: 'greedy' // Makes the map easier to use on mobile
+      };
 
-        // Create new map instance
-        const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
-        setMap(newMap);
-        mapInstanceRef.current = newMap;
-        
-        // Create marker
-        const newMarker = new window.google.maps.Marker({
-          position: { lat: initialLat, lng: initialLng },
-          map: newMap,
-          draggable: true,
-          animation: window.google.maps.Animation.DROP,
-        });
-        setMarker(newMarker);
-        markerInstanceRef.current = newMarker;
-        
-        // Get initial location address
-        reverseGeocode(initialLat, initialLng);
-        
-        setMapLoaded(true);
+      // Create new map instance
+      const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
+      mapRef.current = map;
+      
+      // Create marker
+      const marker = new window.google.maps.Marker({
+        position: { lat: initialLat, lng: initialLng },
+        map: map,
+        draggable: true,
+        animation: window.google.maps.Animation.DROP,
+      });
+      markerRef.current = marker;
+      
+      // Get initial location address
+      reverseGeocode(initialLat, initialLng);
+      
+      setMapLoaded(true);
 
-        // Add event listeners and store references for cleanup
-        const clickListener = newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
-          if (e.latLng) {
-            newMarker.setPosition(e.latLng);
-            reverseGeocode(e.latLng.lat(), e.latLng.lng());
-          }
-        });
-        mapListenersRef.current.push(clickListener);
+      // Add event listeners
+      const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) {
+          marker.setPosition(e.latLng);
+          reverseGeocode(e.latLng.lat(), e.latLng.lng());
+        }
+      });
+      listenersRef.current.push(clickListener);
 
-        const dragendListener = newMarker.addListener('dragend', () => {
-          const position = newMarker.getPosition();
-          if (position) {
-            reverseGeocode(position.lat(), position.lng());
-          }
-        });
-        mapListenersRef.current.push(dragendListener);
-      } else {
-        console.error("Google Maps API not available");
-        toast({
-          title: "خطأ",
-          description: "لم يتم تحميل خرائط Google بشكل صحيح",
-          variant: "destructive"
-        });
-      }
+      const dragendListener = marker.addListener('dragend', () => {
+        const position = marker.getPosition();
+        if (position) {
+          reverseGeocode(position.lat(), position.lng());
+        }
+      });
+      listenersRef.current.push(dragendListener);
     } catch (error) {
       console.error("Error initializing map:", error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحميل الخريطة",
+        description: "حدث خطأ أثناء تهيئة الخريطة",
         variant: "destructive"
       });
     }
@@ -232,7 +226,7 @@ const FullMapView: React.FC = () => {
 
   // Get user's current location
   const getUserLocation = () => {
-    if (!window.google || !window.google.maps || !map || !marker) {
+    if (!mapRef.current || !markerRef.current || !window.google || !window.google.maps) {
       toast({
         title: "خطأ",
         description: "الخريطة غير جاهزة بعد",
@@ -255,9 +249,9 @@ const FullMapView: React.FC = () => {
             lng: position.coords.longitude
           };
           
-          map.setCenter(userLocation);
-          map.setZoom(14); // More zoomed in when finding user location
-          marker.setPosition(userLocation);
+          mapRef.current?.setCenter(userLocation);
+          mapRef.current?.setZoom(14); // More zoomed in when finding user location
+          markerRef.current?.setPosition(userLocation);
           
           reverseGeocode(userLocation.lat, userLocation.lng);
           
@@ -291,10 +285,10 @@ const FullMapView: React.FC = () => {
 
   // Zoom in to the map
   const zoomIn = () => {
-    if (!map) return;
-    const currentZoom = map.getZoom();
+    if (!mapRef.current) return;
+    const currentZoom = mapRef.current.getZoom();
     if (currentZoom !== undefined) {
-      map.setZoom(currentZoom + 1);
+      mapRef.current.setZoom(currentZoom + 1);
     }
   };
 
@@ -365,7 +359,7 @@ const FullMapView: React.FC = () => {
       
       {/* Map takes up most of the screen */}
       <div 
-        ref={mapRef} 
+        ref={mapContainerRef} 
         className="flex-1 w-full relative"
       >
         {!mapLoaded && (

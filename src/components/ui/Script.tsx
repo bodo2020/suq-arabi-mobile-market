@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 interface ScriptProps {
   src: string;
@@ -8,80 +7,81 @@ interface ScriptProps {
   onLoad?: () => void;
 }
 
+// Global script registry
+if (typeof window !== 'undefined') {
+  window.scriptRegistry = window.scriptRegistry || new Map<string, string>();
+}
+
 const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad }) => {
-  const [loaded, setLoaded] = useState(false);
-
   useEffect(() => {
-    // Create a global script loading registry to avoid duplicates
-    if (!window.scriptRegistry) {
-      window.scriptRegistry = new Map();
-    }
+    // Function to handle script loaded event
+    const handleScriptLoad = () => {
+      if (onLoad) onLoad();
+    };
 
-    // Check if script is already loaded or loading
-    if (window.scriptRegistry.has(src)) {
-      // If script is already loaded, call onLoad
-      if (window.scriptRegistry.get(src) === 'loaded') {
-        setLoaded(true);
-        if (onLoad) onLoad();
-      } else {
-        // Script is loading, add a listener for when it's done
-        const eventName = `script-loaded-${src}`;
-        const handleScriptLoad = () => {
-          setLoaded(true);
-          if (onLoad) onLoad();
-        };
-        
-        window.addEventListener(eventName, handleScriptLoad);
-        
-        // Return cleanup function to remove listener
-        return () => {
-          window.removeEventListener(eventName, handleScriptLoad);
-        };
-      }
+    // Check if script is already in the document
+    const existingScript = document.querySelector(`script[src="${src}"]`);
+    
+    // If script is already loaded and in registry
+    if (window.scriptRegistry.has(src) && window.scriptRegistry.get(src) === 'loaded') {
+      handleScriptLoad();
+      return;
+    }
+    
+    // If script element exists but not in our registry
+    if (existingScript) {
+      window.scriptRegistry.set(src, 'loaded');
+      handleScriptLoad();
       return;
     }
 
-    // Mark script as loading
-    window.scriptRegistry.set(src, 'loading');
+    // If script is currently loading according to registry
+    if (window.scriptRegistry.has(src) && window.scriptRegistry.get(src) === 'loading') {
+      const eventName = `script-loaded-${src}`;
+      window.addEventListener(eventName, handleScriptLoad, { once: true });
+      
+      return () => {
+        window.removeEventListener(eventName, handleScriptLoad);
+      };
+    }
 
-    // Create script element
+    // Otherwise, create and append script
+    window.scriptRegistry.set(src, 'loading');
+    
     const script = document.createElement('script');
     script.src = src;
     script.async = async;
     script.defer = defer;
     
-    // Event listener for when script loads
-    const handleLoad = () => {
-      setLoaded(true);
+    const loadHandler = () => {
       window.scriptRegistry.set(src, 'loaded');
       
-      // Dispatch event to notify other instances
+      // Notify other instances
       const loadEvent = new CustomEvent(`script-loaded-${src}`);
       window.dispatchEvent(loadEvent);
       
-      if (onLoad) onLoad();
+      handleScriptLoad();
     };
     
-    script.addEventListener('load', handleLoad);
+    script.addEventListener('load', loadHandler);
     
-    // Append script to document head
+    // Add script to document
     document.head.appendChild(script);
     
     // Cleanup function
     return () => {
-      // Don't remove the script on component unmount as other components may need it
-      // But we should clean up our event listener
-      script.removeEventListener('load', handleLoad);
+      // Don't remove the script from DOM as it may be used by other components
+      script.removeEventListener('load', loadHandler);
     };
   }, [src, async, defer, onLoad]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 // Add script registry to window type
 declare global {
   interface Window {
-    scriptRegistry?: Map<string, string>;
+    scriptRegistry: Map<string, string>;
   }
 }
 
