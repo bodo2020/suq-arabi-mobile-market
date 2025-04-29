@@ -370,6 +370,8 @@ export type Database = {
           governorate_id: string | null
           id: string
           is_default: boolean | null
+          latitude: number | null
+          longitude: number | null
           neighborhood_id: string | null
           updated_at: string | null
           user_id: string
@@ -382,6 +384,8 @@ export type Database = {
           governorate_id?: string | null
           id?: string
           is_default?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           neighborhood_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -394,6 +398,8 @@ export type Database = {
           governorate_id?: string | null
           id?: string
           is_default?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           neighborhood_id?: string | null
           updated_at?: string | null
           user_id?: string
