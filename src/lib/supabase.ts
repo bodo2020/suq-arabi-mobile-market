@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 
@@ -74,7 +75,7 @@ export type CartItem = {
   quantity: number;
 };
 
-// Updated Address type to include join data for name properties and location coordinates
+// Updated Address type to include location coordinates
 export type Address = {
   id: string;
   user_id: string;
@@ -89,10 +90,10 @@ export type Address = {
   latitude?: number | null;
   longitude?: number | null;
   // Join properties
-  governorates?: { id: string; name: string };
-  cities?: { id: string; name: string };
-  areas?: { id: string; name: string };
-  neighborhoods?: { id: string; name: string };
+  governorates?: { id: string; name: string } | null;
+  cities?: { id: string; name: string } | null;
+  areas?: { id: string; name: string } | null;
+  neighborhoods?: { id: string; name: string } | null;
 };
 
 export type Order = {

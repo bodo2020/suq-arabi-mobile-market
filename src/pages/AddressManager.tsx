@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -7,12 +6,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase, Address } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
 
-type AddressWithNames = Address;
-
 const AddressManager = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [addresses, setAddresses] = useState<AddressWithNames[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,10 +29,10 @@ const AddressManager = () => {
         .from('customer_addresses')
         .select(`
           *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
+          governorates(id, name),
+          cities(id, name),
+          areas(id, name),
+          neighborhoods(id, name)
         `)
         .eq('user_id', sessionData.session.user.id)
         .order('is_default', { ascending: false });
@@ -44,7 +41,7 @@ const AddressManager = () => {
         throw error;
       }
       
-      setAddresses(data || []);
+      setAddresses(data as Address[] || []);
     } catch (error) {
       console.error('Error fetching addresses:', error);
       toast({

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, Check, MapPin } from 'lucide-react';
@@ -59,7 +60,7 @@ const Address = () => {
               city: data.city_id || undefined,
               area: data.area_id || undefined,
               neighborhood: data.neighborhood_id || undefined,
-              // Cast latitude and longitude to ensure TypeScript knows they're numbers
+              // Cast latitude and longitude to numbers if they exist
               latitude: data.latitude ? Number(data.latitude) : undefined,
               longitude: data.longitude ? Number(data.longitude) : undefined
             });
