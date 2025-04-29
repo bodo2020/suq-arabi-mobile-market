@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,12 +25,10 @@ const LocationMap: React.FC<LocationMapProps> = ({
   const { toast } = useToast();
   const { user } = useUser();
 
-  // Initialize the map
   useEffect(() => {
     const loadMap = async () => {
       if (!mapRef.current) return;
 
-      // Check if Google Maps is already loaded
       if (!window.google?.maps) {
         console.error('Google Maps is not loaded');
         return;
@@ -48,7 +45,6 @@ const LocationMap: React.FC<LocationMapProps> = ({
       const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
       setMap(newMap);
 
-      // Add marker at initial position
       const newMarker = new window.google.maps.Marker({
         position: { lat: initialLat, lng: initialLng },
         map: newMap,
@@ -57,7 +53,6 @@ const LocationMap: React.FC<LocationMapProps> = ({
       });
       setMarker(newMarker);
 
-      // Add click event to the map
       newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
         const latLng = e.latLng;
         if (latLng) {
@@ -66,7 +61,6 @@ const LocationMap: React.FC<LocationMapProps> = ({
         }
       });
 
-      // Add dragend event to the marker
       newMarker.addListener('dragend', () => {
         const position = newMarker.getPosition();
         if (position) {
@@ -74,7 +68,6 @@ const LocationMap: React.FC<LocationMapProps> = ({
         }
       });
 
-      // Try to get user's current location
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -97,7 +90,6 @@ const LocationMap: React.FC<LocationMapProps> = ({
       }
     };
 
-    // Load the map after Google Maps script is loaded
     const checkGoogleMapsLoaded = setInterval(() => {
       if (window.google?.maps) {
         clearInterval(checkGoogleMapsLoaded);
@@ -105,11 +97,9 @@ const LocationMap: React.FC<LocationMapProps> = ({
       }
     }, 100);
 
-    // Clear interval on component unmount
     return () => clearInterval(checkGoogleMapsLoaded);
   }, [initialLat, initialLng]);
 
-  // Reverse geocode to get address from coordinates
   const reverseGeocode = async (lat: number, lng: number) => {
     if (!window.google?.maps) return;
 
@@ -122,7 +112,6 @@ const LocationMap: React.FC<LocationMapProps> = ({
     });
   };
 
-  // Save location to database
   const saveLocationToDatabase = async () => {
     if (!marker || !user) return;
 
