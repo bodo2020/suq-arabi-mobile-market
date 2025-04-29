@@ -125,5 +125,6 @@ declare global {
     google: {
       maps: typeof google.maps;
     };
+    scriptRegistry?: Map<string, string>;
   }
 }

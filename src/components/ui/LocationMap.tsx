@@ -28,12 +28,41 @@ const LocationMap: React.FC<LocationMapProps> = ({
   const { user } = useUser();
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
+  
+  // References for cleanup
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markerInstanceRef = useRef<google.maps.Marker | null>(null);
+  const mapListenersRef = useRef<google.maps.MapsEventListener[]>([]);
 
   // Handle Google Maps script loading
   const handleMapScriptLoad = () => {
     console.log("Google Maps script loaded");
     setMapScriptLoaded(true);
   };
+
+  // Clean up maps resources on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all listeners
+      if (mapListenersRef.current.length > 0) {
+        mapListenersRef.current.forEach(listener => {
+          if (listener) {
+            listener.remove();
+          }
+        });
+        mapListenersRef.current = [];
+      }
+      
+      // Remove marker from map
+      if (markerInstanceRef.current) {
+        markerInstanceRef.current.setMap(null);
+        markerInstanceRef.current = null;
+      }
+      
+      // Clear map instance reference
+      mapInstanceRef.current = null;
+    };
+  }, []);
 
   // Initialize the map
   useEffect(() => {
@@ -63,6 +92,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         // Create map
         const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
         setMap(newMap);
+        mapInstanceRef.current = newMap;
 
         // Add marker at initial position
         const newMarker = new window.google.maps.Marker({
@@ -72,26 +102,28 @@ const LocationMap: React.FC<LocationMapProps> = ({
           animation: window.google.maps.Animation.DROP,
         });
         setMarker(newMarker);
+        markerInstanceRef.current = newMarker;
         
         // Set map loaded state
         setMapLoaded(true);
 
-        // Add click event to the map
-        newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
+        // Add event listeners and store references for cleanup
+        const clickListener = newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
           const latLng = e.latLng;
           if (latLng) {
             newMarker.setPosition(latLng);
             reverseGeocode(latLng.lat(), latLng.lng());
           }
         });
+        mapListenersRef.current.push(clickListener);
 
-        // Add dragend event to the marker
-        newMarker.addListener('dragend', () => {
+        const dragendListener = newMarker.addListener('dragend', () => {
           const position = newMarker.getPosition();
           if (position) {
             reverseGeocode(position.lat(), position.lng());
           }
         });
+        mapListenersRef.current.push(dragendListener);
         
         return true;
       } catch (error) {

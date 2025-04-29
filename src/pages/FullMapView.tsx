@@ -24,6 +24,10 @@ const FullMapView: React.FC = () => {
   const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markerInstanceRef = useRef<google.maps.Marker | null>(null);
+  const mapListenersRef = useRef<google.maps.MapsEventListener[]>([]);
+  
   const queryParams = new URLSearchParams(location.search);
   const initialLat = parseFloat(queryParams.get('lat') || '30.0444');
   const initialLng = parseFloat(queryParams.get('lng') || '31.2357');
@@ -126,6 +130,30 @@ const FullMapView: React.FC = () => {
     setMapScriptLoaded(true);
   };
   
+  // Clean up maps resources on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all listeners
+      if (mapListenersRef.current.length > 0) {
+        mapListenersRef.current.forEach(listener => {
+          if (listener) {
+            listener.remove();
+          }
+        });
+        mapListenersRef.current = [];
+      }
+      
+      // Remove marker from map
+      if (markerInstanceRef.current) {
+        markerInstanceRef.current.setMap(null);
+        markerInstanceRef.current = null;
+      }
+      
+      // Clear map instance reference
+      mapInstanceRef.current = null;
+    };
+  }, []);
+  
   // Initialize the map once the script is loaded
   useEffect(() => {
     if (!mapRef.current || !mapScriptLoaded) return;
@@ -135,6 +163,7 @@ const FullMapView: React.FC = () => {
       
       // Check if Google Maps API is available
       if (window.google && window.google.maps) {
+        // Create map options
         const mapOptions: google.maps.MapOptions = {
           center: { lat: initialLat, lng: initialLng },
           zoom: 9, // More zoomed out view
@@ -147,9 +176,12 @@ const FullMapView: React.FC = () => {
           gestureHandling: 'greedy' // Makes the map easier to use on mobile
         };
 
+        // Create new map instance
         const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
         setMap(newMap);
-
+        mapInstanceRef.current = newMap;
+        
+        // Create marker
         const newMarker = new window.google.maps.Marker({
           position: { lat: initialLat, lng: initialLng },
           map: newMap,
@@ -157,27 +189,29 @@ const FullMapView: React.FC = () => {
           animation: window.google.maps.Animation.DROP,
         });
         setMarker(newMarker);
+        markerInstanceRef.current = newMarker;
         
         // Get initial location address
         reverseGeocode(initialLat, initialLng);
         
         setMapLoaded(true);
 
-        // Add click event to the map
-        newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
+        // Add event listeners and store references for cleanup
+        const clickListener = newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
           if (e.latLng) {
             newMarker.setPosition(e.latLng);
             reverseGeocode(e.latLng.lat(), e.latLng.lng());
           }
         });
+        mapListenersRef.current.push(clickListener);
 
-        // Add dragend event to the marker
-        newMarker.addListener('dragend', () => {
+        const dragendListener = newMarker.addListener('dragend', () => {
           const position = newMarker.getPosition();
           if (position) {
             reverseGeocode(position.lat(), position.lng());
           }
         });
+        mapListenersRef.current.push(dragendListener);
       } else {
         console.error("Google Maps API not available");
         toast({

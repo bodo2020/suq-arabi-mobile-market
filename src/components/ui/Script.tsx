@@ -12,15 +12,29 @@ const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Check if script already exists
-    const existingScript = document.querySelector(`script[src="${src}"]`);
-    
-    if (existingScript) {
-      // Script exists, consider it loaded
-      setLoaded(true);
-      if (onLoad) onLoad();
+    // Create a global script loading registry to avoid duplicates
+    if (!window.scriptRegistry) {
+      window.scriptRegistry = new Map();
+    }
+
+    // Check if script is already loaded or loading
+    if (window.scriptRegistry.has(src)) {
+      // If script is already loaded, call onLoad
+      if (window.scriptRegistry.get(src) === 'loaded') {
+        setLoaded(true);
+        if (onLoad) onLoad();
+      } else {
+        // Script is loading, add a listener for when it's done
+        window.addEventListener(`script-loaded-${src}`, () => {
+          setLoaded(true);
+          if (onLoad) onLoad();
+        }, { once: true });
+      }
       return;
     }
+
+    // Mark script as loading
+    window.scriptRegistry.set(src, 'loading');
 
     // Create script element
     const script = document.createElement('script');
@@ -31,6 +45,11 @@ const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad
     // Event listener for when script loads
     script.addEventListener('load', () => {
       setLoaded(true);
+      window.scriptRegistry.set(src, 'loaded');
+      
+      // Dispatch event to notify other instances
+      window.dispatchEvent(new CustomEvent(`script-loaded-${src}`));
+      
       if (onLoad) onLoad();
     });
     
@@ -39,11 +58,20 @@ const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad
     
     // Cleanup function
     return () => {
-      // Don't remove the script on component unmount, as other components might need it
+      // Don't remove the script on component unmount
+      // But we can clean up event listeners
+      window.removeEventListener(`script-loaded-${src}`, () => {}, { once: true });
     };
   }, [src, async, defer, onLoad]);
 
   return null; // This component doesn't render anything
 };
+
+// Add script registry to window type
+declare global {
+  interface Window {
+    scriptRegistry?: Map<string, string>;
+  }
+}
 
 export default Script;
