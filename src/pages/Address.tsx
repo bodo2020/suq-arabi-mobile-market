@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, Check, MapPin } from 'lucide-react';
@@ -8,8 +9,7 @@ import { useUser } from '@/contexts/UserContext';
 import LocationMap from '@/components/ui/LocationMap';
 import LocationPicker from '@/components/ui/LocationPicker';
 import Script from '@/components/ui/Script';
-
-// Import our Google Maps type definitions
+// Import types correctly with .d.ts extension
 import '@/types/google-maps.d.ts';
 
 const Address = () => {
@@ -214,7 +214,7 @@ const Address = () => {
   return (
     <MainLayout>
       <Script 
-        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&loading=async`}
+        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places`}
         onLoad={() => setMapsLoaded(true)} 
       />
       

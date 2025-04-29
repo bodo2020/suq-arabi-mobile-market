@@ -1,5 +1,7 @@
 
-// Define explicit Google Maps types
+/// <reference types="google.maps" />
+
+// Define explicit types for Google Maps
 declare namespace google {
   namespace maps {
     class Map {
@@ -84,7 +86,7 @@ declare namespace google {
   }
 }
 
-// Declare the global google namespace on window
+// Declare the global google namespace for window
 declare global {
   interface Window {
     google: typeof google;
