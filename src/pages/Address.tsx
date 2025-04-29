@@ -60,9 +60,9 @@ const Address = () => {
               city: data.city_id || undefined,
               area: data.area_id || undefined,
               neighborhood: data.neighborhood_id || undefined,
-              // Cast latitude and longitude to numbers if they exist
-              latitude: data.latitude ? Number(data.latitude) : undefined,
-              longitude: data.longitude ? Number(data.longitude) : undefined
+              // Add type assertions for latitude and longitude
+              latitude: data.latitude !== null ? Number(data.latitude) : undefined,
+              longitude: data.longitude !== null ? Number(data.longitude) : undefined
             });
           }
         } catch (error) {

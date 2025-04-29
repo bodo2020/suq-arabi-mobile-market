@@ -3,7 +3,9 @@
 
 declare global {
   interface Window {
-    google: typeof google;
+    google: {
+      maps: typeof google.maps;
+    };
   }
 }
 
