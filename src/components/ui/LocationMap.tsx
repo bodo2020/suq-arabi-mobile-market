@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
-import '@/types/google-maps';
 
 interface LocationMapProps {
   onLocationSelect: (lat: number, lng: number, addressText: string) => void;
@@ -23,73 +23,15 @@ const LocationMap: React.FC<LocationMapProps> = ({
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
   const [loading, setLoading] = useState(false);
-  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown');
   const { toast } = useToast();
   const { user } = useUser();
 
-  // Check location permission status
-  useEffect(() => {
-    const checkPermission = async () => {
-      if (navigator.permissions) {
-        try {
-          const result = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
-          setLocationPermission(result.state as 'granted' | 'denied' | 'prompt');
-        } catch (error) {
-          console.error('Error checking location permission:', error);
-          setLocationPermission('unknown');
-        }
-      }
-    };
-    
-    checkPermission();
-  }, []);
-
-  // Request location access
-  const requestLocationAccess = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocationPermission('granted');
-          const userLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          
-          if (map && marker) {
-            map.setCenter(userLocation);
-            marker.setPosition(userLocation);
-            reverseGeocode(userLocation.lat, userLocation.lng);
-          }
-          
-          toast({
-            title: "تم الوصول إلى موقعك",
-            description: "تم تحديد موقعك بنجاح"
-          });
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-          setLocationPermission('denied');
-          toast({
-            variant: "destructive",
-            title: "تعذر الوصول إلى موقعك",
-            description: "يرجى السماح بالوصول إلى الموقع من إعدادات المتصفح"
-          });
-        },
-        { enableHighAccuracy: true }
-      );
-    } else {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "متصفحك لا يدعم خدمة تحديد المواقع"
-      });
-    }
-  };
-
+  // Initialize the map
   useEffect(() => {
     const loadMap = async () => {
       if (!mapRef.current) return;
 
+      // Check if Google Maps is already loaded
       if (!window.google?.maps) {
         console.error('Google Maps is not loaded');
         return;
@@ -106,6 +48,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
       const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
       setMap(newMap);
 
+      // Add marker at initial position
       const newMarker = new window.google.maps.Marker({
         position: { lat: initialLat, lng: initialLng },
         map: newMap,
@@ -114,6 +57,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
       });
       setMarker(newMarker);
 
+      // Add click event to the map
       newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
         const latLng = e.latLng;
         if (latLng) {
@@ -122,6 +66,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         }
       });
 
+      // Add dragend event to the marker
       newMarker.addListener('dragend', () => {
         const position = newMarker.getPosition();
         if (position) {
@@ -129,8 +74,8 @@ const LocationMap: React.FC<LocationMapProps> = ({
         }
       });
 
-      // Only try to get location if permission is granted
-      if (locationPermission === 'granted' && navigator.geolocation) {
+      // Try to get user's current location
+      if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const userLocation = {
@@ -142,13 +87,17 @@ const LocationMap: React.FC<LocationMapProps> = ({
             reverseGeocode(userLocation.lat, userLocation.lng);
           },
           () => {
-            // If we can't get location despite permission being granted, don't show error
-            console.log('Could not get location despite permission being granted');
+            toast({
+              title: "تعذر الوصول إلى موقعك",
+              description: "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا",
+              variant: "destructive"
+            });
           }
         );
       }
     };
 
+    // Load the map after Google Maps script is loaded
     const checkGoogleMapsLoaded = setInterval(() => {
       if (window.google?.maps) {
         clearInterval(checkGoogleMapsLoaded);
@@ -156,9 +105,11 @@ const LocationMap: React.FC<LocationMapProps> = ({
       }
     }, 100);
 
+    // Clear interval on component unmount
     return () => clearInterval(checkGoogleMapsLoaded);
-  }, [initialLat, initialLng, locationPermission]);
+  }, [initialLat, initialLng]);
 
+  // Reverse geocode to get address from coordinates
   const reverseGeocode = async (lat: number, lng: number) => {
     if (!window.google?.maps) return;
 
@@ -171,6 +122,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
     });
   };
 
+  // Save location to database
   const saveLocationToDatabase = async () => {
     if (!marker || !user) return;
 
@@ -234,23 +186,6 @@ const LocationMap: React.FC<LocationMapProps> = ({
         ref={mapRef} 
         className="h-[300px] w-full rounded-lg mb-3 bg-gray-100"
       ></div>
-      
-      {locationPermission !== 'granted' && (
-        <div className="bg-yellow-50 border border-yellow-300 rounded-md p-3 mb-3">
-          <div className="flex items-center">
-            <MapPin size={16} className="ml-2 text-yellow-600" />
-            <span className="text-sm font-medium text-yellow-800">للحصول على أفضل تجربة، يرجى السماح بالوصول إلى موقعك</span>
-          </div>
-          <Button 
-            onClick={requestLocationAccess} 
-            variant="outline" 
-            size="sm" 
-            className="mt-2 w-full text-xs bg-yellow-100 hover:bg-yellow-200 border-yellow-300 text-yellow-800"
-          >
-            السماح بالوصول إلى موقعي
-          </Button>
-        </div>
-      )}
       
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">

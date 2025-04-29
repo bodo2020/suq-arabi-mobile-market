@@ -74,36 +74,25 @@ export type CartItem = {
   quantity: number;
 };
 
-// Updated Address type to include join data for name properties and coordinates
+// Updated Address type to include join data for name properties
 export type Address = {
   id: string;
-  address: string;
   user_id: string;
-  governorate_id: string;
-  city_id: string;
-  area_id: string;
-  neighborhood_id: string;
+  address: string;
+  governorate_id?: string | null;
+  city_id?: string | null;
+  area_id?: string | null;
+  neighborhood_id?: string | null;
   is_default: boolean;
-  created_at: string;
-  updated_at: string;
-  latitude?: number;
-  longitude?: number;
-  governorates: {
-    id: string;
-    name: string;
-  };
-  cities: {
-    id: string;
-    name: string;
-  };
-  areas: {
-    id: string;
-    name: string;
-  };
-  neighborhoods: {
-    id: string;
-    name: string;
-  };
+  created_at?: string;
+  updated_at?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  // Join properties
+  governorates?: { name: string };
+  cities?: { name: string };
+  areas?: { name: string };
+  neighborhoods?: { name: string };
 };
 
 export type Order = {

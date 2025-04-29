@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, Check, MapPin } from 'lucide-react';
@@ -8,7 +9,6 @@ import { useUser } from '@/contexts/UserContext';
 import LocationMap from '@/components/ui/LocationMap';
 import LocationPicker from '@/components/ui/LocationPicker';
 import Script from '@/components/ui/Script';
-import '@/types/google-maps';
 
 const Address = () => {
   const navigate = useNavigate();
@@ -30,6 +30,7 @@ const Address = () => {
   const [addressFromMap, setAddressFromMap] = useState('');
 
   useEffect(() => {
+    // Load saved address if any
     const fetchAddress = async () => {
       if (addressId && user) {
         try {
@@ -70,6 +71,7 @@ const Address = () => {
           });
         }
       } else {
+        // Load saved address from localStorage if no addressId
         const savedAddress = localStorage.getItem('userAddress');
         if (savedAddress) {
           setAddress(savedAddress);
@@ -104,6 +106,7 @@ const Address = () => {
 
     try {
       if (user) {
+        // If logged in, save to database
         const addressData = {
           address,
           user_id: user.id,
@@ -113,17 +116,19 @@ const Address = () => {
           neighborhood_id: location.neighborhood || null,
           latitude: location.latitude || null,
           longitude: location.longitude || null,
-          is_default: false
+          is_default: false // Don't automatically set as default
         };
 
         let result;
         if (addressId) {
+          // Update existing address
           result = await supabase
             .from('customer_addresses')
             .update(addressData)
             .eq('id', addressId)
             .eq('user_id', user.id);
         } else {
+          // Create new address
           result = await supabase
             .from('customer_addresses')
             .insert(addressData)
@@ -134,6 +139,7 @@ const Address = () => {
           throw result.error;
         }
 
+        // Store in localStorage for quick access
         localStorage.setItem('userAddress', address);
 
         if (location.area) {
@@ -166,6 +172,7 @@ const Address = () => {
         });
 
       } else {
+        // For non-logged in users, just store in localStorage
         localStorage.setItem('userAddress', address);
       }
 
@@ -189,6 +196,7 @@ const Address = () => {
       longitude: lng
     }));
     
+    // Optionally update address text if it's empty or if user wants to use the geocoded address
     if (!address || addressFromMap !== addressText) {
       setAddressFromMap(addressText);
     }
@@ -208,6 +216,7 @@ const Address = () => {
       />
       
       <div className="py-4">
+        {/* Header with back button */}
         <div className="flex items-center mb-6">
           <button
             onClick={handleBack}
