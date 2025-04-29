@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,7 +17,6 @@ import ProductCollectionsSection from '@/components/sections/ProductCollectionsS
 import BannersContainer from '@/components/ui/BannersContainer';
 import User from '@/components/ui/User';
 import { useUser } from '@/contexts/UserContext';
-
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
@@ -34,8 +32,9 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const { user } = useUser();
-
+  const {
+    user
+  } = useUser();
   const {
     data: categories = [],
     isLoading: categoriesLoading
@@ -43,7 +42,6 @@ const Index = () => {
     queryKey: ['categories'],
     queryFn: getCategories
   });
-
   const {
     data: productCollections = [],
     isLoading: collectionsLoading
@@ -51,18 +49,15 @@ const Index = () => {
     queryKey: ['productCollections'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from('product_collections')
-          .select('*')
-          .eq('active', true)
-          .order('position');
-        
+        const {
+          data,
+          error
+        } = await supabase.from('product_collections').select('*').eq('active', true).order('position');
         console.log('Fetched collections:', data);
         if (error) {
           console.error('Error fetching collections:', error);
           throw error;
         }
-        
         return data || [];
       } catch (err) {
         console.error('Error in query function:', err);
@@ -70,7 +65,6 @@ const Index = () => {
       }
     }
   });
-
   const {
     data: products = [],
     isLoading: productsLoading
@@ -78,7 +72,6 @@ const Index = () => {
     queryKey: ['products'],
     queryFn: () => getProducts()
   });
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -102,7 +95,6 @@ const Index = () => {
     };
     fetchData();
   }, []);
-
   useEffect(() => {
     if (banners.length > 1) {
       bannerIntervalRef.current = setInterval(() => {
@@ -115,7 +107,6 @@ const Index = () => {
       }
     };
   }, [banners.length]);
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -129,22 +120,17 @@ const Index = () => {
       setProcessingImage(false);
     }
   };
-
   const handleFocusSearchBar = () => {
     navigate('/search');
   };
-
   const handleChangeLocation = () => {
     setPopoverOpen(false);
     navigate('/account/addresses');
   };
-
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
-
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
-
   if (categoriesLoading || productsLoading || collectionsLoading) {
     return <MainLayout>
         <div className="py-4">
@@ -172,27 +158,16 @@ const Index = () => {
         </div>
       </MainLayout>;
   }
-
   const addressSection = <div className="mb-4">
       <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
     </div>;
-
-  return (
-    <MainLayout>
+  return <MainLayout>
       <div className="mb-16 pb-16">
         <div className="relative">
           {banners.length > 0 && <BannersContainer banners={banners} />}
         </div>
         
-        <div className="px-4 py-2 flex justify-end">
-          <Link 
-            to={user ? "/account" : "/phone-login"} 
-            className="flex items-center text-primary"
-          >
-            <span className="ml-1">{user ? "حسابي" : "تسجيل الدخول"}</span>
-            <User size={18} />
-          </Link>
-        </div>
+        
 
         <div className="flex flex-col items-center mb-4">
           <img src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" alt={storeInfo?.name} className="h-16 w-16 mb-1" />
@@ -208,11 +183,9 @@ const Index = () => {
 
         {addressSection}
 
-        {banners.length > 0 && (
-          <div className="mb-6 relative">
+        {banners.length > 0 && <div className="mb-6 relative">
             <BannersContainer banners={banners} />
-          </div>
-        )}
+          </div>}
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
@@ -235,8 +208,6 @@ const Index = () => {
         
         <ProductCollectionsSection />
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 };
-
 export default Index;
