@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Plus, Trash2, Home } from 'lucide-react';
@@ -12,6 +11,8 @@ interface AddressWithNames extends Address {
   cities?: { name: string };
   areas?: { name: string };
   neighborhoods?: { name: string };
+  latitude?: number;
+  longitude?: number;
 }
 
 const AddressManager = () => {
@@ -212,6 +213,10 @@ const AddressManager = () => {
     }
   };
 
+  const handleEditAddress = (addressId: string) => {
+    navigate(`/edit-address/${addressId}`);
+  };
+
   return (
     <MainLayout>
       <div className="py-4">
@@ -235,8 +240,17 @@ const AddressManager = () => {
                       {address.neighborhoods?.name}
                     </span>
                     <span className="text-sm text-gray-600">{address.address}</span>
+                    {address.latitude && address.longitude && (
+                      <span className="text-xs text-gray-400">تم تحديد الموقع على الخريطة</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditAddress(address.id)}
+                      className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    >
+                      تعديل
+                    </button>
                     <button
                       onClick={() => handleSetDefaultAddress(address.id)}
                       className={`text-xs px-2 py-1 rounded ${
@@ -262,60 +276,12 @@ const AddressManager = () => {
 
         {!showNewAddressForm && (
           <button
-            onClick={() => setShowNewAddressForm(true)}
+            onClick={() => navigate('/add-address')}
             className="w-full bg-white border border-primary text-primary py-3 rounded-lg flex items-center justify-center"
           >
             <Plus size={18} className="ml-2" />
             إضافة عنوان جديد
           </button>
-        )}
-
-        {showNewAddressForm && (
-          <form onSubmit={handleAddAddress} className="bg-white border border-primary/20 rounded-lg p-4 mb-4 space-y-3">
-            <div>
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label className="font-medium">الموقع</label>
-              </div>
-              <LocationPicker value={newLocation} onChange={setNewLocation} />
-            </div>
-            <div>
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="newAddress" className="font-medium">تفاصيل العنوان</label>
-              </div>
-              <textarea
-                id="newAddress"
-                value={newAddress}
-                onChange={(e) => setNewAddress(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل تفاصيل العنوان - الشارع، رقم المبنى، الطابق، الخ."
-                rows={3}
-                required
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="mr-2 text-gray-500"
-                onClick={() => setShowNewAddressForm(false)}
-                disabled={isSubmitting}
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                className="bg-primary text-white py-2 px-5 rounded-lg"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white inline-block"></div>
-                ) : (
-                  'حفظ العنوان'
-                )}
-              </button>
-            </div>
-          </form>
         )}
       </div>
     </MainLayout>

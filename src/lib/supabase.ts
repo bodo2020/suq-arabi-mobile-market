@@ -86,6 +86,8 @@ export type Address = {
   is_default: boolean;
   created_at?: string;
   updated_at?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   // Join properties
   governorates?: { name: string };
   cities?: { name: string };
