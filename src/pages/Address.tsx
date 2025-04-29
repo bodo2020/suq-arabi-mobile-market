@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, Check, MapPin } from 'lucide-react';
@@ -8,7 +9,8 @@ import { useUser } from '@/contexts/UserContext';
 import LocationMap from '@/components/ui/LocationMap';
 import LocationPicker from '@/components/ui/LocationPicker';
 import Script from '@/components/ui/Script';
-import '@/types/google-maps';
+// Import types correctly with .d.ts extension
+import '@/types/google-maps.d.ts';
 
 const Address = () => {
   const navigate = useNavigate();
@@ -58,8 +60,9 @@ const Address = () => {
               city: data.city_id || undefined,
               area: data.area_id || undefined,
               neighborhood: data.neighborhood_id || undefined,
-              latitude: data.latitude || undefined,
-              longitude: data.longitude || undefined
+              // Cast latitude and longitude to ensure TypeScript knows they're numbers
+              latitude: data.latitude ? Number(data.latitude) : undefined,
+              longitude: data.longitude ? Number(data.longitude) : undefined
             });
           }
         } catch (error) {
