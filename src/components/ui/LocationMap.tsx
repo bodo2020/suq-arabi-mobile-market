@@ -40,7 +40,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         return;
       }
 
-      const mapOptions: google.maps.MapOptions = {
+      const mapOptions = {
         center: { lat: initialLat, lng: initialLng },
         zoom: 15,
         mapTypeControl: false,
@@ -61,7 +61,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
       setMarker(newMarker);
 
       // Add click event to the map
-      newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
+      newMap.addListener('click', (e: any) => {
         const latLng = e.latLng;
         if (latLng) {
           newMarker.setPosition(latLng);
