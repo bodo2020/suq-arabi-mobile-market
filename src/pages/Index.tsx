@@ -180,7 +180,7 @@ const Index = () => {
         
         
 
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-8 pt-4">
           <img src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" alt={storeInfo?.name} className="h-16 w-16 mb-1" />
           <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
         </div>
