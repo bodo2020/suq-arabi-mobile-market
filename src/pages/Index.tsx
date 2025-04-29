@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -34,8 +33,9 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const { user } = useUser();
-
+  const {
+    user
+  } = useUser();
   const {
     data: categories = [],
     isLoading: categoriesLoading
@@ -43,7 +43,6 @@ const Index = () => {
     queryKey: ['categories'],
     queryFn: getCategories
   });
-
   const {
     data: productCollections = [],
     isLoading: collectionsLoading
@@ -51,18 +50,15 @@ const Index = () => {
     queryKey: ['productCollections'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
-          .from('product_collections')
-          .select('*')
-          .eq('active', true)
-          .order('position');
-        
+        const {
+          data,
+          error
+        } = await supabase.from('product_collections').select('*').eq('active', true).order('position');
         console.log('Fetched collections:', data);
         if (error) {
           console.error('Error fetching collections:', error);
           throw error;
         }
-        
         return data || [];
       } catch (err) {
         console.error('Error in query function:', err);
@@ -70,7 +66,6 @@ const Index = () => {
       }
     }
   });
-
   const {
     data: products = [],
     isLoading: productsLoading
@@ -177,24 +172,15 @@ const Index = () => {
       <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
     </div>;
 
-  return (
-    <MainLayout>
+  return <MainLayout>
       <div className="mb-16 pb-16">
         <div className="relative">
           {banners.length > 0 && <BannersContainer banners={banners} />}
         </div>
         
-        <div className="px-4 py-2 flex justify-end">
-          <Link 
-            to={user ? "/account" : "/phone-login"} 
-            className="flex items-center text-primary"
-          >
-            <span className="ml-1">{user ? "حسابي" : "تسجيل الدخول"}</span>
-            <User size={18} />
-          </Link>
-        </div>
+        
 
-        <div className="flex flex-col items-center mb-4">
+        <div className="flex flex-col items-center mb-8 pt-4">
           <img src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" alt={storeInfo?.name} className="h-16 w-16 mb-1" />
           <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
         </div>
@@ -208,11 +194,9 @@ const Index = () => {
 
         {addressSection}
 
-        {banners.length > 0 && (
-          <div className="mb-6 relative">
+        {banners.length > 0 && <div className="mb-6 relative">
             <BannersContainer banners={banners} />
-          </div>
-        )}
+          </div>}
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
@@ -235,8 +219,7 @@ const Index = () => {
         
         <ProductCollectionsSection />
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 };
 
 export default Index;
