@@ -28,99 +28,154 @@ const LocationMap: React.FC<LocationMapProps> = ({
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useUser();
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   // Initialize the map
   useEffect(() => {
-    const loadMap = async () => {
-      if (!mapRef.current) return;
+    // Only proceed if the map element exists
+    if (!mapRef.current) return;
 
-      // Check if Google Maps is already loaded
-      if (!window.google || !window.google.maps) {
-        console.error('Google Maps is not loaded');
-        return;
-      }
-
-      const mapOptions: google.maps.MapOptions = {
-        center: { lat: initialLat, lng: initialLng },
-        zoom: 15,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false
-      };
-
-      const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
-      setMap(newMap);
-
-      // Add marker at initial position
-      const newMarker = new window.google.maps.Marker({
-        position: { lat: initialLat, lng: initialLng },
-        map: newMap,
-        draggable: true,
-        animation: window.google.maps.Animation.DROP,
-      });
-      setMarker(newMarker);
-
-      // Add click event to the map
-      newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
-        const latLng = e.latLng;
-        if (latLng) {
-          newMarker.setPosition(latLng);
-          reverseGeocode(latLng.lat(), latLng.lng());
+    // Function to initialize Google Maps
+    const initMap = () => {
+      try {
+        // Check if Google Maps API is loaded
+        if (!window.google || !window.google.maps) {
+          console.log("Google Maps not loaded yet, waiting...");
+          return false;
         }
-      });
 
-      // Add dragend event to the marker
-      newMarker.addListener('dragend', () => {
-        const position = newMarker.getPosition();
-        if (position) {
-          reverseGeocode(position.lat(), position.lng());
-        }
-      });
+        console.log("Initializing Google Maps");
+        
+        // Map options
+        const mapOptions: google.maps.MapOptions = {
+          center: { lat: initialLat, lng: initialLng },
+          zoom: 15,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false
+        };
 
-      // Try to get user's current location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            newMap.setCenter(userLocation);
-            newMarker.setPosition(userLocation);
-            reverseGeocode(userLocation.lat, userLocation.lng);
-          },
-          () => {
-            toast({
-              title: "تعذر الوصول إلى موقعك",
-              description: "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا",
-              variant: "destructive"
-            });
+        // Create map
+        const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
+        setMap(newMap);
+
+        // Add marker at initial position
+        const newMarker = new window.google.maps.Marker({
+          position: { lat: initialLat, lng: initialLng },
+          map: newMap,
+          draggable: true,
+          animation: window.google.maps.Animation.DROP,
+        });
+        setMarker(newMarker);
+        
+        // Set map loaded state
+        setMapLoaded(true);
+
+        // Add click event to the map
+        newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
+          const latLng = e.latLng;
+          if (latLng) {
+            newMarker.setPosition(latLng);
+            reverseGeocode(latLng.lat(), latLng.lng());
           }
-        );
+        });
+
+        // Add dragend event to the marker
+        newMarker.addListener('dragend', () => {
+          const position = newMarker.getPosition();
+          if (position) {
+            reverseGeocode(position.lat(), position.lng());
+          }
+        });
+        
+        return true;
+      } catch (error) {
+        console.error("Error initializing map:", error);
+        return false;
       }
     };
 
-    // Load the map after Google Maps script is loaded
+    // Try to initialize the map once the script is loaded
     const checkGoogleMapsLoaded = setInterval(() => {
-      if (window.google && window.google.maps) {
+      if (initMap()) {
         clearInterval(checkGoogleMapsLoaded);
-        loadMap();
+        getUserLocation();
       }
-    }, 100);
+    }, 500);
 
     // Clear interval on component unmount
     return () => clearInterval(checkGoogleMapsLoaded);
-  }, [initialLat, initialLng, toast]);
+  }, [initialLat, initialLng]);
+
+  // Get user's current location
+  const getUserLocation = () => {
+    if (!map || !marker || !window.google) return;
+
+    if (navigator.geolocation) {
+      // Show toast to inform user about location request
+      toast({
+        title: "جاري تحديد موقعك",
+        description: "يرجى الانتظار...",
+      });
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log("Got user location:", position.coords);
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          // Update map center and marker position
+          map.setCenter(userLocation);
+          map.setZoom(17); // Zoom in closer to user's location
+          marker.setPosition(userLocation);
+          
+          // Reverse geocode to get address
+          reverseGeocode(userLocation.lat, userLocation.lng);
+          
+          toast({
+            title: "تم تحديد موقعك",
+            description: "يمكنك تحريك المؤشر لضبط الموقع بدقة",
+          });
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast({
+            title: "تعذر الوصول إلى موقعك",
+            description: "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا",
+            variant: "destructive"
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      toast({
+        title: "خدمة تحديد الموقع غير متوفرة",
+        description: "يرجى تحديد موقعك يدويًا",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = async (lat: number, lng: number) => {
-    if (!window.google || !window.google.maps) return;
+    if (!window.google || !window.google.maps) {
+      console.error("Google Maps not loaded");
+      return;
+    }
 
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode({ location: { lat, lng } }, (results, status) => {
       if (status === "OK" && results && results[0]) {
         const addressText = results[0].formatted_address;
         onLocationSelect(lat, lng, addressText);
+      } else {
+        console.error("Geocoder failed due to: " + status);
       }
     });
   };

@@ -1,7 +1,4 @@
 
-/// <reference types="google.maps" />
-
-// Define explicit types for Google Maps
 declare namespace google {
   namespace maps {
     class Map {
