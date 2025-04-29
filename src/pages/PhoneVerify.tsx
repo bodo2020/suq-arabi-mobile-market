@@ -19,16 +19,11 @@ const PhoneVerify = () => {
   const queryParams = new URLSearchParams(location.search);
   const phoneFromQuery = queryParams.get('phone') || '';
   const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
-  const testCodeFromQuery = queryParams.get('testCode') || '';
   
   const [phone, setPhone] = useState(phoneFromQuery);
   const [step, setStep] = useState<'phone' | 'verification'>(phoneFromQuery ? 'verification' : 'phone');
-  const [code, setCode] = useState(testCodeFromQuery);
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [rateLimitError, setRateLimitError] = useState(false);
-  const [blockedNumber, setBlockedNumber] = useState(false);
-  const [codeForTesting, setCodeForTesting] = useState<string | null>(testCodeFromQuery || null);
   const [countryCode, setCountryCode] = useState<Country>(() => {
     const countries = [
       { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' },
@@ -68,11 +63,6 @@ const PhoneVerify = () => {
   const handleSendCode = async () => {
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
-    // Reset state
-    setRateLimitError(false);
-    setBlockedNumber(false);
-    setCodeForTesting(null);
-    
     if (!cleanPhone) {
       setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف" }));
       toast({
@@ -102,136 +92,28 @@ const PhoneVerify = () => {
       const fullPhone = formatInternationalPhone(phone, countryCode);
       console.log("Sending verification for phone:", fullPhone);
       
-      const { data, error } = await signInWithPhone(fullPhone);
+      const { error } = await signInWithPhone(fullPhone);
       
       if (error) {
         console.error("Error sending verification code:", error);
-        
-        // Check for rate limit error
-        if (error.status === 429 || error.code === 'over_sms_send_rate_limit') {
-          setRateLimitError(true);
-          toast({
-            title: "تم تجاوز الحد المسموح",
-            description: "لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى بعد قليل.",
-            variant: "destructive"
-          });
-          throw error;
-        }
-        
-        // Check for blocked number error from our custom function
-        if (data?.blockedNumber) {
-          setBlockedNumber(true);
-          // If we're in development mode, show the verification code
-          if (data.code) {
-            setCodeForTesting(data.code);
-          }
-          toast({
-            title: "تم حظر رقم الهاتف",
-            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار.",
-            variant: "destructive"
-          });
-          setStep('verification');
-          setLoading(false);
-          return;
-        }
-        
         throw error;
-      }
-      
-      // Check if we got a code for development purposes
-      if (data?.code) {
-        setCodeForTesting(data.code);
       }
       
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إظهار رمز التحقق في التطبيق"
+        description: "تم إرسال رمز التحقق إلى واتساب الخاص بك"
       });
       
       setStep('verification');
     } catch (error: any) {
       console.error('Error sending verification code:', error);
-      
-      if (!error.status || error.status !== 429) {
-        toast({
-          title: "حدث خطأ",
-          description: error.message || "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "حدث خطأ",
+        description: error.message || "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
-    }
-  };
-  
-  const handleResendCode = async () => {
-    if (resendLoading) return;
-    
-    setResendLoading(true);
-    setRateLimitError(false);
-    setBlockedNumber(false);
-    setCodeForTesting(null);
-    
-    try {
-      const fullPhone = formatInternationalPhone(phone, countryCode);
-      console.log("Resending verification for phone:", fullPhone);
-      
-      const { data, error } = await signInWithPhone(fullPhone);
-      
-      if (error) {
-        console.error("Error resending verification code:", error);
-        
-        // Check for rate limit error
-        if (error.status === 429 || error.code === 'over_sms_send_rate_limit') {
-          setRateLimitError(true);
-          toast({
-            title: "تم تجاوز الحد المسموح",
-            description: "لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى بعد قليل.",
-            variant: "destructive"
-          });
-          throw error;
-        }
-        
-        // Check for blocked number error from our custom function
-        if (data?.blockedNumber) {
-          setBlockedNumber(true);
-          // If we're in development mode, show the verification code
-          if (data.code) {
-            setCodeForTesting(data.code);
-          }
-          toast({
-            title: "تم حظر رقم الهاتف",
-            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        throw error;
-      }
-      
-      // Check if we got a code for development purposes
-      if (data?.code) {
-        setCodeForTesting(data.code);
-      }
-      
-      toast({
-        title: "تم إعادة إرسال رمز التحقق",
-        description: "تم إظهار رمز التحقق الجديد في التطبيق"
-      });
-      
-    } catch (error: any) {
-      console.error('Error resending verification code:', error);
-      
-      if (!error.status || error.status !== 429) {
-        toast({
-          title: "حدث خطأ",
-          description: error.message || "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setResendLoading(false);
     }
   };
   
@@ -302,7 +184,7 @@ const PhoneVerify = () => {
           {step === 'phone' ? (
             <>
               <p className="text-center mb-6">
-                سيتم عرض رمز التحقق داخل التطبيق
+                سيتم إرسال رمز تحقق إلى واتساب الخاص بك
               </p>
               
               <div className="mb-6">
@@ -324,8 +206,6 @@ const PhoneVerify = () => {
                     onChange={(e) => {
                       setPhone(e.target.value);
                       setErrors(prev => ({ ...prev, phone: "" }));
-                      setRateLimitError(false);
-                      setBlockedNumber(false);
                     }}
                     className="text-right ltr flex-1"
                     placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
@@ -342,17 +222,11 @@ const PhoneVerify = () => {
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                 )}
-                
-                {rateLimitError && (
-                  <p className="text-amber-600 text-sm mt-1">
-                    لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم الفني.
-                  </p>
-                )}
               </div>
               
               <Button
                 onClick={handleSendCode}
-                disabled={loading || rateLimitError}
+                disabled={loading}
                 className="w-full"
               >
                 {loading ? (
@@ -364,28 +238,10 @@ const PhoneVerify = () => {
           ) : (
             <>
               <p className="text-center mb-6">
-                تم عرض رمز التحقق في التطبيق
+                تم إرسال رمز التحقق إلى واتساب الخاص بك
                 <br />
                 <span className="font-bold">{countryCode.dialCode} {phone}</span>
               </p>
-              
-              {blockedNumber && (
-                <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-red-600 text-sm font-medium">
-                    تم حظر هذا الرقم مؤقتًا بواسطة Twilio بسبب نشاط مشبوه
-                  </p>
-                  <p className="text-red-500 text-xs mt-1">
-                    يرجى استخدام رقم هاتف آخر أو التواصل مع الدعم الفني
-                  </p>
-                </div>
-              )}
-              
-              {codeForTesting && (
-                <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <p className="text-yellow-700 text-sm font-medium">رمز التحقق للتطوير:</p>
-                  <p className="text-yellow-800 text-lg font-bold text-center mt-1 font-mono">{codeForTesting}</p>
-                </div>
-              )}
               
               <div className="mb-6">
                 <div className="flex items-center mb-2">
@@ -428,31 +284,13 @@ const PhoneVerify = () => {
                 التحقق من الرمز
               </Button>
               
-              <div className="mt-4 text-center space-y-2">
+              <div className="mt-4 text-center">
                 <button
-                  onClick={handleResendCode}
-                  className={`text-primary text-sm ${
-                    resendLoading || rateLimitError ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  disabled={resendLoading || rateLimitError}
+                  onClick={() => setStep('phone')}
+                  className="text-primary text-sm"
                 >
-                  {resendLoading ? "جاري إعادة الإرسال..." : "إعادة إرسال الرمز"}
+                  تغيير رقم الهاتف
                 </button>
-                
-                {rateLimitError && (
-                  <p className="text-amber-600 text-sm">
-                    لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى لاحقاً.
-                  </p>
-                )}
-                
-                <div>
-                  <button
-                    onClick={() => setStep('phone')}
-                    className="text-primary text-sm"
-                  >
-                    تغيير رقم الهاتف
-                  </button>
-                </div>
               </div>
             </>
           )}

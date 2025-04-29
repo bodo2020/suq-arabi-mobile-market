@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, Mail, KeyRound, Map } from "lucide-react";
@@ -115,7 +114,7 @@ const Register = () => {
       setIsVerifying(true);
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إظهار رمز التحقق في التطبيق"
+        description: "تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك"
       });
     } catch (err: any) {
       toast({
@@ -385,7 +384,7 @@ const Register = () => {
             </DialogHeader>
             <div className="flex flex-col items-center space-y-4">
               <p className="text-sm text-gray-500 text-center">
-                تم عرض رمز التحقق في التطبيق
+                تم إرسال رمز التحقق إلى رقم الهاتف الخاص بك
                 <br />
                 <span className="font-bold">{countryCode.dialCode} {phone}</span>
               </p>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Loader, KeyRound } from 'lucide-react';
@@ -25,37 +26,37 @@ const PhoneLogin = () => {
   });
   const [isRegisteredUser, setIsRegisteredUser] = useState(false);
   const [phoneFormatted, setPhoneFormatted] = useState('');
-  const [rateLimitError, setRateLimitError] = useState(false);
-  const [codeForTesting, setCodeForTesting] = useState<string | null>(null);
-  const [blockedNumber, setBlockedNumber] = useState(false);
   
+  // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
+    // First remove all non-digit characters
     const digits = phoneNumber.replace(/\D/g, '');
     
+    // If it's Egypt, validate it starts with 0
     if (country.code === 'EG' && digits.length > 0) {
+      // If phone starts with 0, remove it for international format
       return digits.startsWith('0') ? digits.substring(1) : digits;
     }
     
     return digits;
   };
 
+  // Format full international phone number
   const formatInternationalPhone = (phoneNumber: string, country: Country) => {
     const formattedNumber = formatPhoneNumber(phoneNumber, country);
+    // Remove the + from the dial code
     const dialCode = country.dialCode.replace('+', '');
     
     return `${dialCode}${formattedNumber}`;
   };
   
   const validateEgyptianPhone = (phone: string) => {
+    // For Egyptian numbers, they should start with 1 and be 10 digits
     return phone.startsWith('1') && phone.length === 10;
   };
   
   const checkPhoneExists = async () => {
-    if (loading) return;
-    
-    setRateLimitError(false);
-    setBlockedNumber(false);
-    setCodeForTesting(null);
+    if (loading) return; // Prevent multiple clicks
     
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
@@ -69,6 +70,7 @@ const PhoneLogin = () => {
       return;
     }
     
+    // For Egypt, validate Egyptian phone format
     if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
       setErrors(prev => ({ 
         ...prev, 
@@ -85,10 +87,12 @@ const PhoneLogin = () => {
     setLoading(true);
     
     try {
+      // Create full international format
       const fullPhone = formatInternationalPhone(phone, countryCode);
       setPhoneFormatted(fullPhone);
       console.log("Checking phone:", fullPhone);
       
+      // Check if the phone exists in the customers table
       const { data, error: supabaseError } = await supabase
         .from('customers')
         .select('*')
@@ -96,7 +100,7 @@ const PhoneLogin = () => {
         .single();
       
       if (supabaseError) {
-        if (supabaseError.code === 'PGRST116') {
+        if (supabaseError.code === 'PGRST116') { // No rows returned
           console.log("User not found, sending verification code");
           setIsRegisteredUser(false);
           handleSendCode(fullPhone);
@@ -104,9 +108,10 @@ const PhoneLogin = () => {
           throw supabaseError;
         }
       } else {
+        // User exists
         console.log("User found:", data);
         setIsRegisteredUser(true);
-        setLoading(false);
+        setLoading(false); // Important: stop loading here
       }
       
     } catch (error: any) {
@@ -122,46 +127,19 @@ const PhoneLogin = () => {
   
   const handleSendCode = async (fullPhone: string) => {
     try {
-      const { data, error } = await signInWithPhone(fullPhone);
+      const { error } = await signInWithPhone(fullPhone);
       
       if (error) {
         console.error("Error sending verification code:", error);
-        
-        if (error.status === 429 || error.code === 'over_sms_send_rate_limit') {
-          setRateLimitError(true);
-          toast({
-            title: "تم تجاوز الحد المسموح",
-            description: "لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى بعد قليل.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        if (data?.blockedNumber) {
-          setBlockedNumber(true);
-          if (data.code) {
-            setCodeForTesting(data.code);
-          }
-          toast({
-            title: "تم حظر رقم الهاتف",
-            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار أو تجربة رقم آخر.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
         throw error;
-      }
-      
-      if (data?.code) {
-        setCodeForTesting(data.code);
       }
       
       toast({
         title: "تم إرسال رمز التحقق",
-        description: "تم إظهار رمز التحقق في التطبيق"
+        description: "تم إرسال رمز التحقق إلى واتساب الخاص بك"
       });
       
+      // Navigate to verify page with the phone number
       navigate(`/phone-verify?phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode.code)}`);
       
     } catch (error: any) {
@@ -177,7 +155,7 @@ const PhoneLogin = () => {
   };
   
   const handlePasswordLogin = async () => {
-    if (loginLoading) return;
+    if (loginLoading) return; // Prevent multiple clicks
     
     if (!password) {
       setErrors(prev => ({ ...prev, password: "يرجى إدخال كلمة المرور" }));
@@ -187,6 +165,7 @@ const PhoneLogin = () => {
     setLoginLoading(true);
     
     try {
+      // Get the email address for the phone number
       const { data, error: fetchError } = await supabase
         .from('customers')
         .select('email')
@@ -199,6 +178,7 @@ const PhoneLogin = () => {
       
       const email = data.email;
       
+      // Sign in with email and password
       const { error } = await signIn(email, password);
       
       if (error) {
@@ -262,9 +242,6 @@ const PhoneLogin = () => {
                   setPhone(e.target.value);
                   setErrors(prev => ({ ...prev, phone: "" }));
                   setIsRegisteredUser(false);
-                  setRateLimitError(false);
-                  setBlockedNumber(false);
-                  setCodeForTesting(null);
                 }}
                 className="text-right ltr flex-1"
                 placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
@@ -282,43 +259,12 @@ const PhoneLogin = () => {
             {errors.phone && (
               <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
             )}
-            
-            {rateLimitError && (
-              <p className="text-amber-600 text-sm mt-1">
-                لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم الفني.
-              </p>
-            )}
-            
-            {blockedNumber && (
-              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm font-medium">
-                  تم حظر هذا الرقم مؤقتًا بواسطة Twilio بسبب نشاط مشبوه
-                </p>
-                <p className="text-red-500 text-xs mt-1">
-                  يرجى استخدام رقم هاتف آخر أو التواصل مع الدعم الفني
-                </p>
-                {codeForTesting && (
-                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-yellow-700 text-sm font-medium">رمز التحقق للاختبار فقط:</p>
-                    <p className="text-yellow-800 text-lg font-bold text-center mt-1 font-mono">{codeForTesting}</p>
-                    <p className="text-yellow-600 text-xs mt-1">استخدم هذا الرمز في صفحة التحقق</p>
-                    <Button
-                      onClick={() => navigate(`/phone-verify?phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode.code)}&testCode=${codeForTesting}`)}
-                      className="w-full mt-2 bg-yellow-600 hover:bg-yellow-700"
-                      size="sm"
-                    >
-                      الانتقال إلى صفحة التحقق
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
           
           {!isRegisteredUser ? (
             <Button
               onClick={checkPhoneExists}
-              disabled={loading || rateLimitError}
+              disabled={loading}
               className="w-full"
             >
               {loading ? (

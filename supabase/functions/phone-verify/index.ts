@@ -54,7 +54,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
     const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
-    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") ?? "";
+    const twilioWhatsappNumber = Deno.env.get("TWILIO_WHATSAPP_NUMBER") ?? "";
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
@@ -98,24 +98,59 @@ serve(async (req) => {
         console.error("Error checking or creating verification_codes table:", err);
       }
       
-      // Always return the code in development mode
-      const isDevelopment = !twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber;
+      // Development mode - return code if Twilio credentials aren't set
+      if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsappNumber) {
+        console.warn("Twilio credentials not set. Simulating success for development.");
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: "Verification code sent (simulated)",
+            code: verificationCode // Only in development mode!
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
       
-      // Display verification code directly in the app
-      const responseObject: any = { 
-        success: true,
-        message: "رمز التحقق للتطوير",
-        code: verificationCode // Provide code directly for display in the app
-      };
-      
-      console.log("Development mode: Returning verification code", verificationCode);
-      return new Response(
-        JSON.stringify(responseObject),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-      
-      // Remove the Twilio SMS sending code since we're not using it anymore
-      // We're now showing the verification code directly in the app
+      try {
+        // IMPORTANT: Always use WhatsApp for sending verification codes
+        // Format for WhatsApp requires whatsapp: prefix, and ensuring + before the country code
+        const whatsappDestination = `whatsapp:+${formattedPhone}`;
+        const twilioEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+        
+        console.log("Sending WhatsApp message to:", whatsappDestination);
+        
+        const twilioBody = new URLSearchParams({
+          From: `whatsapp:${twilioWhatsappNumber}`,
+          To: whatsappDestination,
+          Body: `Your verification code is: ${verificationCode}`,
+        });
+        
+        const twilioResponse = await fetch(twilioEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: "Basic " + btoa(`${twilioAccountSid}:${twilioAuthToken}`),
+          },
+          body: twilioBody,
+        });
+        
+        if (!twilioResponse.ok) {
+          const errorText = await twilioResponse.text();
+          console.error("Twilio API error:", errorText);
+          throw new Error(errorText);
+        }
+        
+        return new Response(
+          JSON.stringify({ success: true, message: "Verification code sent via WhatsApp" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      } catch (error) {
+        console.error("Twilio error:", error);
+        return new Response(
+          JSON.stringify({ success: false, message: "Failed to send verification code via WhatsApp" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
     } 
     else if (action === "verify") {
       try {

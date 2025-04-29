@@ -64,9 +64,6 @@ enable_confirmations = false
 enable_signup = true
 enable_confirmations = true
 template = "Your verification code is {{ .Code }}"
-# Add rate limit settings
-rate_limit_sms_sent = 3    # Maximum number of SMS that can be sent to a phone number in 60 minutes
-rate_limit_sms_verified = 3   # Maximum number of successful SMS verifications in 60 minutes
 
 # Use an external OAuth provider. The full list of providers are: "apple", "azure", "bitbucket",
 # "discord", "facebook", "github", "gitlab", "google", "keycloak", "linkedin", "notion", "twitch",
