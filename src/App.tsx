@@ -58,6 +58,8 @@ function App() {
             <Route path="/phone-verify" element={<PhoneVerify />} />
             <Route path="/phone-login" element={<PhoneLogin />} />
             <Route path="/address-manager" element={<AddressManager />} />
+            {/* Add redirect from /addresses to /address-manager */}
+            <Route path="/addresses" element={<Navigate to="/address-manager" replace />} />
             <Route path="/edit-account" element={<EditAccount />} />
             <Route path="/add-address" element={<Address />} />
             <Route path="/edit-address/:id" element={<Address />} />
