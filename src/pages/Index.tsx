@@ -17,6 +17,7 @@ import ProductCollectionsSection from '@/components/sections/ProductCollectionsS
 import BannersContainer from '@/components/ui/BannersContainer';
 import User from '@/components/ui/User';
 import { useUser } from '@/contexts/UserContext';
+
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
@@ -72,6 +73,7 @@ const Index = () => {
     queryKey: ['products'],
     queryFn: () => getProducts()
   });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -95,6 +97,7 @@ const Index = () => {
     };
     fetchData();
   }, []);
+
   useEffect(() => {
     if (banners.length > 1) {
       bannerIntervalRef.current = setInterval(() => {
@@ -107,6 +110,7 @@ const Index = () => {
       }
     };
   }, [banners.length]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -120,17 +124,22 @@ const Index = () => {
       setProcessingImage(false);
     }
   };
+
   const handleFocusSearchBar = () => {
     navigate('/search');
   };
+
   const handleChangeLocation = () => {
     setPopoverOpen(false);
     navigate('/account/addresses');
   };
+
   const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
+
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
+
   if (categoriesLoading || productsLoading || collectionsLoading) {
     return <MainLayout>
         <div className="py-4">
@@ -158,9 +167,11 @@ const Index = () => {
         </div>
       </MainLayout>;
   }
+
   const addressSection = <div className="mb-4">
       <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
     </div>;
+
   return <MainLayout>
       <div className="mb-16 pb-16">
         <div className="relative">
@@ -169,7 +180,7 @@ const Index = () => {
         
         
 
-        <div className="flex flex-col items-center mb-4">
+        <div className="flex flex-col items-center mb-8">
           <img src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" alt={storeInfo?.name} className="h-16 w-16 mb-1" />
           <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
         </div>
@@ -210,4 +221,5 @@ const Index = () => {
       </div>
     </MainLayout>;
 };
+
 export default Index;
