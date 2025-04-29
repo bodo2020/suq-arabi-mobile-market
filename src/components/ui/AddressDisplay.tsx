@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ interface AddressDisplayProps {
   className?: string;
   showAddressSelector?: boolean;
   neighborhoodName?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const AddressDisplay = ({
@@ -24,6 +27,8 @@ const AddressDisplay = ({
   className,
   showAddressSelector = false,
   neighborhoodName,
+  latitude,
+  longitude,
   onEdit
 }: AddressDisplayProps) => {
   const { user } = useUser();

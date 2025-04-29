@@ -24,6 +24,7 @@ import NotFound from './pages/NotFound';
 import PhoneVerify from './pages/PhoneVerify';
 import PhoneLogin from './pages/PhoneLogin';
 import BarcodeScanner from './pages/BarcodeScanner';
+import FullMapView from './pages/FullMapView';
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
@@ -58,7 +59,6 @@ function App() {
             <Route path="/phone-verify" element={<PhoneVerify />} />
             <Route path="/phone-login" element={<PhoneLogin />} />
             <Route path="/address-manager" element={<AddressManager />} />
-            {/* Add redirect from /addresses to /address-manager */}
             <Route path="/addresses" element={<Navigate to="/address-manager" replace />} />
             <Route path="/edit-account" element={<EditAccount />} />
             <Route path="/add-address" element={<Address />} />
@@ -68,6 +68,7 @@ function App() {
             <Route path="/bulk-products" element={<BulkProducts />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/scanner" element={<BarcodeScanner />} />
+            <Route path="/map-view" element={<FullMapView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />

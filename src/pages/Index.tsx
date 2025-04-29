@@ -140,10 +140,6 @@ const Index = () => {
     navigate(`/category/${cat.id}`);
   };
 
-  // Create a featured products array - pick first product or random product
-  const featuredProduct = products.length > 0 ? products[0] : null;
-  const regularProducts = products.length > 1 ? products.slice(1) : [];
-
   if (categoriesLoading || productsLoading || collectionsLoading) {
     return <MainLayout>
         <div className="py-4">
@@ -182,6 +178,8 @@ const Index = () => {
           {banners.length > 0 && <BannersContainer banners={banners} />}
         </div>
         
+        
+
         <div className="flex flex-col items-center mb-8 pt-4">
           <img src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" alt={storeInfo?.name} className="h-16 w-16 mb-1" />
           <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
@@ -218,31 +216,6 @@ const Index = () => {
               </Link>}
           </div>
         </div>
-        
-        {/* Featured Products Section with 1.5 Card */}
-        {featuredProduct && (
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold">منتجات مميزة</h2>
-              <Link to="/featured" className="flex items-center text-primary text-sm">
-                عرض الكل
-                <ChevronLeft size={16} />
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <ProductCard 
-                product={featuredProduct} 
-                featured={true} 
-              />
-              {regularProducts.slice(0, 3).map(product => (
-                <ProductCard 
-                  key={product.id} 
-                  product={product} 
-                />
-              ))}
-            </div>
-          </div>
-        )}
         
         <ProductCollectionsSection />
       </div>

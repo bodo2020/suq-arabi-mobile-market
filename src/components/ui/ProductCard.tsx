@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
@@ -9,21 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import FavoriteButton from './FavoriteButton';
 import AddToCartModal from './AddToCartModal';
 import WeightSelector from './WeightSelector';
-import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
   hideIfUnavailable?: boolean;
   showBulkQuantity?: boolean;
-  featured?: boolean; // New prop to indicate if this card should be 1.5x size
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ 
-  product, 
-  hideIfUnavailable = false, 
-  showBulkQuantity = false,
-  featured = false 
-}) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = false, showBulkQuantity = false }) => {
   const { items, updateQuantity, addToCart } = useCart();
   const { toast } = useToast();
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -145,21 +137,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <>
-      <Link 
-        to={`/product/${product.id}`} 
-        className={cn(
-          "product-card flex flex-col h-full hover-scale",
-          featured && "col-span-2 md:col-span-2" // Make the card span 2 columns when featured
-        )}
-      >
+      <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale">
         <div className="absolute top-2 right-2 z-20">
           <FavoriteButton productId={product.id} size="md" />
         </div>
 
-        <div className={cn(
-          "relative pt-[100%] mb-3",
-          featured && "pt-[75%]" // Adjust aspect ratio for featured cards
-        )}>
+        <div className="relative pt-[100%] mb-3">
           <img
             src={productImage}
             alt={product.name}
@@ -190,10 +173,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className="text-right flex-grow flex flex-col justify-between">
-          <h3 className={cn(
-            "font-bold text-sm mb-2 line-clamp-2",
-            featured && "text-base md:text-lg" // Larger text for featured cards
-          )}>{product.name}</h3>
+          <h3 className="font-bold text-sm mb-2 line-clamp-2">{product.name}</h3>
           <div className="mt-auto">
             <div className="flex justify-between mb-2 items-center">
               {displayBulkView ? (

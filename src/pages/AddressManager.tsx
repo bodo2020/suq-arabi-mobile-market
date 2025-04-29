@@ -1,321 +1,222 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, Plus, Trash2, Home } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import { MapPin, Plus, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase, Address } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
 
-interface AddressWithNames extends Address {
-  governorates?: { name: string };
-  cities?: { name: string };
-  areas?: { name: string };
-  neighborhoods?: { name: string };
-}
-
 const AddressManager = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [addresses, setAddresses] = useState<AddressWithNames[]>([]);
-  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
-  const [newAddress, setNewAddress] = useState('');
-  const [newLocation, setNewLocation] = useState<{
-    government?: string; 
-    city?: string; 
-    area?: string; 
-    neighborhood?: string
-  }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAddresses = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/register');
+    fetchAddresses();
+  }, []);
+
+  const fetchAddresses = async () => {
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        setLoading(false);
         return;
       }
-      setUserId(user.id);
-
-      try {
-        const { data: addressesData, error } = await supabase
-          .from('customer_addresses')
-          .select(`
-            *,
-            governorates(name),
-            cities(name),
-            areas(name),
-            neighborhoods(name)
-          `)
-          .eq('user_id', user.id)
-          .order('is_default', { ascending: false });
-
-        if (error) {
-          console.error('Error loading addresses:', error);
-          return;
-        }
-
-        setAddresses(addressesData || []);
-        
-        // Update localStorage with default address if available
-        const defaultAddress = addressesData?.find(addr => addr.is_default);
-        if (defaultAddress) {
-          updateLocalStorageAddress(defaultAddress);
-        }
-      } catch (error) {
-        console.error('Error in address fetch:', error);
-      }
-    };
-
-    fetchAddresses();
-  }, [navigate]);
-
-  const updateLocalStorageAddress = (address: AddressWithNames) => {
-    localStorage.setItem('userAddress', address.address || '');
-    localStorage.setItem('userArea', address.areas?.name || '');
-    localStorage.setItem('userNeighborhood', address.neighborhoods?.name || '');
-  };
-
-  const handleBack = () => {
-    navigate('/account');
-  };
-
-  const handleAddAddress = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userId) return;
-    setIsSubmitting(true);
-
-    try {
-      const isDefault = addresses.length === 0;
-
+      
       const { data, error } = await supabase
         .from('customer_addresses')
-        .insert({
-          user_id: userId,
-          address: newAddress,
-          governorate_id: newLocation.government || null,
-          city_id: newLocation.city || null,
-          area_id: newLocation.area || null,
-          neighborhood_id: newLocation.neighborhood || null,
-          is_default: isDefault
-        })
         .select(`
           *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
+          governorates(id, name),
+          cities(id, name),
+          areas(id, name),
+          neighborhoods(id, name)
         `)
-        .single();
-
-      if (error) throw error;
-
-      if (isDefault) {
-        updateLocalStorageAddress(data);
-      }
-
-      // Refresh the addresses list
-      const { data: addressesData } = await supabase
-        .from('customer_addresses')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
-        .eq('user_id', userId)
+        .eq('user_id', sessionData.session.user.id)
         .order('is_default', { ascending: false });
-
-      setAddresses(addressesData || []);
-      setShowNewAddressForm(false);
-      setNewAddress('');
-      setNewLocation({});
-
-      toast({
-        title: "تم إضافة العنوان",
-        description: "تم إضافة العنوان بنجاح",
-      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      setAddresses(data as Address[] || []);
     } catch (error) {
-      console.error('Error adding address:', error);
+      console.error('Error fetching addresses:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إضافة العنوان",
         variant: "destructive",
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل العناوين"
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const handleSetDefaultAddress = async (addressId: string) => {
-    if (!userId) return;
-    
+  const handleSetDefault = async (addressId: string) => {
     try {
-      // First, update all addresses to not be default
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        return;
+      }
+      
+      // First, set all addresses to non-default
       await supabase
         .from('customer_addresses')
         .update({ is_default: false })
-        .eq('user_id', userId);
+        .eq('user_id', sessionData.session.user.id);
       
-      // Then, set the selected address as default
+      // Then set the selected address as default
       await supabase
         .from('customer_addresses')
         .update({ is_default: true })
         .eq('id', addressId);
-
-      // Get the updated address with joined data
-      const { data: updatedAddress } = await supabase
-        .from('customer_addresses')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
-        .eq('id', addressId)
-        .single();
-
-      // Update local storage
-      if (updatedAddress) {
-        updateLocalStorageAddress(updatedAddress);
+      
+      // Update address in localStorage
+      const selectedAddress = addresses.find(addr => addr.id === addressId);
+      if (selectedAddress) {
+        localStorage.setItem('userAddress', selectedAddress.address || '');
+        localStorage.setItem('userArea', selectedAddress.areas?.name || '');
+        localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
       }
-
-      // Refresh the addresses list
-      const { data: addressesData } = await supabase
-        .from('customer_addresses')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
-        .eq('user_id', userId)
-        .order('is_default', { ascending: false });
-
-      setAddresses(addressesData || []);
-
+      
       toast({
         title: "تم تحديث العنوان الافتراضي",
-        description: "تم تحديث العنوان الافتراضي بنجاح",
+        description: "تم تعيين العنوان الافتراضي بنجاح"
       });
+      
+      // Refresh the addresses list
+      fetchAddresses();
     } catch (error) {
       console.error('Error setting default address:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تحديث العنوان الافتراضي",
         variant: "destructive",
+        title: "خطأ",
+        description: "حدث خطأ أثناء تعيين العنوان الافتراضي"
       });
     }
   };
 
+  const handleDeleteAddress = async (addressId: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        return;
+      }
+      
+      await supabase
+        .from('customer_addresses')
+        .delete()
+        .eq('id', addressId)
+        .eq('user_id', sessionData.session.user.id);
+      
+      toast({
+        title: "تم حذف العنوان",
+        description: "تم حذف العنوان بنجاح"
+      });
+      
+      // Refresh the addresses list
+      fetchAddresses();
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف العنوان"
+      });
+    }
+  };
+
+  const handleAddAddress = () => {
+    navigate('/add-address');
+  };
+  
+  const handleEditAddress = (addressId: string) => {
+    navigate(`/edit-address/${addressId}`);
+  };
+
   return (
     <MainLayout>
-      <div className="py-4">
-        <div className="flex items-center mb-6">
-          <button onClick={handleBack} className="p-2" aria-label="الرجوع">
-            <ArrowRight size={24} />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center">عناوين التوصيل</h1>
-        </div>
-
-        {addresses.length > 0 ? (
-          <div className="space-y-3 mb-4">
-            {addresses.map(address => (
-              <div key={address.id} className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold">
-                      {address.governorates?.name && `${address.governorates.name}، `}
-                      {address.cities?.name && `${address.cities.name}، `}
-                      {address.areas?.name && `${address.areas.name}، `}
-                      {address.neighborhoods?.name}
-                    </span>
-                    <span className="text-sm text-gray-600">{address.address}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleSetDefaultAddress(address.id)}
-                      className={`text-xs px-2 py-1 rounded ${
-                        address.is_default 
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {address.is_default ? 'افتراضي' : 'تعيين كافتراضي'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+      <div className="p-4">
+        <h1 className="text-xl font-bold mb-6 text-center">عناوين التوصيل</h1>
+        
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg p-6 text-center mb-4">
-            <MapPin size={32} className="mx-auto mb-3 text-gray-400" />
-            <h3 className="font-medium mb-2">لا توجد عناوين محفوظة</h3>
-            <p className="text-gray-500 text-sm mb-4">يمكنك إضافة عنوان جديد للتوصيل</p>
-          </div>
-        )}
-
-        {!showNewAddressForm && (
-          <button
-            onClick={() => setShowNewAddressForm(true)}
-            className="w-full bg-white border border-primary text-primary py-3 rounded-lg flex items-center justify-center"
-          >
-            <Plus size={18} className="ml-2" />
-            إضافة عنوان جديد
-          </button>
-        )}
-
-        {showNewAddressForm && (
-          <form onSubmit={handleAddAddress} className="bg-white border border-primary/20 rounded-lg p-4 mb-4 space-y-3">
-            <div>
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label className="font-medium">الموقع</label>
+          <>
+            {addresses.length > 0 ? (
+              <div className="space-y-4">
+                {addresses.map((address) => (
+                  <div 
+                    key={address.id} 
+                    className={`bg-white p-4 rounded-lg shadow ${address.is_default ? 'border-2 border-primary' : ''}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-1">
+                          <MapPin size={16} className="ml-1 text-primary" />
+                          <span className="font-medium">
+                            {address.areas?.name || ''}
+                            {address.neighborhoods?.name ? ` - ${address.neighborhoods?.name}` : ''}
+                          </span>
+                          {address.is_default && (
+                            <span className="mr-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                              العنوان الافتراضي
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">{address.address}</p>
+                        
+                        <div className="flex flex-wrap gap-2">
+                          <button 
+                            onClick={() => handleEditAddress(address.id)} 
+                            className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full"
+                          >
+                            تعديل
+                          </button>
+                          {!address.is_default && (
+                            <>
+                              <button 
+                                onClick={() => handleSetDefault(address.id)} 
+                                className="text-xs bg-green-50 text-green-600 hover:bg-green-100 px-3 py-1 rounded-full"
+                              >
+                                تعيين كافتراضي
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteAddress(address.id)} 
+                                className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-full"
+                              >
+                                حذف
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <LocationPicker value={newLocation} onChange={setNewLocation} />
-            </div>
-            <div>
-              <div className="flex items-center mb-2">
-                <MapPin size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="newAddress" className="font-medium">تفاصيل العنوان</label>
+            ) : (
+              <div className="text-center py-8">
+                <Home size={40} className="mx-auto mb-2 text-gray-400" />
+                <p className="text-gray-500">لا توجد عناوين محفوظة</p>
+                <p className="text-gray-400 text-sm">أضف عنوانًا جديدًا للتوصيل</p>
               </div>
-              <textarea
-                id="newAddress"
-                value={newAddress}
-                onChange={(e) => setNewAddress(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل تفاصيل العنوان - الشارع، رقم المبنى، الطابق، الخ."
-                rows={3}
-                required
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="mr-2 text-gray-500"
-                onClick={() => setShowNewAddressForm(false)}
-                disabled={isSubmitting}
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                className="bg-primary text-white py-2 px-5 rounded-lg"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white inline-block"></div>
-                ) : (
-                  'حفظ العنوان'
-                )}
-              </button>
-            </div>
-          </form>
+            )}
+            
+            <button 
+              onClick={handleAddAddress}
+              className="w-full mt-6 flex items-center justify-center bg-primary text-white p-3 rounded-lg"
+            >
+              <Plus size={18} className="ml-2" />
+              إضافة عنوان جديد
+            </button>
+          </>
         )}
       </div>
     </MainLayout>
