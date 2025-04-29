@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 
-// Import the declaration file
+// Make sure this is at the top of the file to ensure types are loaded
 import '@/types/google-maps.d.ts';
 
 interface LocationMapProps {
@@ -35,7 +35,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
       if (!mapRef.current) return;
 
       // Check if Google Maps is already loaded
-      if (!window.google?.maps) {
+      if (!window.google || !window.google.maps) {
         console.error('Google Maps is not loaded');
         return;
       }
@@ -102,7 +102,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
 
     // Load the map after Google Maps script is loaded
     const checkGoogleMapsLoaded = setInterval(() => {
-      if (window.google?.maps) {
+      if (window.google && window.google.maps) {
         clearInterval(checkGoogleMapsLoaded);
         loadMap();
       }
@@ -114,7 +114,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = async (lat: number, lng: number) => {
-    if (!window.google?.maps) return;
+    if (!window.google || !window.google.maps) return;
 
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode({ location: { lat, lng } }, (results, status) => {
