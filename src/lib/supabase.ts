@@ -89,10 +89,10 @@ export type Address = {
   latitude?: number | null;
   longitude?: number | null;
   // Join properties
-  governorates?: { name: string };
-  cities?: { name: string };
-  areas?: { name: string };
-  neighborhoods?: { name: string };
+  governorates?: { id: string; name: string };
+  cities?: { id: string; name: string };
+  areas?: { id: string; name: string };
+  neighborhoods?: { id: string; name: string };
 };
 
 export type Order = {
