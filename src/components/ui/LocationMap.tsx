@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
-import '../../types/google-maps'; // Import the Google Maps type definition
+import '@/types/google-maps'; // Fix the import path
 
 interface LocationMapProps {
   onLocationSelect: (lat: number, lng: number, addressText: string) => void;
