@@ -74,7 +74,7 @@ export type CartItem = {
   quantity: number;
 };
 
-// Updated Address type to include join data for name properties
+// Updated Address type to include join data for name properties and location coordinates
 export type Address = {
   id: string;
   user_id: string;
