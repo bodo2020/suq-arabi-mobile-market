@@ -83,7 +83,7 @@ declare namespace google {
   }
 }
 
-// Declare the global google namespace for window
+// This makes the global google namespace available in TypeScript
 declare global {
   interface Window {
     google: typeof google;
