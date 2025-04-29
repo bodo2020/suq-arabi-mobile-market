@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ interface LocationMapProps {
   initialLng?: number;
   addressId?: string;
 }
+
+// Import the type definitions
+import '@/types/google-maps';
 
 const LocationMap: React.FC<LocationMapProps> = ({ 
   onLocationSelect, 
