@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface AddressDisplayProps {
   address?: string;
@@ -28,6 +28,7 @@ const AddressDisplay = ({
 }: AddressDisplayProps) => {
   const { user } = useUser();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const { data: addresses = [], refetch } = useQuery({
     queryKey: ['addresses', user?.id],
@@ -52,26 +53,22 @@ const AddressDisplay = ({
   const handleAddressSelect = async (addressId: string) => {
     if (!user) return;
     try {
-      // Update is_default flag for all addresses
       await supabase
         .from('customer_addresses')
         .update({ is_default: false })
         .eq('user_id', user.id);
 
-      // Set selected address as default
       await supabase
         .from('customer_addresses')
         .update({ is_default: true })
         .eq('id', addressId);
 
-      // Store address information in localStorage
       const selectedAddress = addresses.find(addr => addr.id === addressId);
       if (selectedAddress) {
         localStorage.setItem('userAddress', selectedAddress.address || '');
         localStorage.setItem('userArea', selectedAddress.areas?.name || '');
         localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
 
-        // Also update the customer record in the database with location information
         await supabase
           .from('customers')
           .update({
@@ -84,14 +81,12 @@ const AddressDisplay = ({
           .eq('user_id', user.id);
       }
 
-      // Refresh addresses data
       await refetch();
       toast({
         title: "تم تحديث العنوان",
         description: "تم تغيير العنوان الافتراضي بنجاح"
       });
 
-      // Force a page reload to reflect the changes everywhere
       window.location.reload();
     } catch (error) {
       console.error('Error updating default address:', error);
@@ -103,7 +98,10 @@ const AddressDisplay = ({
     }
   };
 
-  // This was the issue - the return statement was missing
+  const handleChangeAddress = () => {
+    navigate('/add-address');
+  };
+
   return (
     <div className={cn("flex items-center gap-2 mb-2", className)}>
       <div className="flex items-center flex-1">
@@ -137,7 +135,7 @@ const AddressDisplay = ({
           </div>
         )}
       </div>
-      <Button variant="ghost" size="sm" onClick={onEdit} className="text-xs">
+      <Button variant="ghost" size="sm" onClick={handleChangeAddress} className="text-xs">
         تغيير
       </Button>
     </div>
