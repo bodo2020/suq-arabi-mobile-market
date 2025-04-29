@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -108,7 +107,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
 
     // Clear interval on component unmount
     return () => clearInterval(checkGoogleMapsLoaded);
-  }, [initialLat, initialLng]);
+  }, [initialLat, initialLng, toast]);
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = async (lat: number, lng: number) => {

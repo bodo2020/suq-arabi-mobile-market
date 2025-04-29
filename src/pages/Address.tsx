@@ -214,7 +214,7 @@ const Address = () => {
   return (
     <MainLayout>
       <Script 
-        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyDH0Ls4iN3IgG6OGLEi7MDrA4TSXmBcbBE&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places`}
         onLoad={() => setMapsLoaded(true)} 
       />
       
