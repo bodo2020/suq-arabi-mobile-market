@@ -1,15 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, Check, MapPin } from 'lucide-react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { ArrowRight, Check, MapPin, Map as MapIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
-import LocationMap from '@/components/ui/LocationMap';
 import LocationPicker from '@/components/ui/LocationPicker';
 import Script from '@/components/ui/Script';
-// Import types correctly with .d.ts extension
 import '@/types/google-maps.d.ts';
 
 const Address = () => {
@@ -17,10 +16,11 @@ const Address = () => {
   const { id: addressId } = useParams();
   const { toast } = useToast();
   const { user } = useUser();
+  const location = useLocation();
   const [address, setAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [location, setLocation] = useState<{
+  const [mapLocation, setMapLocation] = useState<{
     government?: string; 
     city?: string; 
     area?: string; 
@@ -30,6 +30,23 @@ const Address = () => {
   }>({});
   const [mapsLoaded, setMapsLoaded] = useState(false);
   const [addressFromMap, setAddressFromMap] = useState('');
+
+  // Check for location data in URL parameters (coming back from map view)
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const lat = queryParams.get('lat');
+    const lng = queryParams.get('lng');
+    const mapAddress = queryParams.get('address');
+    
+    if (lat && lng && mapAddress) {
+      setMapLocation(prev => ({
+        ...prev,
+        latitude: parseFloat(lat),
+        longitude: parseFloat(lng)
+      }));
+      setAddressFromMap(decodeURIComponent(mapAddress));
+    }
+  }, [location.search]);
 
   useEffect(() => {
     // Load saved address if any
@@ -55,12 +72,11 @@ const Address = () => {
 
           if (data) {
             setAddress(data.address || '');
-            setLocation({
+            setMapLocation({
               government: data.governorate_id || undefined,
               city: data.city_id || undefined,
               area: data.area_id || undefined,
               neighborhood: data.neighborhood_id || undefined,
-              // Add type assertions for latitude and longitude
               latitude: data.latitude !== null ? Number(data.latitude) : undefined,
               longitude: data.longitude !== null ? Number(data.longitude) : undefined
             });
@@ -113,12 +129,12 @@ const Address = () => {
         const addressData = {
           address,
           user_id: user.id,
-          governorate_id: location.government || null,
-          city_id: location.city || null,
-          area_id: location.area || null,
-          neighborhood_id: location.neighborhood || null,
-          latitude: location.latitude || null,
-          longitude: location.longitude || null,
+          governorate_id: mapLocation.government || null,
+          city_id: mapLocation.city || null,
+          area_id: mapLocation.area || null,
+          neighborhood_id: mapLocation.neighborhood || null,
+          latitude: mapLocation.latitude || null,
+          longitude: mapLocation.longitude || null,
           is_default: false // Don't automatically set as default
         };
 
@@ -145,11 +161,11 @@ const Address = () => {
         // Store in localStorage for quick access
         localStorage.setItem('userAddress', address);
 
-        if (location.area) {
+        if (mapLocation.area) {
           const { data: areaData } = await supabase
             .from('areas')
             .select('name')
-            .eq('id', location.area)
+            .eq('id', mapLocation.area)
             .single();
 
           if (areaData?.name) {
@@ -157,11 +173,11 @@ const Address = () => {
           }
         }
 
-        if (location.neighborhood) {
+        if (mapLocation.neighborhood) {
           const { data: neighborhoodData } = await supabase
             .from('neighborhoods')
             .select('name')
-            .eq('id', location.neighborhood)
+            .eq('id', mapLocation.neighborhood)
             .single();
 
           if (neighborhoodData?.name) {
@@ -192,17 +208,9 @@ const Address = () => {
     }
   };
 
-  const handleLocationSelect = (lat: number, lng: number, addressText: string) => {
-    setLocation(prev => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng
-    }));
-    
-    // Optionally update address text if it's empty or if user wants to use the geocoded address
-    if (!address || addressFromMap !== addressText) {
-      setAddressFromMap(addressText);
-    }
+  const handleOpenMapView = () => {
+    // Navigate to full map view with current location
+    navigate(`/map-view?lat=${mapLocation.latitude || 30.0444}&lng=${mapLocation.longitude || 31.2357}${addressId ? `&addressId=${addressId}` : ''}`);
   };
 
   const handleUseMapAddress = () => {
@@ -239,37 +247,39 @@ const Address = () => {
                 <MapPin size={18} className="ml-2 text-gray-500" />
                 <label className="font-medium">الموقع</label>
               </div>
-              <LocationPicker value={location} onChange={setLocation} />
+              <LocationPicker value={mapLocation} onChange={setMapLocation} />
             </div>
 
-            {mapsLoaded && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <MapPin size={18} className="ml-2 text-gray-500" />
-                    <label className="font-medium">تحديد الموقع من الخريطة</label>
-                  </div>
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  <MapPin size={18} className="ml-2 text-gray-500" />
+                  <label className="font-medium">تحديد الموقع من الخريطة</label>
                 </div>
-                <LocationMap 
-                  onLocationSelect={handleLocationSelect}
-                  initialLat={location.latitude}
-                  initialLng={location.longitude}
-                  addressId={addressId}
-                />
-                {addressFromMap && (
-                  <div className="mt-2 flex justify-between items-center">
-                    <div className="text-sm text-gray-600 truncate flex-1">{addressFromMap}</div>
-                    <button
-                      type="button"
-                      onClick={handleUseMapAddress}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      استخدام هذا العنوان
-                    </button>
-                  </div>
-                )}
               </div>
-            )}
+              
+              <Button 
+                onClick={handleOpenMapView} 
+                variant="outline" 
+                className="w-full flex justify-center items-center mb-3"
+              >
+                <MapIcon size={18} className="ml-2" />
+                فتح الخريطة لتحديد موقعك بدقة
+              </Button>
+              
+              {addressFromMap && (
+                <div className="mt-2 flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                  <div className="text-sm text-gray-600 truncate flex-1">{addressFromMap}</div>
+                  <button
+                    type="button"
+                    onClick={handleUseMapAddress}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    استخدام هذا العنوان
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className="mb-2">
               <div className="flex items-center mb-2">

@@ -1,4 +1,5 @@
 
+// Type definitions for Google Maps JavaScript API
 declare namespace google {
   namespace maps {
     class Map {
