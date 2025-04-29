@@ -8,6 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import LocationMap from '@/components/ui/LocationMap';
 import LocationPicker from '@/components/ui/LocationPicker';
 import Script from '@/components/ui/Script';
+import '../../types/google-maps'; // Import the Google Maps type definition
 
 const Address = () => {
   const navigate = useNavigate();

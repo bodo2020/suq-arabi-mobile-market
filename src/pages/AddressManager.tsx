@@ -6,14 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase, Address } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
 
-interface AddressWithNames extends Address {
-  governorates?: { name: string };
-  cities?: { name: string };
-  areas?: { name: string };
-  neighborhoods?: { name: string };
-  latitude?: number;
-  longitude?: number;
-}
+// Update AddressWithNames to properly extend Address
+interface AddressWithNames extends Address {}
 
 const AddressManager = () => {
   const navigate = useNavigate();
