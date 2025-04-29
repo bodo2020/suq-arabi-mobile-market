@@ -25,61 +25,6 @@ function isValidPhoneNumber(phone: string) {
   return digits.length >= 8;
 }
 
-async function sendWhatsAppMessage(phone: string, code: string): Promise<{ success: boolean; message: string }> {
-  try {
-    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
-    const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
-    const twilioWhatsappNumber = Deno.env.get("TWILIO_WHATSAPP_NUMBER") ?? "";
-    
-    if (!twilioAccountSid || !twilioAuthToken || !twilioWhatsappNumber) {
-      console.log("WhatsApp credentials missing, returning code for development");
-      return { 
-        success: false, 
-        message: "Twilio WhatsApp credentials missing" 
-      };
-    }
-
-    // Format the phone number with WhatsApp prefix
-    const formattedPhone = `whatsapp:+${phone}`;
-    
-    console.log(`Sending WhatsApp message to ${formattedPhone}`);
-
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
-    
-    const formData = new URLSearchParams();
-    formData.append("From", `whatsapp:${twilioWhatsappNumber}`);
-    formData.append("To", formattedPhone);
-    formData.append("Body", `Your verification code is: ${code}`);
-    
-    const authHeader = "Basic " + btoa(`${twilioAccountSid}:${twilioAuthToken}`);
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": authHeader,
-      },
-      body: formData.toString(),
-    });
-
-    const result = await response.json();
-    
-    if (response.ok) {
-      console.log("WhatsApp message sent successfully", result.sid);
-      return { success: true, message: "WhatsApp message sent successfully" };
-    } else {
-      console.error("Failed to send WhatsApp message:", result);
-      return { 
-        success: false, 
-        message: `Failed to send WhatsApp message: ${result.message || JSON.stringify(result)}` 
-      };
-    }
-  } catch (error) {
-    console.error("Error sending WhatsApp message:", error);
-    return { success: false, message: `Error sending WhatsApp message: ${error.message}` };
-  }
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -107,6 +52,9 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
+    const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
+    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") ?? "";
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
@@ -150,31 +98,24 @@ serve(async (req) => {
         console.error("Error checking or creating verification_codes table:", err);
       }
       
-      // Send WhatsApp message with verification code
-      const whatsappResult = await sendWhatsAppMessage(formattedPhone, verificationCode);
+      // Always return the code in development mode
+      const isDevelopment = !twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber;
       
-      // For development or if WhatsApp sending fails, still provide the code
-      const isDevelopment = !Deno.env.get("TWILIO_ACCOUNT_SID") || 
-                           !Deno.env.get("TWILIO_AUTH_TOKEN") || 
-                           !Deno.env.get("TWILIO_WHATSAPP_NUMBER");
-      
+      // Display verification code directly in the app
       const responseObject: any = { 
         success: true,
-        message: whatsappResult.success ? 
-          "تم إرسال رمز التحقق عبر واتساب" : 
-          "تعذر إرسال الرسالة عبر واتساب، تم عرض الرمز في التطبيق"
+        message: "رمز التحقق للتطوير",
+        code: verificationCode // Provide code directly for display in the app
       };
       
-      // Always include code for development purposes or if WhatsApp fails
-      if (isDevelopment || !whatsappResult.success) {
-        responseObject.code = verificationCode;
-        console.log("Development mode or WhatsApp failed: Returning verification code", verificationCode);
-      }
-      
+      console.log("Development mode: Returning verification code", verificationCode);
       return new Response(
         JSON.stringify(responseObject),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
+      
+      // Remove the Twilio SMS sending code since we're not using it anymore
+      // We're now showing the verification code directly in the app
     } 
     else if (action === "verify") {
       try {
