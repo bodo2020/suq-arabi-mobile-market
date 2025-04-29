@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
@@ -24,6 +23,7 @@ const FullMapView: React.FC = () => {
   const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   
+  // Store references to map objects for cleanup
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerInstanceRef = useRef<google.maps.Marker | null>(null);
   const mapListenersRef = useRef<google.maps.MapsEventListener[]>([]);

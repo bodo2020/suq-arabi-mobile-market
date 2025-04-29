@@ -25,10 +25,18 @@ const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad
         if (onLoad) onLoad();
       } else {
         // Script is loading, add a listener for when it's done
-        window.addEventListener(`script-loaded-${src}`, () => {
+        const eventName = `script-loaded-${src}`;
+        const handleScriptLoad = () => {
           setLoaded(true);
           if (onLoad) onLoad();
-        }, { once: true });
+        };
+        
+        window.addEventListener(eventName, handleScriptLoad);
+        
+        // Return cleanup function to remove listener
+        return () => {
+          window.removeEventListener(eventName, handleScriptLoad);
+        };
       }
       return;
     }
@@ -43,24 +51,27 @@ const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad
     script.defer = defer;
     
     // Event listener for when script loads
-    script.addEventListener('load', () => {
+    const handleLoad = () => {
       setLoaded(true);
       window.scriptRegistry.set(src, 'loaded');
       
       // Dispatch event to notify other instances
-      window.dispatchEvent(new CustomEvent(`script-loaded-${src}`));
+      const loadEvent = new CustomEvent(`script-loaded-${src}`);
+      window.dispatchEvent(loadEvent);
       
       if (onLoad) onLoad();
-    });
+    };
+    
+    script.addEventListener('load', handleLoad);
     
     // Append script to document head
     document.head.appendChild(script);
     
     // Cleanup function
     return () => {
-      // Don't remove the script on component unmount
-      // But we can clean up event listeners
-      window.removeEventListener(`script-loaded-${src}`, () => {}, { once: true });
+      // Don't remove the script on component unmount as other components may need it
+      // But we should clean up our event listener
+      script.removeEventListener('load', handleLoad);
     };
   }, [src, async, defer, onLoad]);
 
