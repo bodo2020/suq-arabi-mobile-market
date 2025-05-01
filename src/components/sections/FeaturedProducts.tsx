@@ -18,7 +18,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
       </div>
       {availableProducts.length > 0 ? (
         <ScrollArea className="w-full whitespace-nowrap rounded-md">
-          <div className="flex flex-row-reverse space-x-3 space-x-reverse p-4">
+          <div className="flex flex-row-reverse space-x-3 space-x-reverse p-2">
             {availableProducts.map(product => (
               <div key={product.id} className="w-[40%] sm:w-[250px] flex-shrink-0">
                 <ProductCard 

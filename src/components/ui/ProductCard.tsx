@@ -142,7 +142,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           <FavoriteButton productId={product.id} size="md" />
         </div>
 
-        <div className="relative pt-[100%] mb-3">
+        <div className="relative pt-[70%] mb-2">
           <img
             src={productImage}
             alt={product.name}
@@ -164,8 +164,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           )}
           {isOutOfStock && (
             <div className="absolute top-0 right-0 w-full h-full flex items-center justify-center bg-black/30 rounded">
-              <div className="bg-white p-2 rounded text-red-500 text-sm font-semibold flex items-center">
-                <AlertTriangle size={14} className="ml-1" />
+              <div className="bg-white p-2 rounded text-red-500 text-xs font-semibold flex items-center">
+                <AlertTriangle size={12} className="ml-1" />
                 غير متوفر
               </div>
             </div>
@@ -173,31 +173,31 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
         </div>
 
         <div className="text-right flex-grow flex flex-col justify-between">
-          <h3 className="font-bold text-sm mb-2 line-clamp-2">{product.name}</h3>
+          <h3 className="font-bold text-xs mb-1 line-clamp-1">{product.name}</h3>
           <div className="mt-auto">
-            <div className="flex justify-between mb-2 items-center">
+            <div className="flex justify-between mb-1 items-center">
               {displayBulkView ? (
-                <span className="font-bold">{product.bulk_price} ج.م/وحدة</span>
+                <span className="font-bold text-xs">{product.bulk_price} ج.م/وحدة</span>
               ) : product.barcode_type === 'scale' ? (
-                <span className="font-bold">{product.price} ج.م/كجم</span>
+                <span className="font-bold text-xs">{product.price} ج.م/كجم</span>
               ) : product.offer_price ? (
                 <>
                   <span className="text-xs line-through text-gray-400">{product.price} ج.م</span>
-                  <span className="font-bold text-primary">{product.offer_price} ج.م</span>
+                  <span className="font-bold text-primary text-xs">{product.offer_price} ج.م</span>
                 </>
               ) : (
-                <span className="font-bold">{product.price} ج.م</span>
+                <span className="font-bold text-xs">{product.price} ج.م</span>
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               {isOutOfStock ? (
                 <button
                   disabled
-                  className="w-full py-2 px-3 bg-gray-200 rounded-lg text-gray-500 flex items-center justify-center text-sm"
+                  className="w-full py-1 px-2 bg-gray-200 rounded-lg text-gray-500 flex items-center justify-center text-xs"
                   aria-label="غير متوفر"
                 >
-                  <AlertTriangle size={16} className="ml-1" />
+                  <AlertTriangle size={12} className="ml-1" />
                   نفذت الكمية
                 </button>
               ) : (
@@ -209,21 +209,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                         className="p-1 hover:bg-primary-foreground/10 rounded"
                         aria-label="تقليل الكمية"
                       >
-                        <Minus size={16} />
+                        <Minus size={14} />
                       </button>
-                      <span className="mx-2">{regularCartItem?.quantity || 0}</span>
+                      <span className="mx-2 text-xs">{regularCartItem?.quantity || 0}</span>
                       <button 
                         onClick={(e) => handleIncreaseQuantity(e, false)}
                         className="p-1 hover:bg-primary-foreground/10 rounded"
                         aria-label="زيادة الكمية"
                       >
-                        <Plus size={16} />
+                        <Plus size={14} />
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={(e) => handleAddToCart(e, false)}
-                      className="w-full py-2 px-3 bg-primary text-white rounded-lg flex items-center justify-center text-sm hover:bg-primary/90 transition-colors"
+                      className="w-full py-1 px-2 bg-primary text-white rounded-lg flex items-center justify-center text-xs hover:bg-primary/90 transition-colors"
                       aria-label="إضافة إلى السلة"
                     >
                       إضافة للسلة
@@ -235,31 +235,31 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                       <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-1">
                         <button 
                           onClick={(e) => handleDecreaseQuantity(e, true)} 
-                          className="p-2 hover:bg-[#c3ef93]/50 rounded"
+                          className="p-1 hover:bg-[#c3ef93]/50 rounded"
                           aria-label="تقليل الكمية"
                         >
-                          <Minus size={16} />
+                          <Minus size={14} />
                         </button>
                         <div className="flex items-center mx-2">
-                          <Package className="w-4 h-4 ml-1" />
-                          <span>{bulkCartItem.quantity}</span>
+                          <Package className="w-3 h-3 ml-1" />
+                          <span className="text-xs">{bulkCartItem.quantity}</span>
                         </div>
                         <button 
                           onClick={(e) => handleIncreaseQuantity(e, true)}
-                          className="p-2 hover:bg-[#c3ef93]/50 rounded"
+                          className="p-1 hover:bg-[#c3ef93]/50 rounded"
                           aria-label="زيادة الكمية"
                         >
-                          <Plus size={16} />
+                          <Plus size={14} />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={(e) => handleAddToCart(e, true)}
-                        className="w-full py-2 px-3 bg-[#d3ffb3] text-[#005931] rounded-lg flex items-center justify-center text-sm hover:bg-[#c3ef93] transition-colors gap-2"
+                        className="w-full py-1 px-2 bg-[#d3ffb3] text-[#005931] rounded-lg flex items-center justify-center text-xs hover:bg-[#c3ef93] transition-colors gap-1"
                         aria-label="إضافة للجملة"
                       >
-                        <Package className="w-4 h-4" />
-                        {product.bulk_price} ج.م ({product.bulk_quantity} قطعة)
+                        <Package className="w-3 h-3" />
+                        {product.bulk_price} ج.م ({product.bulk_quantity})
                       </button>
                     )
                   )}
