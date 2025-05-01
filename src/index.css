@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -100,6 +101,11 @@ html, body, #root {
 
 .product-card:hover {
   @apply shadow-md;
+}
+
+/* Featured card styles */
+.product-card.col-span-2 {
+  @apply bg-white rounded-lg p-3 shadow-sm relative transition-all;
 }
 
 .product-card .favorite-btn {
