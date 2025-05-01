@@ -35,7 +35,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
-  const handleBarcodeClick = () => {
+  const handleBarcodeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (onBarcodeClick) {
       onBarcodeClick();
     } else {

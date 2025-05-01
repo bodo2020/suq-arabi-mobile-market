@@ -23,20 +23,20 @@ const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad
     const existingScript = document.querySelector(`script[src="${src}"]`);
     
     // If script is already loaded and in registry
-    if (window.scriptRegistry.has(src) && window.scriptRegistry.get(src) === 'loaded') {
+    if (window.scriptRegistry && window.scriptRegistry.has(src) && window.scriptRegistry.get(src) === 'loaded') {
       handleScriptLoad();
       return;
     }
     
     // If script element exists but not in our registry
-    if (existingScript) {
+    if (existingScript && window.scriptRegistry) {
       window.scriptRegistry.set(src, 'loaded');
       handleScriptLoad();
       return;
     }
 
     // If script is currently loading according to registry
-    if (window.scriptRegistry.has(src) && window.scriptRegistry.get(src) === 'loading') {
+    if (window.scriptRegistry && window.scriptRegistry.has(src) && window.scriptRegistry.get(src) === 'loading') {
       const eventName = `script-loaded-${src}`;
       window.addEventListener(eventName, handleScriptLoad, { once: true });
       
@@ -46,7 +46,9 @@ const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad
     }
 
     // Otherwise, create and append script
-    window.scriptRegistry.set(src, 'loading');
+    if (window.scriptRegistry) {
+      window.scriptRegistry.set(src, 'loading');
+    }
     
     const script = document.createElement('script');
     script.src = src;
@@ -54,7 +56,9 @@ const Script: React.FC<ScriptProps> = ({ src, async = true, defer = true, onLoad
     script.defer = defer;
     
     const loadHandler = () => {
-      window.scriptRegistry.set(src, 'loaded');
+      if (window.scriptRegistry) {
+        window.scriptRegistry.set(src, 'loaded');
+      }
       
       // Notify other instances
       const loadEvent = new CustomEvent(`script-loaded-${src}`);

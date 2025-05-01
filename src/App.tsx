@@ -67,6 +67,7 @@ function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/bulk-products" element={<BulkProducts />} />
             <Route path="/favorites" element={<Favorites />} />
+            <Route path="/barcode-scan" element={<BarcodeScanner />} />
             <Route path="/scanner" element={<BarcodeScanner />} />
             <Route path="/map-view" element={<FullMapView />} />
             <Route path="*" element={<NotFound />} />
