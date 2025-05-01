@@ -44,9 +44,11 @@ const BannerProducts = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <div key={product.id} className="flex-shrink-0">
+                <ProductCard key={product.id} product={product} compactDesign={true} />
+              </div>
             ))}
           </div>
         ) : (

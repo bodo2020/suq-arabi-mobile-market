@@ -109,18 +109,21 @@ const BulkProducts = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 px-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 px-4">
             {products.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={{
-                  ...product,
-                  price: product.bulk_price || 0,
-                  offer_price: undefined
-                }} 
-                hideIfUnavailable={true}
-                showBulkQuantity={true}
-              />
+              <div key={product.id} className="flex-shrink-0">
+                <ProductCard 
+                  key={product.id} 
+                  product={{
+                    ...product,
+                    price: product.bulk_price || 0,
+                    offer_price: undefined
+                  }} 
+                  hideIfUnavailable={true}
+                  showBulkQuantity={true}
+                  compactDesign={true}
+                />
+              </div>
             ))}
           </div>
         ) : (
