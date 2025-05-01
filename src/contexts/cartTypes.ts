@@ -1,3 +1,4 @@
+
 import { CartItem as BaseCartItem, Product } from "@/lib/supabase";
 
 export type CartItem = BaseCartItem & {
@@ -8,6 +9,9 @@ export type CartItem = BaseCartItem & {
 
 export type CartContextType = {
   items: CartItem[];
+  cart: {
+    items: CartItem[];
+  };
   addToCart: (product: Product & { 
     price: number; 
     quantity: number; 
@@ -19,5 +23,6 @@ export type CartContextType = {
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
+  getCartTotal: () => number;
   isInitialized: boolean;
 };

@@ -63,3 +63,18 @@ export async function getDeliveryPrice(areaId: string, deliveryTypeId: string): 
     return null;
   }
 }
+
+// Add the missing calculateDeliveryFee function
+export function calculateDeliveryFee(location: any): number {
+  // Simple implementation based on location
+  if (!location) return 0;
+  
+  // Could use coordinates or area-based pricing
+  if (location.neighborhood_id) {
+    return 10; // Additional fee for specific neighborhoods
+  } else if (location.area_id) {
+    return 5; // Standard area fee
+  }
+  
+  return 0; // Default fee
+}

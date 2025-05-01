@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface AddressDisplayProps {
   address?: string;
-  onEdit: () => void;
+  onEdit?: () => void;
   areaName?: string;
   className?: string;
   showAddressSelector?: boolean;
@@ -29,7 +29,7 @@ const AddressDisplay = ({
   neighborhoodName,
   latitude,
   longitude,
-  onEdit
+  onEdit = () => {} // Default empty function to prevent errors
 }: AddressDisplayProps) => {
   const { user } = useUser();
   const { toast } = useToast();
@@ -140,7 +140,7 @@ const AddressDisplay = ({
           </div>
         )}
       </div>
-      <Button variant="ghost" size="sm" onClick={handleChangeAddress} className="text-xs">
+      <Button variant="ghost" size="sm" onClick={onEdit || handleChangeAddress} className="text-xs">
         تغيير
       </Button>
     </div>

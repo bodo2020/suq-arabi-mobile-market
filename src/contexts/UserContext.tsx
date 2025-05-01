@@ -13,6 +13,8 @@ type UserContextType = {
   signOut: () => Promise<void>;
   updateUser: (data: any) => Promise<any>;
   resetPassword: (phone: string) => Promise<any>;
+  signInWithPhone: (phone: string) => Promise<any>;
+  verifyPhone: (phone: string, code: string) => Promise<any>;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -164,6 +166,47 @@ export const UserProvider = ({ children }) => {
     return `${cleanPhone}@phone.user`;
   };
 
+  // Function to sign in with phone verification
+  const signInWithPhone = async (phone: string) => {
+    try {
+      // This is a placeholder for actual phone verification logic
+      // In a real implementation, this would call a serverless function to send SMS/WhatsApp
+      console.log("Sending verification code to phone:", phone);
+      
+      // For development, we can simulate a code
+      const testCode = "123456";
+      
+      return { 
+        data: { 
+          code: testCode, // In production, you'd never return this to the client
+          message: "Verification code sent successfully" 
+        } 
+      };
+    } catch (error) {
+      console.error("Error sending verification code:", error);
+      return { error };
+    }
+  };
+
+  // Function to verify phone code
+  const verifyPhone = async (phone: string, code: string) => {
+    try {
+      // This is a placeholder for actual phone verification logic
+      console.log("Verifying code for phone:", phone, "Code:", code);
+      
+      // In a real implementation, you would verify the code against what was sent
+      // Here we'll just assume code "123456" is valid for testing
+      if (code !== "123456") {
+        throw new Error("Invalid verification code");
+      }
+      
+      return { data: { verified: true } };
+    } catch (error) {
+      console.error("Error verifying code:", error);
+      return { error };
+    }
+  };
+
   return (
     <UserContext.Provider
       value={{
@@ -176,6 +219,8 @@ export const UserProvider = ({ children }) => {
         signOut,
         updateUser,
         resetPassword,
+        signInWithPhone,
+        verifyPhone,
       }}
     >
       {children}

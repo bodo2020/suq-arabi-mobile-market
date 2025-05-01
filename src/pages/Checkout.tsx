@@ -16,7 +16,7 @@ import { ArrowRight, ShoppingCart } from 'lucide-react';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, getCartTotal } = useCart();
+  const { items, getCartTotal } = useCart();
   const { user, session } = useUser();
   const { toast } = useToast();
   
@@ -71,7 +71,7 @@ const Checkout = () => {
       }
       
       const { data, error } = await supabase
-        .from('addresses')
+        .from('customer_addresses')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -118,13 +118,12 @@ const Checkout = () => {
     setDeliveryType(typeId);
   };
   
-  const handleCouponApply = (code, amount) => {
-    setCouponCode(code);
-    setDiscountAmount(amount);
+  const handleCouponApply = (discount) => {
+    setDiscountAmount(discount);
     
     toast({
       title: "تم تطبيق الكوبون",
-      description: `تم خصم ${amount} جنيه من طلبك`,
+      description: `تم خصم ${discount} جنيه من طلبك`,
     });
   };
   
@@ -138,7 +137,7 @@ const Checkout = () => {
       return;
     }
     
-    if (cart.items.length === 0) {
+    if (items.length === 0) {
       toast({
         title: "السلة فارغة",
         description: "يرجى إضافة منتجات إلى السلة",
@@ -150,10 +149,10 @@ const Checkout = () => {
     try {
       // Create the order in the database
       const { data, error } = await supabase
-        .from('orders')
+        .from('online_orders')
         .insert({
-          user_id: user.id,
-          items: cart.items,
+          customer_id: user.id, // Use customer_id instead of user_id
+          items: items,
           address_id: selectedAddress.id,
           delivery_type: deliveryType,
           notes: notes,
@@ -162,7 +161,7 @@ const Checkout = () => {
           delivery_fee: deliveryFee,
           subtotal: getCartTotal(),
           total: getCartTotal() - discountAmount + deliveryFee,
-          status: 'pending'
+          status: 'waiting' // Use 'waiting' instead of 'pending' to match the enum
         })
         .select()
         .single();
@@ -221,7 +220,10 @@ const Checkout = () => {
                       }`}
                       onClick={() => handleAddressSelect(address.id)}
                     >
-                      <AddressDisplay address={address} />
+                      <AddressDisplay 
+                        address={address.address} 
+                        onEdit={() => navigate(`/edit-address/${address.id}`)}
+                      />
                     </div>
                   ))}
                   
@@ -274,7 +276,7 @@ const Checkout = () => {
               <div className="space-y-4">
                 <div className="border-b pb-3">
                   <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>المنتجات ({cart.items.length})</span>
+                    <span>المنتجات ({items.length})</span>
                     <span>{getCartTotal()} ج.م</span>
                   </div>
                   
@@ -298,13 +300,16 @@ const Checkout = () => {
                 
                 {/* Coupon Input */}
                 <div className="pt-3 border-t">
-                  <CouponInput onApply={handleCouponApply} />
+                  <CouponInput 
+                    subtotal={getCartTotal()} 
+                    onApply={handleCouponApply}
+                  />
                 </div>
                 
                 <Button 
                   onClick={handleOrder}
                   className="w-full"
-                  disabled={!selectedAddress || cart.items.length === 0}
+                  disabled={!selectedAddress || items.length === 0}
                 >
                   متابعة الدفع
                 </Button>
