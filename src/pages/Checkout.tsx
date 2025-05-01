@@ -16,7 +16,7 @@ import { ArrowRight, ShoppingCart } from 'lucide-react';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, getCartTotal } = useCart();
+  const { items, getTotalPrice } = useCart();
   const { user, session } = useUser();
   const { toast } = useToast();
   
@@ -71,8 +71,14 @@ const Checkout = () => {
       }
       
       const { data, error } = await supabase
-        .from('addresses')
-        .select('*')
+        .from('customer_addresses')
+        .select(`
+          *,
+          governorates(name),
+          cities(name),
+          areas(name),
+          neighborhoods(name)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
@@ -118,8 +124,7 @@ const Checkout = () => {
     setDeliveryType(typeId);
   };
   
-  const handleCouponApply = (code, amount) => {
-    setCouponCode(code);
+  const handleCouponApply = (amount) => {
     setDiscountAmount(amount);
     
     toast({
@@ -138,7 +143,7 @@ const Checkout = () => {
       return;
     }
     
-    if (cart.items.length === 0) {
+    if (items.length === 0) {
       toast({
         title: "السلة فارغة",
         description: "يرجى إضافة منتجات إلى السلة",
@@ -150,18 +155,18 @@ const Checkout = () => {
     try {
       // Create the order in the database
       const { data, error } = await supabase
-        .from('orders')
+        .from('online_orders')
         .insert({
           user_id: user.id,
-          items: cart.items,
+          items: items,
           address_id: selectedAddress.id,
           delivery_type: deliveryType,
           notes: notes,
           coupon_code: couponCode || null,
           discount_amount: discountAmount,
           delivery_fee: deliveryFee,
-          subtotal: getCartTotal(),
-          total: getCartTotal() - discountAmount + deliveryFee,
+          subtotal: getTotalPrice(),
+          total: getTotalPrice() - discountAmount + deliveryFee,
           status: 'pending'
         })
         .select()
@@ -221,7 +226,12 @@ const Checkout = () => {
                       }`}
                       onClick={() => handleAddressSelect(address.id)}
                     >
-                      <AddressDisplay address={address} />
+                      <AddressDisplay 
+                        address={address.address}
+                        areaName={address.areas?.name}
+                        neighborhoodName={address.neighborhoods?.name}
+                        onEdit={() => navigate(`/edit-address/${address.id}`)}
+                      />
                     </div>
                   ))}
                   
@@ -274,8 +284,8 @@ const Checkout = () => {
               <div className="space-y-4">
                 <div className="border-b pb-3">
                   <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>المنتجات ({cart.items.length})</span>
-                    <span>{getCartTotal()} ج.م</span>
+                    <span>المنتجات ({items.length})</span>
+                    <span>{getTotalPrice()} ج.م</span>
                   </div>
                   
                   <div className="flex justify-between text-sm text-gray-600">
@@ -293,18 +303,21 @@ const Checkout = () => {
                 
                 <div className="flex justify-between font-bold">
                   <span>الإجمالي</span>
-                  <span>{getCartTotal() - discountAmount + deliveryFee} ج.م</span>
+                  <span>{getTotalPrice() - discountAmount + deliveryFee} ج.م</span>
                 </div>
                 
                 {/* Coupon Input */}
                 <div className="pt-3 border-t">
-                  <CouponInput onApply={handleCouponApply} />
+                  <CouponInput 
+                    subtotal={getTotalPrice()} 
+                    onApply={handleCouponApply} 
+                  />
                 </div>
                 
                 <Button 
                   onClick={handleOrder}
                   className="w-full"
-                  disabled={!selectedAddress || cart.items.length === 0}
+                  disabled={!selectedAddress || items.length === 0}
                 >
                   متابعة الدفع
                 </Button>

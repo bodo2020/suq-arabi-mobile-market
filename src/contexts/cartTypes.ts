@@ -1,3 +1,4 @@
+
 import { CartItem as BaseCartItem, Product } from "@/lib/supabase";
 
 export type CartItem = BaseCartItem & {

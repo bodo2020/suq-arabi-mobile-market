@@ -63,3 +63,13 @@ export async function getDeliveryPrice(areaId: string, deliveryTypeId: string): 
     return null;
   }
 }
+
+// Add the missing calculateDeliveryFee function
+export function calculateDeliveryFee(location: string | undefined): number {
+  // A simple implementation that returns a delivery fee based on the location
+  if (!location) return 0;
+  
+  // This could be expanded with more sophisticated logic
+  // For now, just return a base fee
+  return 20;
+}
