@@ -127,7 +127,7 @@ const Cart = () => {
               </div>
             </div>
 
-            <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
+            <Link to="/payment" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
               متابعة الطلب
             </Link>
           </>

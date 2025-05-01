@@ -6,7 +6,6 @@ import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetail';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
 import Payment from './pages/Payment';
 import OrderSuccess from './pages/OrderSuccess';
 import CompanyProducts from './pages/CompanyProducts';
@@ -49,7 +48,7 @@ function App() {
             <Route path="/category/:id" element={<CategoryDetail />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/checkout" element={<Navigate to="/payment" replace />} />
             <Route path="/payment" element={<Payment />} />
             <Route path="/order-success" element={<OrderSuccess />} />
             <Route path="/company/:id" element={<CompanyProducts />} />
