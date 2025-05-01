@@ -1,20 +1,16 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, MapPin, Package } from 'lucide-react';
+import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
-import ProductCard from '@/components/ui/ProductCard';
-import Banner from '@/components/ui/Banner';
 import { getCategories, getProducts, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
 import { Skeleton } from "@/components/ui/skeleton";
 import AddressDisplay from '@/components/ui/AddressDisplay';
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
-import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
 import BannersContainer from '@/components/ui/BannersContainer';
 import User from '@/components/ui/User';
 import { useUser } from '@/contexts/UserContext';
@@ -44,36 +40,8 @@ const Index = () => {
     queryKey: ['categories'],
     queryFn: getCategories
   });
-  const {
-    data: productCollections = [],
-    isLoading: collectionsLoading
-  } = useQuery({
-    queryKey: ['productCollections'],
-    queryFn: async () => {
-      try {
-        const {
-          data,
-          error
-        } = await supabase.from('product_collections').select('*').eq('active', true).order('position');
-        console.log('Fetched collections:', data);
-        if (error) {
-          console.error('Error fetching collections:', error);
-          throw error;
-        }
-        return data || [];
-      } catch (err) {
-        console.error('Error in query function:', err);
-        throw err;
-      }
-    }
-  });
-  const {
-    data: products = [],
-    isLoading: productsLoading
-  } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => getProducts()
-  });
+
+  // We've removed the collections query since we don't need it anymore
 
   useEffect(() => {
     const fetchData = async () => {
@@ -142,7 +110,7 @@ const Index = () => {
     navigate(`/category/${cat.id}`);
   };
 
-  if (categoriesLoading || productsLoading || collectionsLoading) {
+  if (categoriesLoading) {
     return <MainLayout>
         <div className="py-4">
           <div className="flex justify-center mb-4">
@@ -158,12 +126,6 @@ const Index = () => {
             <Skeleton className="h-8 w-36 mb-2" />
             <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
               {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
-            </div>
-          </div>
-          <div className="mb-6">
-            <Skeleton className="h-8 w-40 mb-2" />
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-lg" />)}
             </div>
           </div>
         </div>
@@ -218,8 +180,6 @@ const Index = () => {
             )}
           </div>
         </div>
-        
-        <ProductCollectionsSection />
       </div>
     </MainLayout>;
 };
