@@ -1,9 +1,11 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
+import ProductCard from '@/components/ui/ProductCard';
 import Banner from '@/components/ui/Banner';
 import { getCategories, getProducts, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -14,10 +16,8 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { useQuery } from '@tanstack/react-query';
 import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
 import BannersContainer from '@/components/ui/BannersContainer';
-import FeaturedProducts from '@/components/sections/FeaturedProducts';
 import User from '@/components/ui/User';
 import { useUser } from '@/contexts/UserContext';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
@@ -31,14 +31,12 @@ const Index = () => {
   const [processingImage, setProcessingImage] = useState(false);
   const [activeBanner, setActiveBanner] = useState(0);
   const bannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const categoriesScrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
   const {
     user
   } = useUser();
-  
   const {
     data: categories = [],
     isLoading: categoriesLoading
@@ -137,19 +135,6 @@ const Index = () => {
     navigate('/account/addresses');
   };
 
-  // دالتان للتمرير الأفقي ضمن قسم التصنيفات
-  const scrollCategoriesRight = () => {
-    if (categoriesScrollRef.current) {
-      categoriesScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-    }
-  };
-
-  const scrollCategoriesLeft = () => {
-    if (categoriesScrollRef.current) {
-      categoriesScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-    }
-  };
-
   // Show 9 categories instead of 6/3
   const visibleCategories = categories.slice(0, 9);
 
@@ -177,14 +162,8 @@ const Index = () => {
           </div>
           <div className="mb-6">
             <Skeleton className="h-8 w-40 mb-2" />
-            <div className="px-4">
-              <div className="flex space-x-4 rtl:space-x-reverse">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="min-w-[55%] flex-shrink-0">
-                    <Skeleton className="h-56 w-full rounded-lg" />
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-lg" />)}
             </div>
           </div>
         </div>
@@ -219,7 +198,7 @@ const Index = () => {
             <BannersContainer banners={banners} />
           </div>}
 
-        <div className="mb-6 relative">
+        <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-lg font-bold">الأقسام</h2>
             <Link to="/categories" className="flex items-center text-primary text-sm">
@@ -227,33 +206,18 @@ const Index = () => {
               <ChevronLeft size={16} />
             </Link>
           </div>
-          
-          <ScrollArea className="w-full">
-            <div 
-              ref={categoriesScrollRef}
-              className="flex space-x-4 rtl:space-x-reverse px-3 pb-2"
-            >
-              {visibleCategories.map(category => (
-                <div key={category.id} className="min-w-[30%] flex-shrink-0">
-                  <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
+          <div className="grid grid-cols-3 gap-3">
+            {visibleCategories.map(category => <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />)}
+            {categories.length > 9 && (
+              <Link to="/categories" className="category-item flex flex-col items-center">
+                <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{aspectRatio: '1'}}>
+                  <ChevronLeft size={24} />
                 </div>
-              ))}
-              
-              {categories.length > 9 && (
-                <div className="min-w-[30%] flex-shrink-0">
-                  <Link to="/categories" className="category-item flex flex-col items-center">
-                    <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{aspectRatio: '1'}}>
-                      <ChevronLeft size={24} />
-                    </div>
-                    <span className="text-sm text-center mt-1">عرض الكل</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+                <span className="text-sm text-center mt-1">عرض الكل</span>
+              </Link>
+            )}
+          </div>
         </div>
-        
-        <FeaturedProducts products={products} />
         
         <ProductCollectionsSection />
       </div>

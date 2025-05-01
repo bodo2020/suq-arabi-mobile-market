@@ -54,14 +54,8 @@ const ProductCollectionsSection = () => {
       <div className="space-y-6">
         <div className="mb-6">
           <Skeleton className="h-8 w-36 mb-2" />
-          <div className="px-4">
-            <div className="flex space-x-4 rtl:space-x-reverse">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="min-w-[55%] flex-shrink-0">
-                  <Skeleton className="h-56 w-full rounded-lg" />
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-lg" />)}
           </div>
         </div>
       </div>
