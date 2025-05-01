@@ -74,7 +74,7 @@ export type CartItem = {
   quantity: number;
 };
 
-// Updated Address type to include join data for name properties
+// Updated Address type to include location coordinates
 export type Address = {
   id: string;
   user_id: string;
@@ -86,11 +86,13 @@ export type Address = {
   is_default: boolean;
   created_at?: string;
   updated_at?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   // Join properties
-  governorates?: { name: string };
-  cities?: { name: string };
-  areas?: { name: string };
-  neighborhoods?: { name: string };
+  governorates?: { id: string; name: string } | null;
+  cities?: { id: string; name: string } | null;
+  areas?: { id: string; name: string } | null;
+  neighborhoods?: { id: string; name: string } | null;
 };
 
 export type Order = {
