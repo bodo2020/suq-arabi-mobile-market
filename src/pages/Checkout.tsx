@@ -336,7 +336,121 @@ const Checkout = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Customer Information */}
-          
+          <div className="space-y-4 order-2 md:order-1">
+            <div className="bg-white rounded-lg p-4">
+              <h3 className="text-lg font-bold mb-3">معلومات العميل</h3>
+              
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm mb-1">الاسم الأول</label>
+                    <Input
+                      id="firstName"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm mb-1">اسم العائلة</label>
+                    <Input
+                      id="lastName"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="phone" className="block text-sm mb-1">رقم الهاتف</label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="email" className="block text-sm mb-1">البريد الإلكتروني</label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Delivery Address */}
+            <div className="bg-white rounded-lg p-4">
+              <h3 className="text-lg font-bold mb-3">عنوان التوصيل</h3>
+              
+              {!isEditingAddress ? (
+                <div className="space-y-3">
+                  <LocationPicker
+                    value={selectedLocation}
+                    onChange={setSelectedLocation}
+                  />
+                  
+                  <div>
+                    <label htmlFor="address" className="block text-sm mb-1">العنوان بالتفصيل</label>
+                    <textarea
+                      id="address"
+                      className="w-full border rounded p-2 min-h-[100px]"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  {selectedLocation.area && deliveryTypes.length > 0 && (
+                    <DeliveryTypeSelector
+                      types={deliveryTypes}
+                      selectedId={selectedDeliveryType}
+                      onSelect={handleDeliveryTypeChange}
+                    />
+                  )}
+                </div>
+              ) : (
+                <AddressDisplay
+                  address={address}
+                  areaName={locationName}
+                  onEdit={() => setIsEditingAddress(false)}
+                />
+              )}
+            </div>
+            
+            <div className="bg-white rounded-lg p-4">
+              <h3 className="text-lg font-bold mb-3">ملاحظات إضافية</h3>
+              <OrderNotes value={notes} onChange={setNotes} />
+            </div>
+            
+            <div className="bg-white rounded-lg p-4">
+              <h3 className="text-lg font-bold mb-3">طريقة الدفع</h3>
+              
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={setPaymentMethod}
+                className="space-y-2"
+              >
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="cash" id="cash" />
+                  <Label htmlFor="cash" className="mr-2">الدفع عند الاستلام</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="wallet" id="wallet" />
+                  <Label htmlFor="wallet" className="mr-2">محفظة إلكترونية</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            <Button className="w-full" onClick={handleSubmitOrder} disabled={isLoading || items.length === 0}>
+              {isLoading ? "جاري إرسال الطلب..." : "تأكيد الطلب"}
+            </Button>
+          </div>
           
           {/* Order Details */}
           <div className="bg-white rounded-lg p-4 mb-4 order-1 md:order-2">
@@ -385,10 +499,6 @@ const Checkout = () => {
                   </div>
                 </div>
               </div>}
-            
-            <Button className="w-full mt-6" onClick={handleSubmitOrder} disabled={isLoading || items.length === 0}>
-              {isLoading ? "جاري إرسال الطلب..." : "تأكيد الطلب"}
-            </Button>
           </div>
         </div>
       </div>

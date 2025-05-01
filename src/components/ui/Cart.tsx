@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -68,15 +69,15 @@ const Cart = () => {
                         {item.product.offer_price ? (
                           <>
                             <span className="text-sm font-bold text-primary ml-2">
-                              {item.product.offer_price} ر.س
+                              {item.product.offer_price} ج.م
                             </span>
                             <span className="text-xs line-through text-gray-500">
-                              {item.product.price} ر.س
+                              {item.product.price} ج.م
                             </span>
                           </>
                         ) : (
                           <span className="text-sm font-bold">
-                            {item.product.price} ر.س
+                            {item.product.price} ج.م
                           </span>
                         )}
                       </div>
@@ -120,21 +121,13 @@ const Cart = () => {
 
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-bold">{getTotalPrice().toFixed(2)} ر.س</span>
-                <span>المجموع</span>
-              </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-bold">0.00 ر.س</span>
-                <span>التوصيل</span>
-              </div>
               <div className="flex justify-between py-2 mt-2">
-                <span className="font-bold text-lg">{getTotalPrice().toFixed(2)} ر.س</span>
+                <span className="font-bold text-lg">{getTotalPrice().toFixed(2)} ج.م</span>
                 <span className="font-bold">الإجمالي</span>
               </div>
             </div>
 
-            <Link to="/payment" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
+            <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
               متابعة الطلب
             </Link>
           </>

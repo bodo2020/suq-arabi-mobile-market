@@ -418,7 +418,7 @@ const Payment = () => {
             </div>
 
             <SwipeButton 
-              onComplete={handleSubmitOrder} 
+              onComplete={paymentMethod === 'wallet' ? () => setWalletDialogOpen(true) : handleSubmitOrder}
               isLoading={isLoading}
               className="mt-8"
             />
