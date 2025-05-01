@@ -8,23 +8,20 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
-import { supabase } from '@/lib/supabase';
 
 const PhoneLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signInWithPhonePassword } = useUser();
+  const { signIn } = useUser();
   
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isPhoneChecked, setIsPhoneChecked] = useState(false);
   const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
   const [errors, setErrors] = useState({
     phone: "",
     password: ""
   });
-  const [phoneFormatted, setPhoneFormatted] = useState('');
   
   // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
@@ -54,18 +51,13 @@ const PhoneLogin = () => {
     return phone.startsWith('1') && phone.length === 10;
   };
   
-  const checkPhoneExists = async () => {
+  const handleLogin = async () => {
     if (loading) return; // Prevent multiple clicks
     
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
     if (!cleanPhone) {
       setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف" }));
-      toast({
-        title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف",
-        variant: "destructive"
-      });
       return;
     }
     
@@ -75,61 +67,8 @@ const PhoneLogin = () => {
         ...prev, 
         phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)"
       }));
-      toast({
-        title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)",
-        variant: "destructive"
-      });
       return;
     }
-    
-    setLoading(true);
-    
-    try {
-      // Create full international format
-      const fullPhone = formatInternationalPhone(phone, countryCode);
-      setPhoneFormatted(fullPhone);
-      console.log("Checking phone:", fullPhone);
-      
-      // Check if the phone exists in the customers table
-      const { data, error: supabaseError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('phone', fullPhone)
-        .single();
-      
-      if (supabaseError) {
-        if (supabaseError.code === 'PGRST116') { // No rows returned
-          console.log("User not found, redirecting to register");
-          toast({
-            title: "رقم الهاتف غير مسجل",
-            description: "سيتم توجيهك إلى صفحة التسجيل",
-          });
-          // Navigate to register page with phone and country code as query params
-          navigate(`/register?phone=${phone}&countryCode=${countryCode.code}`);
-        } else {
-          throw supabaseError;
-        }
-      } else {
-        // User exists
-        console.log("User found:", data);
-        setIsPhoneChecked(true);
-      }
-      
-    } catch (error: any) {
-      console.error('Error checking phone:', error);
-      toast({
-        title: "حدث خطأ",
-        description: error.message || "حدث خطأ أثناء التحقق من رقم الهاتف",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handlePasswordLogin = async () => {
-    if (loading) return; // Prevent multiple clicks
     
     if (!password) {
       setErrors(prev => ({ ...prev, password: "يرجى إدخال كلمة المرور" }));
@@ -139,8 +78,11 @@ const PhoneLogin = () => {
     setLoading(true);
     
     try {
+      // Create full international format
+      const fullPhone = formatInternationalPhone(phone, countryCode);
+      
       // Sign in with phone and password
-      const { error } = await signInWithPhonePassword(phoneFormatted, password);
+      const { error } = await signIn(fullPhone, password);
       
       if (error) {
         throw error;
@@ -157,7 +99,7 @@ const PhoneLogin = () => {
       console.error('Error signing in:', error);
       toast({
         title: "فشل تسجيل الدخول",
-        description: error.message || "كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى",
+        description: error.message || "كلمة المرور أو رقم الهاتف غير صحيح، يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
     } finally {
@@ -202,12 +144,10 @@ const PhoneLogin = () => {
                 onChange={(e) => {
                   setPhone(e.target.value);
                   setErrors(prev => ({ ...prev, phone: "" }));
-                  setIsPhoneChecked(false);
                 }}
                 className="text-right ltr flex-1"
                 placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
                 dir="ltr"
-                disabled={isPhoneChecked}
               />
             </div>
             
@@ -222,78 +162,52 @@ const PhoneLogin = () => {
             )}
           </div>
           
-          {!isPhoneChecked ? (
-            <Button
-              onClick={checkPhoneExists}
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? (
-                <Loader size={16} className="animate-spin mr-2" />
-              ) : null}
-              المتابعة
-            </Button>
-          ) : (
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center mb-2">
-                  <KeyRound size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="password" className="font-medium">كلمة المرور</label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setErrors(prev => ({ ...prev, password: "" }));
-                  }}
-                  className="text-right"
-                  placeholder="*********"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handlePasswordLogin();
-                    }
-                  }}
-                />
-                {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-                )}
-              </div>
-              
-              <Button
-                onClick={handlePasswordLogin}
-                disabled={loading}
-                className="w-full"
-              >
-                {loading ? (
-                  <Loader size={16} className="animate-spin mr-2" />
-                ) : null}
-                تسجيل الدخول
-              </Button>
-              
-              <div className="flex justify-between text-sm">
-                <button
-                  onClick={() => {
-                    setIsPhoneChecked(false);
-                    setPassword('');
-                  }}
-                  className="text-primary"
-                  type="button"
-                >
-                  تغيير رقم الهاتف
-                </button>
-                
-                <button
-                  onClick={() => navigate('/register')}
-                  className="text-primary"
-                  type="button"
-                >
-                  تسجيل حساب جديد
-                </button>
-              </div>
+          <div>
+            <div className="flex items-center mb-2">
+              <KeyRound size={18} className="ml-2 text-gray-500" />
+              <label htmlFor="password" className="font-medium">كلمة المرور</label>
             </div>
-          )}
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setErrors(prev => ({ ...prev, password: "" }));
+              }}
+              className="text-right"
+              placeholder="*********"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleLogin();
+                }
+              }}
+            />
+            {errors.password && (
+              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+            )}
+          </div>
+              
+          <Button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? (
+              <Loader size={16} className="animate-spin mr-2" />
+            ) : null}
+            تسجيل الدخول
+          </Button>
+              
+          <div className="flex justify-center text-sm">
+            <button
+              onClick={() => navigate('/register')}
+              className="text-primary"
+              type="button"
+            >
+              تسجيل حساب جديد
+            </button>
+          </div>
         </div>
       </div>
     </MainLayout>

@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -7,15 +8,11 @@ type UserContextType = {
   session: Session | null;
   authLoading: boolean;
   loading: boolean;
-  signIn: (email: string, password?: string) => Promise<any>;
-  signUp: (email: string, password?: string, additionalData?: any) => Promise<any>;
+  signIn: (phone: string, password: string) => Promise<any>;
+  signUp: (phone: string, password: string, additionalData?: any) => Promise<any>;
   signOut: () => Promise<void>;
   updateUser: (data: any) => Promise<any>;
-  resetPassword: (email: string) => Promise<any>;
-  signInWithGoogle: () => Promise<any>;
-  signInWithPhone: (phone: string) => Promise<any>;
-  signInWithPhonePassword: (phone: string, password: string) => Promise<any>;
-  verifyPhone: (phone: string, code: string) => Promise<any>;
+  resetPassword: (phone: string) => Promise<any>;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -57,11 +54,14 @@ export const UserProvider = ({ children }) => {
     });
   }, []);
 
-  // Function to sign in with email and password
-  const signIn = async (email: string, password?: string) => {
+  // Function to sign in with phone as email and password
+  const signIn = async (phone: string, password: string) => {
     try {
+      // Use the phone number as the email for authentication
+      const formattedPhone = formatPhoneAsEmail(phone);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: formattedPhone,
         password,
       });
 
@@ -76,19 +76,32 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Function to sign up with email and password
-  const signUp = async (email: string, password?: string, additionalData?: any) => {
+  // Function to sign up with phone as email and password
+  const signUp = async (phone: string, password: string, additionalData?: any) => {
     try {
+      // Use the phone number as the email for authentication
+      const formattedPhone = formatPhoneAsEmail(phone);
+      
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: formattedPhone,
         password,
         options: {
-          data: additionalData,
+          data: {
+            ...additionalData,
+            phone: phone,
+            phone_as_email: formattedPhone,
+          },
         },
       });
 
       if (error) {
         throw error;
+      }
+
+      // Since we're not requiring email verification, we can immediately sign in the user
+      if (data.user && !data.session) {
+        const signInResult = await signIn(phone, password);
+        return signInResult;
       }
 
       return { data };
@@ -124,9 +137,11 @@ export const UserProvider = ({ children }) => {
   };
 
   // Function to reset password
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (phone: string) => {
     try {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      const formattedPhone = formatPhoneAsEmail(phone);
+      
+      const { data, error } = await supabase.auth.resetPasswordForEmail(formattedPhone, {
         redirectTo: `${window.location.origin}/update-password`,
       });
 
@@ -141,148 +156,12 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Function to sign in with Google
-  const signInWithGoogle = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      return { data };
-    } catch (error) {
-      console.error("Error signing in with Google:", error);
-      return { error };
-    }
-  };
-
-  const signInWithPhone = async (phone: string) => {
-    console.log("Signing in with phone:", phone);
-    try {
-      // First try Supabase's built-in phone auth
-      const { error: supabaseError } = await supabase.auth.signInWithOtp({
-        phone,
-      });
-
-      // If Supabase auth fails, use our custom edge function
-      if (supabaseError) {
-        console.error("Supabase auth error, trying custom function:", supabaseError);
-        
-        const { data: functionData, error: functionError } = await supabase.functions.invoke(
-          "phone-verify",
-          {
-            body: {
-              action: "send",
-              phone: phone,
-            },
-          }
-        );
-
-        if (functionError) {
-          console.error("Custom function error:", functionError);
-          throw functionError;
-        }
-
-        if (!functionData.success) {
-          console.error("Custom function failed:", functionData.message);
-          throw new Error(functionData.message);
-        }
-
-        return { data: functionData };
-      }
-
-      return { data: "OTP sent" };
-    } catch (error) {
-      console.error("Error sending verification code:", error);
-      return { error };
-    }
-  };
-
-  // New function to sign in with phone and password
-  const signInWithPhonePassword = async (phone: string, password: string) => {
-    try {
-      console.log("Signing in with phone and password:", phone);
-      
-      // First get the customer record to find the associated email
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .select('email')
-        .eq('phone', phone)
-        .single();
-      
-      if (customerError) {
-        console.error("Error finding customer with phone:", customerError);
-        throw new Error('رقم الهاتف غير مسجل في النظام');
-      }
-      
-      if (!customer || !customer.email) {
-        throw new Error('لا يوجد بريد إلكتروني مرتبط برقم الهاتف');
-      }
-      
-      // Sign in using the associated email and password
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: customer.email,
-        password,
-      });
-
-      if (error) {
-        console.error("Error signing in with phone and password:", error);
-        throw error;
-      }
-
-      return { data };
-    } catch (error) {
-      console.error("Error signing in with phone and password:", error);
-      return { error };
-    }
-  };
-
-  const verifyPhone = async (phone: string, code: string) => {
-    console.log("Verifying phone:", phone, "with code:", code);
-    try {
-      // First try with Supabase's built-in verification
-      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-        phone,
-        token: code,
-        type: 'sms',
-      });
-
-      // If Supabase verification fails, use our custom edge function
-      if (verifyError) {
-        console.error("Supabase verification failed, trying custom function:", verifyError);
-        
-        const { data: functionData, error: functionError } = await supabase.functions.invoke(
-          "phone-verify",
-          {
-            body: {
-              action: "verify",
-              phone: phone,
-              code: code,
-            },
-          }
-        );
-
-        if (functionError) {
-          console.error("Custom function error:", functionError);
-          throw functionError;
-        }
-
-        if (!functionData.success) {
-          console.error("Custom function failed:", functionData.message);
-          throw new Error(functionData.message);
-        }
-
-        return { data: functionData };
-      }
-
-      return { data: verifyData };
-    } catch (error) {
-      console.error("Error verifying code:", error);
-      return { error };
-    }
+  // Helper function to format phone as email
+  const formatPhoneAsEmail = (phone: string): string => {
+    // Clean the phone number (remove any non-digit characters)
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Format as an email-like string
+    return `${cleanPhone}@phone.user`;
   };
 
   return (
@@ -297,10 +176,6 @@ export const UserProvider = ({ children }) => {
         signOut,
         updateUser,
         resetPassword,
-        signInWithGoogle,
-        signInWithPhone,
-        signInWithPhonePassword,
-        verifyPhone,
       }}
     >
       {children}
