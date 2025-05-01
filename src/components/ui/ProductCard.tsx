@@ -178,7 +178,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className="text-right flex-grow flex flex-col justify-between">
-          <h3 className="font-bold text-xs mb-0.5 line-clamp-1">{product.name}</h3>
+          {/* Updated to allow product name to take up to 2 lines */}
+          <h3 className="font-bold text-xs mb-0.5 line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
           <div className="mt-auto">
             <div className="flex justify-between mb-1 items-center">
               {displayBulkView ? (

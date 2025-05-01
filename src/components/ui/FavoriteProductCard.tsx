@@ -84,7 +84,8 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
       </div>
 
       <div className="text-right flex-grow flex flex-col justify-between">
-        <h3 className="font-bold text-sm mb-2 line-clamp-2">{product.name}</h3>
+        {/* Updated to allow product name to take up to 2 lines */}
+        <h3 className="font-bold text-sm mb-2 line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
         <div className="mt-auto">
           <div className="flex justify-between mb-2 items-center">
             <div className="flex flex-col items-end">
