@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, MapPin, Package } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -134,7 +135,8 @@ const Index = () => {
     navigate('/account/addresses');
   };
 
-  const visibleCategories = isMobile ? categories.slice(0, 3) : categories.slice(0, 6);
+  // Show 9 categories instead of 6/3
+  const visibleCategories = categories.slice(0, 9);
 
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
@@ -178,8 +180,6 @@ const Index = () => {
           {banners.length > 0 && <BannersContainer banners={banners} />}
         </div>
         
-        
-
         <div className="flex flex-col items-center mb-8 pt-4">
           <img src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" alt={storeInfo?.name} className="h-16 w-16 mb-1" />
           <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
@@ -206,14 +206,16 @@ const Index = () => {
               <ChevronLeft size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {visibleCategories.map(category => <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />)}
-            {categories.length > (isMobile ? 3 : 6) && <Link to="/categories" className="category-item flex flex-col items-center">
-                <div className="h-28 w-28 md:h-32 md:w-32 bg-gray-100 rounded-lg flex items-center justify-center mb-2">
+            {categories.length > 9 && (
+              <Link to="/categories" className="category-item flex flex-col items-center">
+                <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{aspectRatio: '1'}}>
                   <ChevronLeft size={24} />
                 </div>
-                <span className="text-sm md:text-base text-center">عرض الكل</span>
-              </Link>}
+                <span className="text-sm text-center mt-1">عرض الكل</span>
+              </Link>
+            )}
           </div>
         </div>
         
