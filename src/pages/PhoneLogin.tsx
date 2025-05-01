@@ -103,10 +103,10 @@ const PhoneLogin = () => {
           console.log("User not found, redirecting to register");
           toast({
             title: "رقم الهاتف غير مسجل",
-            description: "يرجى التسجيل أولاً",
-            variant: "destructive"
+            description: "سيتم توجيهك إلى صفحة التسجيل",
           });
-          navigate('/register');
+          // Navigate to register page with phone and country code as query params
+          navigate(`/register?phone=${phone}&countryCode=${countryCode.code}`);
         } else {
           throw supabaseError;
         }
