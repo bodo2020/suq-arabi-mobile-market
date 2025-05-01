@@ -13,9 +13,15 @@ interface ProductCardProps {
   product: Product;
   hideIfUnavailable?: boolean;
   showBulkQuantity?: boolean;
+  compactDesign?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = false, showBulkQuantity = false }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ 
+  product, 
+  hideIfUnavailable = false, 
+  showBulkQuantity = false,
+  compactDesign = false
+}) => {
   const { items, updateQuantity, addToCart } = useCart();
   const { toast } = useToast();
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -135,6 +141,69 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     product.bulk_quantity && 
     product.quantity >= product.bulk_quantity;
 
+  // Compact design for collection view (like in the reference image)
+  if (compactDesign) {
+    return (
+      <>
+        <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale bg-white rounded-lg shadow-sm p-2">
+          <div className="absolute top-1 right-1 z-20">
+            <FavoriteButton productId={product.id} size="sm" />
+          </div>
+
+          <div className="relative mb-2 flex justify-center items-center py-2" style={{minHeight: '90px'}}>
+            <img
+              src={productImage}
+              alt={product.name}
+              className="h-[90px] object-contain"
+            />
+          </div>
+
+          <div className="text-right flex-grow flex flex-col justify-between">
+            <h3 className="font-medium text-xs mb-1 line-clamp-2 h-9">{product.name}</h3>
+            
+            <div className="mt-auto">
+              <div className="flex justify-center mb-2">
+                <span className="font-bold text-sm">{product.offer_price || product.price} ج.م</span>
+                {product.bulk_quantity && (
+                  <span className="text-xs mr-1 text-gray-500">({product.bulk_quantity})</span>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <button
+                  onClick={(e) => handleAddToCart(e, false)}
+                  className="w-full py-1.5 bg-[#00663d] text-white rounded-md flex items-center justify-center text-sm hover:bg-[#00552f] transition-colors"
+                  aria-label="إضافة للسلة"
+                >
+                  إضافة للسلة
+                </button>
+
+                {product.bulk_price && (
+                  <div className="bg-[#e8f5e9] text-[#00663d] rounded-md py-1 px-2 text-xs text-center flex items-center justify-center gap-1">
+                    <span>{product.bulk_price * (product.bulk_quantity || 1)} ج.م</span>
+                    <span>({product.bulk_quantity})</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        <AddToCartModal
+          product={product}
+          isOpen={showBulkModal}
+          onClose={() => setShowBulkModal(false)}
+        />
+        <WeightSelector
+          product={product}
+          isOpen={showWeightSelector}
+          onClose={() => setShowWeightSelector(false)}
+        />
+      </>
+    );
+  }
+
+  // Original design for other views
   return (
     <>
       <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale">
