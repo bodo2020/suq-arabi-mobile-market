@@ -129,7 +129,7 @@ const Checkout = () => {
     
     toast({
       title: "تم تطبيق الكوبون",
-      description: `تم خصم ${amount} جنيه من طلبك`,
+      description: `تم خصم ${amount} ج.م من طلبك`,
     });
   };
   
@@ -157,17 +157,18 @@ const Checkout = () => {
       const { data, error } = await supabase
         .from('online_orders')
         .insert({
-          user_id: user.id,
+          customer_id: user.id,  // Use customer_id instead of user_id
           items: items,
-          address_id: selectedAddress.id,
+          delivery_location_id: selectedAddress.id,
+          shipping_address: selectedAddress.address,
           delivery_type: deliveryType,
           notes: notes,
-          coupon_code: couponCode || null,
-          discount_amount: discountAmount,
-          delivery_fee: deliveryFee,
+          payment_method: null,  // Will be set in payment page
+          payment_status: "pending",
+          shipping_cost: deliveryFee,
           subtotal: getTotalPrice(),
           total: getTotalPrice() - discountAmount + deliveryFee,
-          status: 'pending'
+          status: "waiting"  // Changed from "pending" to "waiting" to match the enum
         })
         .select()
         .single();
