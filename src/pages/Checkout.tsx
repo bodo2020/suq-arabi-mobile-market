@@ -16,7 +16,7 @@ import { ArrowRight, ShoppingCart } from 'lucide-react';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { items, getTotalPrice } = useCart();
+  const { cart, getCartTotal } = useCart();
   const { user, session } = useUser();
   const { toast } = useToast();
   
@@ -71,14 +71,8 @@ const Checkout = () => {
       }
       
       const { data, error } = await supabase
-        .from('customer_addresses')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
+        .from('addresses')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
@@ -124,12 +118,13 @@ const Checkout = () => {
     setDeliveryType(typeId);
   };
   
-  const handleCouponApply = (amount) => {
+  const handleCouponApply = (code, amount) => {
+    setCouponCode(code);
     setDiscountAmount(amount);
     
     toast({
       title: "تم تطبيق الكوبون",
-      description: `تم خصم ${amount} ج.م من طلبك`,
+      description: `تم خصم ${amount} جنيه من طلبك`,
     });
   };
   
@@ -143,7 +138,7 @@ const Checkout = () => {
       return;
     }
     
-    if (items.length === 0) {
+    if (cart.items.length === 0) {
       toast({
         title: "السلة فارغة",
         description: "يرجى إضافة منتجات إلى السلة",
@@ -155,20 +150,19 @@ const Checkout = () => {
     try {
       // Create the order in the database
       const { data, error } = await supabase
-        .from('online_orders')
+        .from('orders')
         .insert({
-          customer_id: user.id,  // Use customer_id instead of user_id
-          items: items,
-          delivery_location_id: selectedAddress.id,
-          shipping_address: selectedAddress.address,
+          user_id: user.id,
+          items: cart.items,
+          address_id: selectedAddress.id,
           delivery_type: deliveryType,
           notes: notes,
-          payment_method: null,  // Will be set in payment page
-          payment_status: "pending",
-          shipping_cost: deliveryFee,
-          subtotal: getTotalPrice(),
-          total: getTotalPrice() - discountAmount + deliveryFee,
-          status: "waiting"  // Changed from "pending" to "waiting" to match the enum
+          coupon_code: couponCode || null,
+          discount_amount: discountAmount,
+          delivery_fee: deliveryFee,
+          subtotal: getCartTotal(),
+          total: getCartTotal() - discountAmount + deliveryFee,
+          status: 'pending'
         })
         .select()
         .single();
@@ -227,12 +221,7 @@ const Checkout = () => {
                       }`}
                       onClick={() => handleAddressSelect(address.id)}
                     >
-                      <AddressDisplay 
-                        address={address.address}
-                        areaName={address.areas?.name}
-                        neighborhoodName={address.neighborhoods?.name}
-                        onEdit={() => navigate(`/edit-address/${address.id}`)}
-                      />
+                      <AddressDisplay address={address} />
                     </div>
                   ))}
                   
@@ -285,8 +274,8 @@ const Checkout = () => {
               <div className="space-y-4">
                 <div className="border-b pb-3">
                   <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>المنتجات ({items.length})</span>
-                    <span>{getTotalPrice()} ج.م</span>
+                    <span>المنتجات ({cart.items.length})</span>
+                    <span>{getCartTotal()} ج.م</span>
                   </div>
                   
                   <div className="flex justify-between text-sm text-gray-600">
@@ -304,21 +293,18 @@ const Checkout = () => {
                 
                 <div className="flex justify-between font-bold">
                   <span>الإجمالي</span>
-                  <span>{getTotalPrice() - discountAmount + deliveryFee} ج.م</span>
+                  <span>{getCartTotal() - discountAmount + deliveryFee} ج.م</span>
                 </div>
                 
                 {/* Coupon Input */}
                 <div className="pt-3 border-t">
-                  <CouponInput 
-                    subtotal={getTotalPrice()} 
-                    onApply={handleCouponApply} 
-                  />
+                  <CouponInput onApply={handleCouponApply} />
                 </div>
                 
                 <Button 
                   onClick={handleOrder}
                   className="w-full"
-                  disabled={!selectedAddress || items.length === 0}
+                  disabled={!selectedAddress || cart.items.length === 0}
                 >
                   متابعة الدفع
                 </Button>

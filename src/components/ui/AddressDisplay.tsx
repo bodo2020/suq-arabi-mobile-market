@@ -140,7 +140,7 @@ const AddressDisplay = ({
           </div>
         )}
       </div>
-      <Button variant="ghost" size="sm" onClick={onEdit} className="text-xs">
+      <Button variant="ghost" size="sm" onClick={handleChangeAddress} className="text-xs">
         تغيير
       </Button>
     </div>
