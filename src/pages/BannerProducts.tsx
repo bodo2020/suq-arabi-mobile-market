@@ -47,7 +47,7 @@ const BannerProducts = () => {
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {products.map((product) => (
               <div key={product.id} className="flex-shrink-0">
-                <ProductCard key={product.id} product={product} compactDesign={true} />
+                <ProductCard key={product.id} product={product} />
               </div>
             ))}
           </div>

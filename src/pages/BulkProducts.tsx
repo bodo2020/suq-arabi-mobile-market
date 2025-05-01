@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Package, Search } from 'lucide-react';
@@ -121,7 +120,6 @@ const BulkProducts = () => {
                   }} 
                   hideIfUnavailable={true}
                   showBulkQuantity={true}
-                  compactDesign={true}
                 />
               </div>
             ))}

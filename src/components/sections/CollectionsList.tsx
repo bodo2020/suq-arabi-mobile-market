@@ -42,10 +42,10 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
                   {collectionProducts.map(product => (
                     <div key={product.id} className="w-[30%] sm:w-[130px] flex-shrink-0">
                       <ProductCard 
+                        key={product.id} 
                         product={product}
                         hideIfUnavailable={false}
                         showBulkQuantity={false}
-                        compactDesign={true}
                       />
                     </div>
                   ))}

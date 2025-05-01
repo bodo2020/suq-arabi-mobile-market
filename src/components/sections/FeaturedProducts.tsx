@@ -25,7 +25,6 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
                   product={product}
                   hideIfUnavailable={false}
                   showBulkQuantity={false}
-                  compactDesign={true}
                 />
               </div>
             ))}
