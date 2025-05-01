@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
@@ -13,14 +14,12 @@ interface ProductCardProps {
   product: Product;
   hideIfUnavailable?: boolean;
   showBulkQuantity?: boolean;
-  compactDesign?: boolean;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
   product, 
   hideIfUnavailable = false, 
-  showBulkQuantity = false,
-  compactDesign = false
+  showBulkQuantity = false
 }) => {
   const { items, updateQuantity, addToCart } = useCart();
   const { toast } = useToast();
@@ -141,100 +140,37 @@ const ProductCard: React.FC<ProductCardProps> = ({
     product.bulk_quantity && 
     product.quantity >= product.bulk_quantity;
 
-  // Compact design for collection view (like in the reference image)
-  if (compactDesign) {
-    return (
-      <>
-        <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale bg-white rounded-lg shadow-sm p-2">
-          <div className="absolute top-1 right-1 z-20">
-            <FavoriteButton productId={product.id} size="sm" />
-          </div>
-
-          <div className="relative mb-2 flex justify-center items-center py-2" style={{minHeight: '90px'}}>
-            <img
-              src={productImage}
-              alt={product.name}
-              className="h-[90px] object-contain"
-            />
-          </div>
-
-          <div className="text-right flex-grow flex flex-col justify-between">
-            <h3 className="font-medium text-xs mb-1 line-clamp-2 h-9">{product.name}</h3>
-            
-            <div className="mt-auto">
-              <div className="flex justify-center mb-2">
-                <span className="font-bold text-sm">{product.offer_price || product.price} ج.م</span>
-                {product.bulk_quantity && (
-                  <span className="text-xs mr-1 text-gray-500">({product.bulk_quantity})</span>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <button
-                  onClick={(e) => handleAddToCart(e, false)}
-                  className="w-full py-1.5 bg-[#00663d] text-white rounded-md flex items-center justify-center text-sm hover:bg-[#00552f] transition-colors"
-                  aria-label="إضافة للسلة"
-                >
-                  إضافة للسلة
-                </button>
-
-                {product.bulk_price && (
-                  <div className="bg-[#e8f5e9] text-[#00663d] rounded-md py-1 px-2 text-xs text-center flex items-center justify-center gap-1">
-                    <span>{product.bulk_price * (product.bulk_quantity || 1)} ج.م</span>
-                    <span>({product.bulk_quantity})</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        <AddToCartModal
-          product={product}
-          isOpen={showBulkModal}
-          onClose={() => setShowBulkModal(false)}
-        />
-        <WeightSelector
-          product={product}
-          isOpen={showWeightSelector}
-          onClose={() => setShowWeightSelector(false)}
-        />
-      </>
-    );
-  }
-
-  // Original design for other views
   return (
     <>
       <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale">
         <div className="absolute top-2 right-2 z-20">
-          <FavoriteButton productId={product.id} size="md" />
+          <FavoriteButton productId={product.id} size="sm" />
         </div>
 
-        <div className="relative pt-[70%] mb-2">
+        <div className="relative pt-[80%] mb-2">
           <img
             src={productImage}
             alt={product.name}
             className="absolute top-0 right-0 w-full h-full object-contain"
           />
           {discount > 0 && !displayBulkView && (
-            <div className="absolute left-2 top-2 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full shadow animate-fade-in">
-              {discount}% خصم
+            <div className="absolute left-1 top-1 bg-red-500 text-white text-xs font-bold py-1 px-1 rounded-full shadow animate-fade-in">
+              {discount}%
             </div>
           )}
           {displayBulkView && (
             <Badge 
               variant="secondary"
-              className="absolute bottom-2 right-2 flex items-center gap-1 bg-[#d3ffb3] text-[#005931] border-0"
+              className="absolute bottom-1 right-1 flex items-center gap-1 bg-[#d3ffb3] text-[#005931] border-0 text-xs py-0.5"
             >
               <Package className="h-3 w-3" />
-              {product.bulk_quantity} قطعة
+              {product.bulk_quantity}
             </Badge>
           )}
           {isOutOfStock && (
             <div className="absolute top-0 right-0 w-full h-full flex items-center justify-center bg-black/30 rounded">
-              <div className="bg-white p-2 rounded text-red-500 text-xs font-semibold flex items-center">
-                <AlertTriangle size={12} className="ml-1" />
+              <div className="bg-white p-1 rounded text-red-500 text-xs font-semibold flex items-center">
+                <AlertTriangle size={10} className="ml-1" />
                 غير متوفر
               </div>
             </div>
@@ -242,7 +178,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className="text-right flex-grow flex flex-col justify-between">
-          <h3 className="font-bold text-xs mb-1 line-clamp-1">{product.name}</h3>
+          <h3 className="font-bold text-xs mb-0.5 line-clamp-1">{product.name}</h3>
           <div className="mt-auto">
             <div className="flex justify-between mb-1 items-center">
               {displayBulkView ? (
@@ -251,7 +187,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 <span className="font-bold text-xs">{product.price} ج.م/كجم</span>
               ) : product.offer_price ? (
                 <>
-                  <span className="text-xs line-through text-gray-400">{product.price} ج.م</span>
+                  <span className="text-xs line-through text-gray-400">{product.price}</span>
                   <span className="font-bold text-primary text-xs">{product.offer_price} ج.م</span>
                 </>
               ) : (
@@ -263,36 +199,36 @@ const ProductCard: React.FC<ProductCardProps> = ({
               {isOutOfStock ? (
                 <button
                   disabled
-                  className="w-full py-1 px-2 bg-gray-200 rounded-lg text-gray-500 flex items-center justify-center text-xs"
+                  className="w-full py-1 px-1 bg-gray-200 rounded-lg text-gray-500 flex items-center justify-center text-xs"
                   aria-label="غير متوفر"
                 >
-                  <AlertTriangle size={12} className="ml-1" />
+                  <AlertTriangle size={10} className="ml-1" />
                   نفذت الكمية
                 </button>
               ) : (
                 <>
                   {regularCartItem || (!showBulkQuantity && !product.barcode_type) ? (
-                    <div className="flex items-center justify-between bg-primary text-white rounded-lg p-1">
+                    <div className="flex items-center justify-between bg-primary text-white rounded-lg p-0.5">
                       <button 
                         onClick={(e) => handleDecreaseQuantity(e, false)} 
-                        className="p-1 hover:bg-primary-foreground/10 rounded"
+                        className="p-0.5 hover:bg-primary-foreground/10 rounded"
                         aria-label="تقليل الكمية"
                       >
-                        <Minus size={14} />
+                        <Minus size={12} />
                       </button>
-                      <span className="mx-2 text-xs">{regularCartItem?.quantity || 0}</span>
+                      <span className="mx-1 text-xs">{regularCartItem?.quantity || 0}</span>
                       <button 
                         onClick={(e) => handleIncreaseQuantity(e, false)}
-                        className="p-1 hover:bg-primary-foreground/10 rounded"
+                        className="p-0.5 hover:bg-primary-foreground/10 rounded"
                         aria-label="زيادة الكمية"
                       >
-                        <Plus size={14} />
+                        <Plus size={12} />
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={(e) => handleAddToCart(e, false)}
-                      className="w-full py-1 px-2 bg-primary text-white rounded-lg flex items-center justify-center text-xs hover:bg-primary/90 transition-colors"
+                      className="w-full py-1 px-1 bg-primary text-white rounded-lg flex items-center justify-center text-xs hover:bg-primary/90 transition-colors"
                       aria-label="إضافة إلى السلة"
                     >
                       إضافة للسلة
@@ -301,34 +237,34 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
                   {product.bulk_enabled && product.bulk_quantity && !showBulkQuantity && canPurchaseBulk && (
                     bulkCartItem ? (
-                      <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-1">
+                      <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-0.5">
                         <button 
                           onClick={(e) => handleDecreaseQuantity(e, true)} 
-                          className="p-1 hover:bg-[#c3ef93]/50 rounded"
+                          className="p-0.5 hover:bg-[#c3ef93]/50 rounded"
                           aria-label="تقليل الكمية"
                         >
-                          <Minus size={14} />
+                          <Minus size={12} />
                         </button>
-                        <div className="flex items-center mx-2">
-                          <Package className="w-3 h-3 ml-1" />
+                        <div className="flex items-center mx-1">
+                          <Package className="w-2.5 h-2.5 ml-0.5" />
                           <span className="text-xs">{bulkCartItem.quantity}</span>
                         </div>
                         <button 
                           onClick={(e) => handleIncreaseQuantity(e, true)}
-                          className="p-1 hover:bg-[#c3ef93]/50 rounded"
+                          className="p-0.5 hover:bg-[#c3ef93]/50 rounded"
                           aria-label="زيادة الكمية"
                         >
-                          <Plus size={14} />
+                          <Plus size={12} />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={(e) => handleAddToCart(e, true)}
-                        className="w-full py-1 px-2 bg-[#d3ffb3] text-[#005931] rounded-lg flex items-center justify-center text-xs hover:bg-[#c3ef93] transition-colors gap-1"
+                        className="w-full py-1 px-1 bg-[#d3ffb3] text-[#005931] rounded-lg flex items-center justify-center text-xs hover:bg-[#c3ef93] transition-colors gap-1"
                         aria-label="إضافة للجملة"
                       >
-                        <Package className="w-3 h-3" />
-                        {product.bulk_price} ج.م ({product.bulk_quantity})
+                        <Package className="w-2.5 h-2.5" />
+                        {product.bulk_price} ({product.bulk_quantity})
                       </button>
                     )
                   )}

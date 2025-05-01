@@ -172,7 +172,7 @@ const CategoryDetail = () => {
           </div>
         </div>
 
-        <div ref={productsRef} className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 px-4">
+        <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 px-4">
           {products.map((product) => (
             <div key={product.id} className="flex-shrink-0">
               <ProductCard key={product.id} product={product} />

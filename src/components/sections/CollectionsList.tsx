@@ -40,7 +40,7 @@ const CollectionsList = ({ collections, products }: CollectionsListProps) => {
               <ScrollArea className="w-full whitespace-nowrap rounded-md">
                 <div className="flex flex-row-reverse space-x-4 space-x-reverse p-2">
                   {collectionProducts.map(product => (
-                    <div key={product.id} className="w-[30%] sm:w-[130px] flex-shrink-0">
+                    <div key={product.id} className="w-[120px] flex-shrink-0">
                       <ProductCard 
                         key={product.id} 
                         product={product}
