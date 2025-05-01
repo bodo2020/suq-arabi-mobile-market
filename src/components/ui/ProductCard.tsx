@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
@@ -178,8 +177,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className="text-right flex-grow flex flex-col justify-between">
-          {/* Updated to make product name display in up to 3 lines with ellipsis */}
-          <h3 className="font-bold text-xs mb-0.5 line-clamp-3 min-h-[3.75rem] break-words whitespace-normal">{product.name}</h3>
+          {/* Make product name use up to 2 lines with ellipsis and better wrapping */}
+          <h3 className="font-bold text-xs mb-0.5 line-clamp-2 min-h-[2.5rem] break-words whitespace-normal">{product.name}</h3>
           <div className="mt-auto">
             <div className="flex justify-between mb-1 items-center">
               {displayBulkView ? (
