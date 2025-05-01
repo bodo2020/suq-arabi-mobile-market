@@ -1,38 +1,11 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getProducts, supabase } from '@/lib/supabase';
+import { getProducts } from '@/lib/supabase';
 import { Skeleton } from "@/components/ui/skeleton";
 import FeaturedProducts from './FeaturedProducts';
-import CollectionsList from './CollectionsList';
 
 const ProductCollectionsSection = () => {
-  const {
-    data: productCollections = [],
-    isLoading: collectionsLoading
-  } = useQuery({
-    queryKey: ['productCollections'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('product_collections')
-          .select('*')
-          .eq('active', true)
-          .order('position');
-        
-        if (error) {
-          console.error('Error fetching collections:', error);
-          throw error;
-        }
-        
-        return data || [];
-      } catch (err) {
-        console.error('Error in query function:', err);
-        throw err;
-      }
-    }
-  });
-
   const {
     data: products = [],
     isLoading: productsLoading
@@ -41,7 +14,7 @@ const ProductCollectionsSection = () => {
     queryFn: () => getProducts()
   });
 
-  if (productsLoading || collectionsLoading) {
+  if (productsLoading) {
     return (
       <>
         <div className="mb-6">
@@ -56,15 +29,7 @@ const ProductCollectionsSection = () => {
     );
   }
 
-  return (
-    <>
-      {productCollections && productCollections.length > 0 ? (
-        <CollectionsList collections={productCollections} products={products} />
-      ) : (
-        <FeaturedProducts products={products} />
-      )}
-    </>
-  );
+  return <FeaturedProducts products={products} />;
 };
 
 export default ProductCollectionsSection;
