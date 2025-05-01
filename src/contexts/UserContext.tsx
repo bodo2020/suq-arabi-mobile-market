@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -7,7 +6,7 @@ type UserContextType = {
   user: User | null;
   session: Session | null;
   authLoading: boolean;
-  loading: boolean; // Added this property to match what's used in Account.tsx
+  loading: boolean;
   signIn: (email: string, password?: string) => Promise<any>;
   signUp: (email: string, password?: string, additionalData?: any) => Promise<any>;
   signOut: () => Promise<void>;
@@ -15,6 +14,7 @@ type UserContextType = {
   resetPassword: (email: string) => Promise<any>;
   signInWithGoogle: () => Promise<any>;
   signInWithPhone: (phone: string) => Promise<any>;
+  signInWithPhonePassword: (phone: string, password: string) => Promise<any>;
   verifyPhone: (phone: string, code: string) => Promise<any>;
 };
 
@@ -32,7 +32,7 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [loading, setLoading] = useState(true); // Added this state for consistency with Account.tsx
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getSession = async () => {
@@ -40,7 +40,7 @@ export const UserProvider = ({ children }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
-      setLoading(false); // Update loading state once session is fetched
+      setLoading(false);
     };
 
     getSession();
@@ -53,7 +53,7 @@ export const UserProvider = ({ children }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
-      setLoading(false); // Update loading state on auth change
+      setLoading(false);
     });
   }, []);
 
@@ -201,6 +201,45 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  // New function to sign in with phone and password
+  const signInWithPhonePassword = async (phone: string, password: string) => {
+    try {
+      console.log("Signing in with phone and password:", phone);
+      
+      // First get the customer record to find the associated email
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('email')
+        .eq('phone', phone)
+        .single();
+      
+      if (customerError) {
+        console.error("Error finding customer with phone:", customerError);
+        throw new Error('رقم الهاتف غير مسجل في النظام');
+      }
+      
+      if (!customer || !customer.email) {
+        throw new Error('لا يوجد بريد إلكتروني مرتبط برقم الهاتف');
+      }
+      
+      // Sign in using the associated email and password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: customer.email,
+        password,
+      });
+
+      if (error) {
+        console.error("Error signing in with phone and password:", error);
+        throw error;
+      }
+
+      return { data };
+    } catch (error) {
+      console.error("Error signing in with phone and password:", error);
+      return { error };
+    }
+  };
+
   const verifyPhone = async (phone: string, code: string) => {
     console.log("Verifying phone:", phone, "with code:", code);
     try {
@@ -252,7 +291,7 @@ export const UserProvider = ({ children }) => {
         user,
         session,
         authLoading,
-        loading, // Add loading to the context value
+        loading,
         signIn,
         signUp,
         signOut,
@@ -260,6 +299,7 @@ export const UserProvider = ({ children }) => {
         resetPassword,
         signInWithGoogle,
         signInWithPhone,
+        signInWithPhonePassword,
         verifyPhone,
       }}
     >

@@ -8,27 +8,23 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 
 const PhoneLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signInWithPhone, signIn } = useUser();
+  const { signInWithPhonePassword } = useUser();
   
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [isPhoneChecked, setIsPhoneChecked] = useState(false);
   const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
   const [errors, setErrors] = useState({
     phone: "",
     password: ""
   });
-  const [isRegisteredUser, setIsRegisteredUser] = useState(false);
   const [phoneFormatted, setPhoneFormatted] = useState('');
-  const [rateLimitError, setRateLimitError] = useState(false);
-  const [codeForTesting, setCodeForTesting] = useState<string | null>(null);
-  const [blockedNumber, setBlockedNumber] = useState(false);
   
   // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
@@ -60,11 +56,6 @@ const PhoneLogin = () => {
   
   const checkPhoneExists = async () => {
     if (loading) return; // Prevent multiple clicks
-    
-    // Reset state
-    setRateLimitError(false);
-    setBlockedNumber(false);
-    setCodeForTesting(null);
     
     const cleanPhone = formatPhoneNumber(phone, countryCode);
     
@@ -109,17 +100,20 @@ const PhoneLogin = () => {
       
       if (supabaseError) {
         if (supabaseError.code === 'PGRST116') { // No rows returned
-          console.log("User not found, sending verification code");
-          setIsRegisteredUser(false);
-          handleSendCode(fullPhone);
+          console.log("User not found, redirecting to register");
+          toast({
+            title: "رقم الهاتف غير مسجل",
+            description: "يرجى التسجيل أولاً",
+            variant: "destructive"
+          });
+          navigate('/register');
         } else {
           throw supabaseError;
         }
       } else {
         // User exists
         console.log("User found:", data);
-        setIsRegisteredUser(true);
-        setLoading(false); // Important: stop loading here
+        setIsPhoneChecked(true);
       }
       
     } catch (error: any) {
@@ -129,97 +123,24 @@ const PhoneLogin = () => {
         description: error.message || "حدث خطأ أثناء التحقق من رقم الهاتف",
         variant: "destructive"
       });
-      setLoading(false);
-    }
-  };
-  
-  const handleSendCode = async (fullPhone: string) => {
-    try {
-      const { data, error } = await signInWithPhone(fullPhone);
-      
-      if (error) {
-        console.error("Error sending verification code:", error);
-        
-        // Check for rate limit error
-        if (error.status === 429 || error.code === 'over_sms_send_rate_limit') {
-          setRateLimitError(true);
-          toast({
-            title: "تم تجاوز الحد المسموح",
-            description: "لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى بعد قليل.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        // Check for blocked number error from our custom function
-        if (data?.blockedNumber) {
-          setBlockedNumber(true);
-          // If we're in development mode, show the verification code
-          if (data.code) {
-            setCodeForTesting(data.code);
-          }
-          toast({
-            title: "تم حظر رقم الهاتف",
-            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار أو تجربة رقم آخر.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        throw error;
-      }
-      
-      // Check if we got a code for development purposes
-      if (data?.code) {
-        setCodeForTesting(data.code);
-      }
-      
-      toast({
-        title: "تم إرسال رمز التحقق",
-        description: "تم إرسال رمز التحقق إلى واتساب الخاص بك"
-      });
-      
-      // Navigate to verify page with the phone number
-      navigate(`/phone-verify?phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode.code)}`);
-      
-    } catch (error: any) {
-      console.error('Error sending verification code:', error);
-      toast({
-        title: "حدث خطأ",
-        description: error.message || "لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
   };
   
   const handlePasswordLogin = async () => {
-    if (loginLoading) return; // Prevent multiple clicks
+    if (loading) return; // Prevent multiple clicks
     
     if (!password) {
       setErrors(prev => ({ ...prev, password: "يرجى إدخال كلمة المرور" }));
       return;
     }
     
-    setLoginLoading(true);
+    setLoading(true);
     
     try {
-      // Get the email address for the phone number
-      const { data, error: fetchError } = await supabase
-        .from('customers')
-        .select('email')
-        .eq('phone', phoneFormatted)
-        .single();
-      
-      if (fetchError || !data?.email) {
-        throw new Error("لم نتمكن من العثور على بريدك الإلكتروني المرتبط برقم الهاتف");
-      }
-      
-      const email = data.email;
-      
-      // Sign in with email and password
-      const { error } = await signIn(email, password);
+      // Sign in with phone and password
+      const { error } = await signInWithPhonePassword(phoneFormatted, password);
       
       if (error) {
         throw error;
@@ -240,7 +161,7 @@ const PhoneLogin = () => {
         variant: "destructive"
       });
     } finally {
-      setLoginLoading(false);
+      setLoading(false);
     }
   };
   
@@ -281,15 +202,12 @@ const PhoneLogin = () => {
                 onChange={(e) => {
                   setPhone(e.target.value);
                   setErrors(prev => ({ ...prev, phone: "" }));
-                  setIsRegisteredUser(false);
-                  setRateLimitError(false);
-                  setBlockedNumber(false);
-                  setCodeForTesting(null);
+                  setIsPhoneChecked(false);
                 }}
                 className="text-right ltr flex-1"
                 placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
                 dir="ltr"
-                disabled={isRegisteredUser}
+                disabled={isPhoneChecked}
               />
             </div>
             
@@ -302,43 +220,12 @@ const PhoneLogin = () => {
             {errors.phone && (
               <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
             )}
-            
-            {rateLimitError && (
-              <p className="text-amber-600 text-sm mt-1">
-                لقد تجاوزت الحد المسموح لإرسال رسائل التحقق. يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم الفني.
-              </p>
-            )}
-            
-            {blockedNumber && (
-              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm font-medium">
-                  تم حظر هذا الرقم مؤقتًا بواسطة Twilio بسبب نشاط مشبوه
-                </p>
-                <p className="text-red-500 text-xs mt-1">
-                  يرجى استخدام رقم هاتف آخر أو التواصل مع الدعم الفني
-                </p>
-                {codeForTesting && (
-                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-yellow-700 text-sm font-medium">رمز التحقق للاختبار فقط:</p>
-                    <p className="text-yellow-800 text-lg font-bold text-center mt-1 font-mono">{codeForTesting}</p>
-                    <p className="text-yellow-600 text-xs mt-1">استخدم هذا الرمز في صفحة التحقق</p>
-                    <Button
-                      onClick={() => navigate(`/phone-verify?phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode.code)}&testCode=${codeForTesting}`)}
-                      className="w-full mt-2 bg-yellow-600 hover:bg-yellow-700"
-                      size="sm"
-                    >
-                      الانتقال إلى صفحة التحقق
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
           
-          {!isRegisteredUser ? (
+          {!isPhoneChecked ? (
             <Button
               onClick={checkPhoneExists}
-              disabled={loading || rateLimitError}
+              disabled={loading}
               className="w-full"
             >
               {loading ? (
@@ -376,10 +263,10 @@ const PhoneLogin = () => {
               
               <Button
                 onClick={handlePasswordLogin}
-                disabled={loginLoading}
+                disabled={loading}
                 className="w-full"
               >
-                {loginLoading ? (
+                {loading ? (
                   <Loader size={16} className="animate-spin mr-2" />
                 ) : null}
                 تسجيل الدخول
@@ -388,7 +275,7 @@ const PhoneLogin = () => {
               <div className="flex justify-between text-sm">
                 <button
                   onClick={() => {
-                    setIsRegisteredUser(false);
+                    setIsPhoneChecked(false);
                     setPassword('');
                   }}
                   className="text-primary"

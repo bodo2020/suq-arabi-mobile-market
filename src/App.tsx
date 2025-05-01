@@ -20,10 +20,7 @@ import Search from './pages/Search';
 import BulkProducts from './pages/BulkProducts';
 import Favorites from './pages/Favorites';
 import NotFound from './pages/NotFound';
-import PhoneVerify from './pages/PhoneVerify';
 import PhoneLogin from './pages/PhoneLogin';
-import BarcodeScanner from './pages/BarcodeScanner';
-import FullMapView from './pages/FullMapView';
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
@@ -55,7 +52,6 @@ function App() {
             <Route path="/banner/:id" element={<BannerProducts />} />
             <Route path="/account" element={<Account />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/phone-verify" element={<PhoneVerify />} />
             <Route path="/phone-login" element={<PhoneLogin />} />
             <Route path="/address-manager" element={<AddressManager />} />
             <Route path="/addresses" element={<Navigate to="/address-manager" replace />} />
@@ -66,9 +62,6 @@ function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/bulk-products" element={<BulkProducts />} />
             <Route path="/favorites" element={<Favorites />} />
-            <Route path="/barcode-scan" element={<BarcodeScanner />} />
-            <Route path="/scanner" element={<BarcodeScanner />} />
-            <Route path="/map-view" element={<FullMapView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
