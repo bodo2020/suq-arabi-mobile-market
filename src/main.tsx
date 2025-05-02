@@ -18,24 +18,6 @@ const queryClient = new QueryClient({
 document.documentElement.classList.add('hide-scrollbar');
 document.body.classList.add('hide-scrollbar');
 
-// Hide Lovable badge
-const style = document.createElement('style');
-style.textContent = `
-  a[href*="lovable.dev"], 
-  a[href*="lovable.app"],
-  [class*="lovable-badge"] {
-    display: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    position: absolute !important;
-    pointer-events: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-  }
-`;
-document.head.appendChild(style);
-
 const root = document.getElementById("root");
 if (root) {
   root.classList.add('hide-scrollbar');
