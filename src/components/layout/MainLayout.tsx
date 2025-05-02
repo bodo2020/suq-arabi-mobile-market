@@ -58,7 +58,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <div className="hidden md:flex justify-between items-center py-4 mb-4 border-b">
             <Link to="/" className="text-2xl font-bold flex flex-col items-center">
               <img 
-                src="/lovable-uploads/1ff0c021-3af6-413b-b495-2629be0861b0.png" 
+                src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
                 alt="ماركت المعداوي" 
                 className="h-16 w-16 mb-1" 
               />
