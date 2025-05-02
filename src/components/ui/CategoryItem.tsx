@@ -20,15 +20,15 @@ const CategoryItem = ({ category, hideTitle = false, onClick }: CategoryItemProp
   return (
     <Link 
       to={`/category/${category.id}`}
-      className="flex flex-col items-center justify-center rounded-lg p-2 transition-colors hover:bg-gray-100"
+      className="flex flex-col items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100 w-full"
       onClick={handleClick}
     >
-      <div className="h-16 w-16 md:h-20 md:w-20 aspect-square bg-primary/10 flex items-center justify-center overflow-hidden">
+      <div className="w-full aspect-square bg-primary/10 flex items-center justify-center overflow-hidden rounded-lg">
         {category.image_url ? (
           <img
             src={category.image_url}
             alt={category.name}
-            className="h-12 w-12 md:h-16 md:w-16 object-contain"
+            className="w-full h-full object-cover"
           />
         ) : (
           <span className="text-2xl">{category.name.charAt(0)}</span>

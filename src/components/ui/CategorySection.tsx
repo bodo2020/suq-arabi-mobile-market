@@ -46,7 +46,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
           حدث خطأ أثناء تحميل الأقسام
         </div>
       ) : (
-        <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+        <div className="grid grid-cols-4 md:grid-cols-6 gap-1">
           {loading
             ? Array.from({ length: 4 }).map((_, index) => (
                 <CategorySkeleton key={index} />
