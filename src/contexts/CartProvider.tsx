@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { CartContextType, CartItem } from './cartTypes';
 import { Product } from '@/lib/supabase';
@@ -116,15 +115,33 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 0);
   }, [items]);
 
+  const getCartTotal = useCallback(() => {
+    return items.reduce((total, item) => {
+      if (item.is_bulk) {
+        return total + (item.product.bulk_price || 0) * item.quantity;
+      }
+      
+      if (item.unit_of_measure === 'weight') {
+        const pricePerKg = item.product.offer_price || item.product.price || 0;
+        return total + (pricePerKg * (item.quantity / 1000));
+      }
+      
+      const price = item.product.offer_price || item.product.price || 0;
+      return total + (price * item.quantity);
+    }, 0);
+  }, [items]);
+
   return (
     <CartContext.Provider value={{
       items,
+      cart: { items }, // Adding the cart property
       addToCart,
       removeFromCart,
       updateQuantity,
       clearCart,
       getTotalPrice,
       getTotalItems,
+      getCartTotal, // Adding the getCartTotal function
       isInitialized
     }}>
       {children}
