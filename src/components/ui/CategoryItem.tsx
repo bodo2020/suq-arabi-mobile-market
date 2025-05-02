@@ -23,7 +23,7 @@ const CategoryItem = ({ category, hideTitle = false, onClick }: CategoryItemProp
       className="flex flex-col items-center justify-center rounded-lg p-2 transition-colors hover:bg-gray-100"
       onClick={handleClick}
     >
-      <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+      <div className="h-16 w-16 md:h-20 md:w-20 aspect-square bg-primary/10 flex items-center justify-center overflow-hidden">
         {category.image_url ? (
           <img
             src={category.image_url}
