@@ -49,7 +49,12 @@ const Checkout = () => {
   
   useEffect(() => {
     if (!session) {
-      navigate('/account');
+      toast({
+        title: "تسجيل الدخول مطلوب",
+        description: "يرجى تسجيل الدخول أو إنشاء حساب للمتابعة",
+        variant: "destructive"
+      });
+      navigate('/phone-login');
       return;
     }
     

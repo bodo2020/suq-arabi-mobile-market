@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, ArrowRight, Loader, KeyRound } from 'lucide-react';
+import { Phone, ArrowRight, Loader, KeyRound, Mail } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const PhoneLogin = () => {
   const navigate = useNavigate();
@@ -15,11 +16,14 @@ const PhoneLogin = () => {
   const { signIn } = useUser();
   
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loginMethod, setLoginMethod] = useState('phone');
   const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
   const [errors, setErrors] = useState({
     phone: "",
+    email: "",
     password: ""
   });
   
@@ -50,24 +54,41 @@ const PhoneLogin = () => {
     // For Egyptian numbers, they should start with 1 and be 10 digits
     return phone.startsWith('1') && phone.length === 10;
   };
+
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
   
   const handleLogin = async () => {
     if (loading) return; // Prevent multiple clicks
     
-    const cleanPhone = formatPhoneNumber(phone, countryCode);
-    
-    if (!cleanPhone) {
-      setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف" }));
-      return;
-    }
-    
-    // For Egypt, validate Egyptian phone format
-    if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
-      setErrors(prev => ({ 
-        ...prev, 
-        phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)"
-      }));
-      return;
+    if (loginMethod === 'phone') {
+      const cleanPhone = formatPhoneNumber(phone, countryCode);
+      
+      if (!cleanPhone) {
+        setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف" }));
+        return;
+      }
+      
+      // For Egypt, validate Egyptian phone format
+      if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
+        setErrors(prev => ({ 
+          ...prev, 
+          phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)"
+        }));
+        return;
+      }
+    } else {
+      if (!email) {
+        setErrors(prev => ({ ...prev, email: "يرجى إدخال البريد الإلكتروني" }));
+        return;
+      }
+      
+      if (!validateEmail(email)) {
+        setErrors(prev => ({ ...prev, email: "يرجى إدخال بريد إلكتروني صحيح" }));
+        return;
+      }
     }
     
     if (!password) {
@@ -78,11 +99,12 @@ const PhoneLogin = () => {
     setLoading(true);
     
     try {
-      // Create full international format
-      const fullPhone = formatInternationalPhone(phone, countryCode);
+      let username = loginMethod === 'phone' 
+        ? formatInternationalPhone(phone, countryCode) 
+        : email;
       
-      // Sign in with phone and password
-      const { error } = await signIn(fullPhone, password);
+      // Sign in with phone or email and password
+      const { error } = await signIn(username, password);
       
       if (error) {
         throw error;
@@ -99,7 +121,7 @@ const PhoneLogin = () => {
       console.error('Error signing in:', error);
       toast({
         title: "فشل تسجيل الدخول",
-        description: error.message || "كلمة المرور أو رقم الهاتف غير صحيح، يرجى المحاولة مرة أخرى",
+        description: error.message || "كلمة المرور أو بيانات الدخول غير صحيحة، يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
     } finally {
@@ -125,42 +147,77 @@ const PhoneLogin = () => {
         </div>
         
         <div className="bg-white rounded-lg p-6 shadow-sm space-y-6">
-          <div>
-            <div className="flex items-center mb-2">
-              <Phone size={18} className="ml-2 text-gray-500" />
-              <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
-            </div>
+          <Tabs defaultValue="phone" onValueChange={setLoginMethod}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="phone">رقم الهاتف</TabsTrigger>
+              <TabsTrigger value="email">البريد الإلكتروني</TabsTrigger>
+            </TabsList>
             
-            <div className="flex gap-2 items-center">
-              <CountryCodeSelector 
-                value={countryCode}
-                onChange={setCountryCode}
-                className="min-w-[80px]"
-              />
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  setErrors(prev => ({ ...prev, phone: "" }));
-                }}
-                className="text-right ltr flex-1"
-                placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
-                dir="ltr"
-              />
-            </div>
+            <TabsContent value="phone">
+              <div>
+                <div className="flex items-center mb-2">
+                  <Phone size={18} className="ml-2 text-gray-500" />
+                  <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
+                </div>
+                
+                <div className="flex gap-2 items-center">
+                  <CountryCodeSelector 
+                    value={countryCode}
+                    onChange={setCountryCode}
+                    className="min-w-[80px]"
+                  />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      setErrors(prev => ({ ...prev, phone: "" }));
+                    }}
+                    className="text-right ltr flex-1"
+                    placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
+                    dir="ltr"
+                  />
+                </div>
+                
+                <p className="text-xs text-gray-500 mt-1 text-right">
+                  {countryCode.code === 'EG' 
+                    ? 'أدخل رقم الهاتف المصري الذي يبدأ بـ 1 (مثال: 1xxxxxxxxx)' 
+                    : 'أدخل رقم الهاتف بدون رمز الدولة'}
+                </p>
+                
+                {errors.phone && (
+                  <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                )}
+              </div>
+            </TabsContent>
             
-            <p className="text-xs text-gray-500 mt-1 text-right">
-              {countryCode.code === 'EG' 
-                ? 'أدخل رقم الهاتف المصري الذي يبدأ بـ 1 (مثال: 1xxxxxxxxx)' 
-                : 'أدخل رقم الهاتف بدون رمز الدولة'}
-            </p>
-            
-            {errors.phone && (
-              <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-            )}
-          </div>
+            <TabsContent value="email">
+              <div>
+                <div className="flex items-center mb-2">
+                  <Mail size={18} className="ml-2 text-gray-500" />
+                  <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
+                </div>
+                
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErrors(prev => ({ ...prev, email: "" }));
+                  }}
+                  className="text-right ltr"
+                  placeholder="example@domain.com"
+                  dir="ltr"
+                />
+                
+                {errors.email && (
+                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
           
           <div>
             <div className="flex items-center mb-2">

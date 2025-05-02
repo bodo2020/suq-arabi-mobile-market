@@ -244,6 +244,19 @@ const Cart = () => {
       setDeliveryPrice(selectedType.price);
     }
   };
+  const handleProceedToCheckout = () => {
+    if (!user) {
+      toast({
+        title: "تسجيل الدخول مطلوب",
+        description: "يرجى تسجيل الدخول أو إنشاء حساب للمتابعة",
+        variant: "destructive"
+      });
+      navigate('/phone-login');
+      return;
+    }
+    
+    navigate('/checkout');
+  };
   return <MainLayout>
       <div className="py-4 pb-24" dir="rtl">
         <h1 className="text-xl font-bold text-center mb-4">سلة التسوق</h1>
@@ -411,9 +424,9 @@ const Cart = () => {
                 </div>
               </div>
               
-              <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
+              <Button onClick={handleProceedToCheckout} className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center">
                 متابعة الطلب
-              </Link>
+              </Button>
             </div>
           </div>}
       </div>

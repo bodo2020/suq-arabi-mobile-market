@@ -5,38 +5,31 @@ import { MainCategory } from '@/lib/supabase';
 
 interface CategoryItemProps {
   category: MainCategory;
-  onClick?: (category: MainCategory) => void;
-  isActive?: boolean;
+  hideTitle?: boolean;
 }
 
-const CategoryItem: React.FC<CategoryItemProps> = ({ category, onClick, isActive }) => {
-  const handleClick = (e: React.MouseEvent) => {
-    if (onClick) {
-      e.preventDefault();
-      onClick(category);
-    }
-  };
-
+const CategoryItem = ({ category, hideTitle = false }: CategoryItemProps) => {
   return (
-    <div className="flex flex-col items-center">
-      <Link 
-        to={`/category/${category.id}`}
-        onClick={handleClick}
-        className={`
-          category-item relative 
-          rounded-2xl bg-[#F2FCE2] w-full
-          ${isActive ? 'ring-2 ring-primary' : ''}
-        `}
-        style={{aspectRatio: '1'}}
-      >
-        <img 
-          src={category.image_url} 
-          alt={category.name} 
-          className="w-full h-full object-cover rounded-2xl"
-        />
-      </Link>
-      <span className="text-sm text-center mt-1">{category.name}</span>
-    </div>
+    <Link 
+      to={`/category/${category.id}`}
+      className="flex flex-col items-center justify-center rounded-lg p-2 transition-colors hover:bg-gray-100"
+    >
+      <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+        {category.image_url ? (
+          <img
+            src={category.image_url}
+            alt={category.name}
+            className="h-12 w-12 md:h-16 md:w-16 object-contain"
+          />
+        ) : (
+          <span className="text-2xl">{category.name.charAt(0)}</span>
+        )}
+      </div>
+      
+      {!hideTitle && (
+        <span className="mt-2 text-xs text-center line-clamp-2">{category.name}</span>
+      )}
+    </Link>
   );
 };
 
