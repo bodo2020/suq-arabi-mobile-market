@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'suq-arabi-mobile-market',
   webDir: 'dist',
   server: {
-    url: 'https://66945659-a252-41e2-8045-bbb22bd54cc8.lovableproject.com?forceHideBadge=true',
+    url: 'http://elmadawymarket.store',
     cleartext: true
   },
   plugins: {
