@@ -6,13 +6,22 @@ import { MainCategory } from '@/lib/supabase';
 interface CategoryItemProps {
   category: MainCategory;
   hideTitle?: boolean;
+  onClick?: (category: MainCategory) => void;
 }
 
-const CategoryItem = ({ category, hideTitle = false }: CategoryItemProps) => {
+const CategoryItem = ({ category, hideTitle = false, onClick }: CategoryItemProps) => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      e.preventDefault();
+      onClick(category);
+    }
+  };
+
   return (
     <Link 
       to={`/category/${category.id}`}
       className="flex flex-col items-center justify-center rounded-lg p-2 transition-colors hover:bg-gray-100"
+      onClick={handleClick}
     >
       <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
         {category.image_url ? (
