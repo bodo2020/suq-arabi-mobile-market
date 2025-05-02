@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'suq-arabi-mobile-market',
   webDir: 'dist',
   server: {
-    url: 'https://yourdomain.com',
+    url: 'http://elmadawymarket.store',
     cleartext: true
   },
   plugins: {
