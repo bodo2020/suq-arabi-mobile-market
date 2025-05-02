@@ -18,6 +18,32 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   React.useEffect(() => {
     document.body.dir = "rtl";
+    
+    // Hide Lovable badge by removing it from DOM if present
+    const hideLovableBadge = () => {
+      const badges = document.querySelectorAll('a[href*="lovable.dev"]');
+      badges.forEach(badge => {
+        if (badge.parentNode) {
+          badge.parentNode.removeChild(badge);
+        }
+      });
+    };
+    
+    // Run immediately and after a small delay to catch any badges added dynamically
+    hideLovableBadge();
+    setTimeout(hideLovableBadge, 1000);
+    
+    // Create a MutationObserver to remove any badges that might be added after load
+    const observer = new MutationObserver((mutations) => {
+      hideLovableBadge();
+    });
+    
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    return () => observer.disconnect();
   }, []);
 
   const isActive = (route: string) => {
