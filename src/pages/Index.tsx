@@ -134,8 +134,8 @@ const Index = () => {
     navigate('/account/addresses');
   };
 
-  // Show 9 categories instead of 6/3
-  const visibleCategories = categories.slice(0, 9);
+  // Show 12 categories instead of 9
+  const visibleCategories = categories.slice(0, 12);
 
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
@@ -205,9 +205,9 @@ const Index = () => {
               <ChevronLeft size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
             {visibleCategories.map(category => <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />)}
-            {categories.length > 9 && (
+            {categories.length > 12 && (
               <Link to="/categories" className="category-item flex flex-col items-center">
                 <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{aspectRatio: '1'}}>
                   <ChevronLeft size={24} />
