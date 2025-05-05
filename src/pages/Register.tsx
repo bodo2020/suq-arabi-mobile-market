@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowRight, User, Phone, MapPin, KeyRound, Map } from "lucide-react";
+import { ArrowRight, User, Phone, MapPin, KeyRound, Map, Mail } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +22,7 @@ const Register = () => {
   const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
   
   const [phone, setPhone] = useState(phoneFromQuery);
+  const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
@@ -58,6 +60,7 @@ const Register = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({
     phone: "",
+    email: "",
     firstName: "",
     lastName: "",
     password: "",
@@ -83,6 +86,11 @@ const Register = () => {
     return phone.startsWith('1') && phone.length === 10;
   };
 
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -99,6 +107,7 @@ const Register = () => {
         data,
         error
       } = await signUp(
+        email,
         fullPhone,
         password,
         {
@@ -136,6 +145,7 @@ const Register = () => {
     let valid = true;
     const newErrors = {
       phone: "",
+      email: "",
       firstName: "",
       lastName: "",
       password: "",
@@ -150,6 +160,14 @@ const Register = () => {
       valid = false;
     } else if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
       newErrors.phone = "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام بدون 0)";
+      valid = false;
+    }
+    
+    if (!email.trim()) {
+      newErrors.email = "البريد الإلكتروني مطلوب";
+      valid = false;
+    } else if (!validateEmail(email)) {
+      newErrors.email = "يرجى إدخال بريد إلكتروني صحيح";
       valid = false;
     }
     
@@ -221,6 +239,29 @@ const Register = () => {
               </p>
               
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <Mail size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
+              </div>
+              <Input 
+                id="email" 
+                type="email" 
+                value={email} 
+                onChange={e => {
+                  setEmail(e.target.value);
+                  setErrors(prev => ({
+                    ...prev,
+                    email: ""
+                  }));
+                }} 
+                className="text-right ltr" 
+                placeholder="example@domain.com" 
+                dir="ltr"
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
             
             <div className="mb-4">

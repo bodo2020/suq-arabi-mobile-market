@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Loader, KeyRound, Mail } from 'lucide-react';
@@ -63,6 +62,16 @@ const PhoneLogin = () => {
   const handleLogin = async () => {
     if (loading) return; // Prevent multiple clicks
     
+    // Reset all errors first
+    setErrors({
+      phone: "",
+      email: "",
+      password: ""
+    });
+    
+    // Validate input based on login method
+    let username = "";
+    
     if (loginMethod === 'phone') {
       const cleanPhone = formatPhoneNumber(phone, countryCode);
       
@@ -79,6 +88,8 @@ const PhoneLogin = () => {
         }));
         return;
       }
+      
+      username = formatInternationalPhone(phone, countryCode);
     } else {
       if (!email) {
         setErrors(prev => ({ ...prev, email: "يرجى إدخال البريد الإلكتروني" }));
@@ -89,6 +100,8 @@ const PhoneLogin = () => {
         setErrors(prev => ({ ...prev, email: "يرجى إدخال بريد إلكتروني صحيح" }));
         return;
       }
+      
+      username = email;
     }
     
     if (!password) {
@@ -99,11 +112,7 @@ const PhoneLogin = () => {
     setLoading(true);
     
     try {
-      let username = loginMethod === 'phone' 
-        ? formatInternationalPhone(phone, countryCode) 
-        : email;
-      
-      // Sign in with phone or email and password
+      // Sign in with username (email or phone) and password
       const { error } = await signIn(username, password);
       
       if (error) {

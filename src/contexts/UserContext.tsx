@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -8,11 +7,11 @@ type UserContextType = {
   session: Session | null;
   authLoading: boolean;
   loading: boolean;
-  signIn: (phone: string, password: string) => Promise<any>;
-  signUp: (phone: string, password: string, additionalData?: any) => Promise<any>;
+  signIn: (username: string, password: string) => Promise<any>;
+  signUp: (email: string, phone: string, password: string, additionalData?: any) => Promise<any>;
   signOut: () => Promise<void>;
   updateUser: (data: any) => Promise<any>;
-  resetPassword: (phone: string) => Promise<any>;
+  resetPassword: (username: string) => Promise<any>;
   signInWithPhone: (phone: string) => Promise<any>;
   verifyPhone: (phone: string, code: string) => Promise<any>;
 };
@@ -56,53 +55,64 @@ export const UserProvider = ({ children }) => {
     });
   }, []);
 
-  // Function to sign in with phone as email and password
-  const signIn = async (phone: string, password: string) => {
+  // Function to sign in with email or phone and password
+  const signIn = async (username: string, password: string) => {
     try {
-      // Use the phone number as the email for authentication
-      const formattedPhone = formatPhoneAsEmail(phone);
+      // Check if the username is an email or phone
+      const isEmail = username.includes('@');
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formattedPhone,
-        password,
-      });
+      if (isEmail) {
+        // Sign in with email
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: username,
+          password,
+        });
 
-      if (error) {
-        throw error;
+        if (error) throw error;
+        return { data };
+      } else {
+        // Use the phone number as the email for authentication
+        const formattedPhone = formatPhoneAsEmail(username);
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formattedPhone,
+          password,
+        });
+
+        if (error) throw error;
+        return { data };
       }
-
-      return { data };
     } catch (error) {
       console.error("Error signing in:", error);
       return { error };
     }
   };
 
-  // Function to sign up with phone as email and password
-  const signUp = async (phone: string, password: string, additionalData?: any) => {
+  // Function to sign up with both email and phone
+  const signUp = async (email: string, phone: string, password: string, additionalData?: any) => {
     try {
-      // Use the phone number as the email for authentication
+      // Use the phone number as the email for authentication if no email is provided
       const formattedPhone = formatPhoneAsEmail(phone);
+      const loginEmail = email || formattedPhone;
       
       const { data, error } = await supabase.auth.signUp({
-        email: formattedPhone,
+        email: loginEmail,
         password,
         options: {
           data: {
             ...additionalData,
+            email: email,
             phone: phone,
             phone_as_email: formattedPhone,
           },
         },
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       // Since we're not requiring email verification, we can immediately sign in the user
       if (data.user && !data.session) {
-        const signInResult = await signIn(phone, password);
+        const signInResult = await signIn(loginEmail, password);
         return signInResult;
       }
 
@@ -139,18 +149,17 @@ export const UserProvider = ({ children }) => {
   };
 
   // Function to reset password
-  const resetPassword = async (phone: string) => {
+  const resetPassword = async (username: string) => {
     try {
-      const formattedPhone = formatPhoneAsEmail(phone);
+      // Check if username is email or phone
+      const isEmail = username.includes('@');
+      const resetEmail = isEmail ? username : formatPhoneAsEmail(username);
       
-      const { data, error } = await supabase.auth.resetPasswordForEmail(formattedPhone, {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/update-password`,
       });
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       return { data };
     } catch (error) {
       console.error("Error resetting password:", error);
