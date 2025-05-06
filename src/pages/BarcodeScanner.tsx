@@ -15,34 +15,44 @@ const BarcodeScanner = () => {
 
   useEffect(() => {
     const startScanner = () => {
-      const qrScanner = new Html5Qrcode("barcode-reader");
-      setScanner(qrScanner);
-      setScanning(true);
-      
-      qrScanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 150 },
-        },
-        (decodedText) => {
-          // Success callback
-          console.log("Barcode detected:", decodedText);
-          stopScannerAndNavigate(qrScanner, decodedText);
-        },
-        (errorMessage) => {
-          // Error callback - we'll just log it and continue scanning
-          console.log("Error scanning barcode:", errorMessage);
-        }
-      ).catch((err) => {
-        console.error("Failed to start scanner:", err);
+      try {
+        const qrScanner = new Html5Qrcode("barcode-reader");
+        setScanner(qrScanner);
+        setScanning(true);
+        
+        qrScanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 150 },
+          },
+          (decodedText) => {
+            // Success callback
+            console.log("Barcode detected:", decodedText);
+            stopScannerAndNavigate(qrScanner, decodedText);
+          },
+          (errorMessage) => {
+            // Error callback - we'll just log it and continue scanning
+            console.log("Error scanning barcode:", errorMessage);
+          }
+        ).catch((err) => {
+          console.error("Failed to start scanner:", err);
+          toast({
+            title: "فشل تشغيل الماسح",
+            description: "تأكد من إعطاء الإذن للوصول إلى الكاميرا",
+            variant: "destructive",
+          });
+          setScanning(false);
+        });
+      } catch (err) {
+        console.error("Error creating scanner instance:", err);
         toast({
           title: "فشل تشغيل الماسح",
-          description: "تأكد من إعطاء الإذن للوصول إلى الكاميرا",
+          description: "حدث خطأ أثناء تهيئة الماسح",
           variant: "destructive",
         });
         setScanning(false);
-      });
+      }
     };
 
     // Start scanner with a small delay to ensure DOM is ready
@@ -55,30 +65,47 @@ const BarcodeScanner = () => {
       // Clean up scanner on component unmount
       if (scanner) {
         console.log("Stopping scanner on component unmount");
-        scanner.stop().catch(err => console.error("Error stopping scanner:", err));
+        // Check if scanner is running before stopping
+        if (scanner.isScanning) {
+          scanner.stop().then(() => {
+            console.log("Scanner stopped successfully");
+          }).catch(err => {
+            console.error("Error stopping scanner:", err);
+          });
+        }
         setScanner(null);
       }
     };
   }, [navigate, toast]);
 
   const stopScannerAndNavigate = (scannerInstance: Html5Qrcode, decodedText?: string) => {
-    scannerInstance.stop().then(() => {
+    // Only attempt to stop if it's scanning
+    if (scannerInstance.isScanning) {
+      scannerInstance.stop().then(() => {
+        setScanner(null);
+        setScanning(false);
+        navigateToDestination(decodedText);
+      }).catch(err => {
+        console.error("Error stopping scanner:", err);
+        // Still navigate even if there was an error stopping
+        setScanner(null);
+        setScanning(false);
+        navigateToDestination(decodedText);
+      });
+    } else {
+      // If not scanning, just navigate
       setScanner(null);
       setScanning(false);
-      if (decodedText) {
-        navigate(`/search?q=${encodeURIComponent(decodedText)}`);
-      } else {
-        navigate(-1);
-      }
-    }).catch(err => {
-      console.error("Error stopping scanner:", err);
-      // Still navigate even if there was an error stopping
-      if (decodedText) {
-        navigate(`/search?q=${encodeURIComponent(decodedText)}`);
-      } else {
-        navigate(-1);
-      }
-    });
+      navigateToDestination(decodedText);
+    }
+  };
+
+  const navigateToDestination = (decodedText?: string) => {
+    if (decodedText) {
+      navigate(`/search?q=${encodeURIComponent(decodedText)}`);
+    } else {
+      navigate(-1);
+    }
   };
 
   const handleBack = () => {

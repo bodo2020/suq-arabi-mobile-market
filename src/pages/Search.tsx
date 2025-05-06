@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Barcode, Search as SearchIcon } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -17,7 +17,7 @@ const Search = () => {
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [scanner, setScanner] = useState<Html5Qrcode | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -38,16 +38,25 @@ const Search = () => {
     }
   }, [query]);
 
-  // Cleanup effect for scanner when component unmounts
+  // Cleanup effect for scanner when component unmounts or scanner state changes
   useEffect(() => {
     return () => {
-      if (scanner) {
+      // Clean up scanner on component unmount
+      if (scannerRef.current) {
         console.log("Stopping scanner on Search component unmount");
-        scanner.stop().catch(err => console.error("Error stopping scanner:", err));
-        setScanner(null);
+        try {
+          if (scannerRef.current.isScanning) {
+            scannerRef.current.stop().catch(err => {
+              console.error("Error stopping scanner:", err);
+            });
+          }
+          scannerRef.current = null;
+        } catch (err) {
+          console.error("Error during scanner cleanup:", err);
+        }
       }
     };
-  }, [scanner]);
+  }, []);
 
   // Fetch search results
   useEffect(() => {
@@ -76,7 +85,7 @@ const Search = () => {
   }, [query, toast]);
 
   const handleBack = () => {
-    if (showScanner && scanner) {
+    if (showScanner && scannerRef.current) {
       stopBarcodeScanner();
     } else {
       navigate(-1);
@@ -97,56 +106,86 @@ const Search = () => {
     
     // Wait for the DOM to update with the scanner element
     setTimeout(() => {
-      const qrScanner = new Html5Qrcode("barcode-reader");
-      setScanner(qrScanner);
-      
-      qrScanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 150 },
-        },
-        (decodedText) => {
-          // Success callback
-          console.log("Barcode detected:", decodedText);
-          qrScanner.stop().then(() => {
-            setShowScanner(false);
-            setScanner(null);
-            navigate(`/search?q=${encodeURIComponent(decodedText)}`);
-          }).catch(err => {
-            console.error("Error stopping scanner:", err);
-            // Still navigate even if there was an error stopping
-            setShowScanner(false);
-            setScanner(null);
-            navigate(`/search?q=${encodeURIComponent(decodedText)}`);
+      try {
+        const qrScanner = new Html5Qrcode("barcode-reader");
+        scannerRef.current = qrScanner;
+        
+        qrScanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 150 },
+          },
+          (decodedText) => {
+            // Success callback
+            console.log("Barcode detected:", decodedText);
+            
+            // Check if scanner is still active
+            if (scannerRef.current && scannerRef.current.isScanning) {
+              scannerRef.current.stop().then(() => {
+                setShowScanner(false);
+                scannerRef.current = null;
+                navigate(`/search?q=${encodeURIComponent(decodedText)}`);
+              }).catch(err => {
+                console.error("Error stopping scanner:", err);
+                // Still navigate even if there was an error stopping
+                setShowScanner(false);
+                scannerRef.current = null;
+                navigate(`/search?q=${encodeURIComponent(decodedText)}`);
+              });
+            } else {
+              // Scanner might have been stopped by another process
+              setShowScanner(false);
+              navigate(`/search?q=${encodeURIComponent(decodedText)}`);
+            }
+          },
+          (errorMessage) => {
+            // Error callback - we'll just log it and continue scanning
+            console.log("Error scanning barcode:", errorMessage);
+          }
+        ).catch((err) => {
+          console.error("Failed to start scanner:", err);
+          toast({
+            title: "فشل تشغيل الماسح",
+            description: "تأكد من إعطاء الإذن للوصول إلى الكاميرا",
+            variant: "destructive",
           });
-        },
-        (errorMessage) => {
-          // Error callback - we'll just log it and continue scanning
-          console.log("Error scanning barcode:", errorMessage);
-        }
-      ).catch((err) => {
-        console.error("Failed to start scanner:", err);
+          setShowScanner(false);
+        });
+      } catch (err) {
+        console.error("Error creating scanner instance:", err);
         toast({
           title: "فشل تشغيل الماسح",
-          description: "تأكد من إعطاء الإذن للوصول إلى الكاميرا",
+          description: "حدث خطأ أثناء تهيئة الماسح",
           variant: "destructive",
         });
         setShowScanner(false);
-      });
+      }
     }, 100);
   };
 
   const stopBarcodeScanner = () => {
-    if (scanner) {
-      scanner.stop().then(() => {
+    if (scannerRef.current) {
+      try {
+        if (scannerRef.current.isScanning) {
+          scannerRef.current.stop().then(() => {
+            setShowScanner(false);
+            scannerRef.current = null;
+          }).catch(err => {
+            console.error("Error stopping scanner:", err);
+            setShowScanner(false);
+            scannerRef.current = null;
+          });
+        } else {
+          // Scanner is not running, just update state
+          setShowScanner(false);
+          scannerRef.current = null;
+        }
+      } catch (err) {
+        console.error("Error during scanner cleanup:", err);
         setShowScanner(false);
-        setScanner(null);
-      }).catch(err => {
-        console.error("Error stopping scanner:", err);
-        setShowScanner(false);
-        setScanner(null);
-      });
+        scannerRef.current = null;
+      }
     } else {
       setShowScanner(false);
     }
