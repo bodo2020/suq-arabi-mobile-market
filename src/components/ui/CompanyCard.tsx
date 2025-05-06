@@ -11,7 +11,7 @@ interface CompanyCardProps {
 const CompanyCard: React.FC<CompanyCardProps> = ({ company }) => {
   return (
     <Link 
-      to={`/company-products/${company.id}`} 
+      to={`/company/${company.id}`} 
       className="flex items-center bg-gray-100 rounded-md p-2 hover:bg-gray-200 transition-colors w-1/2"
     >
       <Building className="w-4 h-4 text-gray-500 ml-2" />
