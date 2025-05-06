@@ -5,6 +5,7 @@ import { ArrowRight, Scan } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 const BarcodeScanner = () => {
   const navigate = useNavigate();
@@ -27,9 +28,7 @@ const BarcodeScanner = () => {
         (decodedText) => {
           // Success callback
           console.log("Barcode detected:", decodedText);
-          qrScanner.stop().then(() => {
-            navigate(`/search?q=${encodeURIComponent(decodedText)}`);
-          });
+          stopScannerAndNavigate(qrScanner, decodedText);
         },
         (errorMessage) => {
           // Error callback - we'll just log it and continue scanning
@@ -55,13 +54,39 @@ const BarcodeScanner = () => {
       clearTimeout(timer);
       // Clean up scanner on component unmount
       if (scanner) {
+        console.log("Stopping scanner on component unmount");
         scanner.stop().catch(err => console.error("Error stopping scanner:", err));
+        setScanner(null);
       }
     };
   }, [navigate, toast]);
 
+  const stopScannerAndNavigate = (scannerInstance: Html5Qrcode, decodedText?: string) => {
+    scannerInstance.stop().then(() => {
+      setScanner(null);
+      setScanning(false);
+      if (decodedText) {
+        navigate(`/search?q=${encodeURIComponent(decodedText)}`);
+      } else {
+        navigate(-1);
+      }
+    }).catch(err => {
+      console.error("Error stopping scanner:", err);
+      // Still navigate even if there was an error stopping
+      if (decodedText) {
+        navigate(`/search?q=${encodeURIComponent(decodedText)}`);
+      } else {
+        navigate(-1);
+      }
+    });
+  };
+
   const handleBack = () => {
-    navigate(-1);
+    if (scanner) {
+      stopScannerAndNavigate(scanner);
+    } else {
+      navigate(-1);
+    }
   };
 
   return (
@@ -93,12 +118,12 @@ const BarcodeScanner = () => {
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <button
+            <Button
               onClick={() => window.location.reload()}
-              className="mt-4 bg-primary text-white px-4 py-2 rounded-lg"
+              className="mt-4"
             >
               إعادة المحاولة
-            </button>
+            </Button>
           )}
         </div>
       </div>

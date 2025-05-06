@@ -8,6 +8,7 @@ import ProductCard from '@/components/ui/ProductCard';
 import { searchProducts } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Html5Qrcode } from 'html5-qrcode';
+import { Button } from '@/components/ui/button';
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -37,6 +38,17 @@ const Search = () => {
     }
   }, [query]);
 
+  // Cleanup effect for scanner when component unmounts
+  useEffect(() => {
+    return () => {
+      if (scanner) {
+        console.log("Stopping scanner on Search component unmount");
+        scanner.stop().catch(err => console.error("Error stopping scanner:", err));
+        setScanner(null);
+      }
+    };
+  }, [scanner]);
+
   // Fetch search results
   useEffect(() => {
     const fetchResults = async () => {
@@ -64,7 +76,11 @@ const Search = () => {
   }, [query, toast]);
 
   const handleBack = () => {
-    navigate(-1);
+    if (showScanner && scanner) {
+      stopBarcodeScanner();
+    } else {
+      navigate(-1);
+    }
   };
 
   const handleSearchClick = (search: string) => {
@@ -95,6 +111,13 @@ const Search = () => {
           console.log("Barcode detected:", decodedText);
           qrScanner.stop().then(() => {
             setShowScanner(false);
+            setScanner(null);
+            navigate(`/search?q=${encodeURIComponent(decodedText)}`);
+          }).catch(err => {
+            console.error("Error stopping scanner:", err);
+            // Still navigate even if there was an error stopping
+            setShowScanner(false);
+            setScanner(null);
             navigate(`/search?q=${encodeURIComponent(decodedText)}`);
           });
         },
@@ -118,9 +141,11 @@ const Search = () => {
     if (scanner) {
       scanner.stop().then(() => {
         setShowScanner(false);
+        setScanner(null);
       }).catch(err => {
         console.error("Error stopping scanner:", err);
         setShowScanner(false);
+        setScanner(null);
       });
     } else {
       setShowScanner(false);
@@ -156,12 +181,13 @@ const Search = () => {
           <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex flex-col items-center justify-center p-4">
             <div id="barcode-reader" className="w-full max-w-md h-64 bg-gray-200 rounded-lg overflow-hidden"></div>
             <p className="text-white my-4 text-center">قم بتوجيه الكاميرا نحو الباركود</p>
-            <button 
+            <Button 
               onClick={stopBarcodeScanner}
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg"
+              variant="destructive"
+              className="mt-4"
             >
               إلغاء
-            </button>
+            </Button>
           </div>
         )}
 
