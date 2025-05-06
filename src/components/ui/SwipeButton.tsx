@@ -28,7 +28,7 @@ const SwipeButton = ({
       )}
       disabled={isLoading}
     >
-      {isLoading ? loadingText : completeText}
+      {isLoading ? loadingText : "تأكيد الطلب"}
     </Button>
   );
 };

@@ -68,7 +68,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         type="button"
         onClick={handleBarcodeClick}
         className="p-2 hover:bg-gray-50/50 rounded-full transition-colors"
-        aria-label="مسح الباركود"
+        aria-label="البحث بالباركود"
       >
         <Barcode className="w-5 h-5 text-gray-400" />
       </button>
