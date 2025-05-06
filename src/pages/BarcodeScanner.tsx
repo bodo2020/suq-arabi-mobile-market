@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Scan } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useToast } from '@/hooks/use-toast';

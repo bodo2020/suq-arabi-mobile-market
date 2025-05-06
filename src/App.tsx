@@ -24,6 +24,7 @@ import PhoneLogin from './pages/PhoneLogin';
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
+import BarcodeScanner from './pages/BarcodeScanner';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -49,6 +50,7 @@ function App() {
             <Route path="/payment" element={<Payment />} />
             <Route path="/order-success" element={<OrderSuccess />} />
             <Route path="/company/:id" element={<CompanyProducts />} />
+            <Route path="/company-products/:id" element={<CompanyProducts />} />
             <Route path="/banner/:id" element={<BannerProducts />} />
             <Route path="/account" element={<Account />} />
             <Route path="/register" element={<Register />} />
@@ -60,6 +62,7 @@ function App() {
             <Route path="/edit-address/:id" element={<Address />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/search" element={<Search />} />
+            <Route path="/barcode-scan" element={<BarcodeScanner />} />
             <Route path="/bulk-products" element={<BulkProducts />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="*" element={<NotFound />} />
