@@ -6,7 +6,9 @@ const config: CapacitorConfig = {
   appName: 'ماركت المعداوي',
   webDir: 'dist',
   server: {
-    url: 'http://elmadawymarket.store',
+    // Default to using localhost for development
+    // When deployed, it will use the actual domain
+    url: process.env.NODE_ENV === 'production' ? 'http://elmadawymarket.store' : 'http://localhost:5173',
     cleartext: true
   },
   plugins: {
