@@ -20,6 +20,85 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="icon" href="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" type="image/png">
+    
+    <!-- Immediately hide Lovable badge as early as possible -->
+    <style>
+      a[href*="lovable.dev"], 
+      a[href*="lovable.app"],
+      [class*="lovable"],
+      [class*="lovable-badge"],
+      [id*="lovable"],
+      [data-lovable],
+      [aria-label*="lovable"],
+      [aria-label*="Lovable"] {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        margin: -1px !important;
+        padding: 0 !important;
+        border: 0 !important;
+      }
+    </style>
+
+    <!-- Execute badge hiding function immediately -->
+    <script>
+      (function() {
+        // Remove any existing badges
+        function removeBadges() {
+          const selectors = [
+            'a[href*="lovable.dev"]',
+            'a[href*="lovable.app"]', 
+            '[class*="lovable-badge"]',
+            '[class*="lovable"]',
+            '[id*="lovable"]',
+          ];
+          
+          selectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(el => {
+              if (el && el.parentNode) {
+                el.parentNode.removeChild(el);
+              }
+            });
+          });
+        }
+        
+        // Run immediately
+        removeBadges();
+
+        // Run again when DOM is loaded
+        document.addEventListener('DOMContentLoaded', removeBadges);
+
+        // Create MutationObserver to watch for dynamically added elements
+        if (typeof MutationObserver !== 'undefined') {
+          const observer = new MutationObserver(removeBadges);
+          
+          // Start observing as soon as body is available
+          const startObserving = function() {
+            if (document.body) {
+              observer.observe(document.body, { 
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class', 'style', 'id']
+              });
+            } else {
+              setTimeout(startObserving, 10);
+            }
+          };
+          
+          startObserving();
+        }
+
+        // Run periodically to be extra sure
+        setInterval(removeBadges, 100);
+      })();
+    </script>
   </head>
 
   <body>
