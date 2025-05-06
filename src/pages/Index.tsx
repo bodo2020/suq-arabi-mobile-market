@@ -1,22 +1,21 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, MapPin, Package } from 'lucide-react';
+
+import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
+import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
-import ProductCard from '@/components/ui/ProductCard';
-import Banner from '@/components/ui/Banner';
-import { getCategories, getProducts, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
+import { getCategories, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
 import { Skeleton } from "@/components/ui/skeleton";
 import AddressDisplay from '@/components/ui/AddressDisplay';
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
-import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
-import BannersContainer from '@/components/ui/BannersContainer';
-import User from '@/components/ui/User';
 import { useUser } from '@/contexts/UserContext';
+
+// Lazy load components that aren't immediately visible
+const ProductCollectionsSection = lazy(() => import('@/components/sections/ProductCollectionsSection'));
+const BannersContainer = lazy(() => import('@/components/ui/BannersContainer'));
 
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
@@ -32,65 +31,46 @@ const Index = () => {
   const bannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const {
-    user
-  } = useUser();
+  const { user } = useUser();
+  
+  // Optimize queries with proper caching strategy
   const {
     data: categories = [],
     isLoading: categoriesLoading
   } = useQuery({
     queryKey: ['categories'],
-    queryFn: getCategories
+    queryFn: getCategories,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    refetchOnWindowFocus: false
   });
-  const {
-    data: productCollections = [],
-    isLoading: collectionsLoading
-  } = useQuery({
-    queryKey: ['productCollections'],
-    queryFn: async () => {
-      try {
-        const {
-          data,
-          error
-        } = await supabase.from('product_collections').select('*').eq('active', true).order('position');
-        console.log('Fetched collections:', data);
-        if (error) {
-          console.error('Error fetching collections:', error);
-          throw error;
-        }
-        return data || [];
-      } catch (err) {
-        console.error('Error in query function:', err);
-        throw err;
-      }
-    }
-  });
-  const {
-    data: products = [],
-    isLoading: productsLoading
-  } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => getProducts()
-  });
+
+  // Show only essential categories on initial load
+  const visibleCategories = categories.slice(0, 12);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch critical data first
         const storeInfoData = await getStoreInfo();
-        const bannersData = await supabase.from('banners').select('*').eq('active', true).order('position');
         setStoreInfo(storeInfoData);
-        if (bannersData.data) setBanners(bannersData.data);
+        
+        // Fetch user location data from localStorage
         const savedAddress = localStorage.getItem('userAddress');
         if (savedAddress) setUserAddress(savedAddress);
+        
         const area = localStorage.getItem('userArea');
         const neighborhood = localStorage.getItem('userNeighborhood');
         if (area || neighborhood) {
-          setUserLocation({
-            area,
-            neighborhood
-          });
+          setUserLocation({ area, neighborhood });
         }
+        
+        // Then fetch banner data which is less critical
+        const bannersData = await supabase.from('banners')
+          .select('*')
+          .eq('active', true)
+          .order('position');
+          
+        if (bannersData.data) setBanners(bannersData.data);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -130,19 +110,17 @@ const Index = () => {
   };
 
   const handleChangeLocation = () => {
-    setPopoverOpen(false);
     navigate('/account/addresses');
   };
-
-  // Show 12 categories instead of 9
-  const visibleCategories = categories.slice(0, 12);
 
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
 
-  if (categoriesLoading || productsLoading || collectionsLoading) {
-    return <MainLayout>
+  // Loading skeleton for better user experience
+  if (categoriesLoading) {
+    return (
+      <MainLayout>
         <div className="py-4">
           <div className="flex justify-center mb-4">
             <Skeleton className="h-12 w-32 rounded" />
@@ -150,52 +128,70 @@ const Index = () => {
           <div className="mb-4">
             <Skeleton className="h-12 w-full rounded-lg mb-3" />
           </div>
-          <div className="mb-4">
-            <Skeleton className="h-40 w-full rounded-lg mb-3" />
-          </div>
           <div className="mb-6">
             <Skeleton className="h-8 w-36 mb-2" />
             <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
               {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
             </div>
           </div>
-          <div className="mb-6">
-            <Skeleton className="h-8 w-40 mb-2" />
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-lg" />)}
-            </div>
-          </div>
         </div>
-      </MainLayout>;
+      </MainLayout>
+    );
   }
 
-  const addressSection = <div className="mb-4">
-      <AddressDisplay address={userAddress || ''} areaName={userLocation?.area || undefined} neighborhoodName={userLocation?.neighborhood || undefined} onEdit={handleChangeLocation} showAddressSelector={true} />
-    </div>;
+  const addressSection = (
+    <div className="mb-4">
+      <AddressDisplay 
+        address={userAddress || ''} 
+        areaName={userLocation?.area || undefined} 
+        neighborhoodName={userLocation?.neighborhood || undefined} 
+        onEdit={handleChangeLocation}
+        showAddressSelector={true}
+      />
+    </div>
+  );
 
-  return <MainLayout>
+  return (
+    <MainLayout>
       <div className="mb-16 pb-16">
-        <div className="relative">
-          {banners.length > 0 && <BannersContainer banners={banners} />}
-        </div>
-        
-        <div className="flex flex-col items-center mb-8 pt-4">
-          <img src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" alt={storeInfo?.name} className="h-16 w-16 mb-1" />
+        <div className="flex flex-col items-center mb-6 pt-4">
+          <img 
+            src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
+            alt={storeInfo?.name} 
+            className="h-16 w-16 mb-1"
+            loading="eager" 
+          />
           <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
         </div>
 
         <div className="relative mb-2">
-          <SearchBar backgroundImage={searchBackground} onFocus={handleFocusSearchBar} readOnly />
+          <SearchBar 
+            backgroundImage={searchBackground} 
+            onFocus={handleFocusSearchBar} 
+            readOnly 
+          />
           <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
-            <input id="bgImageUpload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={processingImage} />
+            <input 
+              id="bgImageUpload" 
+              type="file" 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleImageUpload} 
+              disabled={processingImage} 
+            />
           </div>
         </div>
 
         {addressSection}
 
-        {banners.length > 0 && <div className="mb-6 relative">
-            <BannersContainer banners={banners} />
-          </div>}
+        {/* Lazy load banners */}
+        <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
+          {banners.length > 0 && (
+            <div className="mb-6 relative">
+              <BannersContainer banners={banners} />
+            </div>
+          )}
+        </Suspense>
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
@@ -206,10 +202,19 @@ const Index = () => {
             </Link>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
-            {visibleCategories.map(category => <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />)}
+            {visibleCategories.map(category => (
+              <CategoryItem 
+                key={category.id} 
+                category={category} 
+                onClick={handleMainCategoryClick} 
+              />
+            ))}
             {categories.length > 12 && (
               <Link to="/categories" className="category-item flex flex-col items-center">
-                <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{aspectRatio: '1'}}>
+                <div 
+                  className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" 
+                  style={{aspectRatio: '1'}}
+                >
                   <ChevronLeft size={24} />
                 </div>
                 <span className="text-sm text-center mt-1">عرض الكل</span>
@@ -218,9 +223,20 @@ const Index = () => {
           </div>
         </div>
         
-        <ProductCollectionsSection />
+        {/* Lazy load product collections */}
+        <Suspense fallback={
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-40 mb-2" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-lg" />)}
+            </div>
+          </div>
+        }>
+          <ProductCollectionsSection />
+        </Suspense>
       </div>
-    </MainLayout>;
+    </MainLayout>
+  );
 };
 
 export default Index;

@@ -3,12 +3,11 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/supabase';
-import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
-import CollectionsList from './CollectionsList';
 import { Skeleton } from '@/components/ui/skeleton';
+import CollectionsList from './CollectionsList';
 
 const ProductCollectionsSection = () => {
+  // Optimize collections query with proper caching
   const {
     data: productCollections = [],
     isLoading: collectionsLoading
@@ -19,8 +18,12 @@ const ProductCollectionsSection = () => {
         const {
           data,
           error
-        } = await supabase.from('product_collections').select('*').eq('active', true).order('position');
-        console.log('Fetched collections:', data);
+        } = await supabase
+          .from('product_collections')
+          .select('*')
+          .eq('active', true)
+          .order('position');
+          
         if (error) {
           console.error('Error fetching collections:', error);
           throw error;
@@ -30,14 +33,17 @@ const ProductCollectionsSection = () => {
         console.error('Error in query function:', err);
         throw err;
       }
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    refetchOnWindowFocus: false
   });
 
+  // Use a more efficient product fetch strategy - only get active products
   const { 
     data: products = [], 
     isLoading: productsLoading 
   } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['active-products'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
@@ -46,7 +52,9 @@ const ProductCollectionsSection = () => {
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    refetchOnWindowFocus: false
   });
 
   if (collectionsLoading || productsLoading) {
