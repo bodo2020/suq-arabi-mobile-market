@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -41,6 +42,7 @@ const AddressManager = () => {
         throw error;
       }
       
+      console.log("Fetched addresses:", data);
       setAddresses(data as Address[] || []);
     } catch (error) {
       console.error('Error fetching addresses:', error);
@@ -59,6 +61,11 @@ const AddressManager = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
+        toast({
+          variant: "destructive",
+          title: "خطأ",
+          description: "يجب تسجيل الدخول أولاً"
+        });
         return;
       }
       
@@ -74,12 +81,24 @@ const AddressManager = () => {
         .update({ is_default: true })
         .eq('id', addressId);
       
-      // Update address in localStorage
+      // Update address info in localStorage
       const selectedAddress = addresses.find(addr => addr.id === addressId);
       if (selectedAddress) {
         localStorage.setItem('userAddress', selectedAddress.address || '');
         localStorage.setItem('userArea', selectedAddress.areas?.name || '');
         localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
+        
+        // Also update the customer profile with this address
+        await supabase
+          .from('customers')
+          .update({
+            address: selectedAddress.address,
+            governorate_id: selectedAddress.governorate_id,
+            city_id: selectedAddress.city_id,
+            area_id: selectedAddress.area_id,
+            neighborhood_id: selectedAddress.neighborhood_id
+          })
+          .eq('user_id', sessionData.session.user.id);
       }
       
       toast({
@@ -107,11 +126,24 @@ const AddressManager = () => {
         return;
       }
       
+      // Check if this is the default address
+      const addressToDelete = addresses.find(addr => addr.id === addressId);
+      const isDefault = addressToDelete?.is_default || false;
+      
+      // Delete the address
       await supabase
         .from('customer_addresses')
         .delete()
         .eq('id', addressId)
         .eq('user_id', sessionData.session.user.id);
+      
+      // If deleted the default address, need to set another as default
+      if (isDefault && addresses.length > 1) {
+        const remainingAddresses = addresses.filter(addr => addr.id !== addressId);
+        if (remainingAddresses.length > 0) {
+          await handleSetDefault(remainingAddresses[0].id);
+        }
+      }
       
       toast({
         title: "تم حذف العنوان",

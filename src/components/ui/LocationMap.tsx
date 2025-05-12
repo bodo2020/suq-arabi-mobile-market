@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -228,6 +227,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         throw new Error('Authentication required');
       }
       
+      // Use the edge function to update the location
       const response = await fetch('https://qzvpayjaadbmpayeglon.functions.supabase.co/update-location', {
         method: 'POST',
         headers: {
@@ -251,6 +251,17 @@ const LocationMap: React.FC<LocationMapProps> = ({
         title: "تم حفظ الموقع",
         description: "تم تحديث موقعك بنجاح"
       });
+      
+      // Update the customer profile with this location
+      if (user.id) {
+        await supabase
+          .from('customers')
+          .update({
+            latitude,
+            longitude
+          })
+          .eq('user_id', user.id);
+      }
       
     } catch (error) {
       console.error('Error saving location:', error);
@@ -297,7 +308,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         </Button>
         <Button
           onClick={saveLocationToDatabase}
-          disabled={loading}
+          disabled={loading || !user}
           size="sm"
           className="text-xs"
         >

@@ -135,7 +135,8 @@ const Address = () => {
           neighborhood_id: mapLocation.neighborhood || null,
           latitude: mapLocation.latitude || null,
           longitude: mapLocation.longitude || null,
-          is_default: false // Don't automatically set as default
+          // Set as default if this is the user's first address
+          is_default: addressId ? false : await isFirstAddress()
         };
 
         let result;
@@ -157,6 +158,9 @@ const Address = () => {
         if (result.error) {
           throw result.error;
         }
+
+        // Store area and neighborhood names in customer profile for quick access
+        await updateCustomerProfileWithAddress();
 
         // Store in localStorage for quick access
         localStorage.setItem('userAddress', address);
@@ -195,7 +199,7 @@ const Address = () => {
         localStorage.setItem('userAddress', address);
       }
 
-      navigate(-1);
+      navigate('/address-manager');
     } catch (error) {
       console.error('Error saving address:', error);
       toast({
@@ -205,6 +209,58 @@ const Address = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Helper function to check if this is the user's first address
+  const isFirstAddress = async () => {
+    if (!user) return false;
+    
+    const { data, error } = await supabase
+      .from('customer_addresses')
+      .select('id')
+      .eq('user_id', user.id);
+      
+    if (error) {
+      console.error('Error checking existing addresses:', error);
+      return false;
+    }
+    
+    return data.length === 0;
+  };
+  
+  // Helper function to update customer profile with address details
+  const updateCustomerProfileWithAddress = async () => {
+    if (!user) return;
+    
+    try {
+      const updateData: Record<string, any> = {
+        address: address
+      };
+      
+      if (mapLocation.government) {
+        updateData.governorate_id = mapLocation.government;
+      }
+      
+      if (mapLocation.city) {
+        updateData.city_id = mapLocation.city;
+      }
+      
+      if (mapLocation.area) {
+        updateData.area_id = mapLocation.area;
+      }
+      
+      if (mapLocation.neighborhood) {
+        updateData.neighborhood_id = mapLocation.neighborhood;
+      }
+      
+      await supabase
+        .from('customers')
+        .update(updateData)
+        .eq('user_id', user.id);
+    } catch (error) {
+      console.error('Error updating customer profile:', error);
+      // Don't throw error as this is a non-critical operation
     }
   };
 

@@ -29,7 +29,7 @@ const AddressDisplay = ({
   neighborhoodName,
   latitude,
   longitude,
-  onEdit = () => {} // Default empty function to prevent errors
+  onEdit
 }: AddressDisplayProps) => {
   const { user } = useUser();
   const { toast } = useToast();
@@ -104,7 +104,11 @@ const AddressDisplay = ({
   };
 
   const handleChangeAddress = () => {
-    navigate('/add-address');
+    if (user) {
+      navigate('/address-manager');
+    } else {
+      navigate('/add-address');
+    }
   };
 
   return (
