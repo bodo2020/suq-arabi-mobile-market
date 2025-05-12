@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, KeyRound, Map, Mail } from "lucide-react";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import CountryCodeSelector, { Country } from "@/components/ui/CountryCodeSelector";
+import { supabase } from "@/lib/supabase";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -120,6 +122,66 @@ const Register = () => {
         }
       );
       if (error) throw error;
+      
+      // Retrieve the user ID after successful signup
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (sessionData?.session?.user?.id && address) {
+        try {
+          // Check if this is the user's first address
+          const { count } = await supabase
+            .from('customer_addresses')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', sessionData.session.user.id);
+            
+          const isFirstAddress = count === 0;
+          
+          // Save the address to the customer_addresses table
+          await supabase
+            .from('customer_addresses')
+            .insert({
+              user_id: sessionData.session.user.id,
+              address: address,
+              governorate_id: locationValue.governorate || null,
+              city_id: locationValue.city || null,
+              area_id: locationValue.area || null,
+              neighborhood_id: locationValue.neighborhood || null,
+              is_default: isFirstAddress ? true : false
+            });
+          
+          // Store area and neighborhood names in localStorage for quick access
+          if (locationValue.area) {
+            const { data: areaData } = await supabase
+              .from('areas')
+              .select('name')
+              .eq('id', locationValue.area)
+              .single();
+            
+            if (areaData?.name) {
+              localStorage.setItem('userArea', areaData.name);
+            }
+          }
+          
+          if (locationValue.neighborhood) {
+            const { data: neighborhoodData } = await supabase
+              .from('neighborhoods')
+              .select('name')
+              .eq('id', locationValue.neighborhood)
+              .single();
+            
+            if (neighborhoodData?.name) {
+              localStorage.setItem('userNeighborhood', neighborhoodData.name);
+            }
+          }
+          
+          localStorage.setItem('userAddress', address);
+          
+        } catch (addressError) {
+          console.error("Error saving address:", addressError);
+          // Continue with account creation even if address saving fails
+        }
+      }
+      
       toast({
         title: "تم التسجيل بنجاح",
         description: "مرحباً بك! تم تسجيل حسابك بنجاح."
