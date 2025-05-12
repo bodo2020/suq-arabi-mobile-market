@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Loader, User, Send } from 'lucide-react';
@@ -187,8 +186,8 @@ const ForgotPassword = () => {
                       setError("");
                     }}
                     className="text-right ltr flex-1"
-                    placeholder="example@domain.com أو 1xxxxxxxxx"
-                    dir="ltr"
+                    placeholder="أدخل بريدك الإلكتروني أو رقم الهاتف"
+                    dir="rtl"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         handleResetPassword();

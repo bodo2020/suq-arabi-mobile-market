@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Loader, KeyRound, User } from 'lucide-react';
@@ -183,8 +182,8 @@ const PhoneLogin = () => {
                     setErrors(prev => ({ ...prev, username: "" }));
                   }}
                   className="text-right ltr flex-1"
-                  placeholder="example@domain.com أو 1xxxxxxxxx"
-                  dir="ltr"
+                  placeholder="أدخل بريدك الإلكتروني أو رقم الهاتف"
+                  dir="rtl"
                 />
               </div>
               
@@ -215,7 +214,8 @@ const PhoneLogin = () => {
                   setErrors(prev => ({ ...prev, password: "" }));
                 }}
                 className="text-right"
-                placeholder="*********"
+                placeholder="أدخل كلمة المرور"
+                dir="rtl"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleLogin();
