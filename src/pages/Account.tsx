@@ -6,11 +6,13 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Button } from "@/components/ui/button"
 import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
+import { supabase } from '@/lib/supabase';
 
 const Account = () => {
   const { user, loading, signOut } = useUser();
   const navigate = useNavigate();
   const [loadingComplete, setLoadingComplete] = useState(false);
+  const [userData, setUserData] = useState<{ name?: string } | null>(null);
   
   useEffect(() => {
     // Set a timeout to prevent infinite loading state
@@ -21,9 +23,41 @@ const Account = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    // Fetch user profile data when user is available
+    const fetchUserData = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('name')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (data && !error) {
+          setUserData(data);
+        }
+      }
+    };
+    
+    fetchUserData();
+  }, [user]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  // Get the display name from various sources
+  const getDisplayName = () => {
+    if (userData?.name) {
+      return userData.name;
+    } else if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    } else if (user?.user_metadata?.first_name) {
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim();
+    } else {
+      return 'المستخدم';
+    }
   };
 
   // Show loading state only for a limited time
@@ -52,7 +86,7 @@ const Account = () => {
                     <User className="h-6 w-6 text-primary" />
                   </div>
                   <div className="mr-4">
-                    <h2 className="font-semibold">اسم المستخدم</h2>
+                    <h2 className="font-semibold">{getDisplayName()}</h2>
                     <p className="text-sm text-gray-500">مرحباً بك في ماركت المعداوي</p>
                   </div>
                 </div>
