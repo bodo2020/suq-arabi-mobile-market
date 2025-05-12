@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -51,7 +52,7 @@ const Account = () => {
                     <User className="h-6 w-6 text-primary" />
                   </div>
                   <div className="mr-4">
-                    <h2 className="font-semibold">{user.email}</h2>
+                    <h2 className="font-semibold">اسم المستخدم</h2>
                     <p className="text-sm text-gray-500">مرحباً بك في ماركت المعداوي</p>
                   </div>
                 </div>
