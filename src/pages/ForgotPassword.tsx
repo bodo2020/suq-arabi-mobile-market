@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Loader, User, Send } from 'lucide-react';
@@ -7,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
+import { supabase } from '@/lib/supabase';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -61,7 +63,8 @@ const ForgotPassword = () => {
     return re.test(email);
   };
   
-  const resetPassword = async (username: string) => {
+  // Renamed from resetPassword to findUserEmail to avoid conflict
+  const findUserEmail = async (username: string) => {
     try {
       // Check if username is email or phone
       const isEmail = username.includes('@');
@@ -135,7 +138,7 @@ const ForgotPassword = () => {
       // Try to find the email associated with the phone number
       if (isPhoneInput) {
         try {
-          const email = await resetPassword(resetUsername);
+          const email = await findUserEmail(resetUsername);
           resetUsername = email;
         } catch (error) {
           console.error('Error finding email for phone:', error);
