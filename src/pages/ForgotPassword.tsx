@@ -61,6 +61,44 @@ const ForgotPassword = () => {
     return re.test(email);
   };
   
+  const resetPassword = async (username: string) => {
+    try {
+      // Check if username is email or phone
+      const isEmail = username.includes('@');
+      const resetEmail = isEmail ? username : username;
+      
+      // If it's a phone number, we need to query the user's email from the database
+      if (!isEmail) {
+        // Format the phone number for consistency
+        const formattedPhone = formatInternationalPhone(username, countryCode);
+        
+        // Look up the user by phone number from customers table
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('user_id')
+          .eq('phone', formattedPhone)
+          .single();
+          
+        if (customerData?.user_id) {
+          // If we found a user with this phone, get their email
+          const { data: userData } = await supabase.auth.admin.getUserById(
+            customerData.user_id
+          );
+          
+          if (userData?.user?.email) {
+            // Use the retrieved email
+            return userData.user.email;
+          }
+        }
+      }
+      
+      return resetEmail;
+    } catch (error) {
+      console.error("Error finding user for password reset:", error);
+      throw error;
+    }
+  };
+
   const handleResetPassword = async () => {
     if (loading) return; // Prevent multiple clicks
     
@@ -94,6 +132,17 @@ const ForgotPassword = () => {
     setLoading(true);
     
     try {
+      // Try to find the email associated with the phone number
+      if (isPhoneInput) {
+        try {
+          const email = await resetPassword(resetUsername);
+          resetUsername = email;
+        } catch (error) {
+          console.error('Error finding email for phone:', error);
+          // Continue with the phone number if email lookup fails
+        }
+      }
+      
       // Request password reset
       const { error } = await resetPassword(resetUsername);
       

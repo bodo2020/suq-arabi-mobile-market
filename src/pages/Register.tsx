@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowRight, User, Phone, MapPin, KeyRound, Map, Mail } from "lucide-react";
@@ -108,12 +107,12 @@ const Register = () => {
         error
       } = await signUp(
         email,
-        fullPhone,
+        fullPhone, // Use the full international phone number
         password,
         {
           first_name: firstName,
           last_name: lastName,
-          phone: fullPhone,
+          phone: fullPhone, // Store the phone number directly
           countryCode: countryCode.code,
           name: `${firstName} ${lastName}`.trim(),
           address,

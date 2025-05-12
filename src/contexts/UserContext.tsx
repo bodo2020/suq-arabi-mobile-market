@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -71,15 +72,48 @@ export const UserProvider = ({ children }) => {
         if (error) throw error;
         return { data };
       } else {
-        // Use the phone number as the email for authentication
-        const formattedPhone = formatPhoneAsEmail(username);
+        // For phone numbers, no longer convert to email format
+        // Instead, check if we need to directly use the phone number
+        // or look up the user by phone number from the customers table
         
+        // First try direct signin if the user registered with phone
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: formattedPhone,
+          email: username,
           password,
         });
-
-        if (error) throw error;
+        
+        // If direct sign in fails, try looking up the user by phone number
+        if (error) {
+          // Look up the user by phone number from customers table
+          const { data: customerData } = await supabase
+            .from('customers')
+            .select('user_id')
+            .eq('phone', username)
+            .single();
+            
+          if (customerData?.user_id) {
+            // If we found a user with this phone, try to get their email
+            const { data: userData } = await supabase.auth.admin.getUserById(
+              customerData.user_id
+            );
+            
+            if (userData?.user?.email) {
+              // Try to sign in with the retrieved email
+              const signInResult = await supabase.auth.signInWithPassword({
+                email: userData.user.email,
+                password,
+              });
+              
+              if (!signInResult.error) {
+                return { data: signInResult.data };
+              }
+            }
+          }
+          
+          // If all attempts failed, throw the original error
+          throw error;
+        }
+        
         return { data };
       }
     } catch (error) {
@@ -91,9 +125,8 @@ export const UserProvider = ({ children }) => {
   // Function to sign up with both email and phone
   const signUp = async (email: string, phone: string, password: string, additionalData?: any) => {
     try {
-      // Use the phone number as the email for authentication if no email is provided
-      const formattedPhone = formatPhoneAsEmail(phone);
-      const loginEmail = email || formattedPhone;
+      // Store the real phone number without formatting it as an email
+      const loginEmail = email || phone;
       
       const { data, error } = await supabase.auth.signUp({
         email: loginEmail,
@@ -103,7 +136,6 @@ export const UserProvider = ({ children }) => {
             ...additionalData,
             email: email,
             phone: phone,
-            phone_as_email: formattedPhone,
           },
         },
       });
@@ -153,7 +185,7 @@ export const UserProvider = ({ children }) => {
     try {
       // Check if username is email or phone
       const isEmail = username.includes('@');
-      const resetEmail = isEmail ? username : formatPhoneAsEmail(username);
+      const resetEmail = isEmail ? username : username;
       
       const { data, error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/update-password`,
@@ -165,14 +197,6 @@ export const UserProvider = ({ children }) => {
       console.error("Error resetting password:", error);
       return { error };
     }
-  };
-
-  // Helper function to format phone as email
-  const formatPhoneAsEmail = (phone: string): string => {
-    // Clean the phone number (remove any non-digit characters)
-    const cleanPhone = phone.replace(/\D/g, '');
-    // Format as an email-like string
-    return `${cleanPhone}@phone.user`;
   };
 
   // Function to sign in with phone verification

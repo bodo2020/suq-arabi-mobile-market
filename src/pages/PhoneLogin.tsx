@@ -94,6 +94,7 @@ const PhoneLogin = () => {
         return;
       }
       
+      // Format the phone number for login
       loginUsername = formatInternationalPhone(username, countryCode);
     } else if (!validateEmail(username)) {
       setErrors(prev => ({ ...prev, username: "يرجى إدخال بريد إلكتروني صحيح" }));
