@@ -1,31 +1,37 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, ArrowRight, Loader, KeyRound, Mail } from 'lucide-react';
+import { ArrowRight, Loader, KeyRound, User } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const PhoneLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn } = useUser();
   
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loginMethod, setLoginMethod] = useState('phone');
+  const [isPhoneInput, setIsPhoneInput] = useState(false);
   const [countryCode, setCountryCode] = useState<Country>({ name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' });
   const [errors, setErrors] = useState({
-    phone: "",
-    email: "",
+    username: "",
     password: ""
   });
   
+  // Detect if input is likely a phone number
+  const detectInputType = (value: string) => {
+    // Simple detection: if it has digits and no @ symbol, likely a phone
+    const hasDigits = /\d/.test(value);
+    const hasEmailSymbol = /@/.test(value);
+    setIsPhoneInput(hasDigits && !hasEmailSymbol);
+  };
+
   // Format phone number based on country
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
     // First remove all non-digit characters
@@ -64,44 +70,35 @@ const PhoneLogin = () => {
     
     // Reset all errors first
     setErrors({
-      phone: "",
-      email: "",
+      username: "",
       password: ""
     });
     
-    // Validate input based on login method
-    let username = "";
+    // Validate input
+    if (!username) {
+      setErrors(prev => ({ ...prev, username: "يرجى إدخال البريد الإلكتروني أو رقم الهاتف" }));
+      return;
+    }
     
-    if (loginMethod === 'phone') {
-      const cleanPhone = formatPhoneNumber(phone, countryCode);
-      
-      if (!cleanPhone) {
-        setErrors(prev => ({ ...prev, phone: "يرجى إدخال رقم هاتف" }));
-        return;
-      }
+    let loginUsername = username;
+    
+    // If it looks like a phone number, validate and format it
+    if (isPhoneInput) {
+      const cleanPhone = formatPhoneNumber(username, countryCode);
       
       // For Egypt, validate Egyptian phone format
       if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
         setErrors(prev => ({ 
           ...prev, 
-          phone: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)"
+          username: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)"
         }));
         return;
       }
       
-      username = formatInternationalPhone(phone, countryCode);
-    } else {
-      if (!email) {
-        setErrors(prev => ({ ...prev, email: "يرجى إدخال البريد الإلكتروني" }));
-        return;
-      }
-      
-      if (!validateEmail(email)) {
-        setErrors(prev => ({ ...prev, email: "يرجى إدخال بريد إلكتروني صحيح" }));
-        return;
-      }
-      
-      username = email;
+      loginUsername = formatInternationalPhone(username, countryCode);
+    } else if (!validateEmail(username)) {
+      setErrors(prev => ({ ...prev, username: "يرجى إدخال بريد إلكتروني صحيح" }));
+      return;
     }
     
     if (!password) {
@@ -113,7 +110,7 @@ const PhoneLogin = () => {
     
     try {
       // Sign in with username (email or phone) and password
-      const { error } = await signIn(username, password);
+      const { error } = await signIn(loginUsername, password);
       
       if (error) {
         throw error;
@@ -138,6 +135,10 @@ const PhoneLogin = () => {
     }
   };
   
+  const handleForgotPassword = () => {
+    navigate('/forgot-password');
+  };
+  
   return (
     <MainLayout>
       <div className="p-4 max-w-md mx-auto">
@@ -156,102 +157,85 @@ const PhoneLogin = () => {
         </div>
         
         <div className="bg-white rounded-lg p-6 shadow-sm space-y-6">
-          <Tabs defaultValue="phone" onValueChange={setLoginMethod}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="phone">رقم الهاتف</TabsTrigger>
-              <TabsTrigger value="email">البريد الإلكتروني</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="phone">
-              <div>
-                <div className="flex items-center mb-2">
-                  <Phone size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
-                </div>
-                
-                <div className="flex gap-2 items-center">
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center mb-2">
+                <User size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="username" className="font-medium">البريد الإلكتروني أو رقم الهاتف</label>
+              </div>
+              
+              <div className="flex gap-2 items-center">
+                {isPhoneInput && (
                   <CountryCodeSelector 
                     value={countryCode}
                     onChange={setCountryCode}
                     className="min-w-[80px]"
                   />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(e.target.value);
-                      setErrors(prev => ({ ...prev, phone: "" }));
-                    }}
-                    className="text-right ltr flex-1"
-                    placeholder={countryCode.code === 'EG' ? "1xxxxxxxxx" : "xxx-xxxx-xxx"}
-                    dir="ltr"
-                  />
-                </div>
-                
-                <p className="text-xs text-gray-500 mt-1 text-right">
-                  {countryCode.code === 'EG' 
-                    ? 'أدخل رقم الهاتف المصري الذي يبدأ بـ 1 (مثال: 1xxxxxxxxx)' 
-                    : 'أدخل رقم الهاتف بدون رمز الدولة'}
-                </p>
-                
-                {errors.phone && (
-                  <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                 )}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="email">
-              <div>
-                <div className="flex items-center mb-2">
-                  <Mail size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
-                </div>
-                
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
+                  id="username"
+                  type="text"
+                  value={username}
                   onChange={(e) => {
-                    setEmail(e.target.value);
-                    setErrors(prev => ({ ...prev, email: "" }));
+                    const value = e.target.value;
+                    setUsername(value);
+                    detectInputType(value);
+                    setErrors(prev => ({ ...prev, username: "" }));
                   }}
-                  className="text-right ltr"
-                  placeholder="example@domain.com"
+                  className="text-right ltr flex-1"
+                  placeholder="example@domain.com أو 1xxxxxxxxx"
                   dir="ltr"
                 />
-                
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                )}
               </div>
-            </TabsContent>
-          </Tabs>
-          
-          <div>
-            <div className="flex items-center mb-2">
-              <KeyRound size={18} className="ml-2 text-gray-500" />
-              <label htmlFor="password" className="font-medium">كلمة المرور</label>
+              
+              <p className="text-xs text-gray-500 mt-1 text-right">
+                {isPhoneInput
+                  ? (countryCode.code === 'EG' 
+                      ? 'أدخل رقم الهاتف المصري الذي يبدأ بـ 1 (مثال: 1xxxxxxxxx)' 
+                      : 'أدخل رقم الهاتف بدون رمز الدولة')
+                  : 'أدخل البريد الإلكتروني الخاص بك'}
+              </p>
+              
+              {errors.username && (
+                <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+              )}
             </div>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setErrors(prev => ({ ...prev, password: "" }));
-              }}
-              className="text-right"
-              placeholder="*********"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleLogin();
-                }
-              }}
-            />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-            )}
+            
+            <div>
+              <div className="flex items-center mb-2">
+                <KeyRound size={18} className="ml-2 text-gray-500" />
+                <label htmlFor="password" className="font-medium">كلمة المرور</label>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrors(prev => ({ ...prev, password: "" }));
+                }}
+                className="text-right"
+                placeholder="*********"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleLogin();
+                  }
+                }}
+              />
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+              )}
+              
+              <div className="flex justify-end mt-1">
+                <button 
+                  onClick={handleForgotPassword} 
+                  className="text-sm text-primary hover:underline"
+                  type="button"
+                >
+                  نسيت كلمة المرور؟
+                </button>
+              </div>
+            </div>
           </div>
               
           <Button
@@ -260,12 +244,13 @@ const PhoneLogin = () => {
             className="w-full"
           >
             {loading ? (
-              <Loader size={16} className="animate-spin mr-2" />
+              <Loader size={16} className="animate-spin ml-2" />
             ) : null}
             تسجيل الدخول
           </Button>
               
           <div className="flex justify-center text-sm">
+            <span className="text-gray-500 ml-2">ليس لديك حساب؟</span>
             <button
               onClick={() => navigate('/register')}
               className="text-primary"

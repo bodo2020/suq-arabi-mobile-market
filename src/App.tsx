@@ -21,6 +21,7 @@ import BulkProducts from './pages/BulkProducts';
 import Favorites from './pages/Favorites';
 import NotFound from './pages/NotFound';
 import PhoneLogin from './pages/PhoneLogin';
+import ForgotPassword from './pages/ForgotPassword';
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
@@ -55,6 +56,7 @@ function App() {
             <Route path="/account" element={<Account />} />
             <Route path="/register" element={<Register />} />
             <Route path="/phone-login" element={<PhoneLogin />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/address-manager" element={<AddressManager />} />
             <Route path="/addresses" element={<Navigate to="/address-manager" replace />} />
             <Route path="/edit-account" element={<EditAccount />} />
