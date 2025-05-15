@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
@@ -19,6 +20,7 @@ const FullMapView: React.FC = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
+  const [googleInitialized, setGoogleInitialized] = useState(false);
   
   // Refs for Google Maps objects
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -160,12 +162,14 @@ const FullMapView: React.FC = () => {
   
   // Initialize the map once the script is loaded and the container is ready
   useEffect(() => {
-    if (!mapContainerRef.current || !mapScriptLoaded || !window.google || !window.google.maps) {
+    // Safety check to ensure we only initialize once and all requirements are met
+    if (!mapContainerRef.current || !mapScriptLoaded || !window.google || !window.google.maps || googleInitialized) {
       return;
     }
     
     try {
       console.log("Initializing Google Maps");
+      setGoogleInitialized(true);
       
       // Create map options
       const mapOptions: google.maps.MapOptions = {
@@ -180,40 +184,54 @@ const FullMapView: React.FC = () => {
         gestureHandling: 'greedy' // Makes the map easier to use on mobile
       };
 
-      // Create new map instance
-      const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
-      mapRef.current = map;
-      
-      // Create marker
-      const marker = new window.google.maps.Marker({
-        position: { lat: initialLat, lng: initialLng },
-        map: map,
-        draggable: true,
-        animation: window.google.maps.Animation.DROP,
-      });
-      markerRef.current = marker;
-      
-      // Get initial location address
-      reverseGeocode(initialLat, initialLng);
-      
-      setMapLoaded(true);
+      // Create new map instance with a delay to ensure the container is fully rendered
+      setTimeout(() => {
+        if (mapContainerRef.current && window.google && window.google.maps) {
+          try {
+            const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
+            mapRef.current = map;
+            
+            // Create marker
+            const marker = new window.google.maps.Marker({
+              position: { lat: initialLat, lng: initialLng },
+              map: map,
+              draggable: true,
+              animation: window.google.maps.Animation.DROP,
+            });
+            markerRef.current = marker;
+            
+            // Get initial location address
+            reverseGeocode(initialLat, initialLng);
+            
+            setMapLoaded(true);
 
-      // Add event listeners
-      const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
-          marker.setPosition(e.latLng);
-          reverseGeocode(e.latLng.lat(), e.latLng.lng());
-        }
-      });
-      listenersRef.current.push(clickListener);
+            // Add event listeners
+            const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+              if (e.latLng) {
+                marker.setPosition(e.latLng);
+                reverseGeocode(e.latLng.lat(), e.latLng.lng());
+              }
+            });
+            listenersRef.current.push(clickListener);
 
-      const dragendListener = marker.addListener('dragend', () => {
-        const position = marker.getPosition();
-        if (position) {
-          reverseGeocode(position.lat(), position.lng());
+            const dragendListener = marker.addListener('dragend', () => {
+              const position = marker.getPosition();
+              if (position) {
+                reverseGeocode(position.lat(), position.lng());
+              }
+            });
+            listenersRef.current.push(dragendListener);
+          } catch (error) {
+            console.error("Error creating map:", error);
+            toast({
+              title: "خطأ",
+              description: "حدث خطأ أثناء إنشاء الخريطة",
+              variant: "destructive"
+            });
+          }
         }
-      });
-      listenersRef.current.push(dragendListener);
+      }, 300);
+      
     } catch (error) {
       console.error("Error initializing map:", error);
       toast({
@@ -222,7 +240,7 @@ const FullMapView: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [initialLat, initialLng, mapScriptLoaded, toast]);
+  }, [initialLat, initialLng, mapScriptLoaded, toast, googleInitialized]);
 
   // Get user's current location
   const getUserLocation = () => {
