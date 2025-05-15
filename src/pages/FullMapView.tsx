@@ -219,11 +219,20 @@ const FullMapView: React.FC = () => {
               // Create marker only after map is idle
               if (mapRef.current) {
                 try {
+                  // Create and display the marker with animation
                   const marker = new window.google.maps.Marker({
                     position: { lat: initialLat, lng: initialLng },
                     map: mapRef.current,
                     draggable: true,
                     animation: window.google.maps.Animation.DROP,
+                    icon: {
+                      path: window.google.maps.SymbolPath.CIRCLE,
+                      fillColor: '#4285F4',
+                      fillOpacity: 1,
+                      strokeColor: '#FFFFFF',
+                      strokeWeight: 2,
+                      scale: 10,
+                    }
                   });
                   markerRef.current = marker;
                   
@@ -498,6 +507,12 @@ const FullMapView: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
           </div>
         )}
+        
+        {/* Center pin marker overlay (appears when dragging) */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-0">
+          <MapPin size={36} color="#4285F4" strokeWidth={2.5} />
+        </div>
+        
         {/* Zoom in button overlay */}
         {mapLoaded && (
           <div className="absolute top-4 end-4 z-10">
