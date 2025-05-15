@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 
@@ -44,6 +44,7 @@ export const useLocation = () => {
       }
     }
 
+    // Always try to get current location regardless of saved coordinates
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
@@ -63,13 +64,17 @@ export const useLocation = () => {
         }
       },
       (error) => {
-        setLocation(prev => ({
-          ...prev,
-          error: error.message,
-          loading: false
-        }));
         console.error('Location error:', error);
-      }
+        // Only update error if we don't have saved coordinates
+        if (!savedLat || !savedLng) {
+          setLocation(prev => ({
+            ...prev,
+            error: error.message,
+            loading: false
+          }));
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }, [user]);
   

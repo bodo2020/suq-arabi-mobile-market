@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Script from '@/components/ui/Script';
+import { useLocation as useUserLocation } from '@/hooks/useLocation';
 
 interface SelectedLocation {
   lat: number;
@@ -20,10 +20,9 @@ const FullMapView: React.FC = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
-  const [googleInitialized, setGoogleInitialized] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
   const [locationPermissionRequested, setLocationPermissionRequested] = useState(false);
-  const mapInitializedRef = useRef(false);
-  const componentMountedRef = useRef(true);
+  const userLocation = useUserLocation();
   
   // Refs for Google Maps objects
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -31,9 +30,8 @@ const FullMapView: React.FC = () => {
   const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
   
   const queryParams = new URLSearchParams(location.search);
-  // Using the specified coordinates as default, or get them from query params if present
-  const initialLat = parseFloat(queryParams.get('lat') || '31.256702071282238');
-  const initialLng = parseFloat(queryParams.get('lng') || '31.167919046401884');
+  const initialLat = parseFloat(queryParams.get('lat') || '30.0444');
+  const initialLng = parseFloat(queryParams.get('lng') || '31.2357');
   const addressId = queryParams.get('addressId');
 
   // Dark mode map style
@@ -130,18 +128,8 @@ const FullMapView: React.FC = () => {
   // Handle Google Maps script loading
   const handleMapScriptLoad = () => {
     console.log("Google Maps script loaded");
-    if (componentMountedRef.current) {
-      setMapScriptLoaded(true);
-    }
+    setMapScriptLoaded(true);
   };
-  
-  // Set componentMountedRef to false when component unmounts
-  useEffect(() => {
-    componentMountedRef.current = true;
-    return () => {
-      componentMountedRef.current = false;
-    };
-  }, []);
   
   // Clean up maps resources on unmount
   useEffect(() => {
@@ -171,148 +159,111 @@ const FullMapView: React.FC = () => {
       }
       
       mapRef.current = null;
-      mapInitializedRef.current = false;
+      setMapInitialized(false);
     };
   }, []);
   
   // Initialize the map once the script is loaded and the container is ready
   useEffect(() => {
-    // Safety check to ensure we only initialize once and all requirements are met
-    if (!mapContainerRef.current || !mapScriptLoaded || !window.google?.maps || googleInitialized || mapInitializedRef.current || !componentMountedRef.current) {
+    if (!mapContainerRef.current || !mapScriptLoaded || !window.google?.maps || mapInitialized) {
       return;
     }
-    
-    // Set flag to prevent duplicate initialization
-    mapInitializedRef.current = true;
+
+    console.log("Initializing Google Maps");
+    setMapInitialized(true);
     
     try {
-      console.log("Initializing Google Maps");
-      setGoogleInitialized(true);
-      
       // Create map options
       const mapOptions: google.maps.MapOptions = {
         center: { lat: initialLat, lng: initialLng },
-        zoom: 14, // Closer zoom level for better view of the area
+        zoom: 14,
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
-        styles: darkMapStyle, // Apply dark style
-        backgroundColor: '#242f3e', // Dark background color
-        zoomControl: true, // Enable zoom controls
-        gestureHandling: 'greedy' // Makes the map easier to use on mobile
+        styles: darkMapStyle,
+        backgroundColor: '#242f3e',
+        zoomControl: true,
+        gestureHandling: 'greedy'
       };
 
-      // Create new map instance with a delay to ensure the container is fully rendered
-      const timeoutId = setTimeout(() => {
-        if (mapContainerRef.current && window.google?.maps && !mapRef.current && componentMountedRef.current) {
-          try {
-            // Create map instance
-            const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
-            mapRef.current = map;
-            
-            // Wait for map to be initialized before adding markers
-            const mapIdleListener = map.addListener('idle', () => {
-              if (!componentMountedRef.current) {
-                return;
-              }
-              
-              // Create marker only after map is idle
-              if (mapRef.current) {
-                try {
-                  // Create and display the marker with animation
-                  // Using a standard marker with custom icon URL instead of SymbolPath
-                  const marker = new window.google.maps.Marker({
-                    position: { lat: initialLat, lng: initialLng },
-                    map: mapRef.current,
-                    draggable: true,
-                    animation: window.google.maps.Animation.DROP,
-                    icon: {
-                      url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
-                        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#4285F4" stroke="#FFFFFF" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg>'
-                      ),
-                      scaledSize: new window.google.maps.Size(20, 20),
-                      anchor: new window.google.maps.Point(10, 10)
-                    }
-                  });
-                  markerRef.current = marker;
-                  
-                  // Get initial location address
-                  reverseGeocode(initialLat, initialLng);
-                  
-                  if (componentMountedRef.current) {
-                    setMapLoaded(true);
-                  }
-  
-                  // Add event listeners
-                  if (componentMountedRef.current) {
-                    const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
-                      if (e.latLng && markerRef.current) {
-                        markerRef.current.setPosition(e.latLng);
-                        reverseGeocode(e.latLng.lat(), e.latLng.lng());
-                      }
-                    });
-                    listenersRef.current.push(clickListener);
-    
-                    const dragendListener = marker.addListener('dragend', () => {
-                      const position = marker.getPosition();
-                      if (position) {
-                        reverseGeocode(position.lat(), position.lng());
-                      }
-                    });
-                    listenersRef.current.push(dragendListener);
-                  }
+      // Create new map instance
+      const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
+      mapRef.current = map;
 
-                  // Remove the idle listener after first use
-                  if (mapIdleListener) {
-                    mapIdleListener.remove();
-                  }
-                  
-                  // Request location access after map is loaded
-                  if (!locationPermissionRequested && componentMountedRef.current) {
-                    setTimeout(() => {
-                      if (componentMountedRef.current) {
-                        requestLocationAccess();
-                      }
-                    }, 1000);
-                  }
-                } catch (error) {
-                  console.error("Error setting up marker:", error);
-                }
+      // Create marker only after map is idle
+      const mapIdleListener = map.addListener('idle', () => {
+        if (mapRef.current) {
+          try {
+            // Create and display the marker
+            const marker = new window.google.maps.Marker({
+              position: { lat: initialLat, lng: initialLng },
+              map: mapRef.current,
+              draggable: true,
+              animation: window.google.maps.Animation.DROP,
+              icon: {
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+                  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#4285F4" stroke="#FFFFFF" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg>'
+                ),
+                scaledSize: new window.google.maps.Size(20, 20),
+                anchor: new window.google.maps.Point(10, 10)
               }
             });
+            markerRef.current = marker;
             
-          } catch (error) {
-            console.error("Error creating map:", error);
-            if (componentMountedRef.current) {
-              toast({
-                title: "خطأ",
-                description: "حدث خطأ أثناء إنشاء الخريطة",
-                variant: "destructive"
-              });
+            // Get initial location address
+            reverseGeocode(initialLat, initialLng);
+            
+            setMapLoaded(true);
+
+            // Add event listeners
+            const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+              if (e.latLng && markerRef.current) {
+                markerRef.current.setPosition(e.latLng);
+                reverseGeocode(e.latLng.lat(), e.latLng.lng());
+              }
+            });
+            listenersRef.current.push(clickListener);
+
+            const dragendListener = marker.addListener('dragend', () => {
+              const position = marker.getPosition();
+              if (position) {
+                reverseGeocode(position.lat(), position.lng());
+              }
+            });
+            listenersRef.current.push(dragendListener);
+
+            // Remove the idle listener after first use
+            mapIdleListener.remove();
+            
+            // Request location access after map is loaded
+            if (!locationPermissionRequested) {
+              setTimeout(() => {
+                requestLocationAccess();
+              }, 1000);
             }
+          } catch (error) {
+            console.error("Error setting up marker:", error);
+            toast({
+              title: "خطأ",
+              description: "حدث خطأ أثناء إنشاء العلامة على الخريطة",
+              variant: "destructive"
+            });
           }
         }
-      }, 500); // Increased timeout for more reliability
-      
-      return () => {
-        clearTimeout(timeoutId);
-      };
-      
+      });
+
     } catch (error) {
       console.error("Error initializing map:", error);
-      if (componentMountedRef.current) {
-        toast({
-          title: "خطأ",
-          description: "حدث خطأ أثناء تهيئة الخريطة",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تهيئة الخريطة",
+        variant: "destructive"
+      });
     }
-  }, [initialLat, initialLng, mapScriptLoaded, toast, googleInitialized, darkMapStyle, locationPermissionRequested]);
+  }, [initialLat, initialLng, mapScriptLoaded, darkMapStyle, locationPermissionRequested, toast]);
 
   // Request user's location permission
   const requestLocationAccess = () => {
-    if (!componentMountedRef.current) return;
     setLocationPermissionRequested(true);
     
     toast({
@@ -346,7 +297,7 @@ const FullMapView: React.FC = () => {
 
   // Get user's current location
   const getUserLocation = () => {
-    if (!mapRef.current || !markerRef.current || !componentMountedRef.current) {
+    if (!mapRef.current || !markerRef.current) {
       toast({
         title: "خطأ",
         description: "الخريطة غير جاهزة بعد",
@@ -363,8 +314,6 @@ const FullMapView: React.FC = () => {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          if (!componentMountedRef.current) return;
-          
           console.log("Got user location:", position.coords);
           const userLocation = {
             lat: position.coords.latitude,
@@ -373,7 +322,7 @@ const FullMapView: React.FC = () => {
           
           if (mapRef.current && markerRef.current) {
             mapRef.current.setCenter(userLocation);
-            mapRef.current.setZoom(16); // More zoomed in when finding user location
+            mapRef.current.setZoom(16);
             markerRef.current.setPosition(userLocation);
             
             reverseGeocode(userLocation.lat, userLocation.lng);
@@ -385,12 +334,9 @@ const FullMapView: React.FC = () => {
           });
         },
         (error) => {
-          if (!componentMountedRef.current) return;
-          
           console.error("Geolocation error:", error);
           let errorMessage = "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا";
           
-          // Provide more specific error messages based on the error code
           if (error.code === 1) {
             errorMessage = "تم رفض الوصول إلى الموقع. يرجى تفعيل خدمة تحديد المواقع في إعدادات المتصفح";
           } else if (error.code === 2) {
@@ -431,7 +377,7 @@ const FullMapView: React.FC = () => {
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = (lat: number, lng: number) => {
-    if (!window.google || !window.google.maps || !componentMountedRef.current) {
+    if (!window.google || !window.google.maps) {
       console.error("Google Maps not loaded");
       return;
     }
@@ -439,8 +385,6 @@ const FullMapView: React.FC = () => {
     try {
       const geocoder = new window.google.maps.Geocoder();
       geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        if (!componentMountedRef.current) return;
-        
         if (status === "OK" && results && results[0]) {
           const addressText = results[0].formatted_address;
           setSelectedLocation({ lat, lng, address: addressText });
@@ -449,17 +393,27 @@ const FullMapView: React.FC = () => {
           localStorage.setItem('selectedLat', lat.toString());
           localStorage.setItem('selectedLng', lng.toString());
           localStorage.setItem('selectedAddress', addressText);
+          
+          console.log("Location selected and saved:", { lat, lng, address: addressText });
         } else {
           console.error("Geocoder failed due to: " + status);
+          // Still save the coordinates even if we can't get an address
+          setSelectedLocation({ lat, lng, address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+          localStorage.setItem('selectedLat', lat.toString());
+          localStorage.setItem('selectedLng', lng.toString());
+          
           toast({
-            title: "خطأ",
-            description: "تعذر الحصول على العنوان لهذا الموقع",
-            variant: "destructive"
+            title: "تنبيه",
+            description: "تم حفظ الإحداثيات لكن تعذر الحصول على العنوان"
           });
         }
       });
     } catch (error) {
       console.error("Geocoder error:", error);
+      // Still save coordinates even if geocoder fails
+      setSelectedLocation({ lat, lng, address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+      localStorage.setItem('selectedLat', lat.toString());
+      localStorage.setItem('selectedLng', lng.toString());
     }
   };
 
@@ -484,7 +438,7 @@ const FullMapView: React.FC = () => {
   return (
     <div className="fixed inset-0 bg-[#222222] flex flex-col z-50">
       <Script 
-        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype`}
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places"
         onLoad={handleMapScriptLoad}
         onError={(error) => console.error("Google Maps script error:", error)}
       />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, MapPin, Map as MapIcon } from 'lucide-react';
@@ -51,8 +50,14 @@ const Address = () => {
         longitude: parseFloat(lng)
       }));
       setAddressFromMap(decodeURIComponent(mapAddress));
+      
+      // Show success message
+      toast({
+        title: "تم تحديد الموقع",
+        description: "تم تحديد موقعك بنجاح على الخريطة"
+      });
     }
-  }, [location.search]);
+  }, [location.search, toast]);
 
   useEffect(() => {
     // Load saved address if any
@@ -290,7 +295,7 @@ const Address = () => {
   return (
     <MainLayout>
       <Script 
-        src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places`}
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places"
         onLoad={() => setMapsLoaded(true)} 
       />
       
