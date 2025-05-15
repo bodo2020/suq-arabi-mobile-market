@@ -109,6 +109,32 @@ export type Order = {
   created_at: string;
 };
 
+// New types for return requests
+export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export type ReturnRequest = {
+  id: string;
+  user_id: string;
+  order_id: string;
+  reason: string;
+  status: ReturnRequestStatus;
+  created_at: string;
+  updated_at: string;
+  admin_notes?: string;
+  images: string[];
+};
+
+export type ReturnRequestItem = {
+  id: string;
+  return_request_id: string;
+  product_id: string;
+  quantity: number;
+  reason?: string;
+  created_at: string;
+  // Join properties
+  products?: Product;
+};
+
 // Fetching functions
 export async function getCategories() {
   const { data, error } = await supabase.from('main_categories').select('*');
@@ -258,4 +284,103 @@ export async function createOrUpdateCustomer(customerData: {
   
   if (error) console.error(`Error creating/updating customer:`, error);
   return data;
+}
+
+// New function to get return requests for a user
+export async function getUserReturnRequests(userId: string) {
+  const { data, error } = await supabase
+    .from('return_requests')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  
+  if (error) console.error('Error fetching return requests:', error);
+  return data as ReturnRequest[] || [];
+}
+
+// Function to get return request items for a specific return request
+export async function getReturnRequestItems(returnRequestId: string) {
+  const { data, error } = await supabase
+    .from('return_request_items')
+    .select(`
+      *,
+      products(*)
+    `)
+    .eq('return_request_id', returnRequestId);
+  
+  if (error) console.error('Error fetching return request items:', error);
+  return data as ReturnRequestItem[] || [];
+}
+
+// Function to create a return request
+export async function createReturnRequest(
+  userId: string,
+  orderId: string,
+  reason: string,
+  items: { productId: string; quantity: number; reason?: string }[],
+  images: string[]
+) {
+  // First create the return request
+  const { data: returnRequest, error: returnRequestError } = await supabase
+    .from('return_requests')
+    .insert({
+      user_id: userId,
+      order_id: orderId,
+      reason,
+      images
+    })
+    .select()
+    .single();
+  
+  if (returnRequestError) {
+    console.error('Error creating return request:', returnRequestError);
+    throw returnRequestError;
+  }
+  
+  // Then create the return request items
+  const returnItems = items.map(item => ({
+    return_request_id: returnRequest.id,
+    product_id: item.productId,
+    quantity: item.quantity,
+    reason: item.reason
+  }));
+  
+  const { error: itemsError } = await supabase
+    .from('return_request_items')
+    .insert(returnItems);
+  
+  if (itemsError) {
+    console.error('Error creating return request items:', itemsError);
+    throw itemsError;
+  }
+  
+  return returnRequest;
+}
+
+// Function to upload images for a return request
+export async function uploadReturnImages(files: File[]) {
+  const uploadedUrls: string[] = [];
+  
+  for (const file of files) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `returns/${fileName}`;
+    
+    const { error: uploadError, data } = await supabase.storage
+      .from('returns')
+      .upload(filePath, file);
+    
+    if (uploadError) {
+      console.error('Error uploading file:', uploadError);
+      continue;
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('returns')
+      .getPublicUrl(filePath);
+    
+    uploadedUrls.push(publicUrl);
+  }
+  
+  return uploadedUrls;
 }

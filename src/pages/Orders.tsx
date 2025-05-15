@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Package, Home, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Package, Home, ShoppingCart, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,12 @@ const Orders = () => {
   const currentOrders = orders?.filter(order => ['waiting', 'ready'].includes(order.status)) || [];
   const previousOrders = orders?.filter(order => ['shipped', 'done'].includes(order.status)) || [];
   const activeOrders = activeTab === 'current' ? currentOrders : previousOrders;
+  
+  // Check if return is available for an order (only for completed orders)
+  const canReturnOrder = (order: any) => {
+    return order.status === 'done';
+  };
+  
   return <MainLayout>
       <div className="py-4 px-4 max-w-lg mx-auto">
         <div className="flex items-center mb-6">
@@ -88,6 +95,15 @@ const Orders = () => {
             {`الطلبات السابقة (${previousOrders.length})`}
           </button>
         </div>
+
+        <Button 
+          variant="outline" 
+          className="mb-4 w-full"
+          onClick={() => navigate('/return-requests')}
+        >
+          <RefreshCw className="ml-2 h-4 w-4" />
+          عرض طلبات الإرجاع
+        </Button>
 
         {isLoading ? <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -167,6 +183,19 @@ const Orders = () => {
                     </ul>
                   </div>
                 </div>
+                
+                {canReturnOrder(order) && (
+                  <div className="mt-4 pt-3 border-t">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => navigate(`/create-return/${order.id}`)}
+                    >
+                      <RefreshCw className="ml-2 h-4 w-4" />
+                      طلب إرجاع
+                    </Button>
+                  </div>
+                )}
               </div>)}
           </div>}
         

@@ -22,6 +22,8 @@ import Favorites from './pages/Favorites';
 import NotFound from './pages/NotFound';
 import PhoneLogin from './pages/PhoneLogin';
 import ForgotPassword from './pages/ForgotPassword';
+import ReturnRequests from './pages/ReturnRequests';
+import CreateReturnRequest from './pages/CreateReturnRequest';
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
@@ -67,6 +69,8 @@ function App() {
             <Route path="/barcode-scan" element={<BarcodeScanner />} />
             <Route path="/bulk-products" element={<BulkProducts />} />
             <Route path="/favorites" element={<Favorites />} />
+            <Route path="/return-requests" element={<ReturnRequests />} />
+            <Route path="/create-return/:orderId" element={<CreateReturnRequest />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
