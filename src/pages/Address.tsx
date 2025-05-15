@@ -39,6 +39,12 @@ const Address = () => {
     const mapAddress = queryParams.get('address');
     
     if (lat && lng && mapAddress) {
+      // Save coordinates in local storage for persistence
+      localStorage.setItem('selectedLat', lat);
+      localStorage.setItem('selectedLng', lng);
+      localStorage.setItem('selectedAddress', decodeURIComponent(mapAddress));
+      
+      // Update state with new coordinates
       setMapLocation(prev => ({
         ...prev,
         latitude: parseFloat(lat),
@@ -265,8 +271,14 @@ const Address = () => {
   };
 
   const handleOpenMapView = () => {
-    // Navigate to full map view with current location
-    navigate(`/map-view?lat=${mapLocation.latitude || 30.0444}&lng=${mapLocation.longitude || 31.2357}${addressId ? `&addressId=${addressId}` : ''}`);
+    // Navigate to full map view with current location or saved coordinates
+    const savedLat = localStorage.getItem('selectedLat');
+    const savedLng = localStorage.getItem('selectedLng');
+    
+    const lat = mapLocation.latitude || (savedLat ? parseFloat(savedLat) : 30.0444);
+    const lng = mapLocation.longitude || (savedLng ? parseFloat(savedLng) : 31.2357);
+    
+    navigate(`/map-view?lat=${lat}&lng=${lng}${addressId ? `&addressId=${addressId}` : ''}`);
   };
 
   const handleUseMapAddress = () => {
@@ -325,7 +337,10 @@ const Address = () => {
               
               {addressFromMap && (
                 <div className="mt-2 flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                  <div className="text-sm text-gray-600 truncate flex-1">{addressFromMap}</div>
+                  <div className="text-sm text-gray-600 truncate flex-1">
+                    <div className="font-semibold mb-1">الإحداثيات: {mapLocation.latitude?.toFixed(6)}, {mapLocation.longitude?.toFixed(6)}</div>
+                    <div>{addressFromMap}</div>
+                  </div>
                   <button
                     type="button"
                     onClick={handleUseMapAddress}

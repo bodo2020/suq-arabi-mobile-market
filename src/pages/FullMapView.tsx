@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
@@ -443,6 +444,11 @@ const FullMapView: React.FC = () => {
         if (status === "OK" && results && results[0]) {
           const addressText = results[0].formatted_address;
           setSelectedLocation({ lat, lng, address: addressText });
+          
+          // Save coordinates to localStorage for persistence
+          localStorage.setItem('selectedLat', lat.toString());
+          localStorage.setItem('selectedLng', lng.toString());
+          localStorage.setItem('selectedAddress', addressText);
         } else {
           console.error("Geocoder failed due to: " + status);
           toast({
@@ -531,7 +537,13 @@ const FullMapView: React.FC = () => {
       {/* Footer */}
       <div className="p-4 bg-[#222222] border-t border-gray-700 text-white">
         {selectedLocation && (
-          <div className="mb-4 text-sm text-gray-300">{selectedLocation.address}</div>
+          <div className="mb-4 text-sm text-gray-300">
+            <div className="mb-1">
+              <span className="font-bold">الإحداثيات: </span>
+              <span>{selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</span>
+            </div>
+            <div>{selectedLocation.address}</div>
+          </div>
         )}
         
         <div className="flex space-x-3 space-x-reverse rtl:space-x-reverse">
