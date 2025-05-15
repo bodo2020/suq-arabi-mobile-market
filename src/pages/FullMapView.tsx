@@ -21,6 +21,7 @@ const FullMapView: React.FC = () => {
   const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   const [googleInitialized, setGoogleInitialized] = useState(false);
+  const mapInitializedRef = useRef(false);
   
   // Refs for Google Maps objects
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -157,15 +158,19 @@ const FullMapView: React.FC = () => {
       }
       
       mapRef.current = null;
+      mapInitializedRef.current = false;
     };
   }, []);
   
   // Initialize the map once the script is loaded and the container is ready
   useEffect(() => {
     // Safety check to ensure we only initialize once and all requirements are met
-    if (!mapContainerRef.current || !mapScriptLoaded || !window.google || !window.google.maps || googleInitialized) {
+    if (!mapContainerRef.current || !mapScriptLoaded || !window.google?.maps || googleInitialized || mapInitializedRef.current) {
       return;
     }
+    
+    // Set flag to prevent duplicate initialization
+    mapInitializedRef.current = true;
     
     try {
       console.log("Initializing Google Maps");
@@ -186,41 +191,52 @@ const FullMapView: React.FC = () => {
 
       // Create new map instance with a delay to ensure the container is fully rendered
       setTimeout(() => {
-        if (mapContainerRef.current && window.google && window.google.maps) {
+        if (mapContainerRef.current && window.google?.maps && !mapRef.current) {
           try {
+            // Create map instance
             const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
             mapRef.current = map;
             
-            // Create marker
-            const marker = new window.google.maps.Marker({
-              position: { lat: initialLat, lng: initialLng },
-              map: map,
-              draggable: true,
-              animation: window.google.maps.Animation.DROP,
-            });
-            markerRef.current = marker;
-            
-            // Get initial location address
-            reverseGeocode(initialLat, initialLng);
-            
-            setMapLoaded(true);
-
-            // Add event listeners
-            const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
-              if (e.latLng) {
-                marker.setPosition(e.latLng);
-                reverseGeocode(e.latLng.lat(), e.latLng.lng());
+            // Wait for map to be initialized before adding markers
+            google.maps.event.addListenerOnce(map, 'idle', () => {
+              // Create marker only after map is idle
+              if (mapRef.current) {
+                try {
+                  const marker = new window.google.maps.Marker({
+                    position: { lat: initialLat, lng: initialLng },
+                    map: mapRef.current,
+                    draggable: true,
+                    animation: window.google.maps.Animation.DROP,
+                  });
+                  markerRef.current = marker;
+                  
+                  // Get initial location address
+                  reverseGeocode(initialLat, initialLng);
+                  
+                  setMapLoaded(true);
+  
+                  // Add event listeners
+                  const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+                    if (e.latLng && markerRef.current) {
+                      markerRef.current.setPosition(e.latLng);
+                      reverseGeocode(e.latLng.lat(), e.latLng.lng());
+                    }
+                  });
+                  listenersRef.current.push(clickListener);
+  
+                  const dragendListener = marker.addListener('dragend', () => {
+                    const position = marker.getPosition();
+                    if (position) {
+                      reverseGeocode(position.lat(), position.lng());
+                    }
+                  });
+                  listenersRef.current.push(dragendListener);
+                } catch (error) {
+                  console.error("Error setting up marker:", error);
+                }
               }
             });
-            listenersRef.current.push(clickListener);
-
-            const dragendListener = marker.addListener('dragend', () => {
-              const position = marker.getPosition();
-              if (position) {
-                reverseGeocode(position.lat(), position.lng());
-              }
-            });
-            listenersRef.current.push(dragendListener);
+            
           } catch (error) {
             console.error("Error creating map:", error);
             toast({
@@ -230,7 +246,7 @@ const FullMapView: React.FC = () => {
             });
           }
         }
-      }, 300);
+      }, 500); // Increased timeout for more reliability
       
     } catch (error) {
       console.error("Error initializing map:", error);
@@ -240,11 +256,11 @@ const FullMapView: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [initialLat, initialLng, mapScriptLoaded, toast, googleInitialized]);
+  }, [initialLat, initialLng, mapScriptLoaded, toast, googleInitialized, darkMapStyle]);
 
   // Get user's current location
   const getUserLocation = () => {
-    if (!mapRef.current || !markerRef.current || !window.google || !window.google.maps) {
+    if (!mapRef.current || !markerRef.current) {
       toast({
         title: "خطأ",
         description: "الخريطة غير جاهزة بعد",
@@ -267,11 +283,13 @@ const FullMapView: React.FC = () => {
             lng: position.coords.longitude
           };
           
-          mapRef.current?.setCenter(userLocation);
-          mapRef.current?.setZoom(14); // More zoomed in when finding user location
-          markerRef.current?.setPosition(userLocation);
-          
-          reverseGeocode(userLocation.lat, userLocation.lng);
+          if (mapRef.current && markerRef.current) {
+            mapRef.current.setCenter(userLocation);
+            mapRef.current.setZoom(14); // More zoomed in when finding user location
+            markerRef.current.setPosition(userLocation);
+            
+            reverseGeocode(userLocation.lat, userLocation.lng);
+          }
           
           toast({
             title: "تم تحديد موقعك",
@@ -360,6 +378,7 @@ const FullMapView: React.FC = () => {
       <Script 
         src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype`}
         onLoad={handleMapScriptLoad}
+        onError={(error) => console.error("Google Maps script error:", error)}
       />
       
       {/* Header */}
@@ -386,17 +405,19 @@ const FullMapView: React.FC = () => {
           </div>
         )}
         {/* Zoom in button overlay */}
-        <div className="absolute top-4 end-4 z-10">
-          <Button
-            onClick={zoomIn}
-            variant="secondary"
-            size="icon"
-            className="bg-black/50 text-white hover:bg-black/70"
-            aria-label="تكبير"
-          >
-            <ZoomIn size={18} />
-          </Button>
-        </div>
+        {mapLoaded && (
+          <div className="absolute top-4 end-4 z-10">
+            <Button
+              onClick={zoomIn}
+              variant="secondary"
+              size="icon"
+              className="bg-black/50 text-white hover:bg-black/70"
+              aria-label="تكبير"
+            >
+              <ZoomIn size={18} />
+            </Button>
+          </div>
+        )}
       </div>
       
       {/* Footer */}
@@ -410,6 +431,7 @@ const FullMapView: React.FC = () => {
             onClick={getUserLocation}
             variant="outline"
             className="flex-1 border-gray-600 text-gray-200 hover:bg-gray-800"
+            disabled={!mapLoaded}
           >
             <MapPin size={16} className="ml-2" />
             تحديد موقعي
@@ -418,6 +440,7 @@ const FullMapView: React.FC = () => {
           <Button
             onClick={handleConfirmLocation}
             className="flex-1 bg-primary hover:bg-primary/90"
+            disabled={!selectedLocation}
           >
             <Check size={16} className="ml-2" />
             تأكيد الموقع
