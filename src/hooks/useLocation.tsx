@@ -43,7 +43,9 @@ export const useLocation = () => {
     // Function to handle getting the location
     const getLocation = () => {
       if (!navigator.geolocation) {
-        setLocation(prev => ({ ...prev, error: 'Geolocation is not supported', loading: false }));
+        if (isMountedRef.current) {
+          setLocation(prev => ({ ...prev, error: 'Geolocation is not supported', loading: false }));
+        }
         return;
       }
 
@@ -87,7 +89,7 @@ export const useLocation = () => {
             console.log('Location updated:', latitude, longitude);
             
             // If user is logged in, update the location in the database
-            if (user) {
+            if (user && isMountedRef.current) {
               updateLocationInDatabase(latitude, longitude);
             }
           },
@@ -111,6 +113,8 @@ export const useLocation = () => {
         // Store watch ID for cleanup
         watchIdRef.current = watchId;
       } catch (e) {
+        if (!isMountedRef.current) return;
+        
         console.error("Error setting up geolocation watch:", e);
         if (isMountedRef.current) {
           setLocation(prev => ({
@@ -134,7 +138,7 @@ export const useLocation = () => {
   }, [user]);
   
   const updateLocationInDatabase = async (latitude: number, longitude: number) => {
-    if (!user) return;
+    if (!user || !isMountedRef.current) return;
     
     try {
       // Get the JWT token

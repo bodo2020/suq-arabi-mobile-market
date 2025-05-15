@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Script from '@/components/ui/Script';
-import { useLocation as useUserLocation } from '@/hooks/useLocation';
+import { useLocation } from '@/hooks/useLocation';
 
 interface SelectedLocation {
   lat: number;
@@ -15,7 +15,7 @@ interface SelectedLocation {
 
 const MapView: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const routerLocation = useRouterLocation();
   const { toast } = useToast();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -23,10 +23,10 @@ const MapView: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [locationPermissionRequested, setLocationPermissionRequested] = useState(false);
-  const userLocation = useUserLocation();
+  const userLocation = useLocation();
   
-  // Generate unique ID for this map instance
-  const mapId = useRef(`map-container-${Math.random().toString(36).substring(2, 9)}`);
+  // Generate unique ID for this map instance - use a ref so it doesn't change on re-render
+  const mapId = useRef(`map-${Math.random().toString(36).substring(2, 9)}`);
   
   // Refs for Google Maps objects
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -35,7 +35,7 @@ const MapView: React.FC = () => {
   const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
   
   // Extract query parameters
-  const queryParams = new URLSearchParams(location.search);
+  const queryParams = new URLSearchParams(routerLocation.search);
   const initialLat = parseFloat(queryParams.get('lat') || localStorage.getItem('userLatitude') || '30.0444');
   const initialLng = parseFloat(queryParams.get('lng') || localStorage.getItem('userLongitude') || '31.2357');
   const addressId = queryParams.get('addressId');
@@ -87,10 +87,10 @@ const MapView: React.FC = () => {
         } catch (e) {
           console.error("Error removing marker:", e);
         }
+        markerRef.current = null;
       }
       
       // Clear references
-      markerRef.current = null;
       mapRef.current = null;
       geocoderRef.current = null;
       setMapInitialized(false);
@@ -99,14 +99,15 @@ const MapView: React.FC = () => {
 
   // Initialize the map once the script is loaded
   useEffect(() => {
-    if (!mapContainerRef.current || !mapScriptLoaded || !window.google?.maps || mapInitialized) {
+    // Don't proceed if any of these conditions are not met
+    if (!mapScriptLoaded || !window.google?.maps || mapInitialized) {
       return;
     }
 
     try {
       console.log("Initializing Google Maps");
       
-      // Create map options - using light theme for better visibility
+      // Create map options
       const mapOptions: google.maps.MapOptions = {
         center: { lat: initialLat, lng: initialLng },
         zoom: 15,
@@ -151,7 +152,7 @@ const MapView: React.FC = () => {
             // Get initial location address
             reverseGeocode(initialLat, initialLng);
             
-            // Add event listeners for marker drag
+            // Add marker drag listener
             const dragendListener = marker.addListener('dragend', () => {
               const position = marker.getPosition();
               if (position) {
@@ -182,7 +183,7 @@ const MapView: React.FC = () => {
           console.error("Error setting up map marker:", error);
         }
         
-        // Remove the idle listener after first use
+        // Remove the idle listener after first use to avoid multiple calls
         idleListener.remove();
       });
       
@@ -196,7 +197,7 @@ const MapView: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [initialLat, initialLng, mapScriptLoaded, mapContainerRef, locationPermissionRequested, toast, mapInitialized]);
+  }, [initialLat, initialLng, mapScriptLoaded, locationPermissionRequested, toast, mapInitialized]);
 
   // Request user's location permission
   const requestLocationAccess = () => {
@@ -401,9 +402,10 @@ const MapView: React.FC = () => {
       
       {/* Map container */}
       <div className="flex-1 w-full relative">
-        {/* We use ID instead of ref to avoid DOM node issues */}
+        {/* Use a stable ID for the map container that won't change between renders */}
         <div 
-          id={mapId.current} 
+          id={mapId.current}
+          ref={mapContainerRef}
           className="h-full w-full"
         />
         

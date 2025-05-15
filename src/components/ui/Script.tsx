@@ -21,12 +21,9 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const isMountedRef = useRef(true);
-  const scriptRef = useRef<HTMLScriptElement | null>(null);
+  const scriptIdRef = useRef(`script-${src.replace(/[^\w]/g, '_')}-${Math.random().toString(36).substring(2, 9)}`);
+  const scriptLoadEventName = useRef(`scriptLoaded_${src.replace(/[^\w]/g, '_')}`);
   const cleanupFunctionsRef = useRef<(() => void)[]>([]);
-
-  // Set up src-specific event name for coordination between multiple instances
-  const scriptId = `script-${src.replace(/[^\w]/g, '_')}`;
-  const scriptLoadEventName = `scriptLoaded_${src.replace(/[^\w]/g, '_')}`;
 
   useEffect(() => {
     // Set flag for component mounted state
@@ -42,6 +39,8 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
     if (!window.scriptRegistry) {
       window.scriptRegistry = new Map();
     }
+    
+    const scriptId = scriptIdRef.current;
     
     // Check if script is already loaded
     if (window.scriptRegistry.has(src)) {
@@ -64,9 +63,9 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
           }
         };
         
-        document.addEventListener(scriptLoadEventName, handleExistingScriptLoad);
+        document.addEventListener(scriptLoadEventName.current, handleExistingScriptLoad);
         cleanupFunctionsRef.current.push(() => {
-          document.removeEventListener(scriptLoadEventName, handleExistingScriptLoad);
+          document.removeEventListener(scriptLoadEventName.current, handleExistingScriptLoad);
         });
         
         return;
@@ -76,7 +75,7 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
     // Mark this script as loading
     window.scriptRegistry.set(src, 'loading');
     
-    // Check for existing script element by ID first (our way)
+    // Check for existing script element by ID first 
     let existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
     
     // If not found by ID, try by src (fallback)
@@ -86,7 +85,6 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
     
     if (existingScript) {
       // Script tag exists but might still be loading
-      scriptRef.current = existingScript;
       
       if (existingScript.hasAttribute('data-loaded')) {
         // Script is already fully loaded
@@ -108,7 +106,7 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
         onLoad?.();
         
         // Dispatch custom event to notify other instances
-        document.dispatchEvent(new CustomEvent(scriptLoadEventName));
+        document.dispatchEvent(new CustomEvent(scriptLoadEventName.current));
       };
 
       const handleError = (e: Event | string) => {
@@ -137,7 +135,6 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
       script.src = src;
       script.id = scriptId; // Add an ID to identify this script
       script.async = true;
-      scriptRef.current = script;
       
       const handleLoad = () => {
         if (!isMountedRef.current) return;
@@ -149,7 +146,7 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
         onLoad?.();
         
         // Dispatch custom event to notify other instances
-        document.dispatchEvent(new CustomEvent(scriptLoadEventName));
+        document.dispatchEvent(new CustomEvent(scriptLoadEventName.current));
       };
 
       const handleError = (e: Event | string) => {
@@ -198,7 +195,7 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
       // NOTE: We don't remove the script tag from DOM on unmount
       // as it might be used by other components
     };
-  }, [src, onLoad, onError, scriptLoadEventName, scriptId]);
+  }, [src, onLoad, onError]);
 
   return null;
 };
