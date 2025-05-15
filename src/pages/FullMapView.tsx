@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
@@ -220,18 +219,18 @@ const FullMapView: React.FC = () => {
               if (mapRef.current) {
                 try {
                   // Create and display the marker with animation
+                  // Using a standard marker with custom icon URL instead of SymbolPath
                   const marker = new window.google.maps.Marker({
                     position: { lat: initialLat, lng: initialLng },
                     map: mapRef.current,
                     draggable: true,
                     animation: window.google.maps.Animation.DROP,
                     icon: {
-                      path: window.google.maps.SymbolPath.CIRCLE,
-                      fillColor: '#4285F4',
-                      fillOpacity: 1,
-                      strokeColor: '#FFFFFF',
-                      strokeWeight: 2,
-                      scale: 10,
+                      url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#4285F4" stroke="#FFFFFF" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg>'
+                      ),
+                      scaledSize: new window.google.maps.Size(20, 20),
+                      anchor: new window.google.maps.Point(10, 10)
                     }
                   });
                   markerRef.current = marker;
@@ -508,8 +507,8 @@ const FullMapView: React.FC = () => {
           </div>
         )}
         
-        {/* Center pin marker overlay (appears when dragging) */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-0">
+        {/* Center pin marker overlay (appears when user is moving the map) */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
           <MapPin size={36} color="#4285F4" strokeWidth={2.5} />
         </div>
         
