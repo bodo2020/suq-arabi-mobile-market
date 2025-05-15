@@ -46,7 +46,7 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
         console.log(`Script ${src} is already being loaded.`);
         // Add event listener to document for this specific script load
         const handleExistingScriptLoad = (e: Event) => {
-          if (e instanceof CustomEvent && e.detail === src) {
+          if ((e as CustomEvent).detail === src) {
             setLoaded(true);
             onLoad?.();
             document.removeEventListener('scriptLoaded', handleExistingScriptLoad);
@@ -104,14 +104,18 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
     }
     
     // Create and add new script element
+    let script: HTMLScriptElement | null = null;
+    
     try {
-      const script = document.createElement('script');
+      script = document.createElement('script');
       script.src = src;
       script.async = true;
       
       const handleLoad = () => {
         console.log(`Script ${src} loaded successfully`);
-        script.setAttribute('data-loaded', 'true');
+        if (script) {
+          script.setAttribute('data-loaded', 'true');
+        }
         window.scriptRegistry.set(src, 'loaded');
         setLoaded(true);
         onLoad?.();
@@ -135,9 +139,13 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
       document.head.appendChild(script);
 
       return () => {
-        script.removeEventListener('load', handleLoad);
-        script.removeEventListener('error', handleError as EventListener);
-        // Don't remove the script from DOM on unmount as it might be used by other components
+        if (script) {
+          script.removeEventListener('load', handleLoad);
+          script.removeEventListener('error', handleError as EventListener);
+          // Don't remove the script from DOM on unmount as it might be used by other components
+          // But we can remove our reference to it
+          script = null;
+        }
       };
     } catch (e) {
       const err = e instanceof Error ? e : new Error(`Error creating script: ${src}`);

@@ -198,7 +198,7 @@ const FullMapView: React.FC = () => {
             mapRef.current = map;
             
             // Wait for map to be initialized before adding markers
-            google.maps.event.addListenerOnce(map, 'idle', () => {
+            const mapIdleListener = map.addListener('idle', () => {
               // Create marker only after map is idle
               if (mapRef.current) {
                 try {
@@ -231,6 +231,11 @@ const FullMapView: React.FC = () => {
                     }
                   });
                   listenersRef.current.push(dragendListener);
+
+                  // Remove the idle listener after first use
+                  if (mapIdleListener) {
+                    google.maps.event.removeListener(mapIdleListener);
+                  }
                 } catch (error) {
                   console.error("Error setting up marker:", error);
                 }
