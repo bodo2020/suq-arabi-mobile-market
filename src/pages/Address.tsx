@@ -37,11 +37,15 @@ const Address = () => {
     const lng = queryParams.get('lng');
     const mapAddress = queryParams.get('address');
     
-    if (lat && lng && mapAddress) {
+    if (lat && lng) {
       // Save coordinates in local storage for persistence
       localStorage.setItem('selectedLat', lat);
       localStorage.setItem('selectedLng', lng);
-      localStorage.setItem('selectedAddress', decodeURIComponent(mapAddress));
+      
+      if (mapAddress) {
+        localStorage.setItem('selectedAddress', decodeURIComponent(mapAddress));
+        setAddressFromMap(decodeURIComponent(mapAddress));
+      }
       
       // Update state with new coordinates
       setMapLocation(prev => ({
@@ -49,13 +53,14 @@ const Address = () => {
         latitude: parseFloat(lat),
         longitude: parseFloat(lng)
       }));
-      setAddressFromMap(decodeURIComponent(mapAddress));
       
-      // Show success message
-      toast({
-        title: "تم تحديد الموقع",
-        description: "تم تحديد موقعك بنجاح على الخريطة"
-      });
+      // Show success message if we have a complete address
+      if (mapAddress) {
+        toast({
+          title: "تم تحديد الموقع",
+          description: "تم تحديد موقعك بنجاح على الخريطة"
+        });
+      }
     }
   }, [location.search, toast]);
 
@@ -176,6 +181,12 @@ const Address = () => {
         // Store in localStorage for quick access
         localStorage.setItem('userAddress', address);
 
+        // Save coordinates in localStorage
+        if (mapLocation.latitude && mapLocation.longitude) {
+          localStorage.setItem('userLatitude', mapLocation.latitude.toString());
+          localStorage.setItem('userLongitude', mapLocation.longitude.toString());
+        }
+
         if (mapLocation.area) {
           const { data: areaData } = await supabase
             .from('areas')
@@ -208,6 +219,12 @@ const Address = () => {
       } else {
         // For non-logged in users, just store in localStorage
         localStorage.setItem('userAddress', address);
+        
+        // Save coordinates if available
+        if (mapLocation.latitude && mapLocation.longitude) {
+          localStorage.setItem('userLatitude', mapLocation.latitude.toString());
+          localStorage.setItem('userLongitude', mapLocation.longitude.toString());
+        }
       }
 
       navigate('/address-manager');
@@ -283,6 +300,9 @@ const Address = () => {
     const lat = mapLocation.latitude || (savedLat ? parseFloat(savedLat) : 30.0444);
     const lng = mapLocation.longitude || (savedLng ? parseFloat(savedLng) : 31.2357);
     
+    // Save any current form state to localStorage before navigating
+    if (address) localStorage.setItem('draftAddress', address);
+    
     navigate(`/map-view?lat=${lat}&lng=${lng}${addressId ? `&addressId=${addressId}` : ''}`);
   };
 
@@ -295,7 +315,7 @@ const Address = () => {
   return (
     <MainLayout>
       <Script 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype"
         onLoad={() => setMapsLoaded(true)} 
       />
       
@@ -340,16 +360,19 @@ const Address = () => {
                 فتح الخريطة لتحديد موقعك بدقة
               </Button>
               
-              {addressFromMap && (
+              {(addressFromMap || (mapLocation.latitude && mapLocation.longitude)) && (
                 <div className="mt-2 flex justify-between items-center p-3 bg-gray-50 rounded-md">
                   <div className="text-sm text-gray-600 truncate flex-1">
-                    <div className="font-semibold mb-1">الإحداثيات: {mapLocation.latitude?.toFixed(6)}, {mapLocation.longitude?.toFixed(6)}</div>
-                    <div>{addressFromMap}</div>
+                    <div className="font-semibold mb-1">
+                      الإحداثيات: {mapLocation.latitude?.toFixed(6)}, {mapLocation.longitude?.toFixed(6)}
+                    </div>
+                    {addressFromMap && <div>{addressFromMap}</div>}
                   </div>
                   <button
                     type="button"
                     onClick={handleUseMapAddress}
                     className="text-xs text-primary hover:underline"
+                    disabled={!addressFromMap}
                   >
                     استخدام هذا العنوان
                   </button>

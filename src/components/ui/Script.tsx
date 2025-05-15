@@ -20,9 +20,16 @@ interface ScriptProps {
 const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const isMountedRef = useRef(true);
   const cleanupFunctionsRef = useRef<(() => void)[]>([]);
 
+  // Set up src-specific event name for coordination between multiple instances
+  const scriptLoadEventName = `scriptLoaded_${src.replace(/[^\w]/g, '_')}`;
+
   useEffect(() => {
+    // Set flag for component mounted state
+    isMountedRef.current = true;
+    
     // Skip if src is empty or invalid
     if (!src) {
       console.error("Invalid script source provided");
@@ -40,34 +47,27 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
       
       if (status === 'loaded') {
         console.log(`Script ${src} is already loaded.`);
-        setLoaded(true);
-        onLoad?.();
+        if (isMountedRef.current) {
+          setLoaded(true);
+          onLoad?.();
+        }
         return;
       } else if (status === 'loading') {
         console.log(`Script ${src} is already being loaded.`);
         // Add event listener to document for this specific script load
-        const handleExistingScriptLoad = (e: Event) => {
-          if ((e as CustomEvent).detail === src) {
+        const handleExistingScriptLoad = () => {
+          if (isMountedRef.current) {
             setLoaded(true);
             onLoad?.();
-            document.removeEventListener('scriptLoaded', handleExistingScriptLoad);
           }
         };
         
-        document.addEventListener('scriptLoaded', handleExistingScriptLoad);
+        document.addEventListener(scriptLoadEventName, handleExistingScriptLoad);
         cleanupFunctionsRef.current.push(() => {
-          document.removeEventListener('scriptLoaded', handleExistingScriptLoad);
+          document.removeEventListener(scriptLoadEventName, handleExistingScriptLoad);
         });
         
-        return () => {
-          cleanupFunctionsRef.current.forEach(cleanup => {
-            try {
-              cleanup();
-            } catch (e) {
-              console.error("Cleanup error:", e);
-            }
-          });
-        };
+        return;
       }
     }
     
@@ -82,24 +82,29 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
       if (existingScript.hasAttribute('data-loaded')) {
         // Script is already fully loaded
         window.scriptRegistry.set(src, 'loaded');
-        setLoaded(true);
-        onLoad?.();
+        if (isMountedRef.current) {
+          setLoaded(true);
+          onLoad?.();
+        }
         return;
       }
       
       // Script exists but still loading, add event listeners
       const handleLoad = () => {
-        if (!document.contains(existingScript)) return;
+        if (!isMountedRef.current) return;
+        
         existingScript.setAttribute('data-loaded', 'true');
         window.scriptRegistry.set(src, 'loaded');
         setLoaded(true);
         onLoad?.();
         
         // Dispatch custom event to notify other instances
-        document.dispatchEvent(new CustomEvent('scriptLoaded', { detail: src }));
+        document.dispatchEvent(new CustomEvent(scriptLoadEventName));
       };
 
       const handleError = (e: Event | string) => {
+        if (!isMountedRef.current) return;
+        
         const errorInstance = e instanceof Error ? e : new Error(`Failed to load script: ${src}`);
         setError(errorInstance);
         window.scriptRegistry.delete(src);
@@ -110,37 +115,21 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
       existingScript.addEventListener('error', handleError as EventListener);
       
       cleanupFunctionsRef.current.push(() => {
-        if (document.contains(existingScript)) {
-          try {
-            existingScript.removeEventListener('load', handleLoad);
-            existingScript.removeEventListener('error', handleError as EventListener);
-          } catch (e) {
-            console.error("Error removing event listeners:", e);
-          }
-        }
+        existingScript.removeEventListener('load', handleLoad);
+        existingScript.removeEventListener('error', handleError as EventListener);
       });
       
-      return () => {
-        cleanupFunctionsRef.current.forEach(cleanup => {
-          try {
-            cleanup();
-          } catch (e) {
-            console.error("Cleanup error:", e);
-          }
-        });
-      };
+      return;
     }
     
     // Create and add new script element
-    let script: HTMLScriptElement | null = null;
-    
     try {
-      script = document.createElement('script');
+      const script = document.createElement('script');
       script.src = src;
       script.async = true;
       
       const handleLoad = () => {
-        if (!script || !document.contains(script)) return;
+        if (!isMountedRef.current) return;
         
         console.log(`Script ${src} loaded successfully`);
         script.setAttribute('data-loaded', 'true');
@@ -149,10 +138,12 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
         onLoad?.();
         
         // Dispatch custom event to notify other instances
-        document.dispatchEvent(new CustomEvent('scriptLoaded', { detail: src }));
+        document.dispatchEvent(new CustomEvent(scriptLoadEventName));
       };
 
       const handleError = (e: Event | string) => {
+        if (!isMountedRef.current) return;
+        
         const errorInstance = e instanceof Error ? e : new Error(`Failed to load script: ${src}`);
         console.error(`Error loading script ${src}:`, errorInstance);
         setError(errorInstance);
@@ -167,34 +158,42 @@ const Script: React.FC<ScriptProps> = ({ src, onLoad, onError }) => {
       document.head.appendChild(script);
 
       cleanupFunctionsRef.current.push(() => {
-        if (script && document.contains(script)) {
-          try {
-            script.removeEventListener('load', handleLoad);
-            script.removeEventListener('error', handleError as EventListener);
-          } catch (e) {
-            console.error("Error removing event listeners:", e);
-          }
-        }
+        script.removeEventListener('load', handleLoad);
+        script.removeEventListener('error', handleError as EventListener);
       });
 
+      // Store reference to script for potential cleanup
       return () => {
-        cleanupFunctionsRef.current.forEach(cleanup => {
-          try {
-            cleanup();
-          } catch (e) {
-            console.error("Cleanup error:", e);
-          }
-        });
-        script = null;
+        // Don't remove the script from the DOM as it might be used by other components
+        // Just clean up event listeners
+        script.removeEventListener('load', handleLoad);
+        script.removeEventListener('error', handleError as EventListener);
       };
     } catch (e) {
       const err = e instanceof Error ? e : new Error(`Error creating script: ${src}`);
       console.error(err);
-      setError(err);
-      onError?.(err);
+      if (isMountedRef.current) {
+        setError(err);
+        onError?.(err);
+      }
       return;
     }
-  }, [src, onLoad, onError]);
+    
+    // Cleanup function
+    return () => {
+      isMountedRef.current = false;
+      
+      // Execute all cleanup functions
+      cleanupFunctionsRef.current.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (e) {
+          console.error("Cleanup error:", e);
+        }
+      });
+      cleanupFunctionsRef.current = [];
+    };
+  }, [src, onLoad, onError, scriptLoadEventName]);
 
   return null;
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
@@ -24,7 +25,7 @@ const FullMapView: React.FC = () => {
   const [locationPermissionRequested, setLocationPermissionRequested] = useState(false);
   const userLocation = useUserLocation();
   
-  // Refs for Google Maps objects
+  // Refs for Google Maps objects - moved outside useEffect for better cleanup
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
@@ -131,9 +132,11 @@ const FullMapView: React.FC = () => {
     setMapScriptLoaded(true);
   };
   
-  // Clean up maps resources on unmount
+  // Clean up maps resources on unmount - improved cleanup logic
   useEffect(() => {
     return () => {
+      console.log("Cleaning up map resources");
+      
       // Clear all listeners
       if (listenersRef.current.length > 0) {
         listenersRef.current.forEach(listener => {
@@ -152,10 +155,10 @@ const FullMapView: React.FC = () => {
       if (markerRef.current) {
         try {
           markerRef.current.setMap(null);
+          markerRef.current = null;
         } catch (e) {
           console.error("Error removing marker:", e);
         }
-        markerRef.current = null;
       }
       
       mapRef.current = null;
@@ -170,7 +173,6 @@ const FullMapView: React.FC = () => {
     }
 
     console.log("Initializing Google Maps");
-    setMapInitialized(true);
     
     try {
       // Create map options
@@ -189,12 +191,18 @@ const FullMapView: React.FC = () => {
       // Create new map instance
       const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
       mapRef.current = map;
+      
+      // Only set this after map is fully initialized
+      setMapInitialized(true);
 
-      // Create marker only after map is idle
+      // Create marker only after map is idle - using a safer approach
       const mapIdleListener = map.addListener('idle', () => {
-        if (mapRef.current) {
+        if (!mapRef.current) return;
+        
+        // Only create marker if it doesn't exist
+        if (!markerRef.current) {
           try {
-            // Create and display the marker
+            // Create and display the marker with SVG icon instead of path
             const marker = new window.google.maps.Marker({
               position: { lat: initialLat, lng: initialLng },
               map: mapRef.current,
@@ -231,26 +239,24 @@ const FullMapView: React.FC = () => {
               }
             });
             listenersRef.current.push(dragendListener);
-
-            // Remove the idle listener after first use
-            mapIdleListener.remove();
-            
-            // Request location access after map is loaded
-            if (!locationPermissionRequested) {
-              setTimeout(() => {
-                requestLocationAccess();
-              }, 1000);
-            }
           } catch (error) {
             console.error("Error setting up marker:", error);
-            toast({
-              title: "خطأ",
-              description: "حدث خطأ أثناء إنشاء العلامة على الخريطة",
-              variant: "destructive"
-            });
           }
         }
+
+        // Remove the idle listener after first use
+        mapIdleListener.remove();
+        
+        // Request location access after map is loaded
+        if (!locationPermissionRequested) {
+          setTimeout(() => {
+            requestLocationAccess();
+          }, 1000);
+        }
       });
+      
+      // Add the idle listener to our collection for cleanup
+      listenersRef.current.push(mapIdleListener);
 
     } catch (error) {
       console.error("Error initializing map:", error);
@@ -438,7 +444,7 @@ const FullMapView: React.FC = () => {
   return (
     <div className="fixed inset-0 bg-[#222222] flex flex-col z-50">
       <Script 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype"
         onLoad={handleMapScriptLoad}
         onError={(error) => console.error("Google Maps script error:", error)}
       />
@@ -460,6 +466,7 @@ const FullMapView: React.FC = () => {
       <div 
         ref={mapContainerRef} 
         className="flex-1 w-full relative"
+        id="map-container"
       >
         {!mapLoaded && (
           <div className="absolute inset-0 bg-[#1a1f25] flex items-center justify-center">
@@ -500,14 +507,14 @@ const FullMapView: React.FC = () => {
           </div>
         )}
         
-        <div className="flex space-x-3 space-x-reverse rtl:space-x-reverse">
+        <div className="flex gap-3">
           <Button
             onClick={getUserLocation}
             variant="outline"
             className="flex-1 border-gray-600 text-gray-200 hover:bg-gray-800"
             disabled={!mapLoaded}
           >
-            <MapPin size={16} className="ml-2" />
+            <MapPin size={16} className="ltr:mr-2 rtl:ml-2" />
             تحديد موقعي
           </Button>
           
@@ -516,7 +523,7 @@ const FullMapView: React.FC = () => {
             className="flex-1 bg-primary hover:bg-primary/90"
             disabled={!selectedLocation}
           >
-            <Check size={16} className="ml-2" />
+            <Check size={16} className="ltr:mr-2 rtl:ml-2" />
             تأكيد الموقع
           </Button>
         </div>
