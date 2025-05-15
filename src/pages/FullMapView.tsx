@@ -23,6 +23,7 @@ const FullMapView: React.FC = () => {
   const [googleInitialized, setGoogleInitialized] = useState(false);
   const [locationPermissionRequested, setLocationPermissionRequested] = useState(false);
   const mapInitializedRef = useRef(false);
+  const componentMountedRef = useRef(true);
   
   // Refs for Google Maps objects
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -129,8 +130,18 @@ const FullMapView: React.FC = () => {
   // Handle Google Maps script loading
   const handleMapScriptLoad = () => {
     console.log("Google Maps script loaded");
-    setMapScriptLoaded(true);
+    if (componentMountedRef.current) {
+      setMapScriptLoaded(true);
+    }
   };
+  
+  // Set componentMountedRef to false when component unmounts
+  useEffect(() => {
+    componentMountedRef.current = true;
+    return () => {
+      componentMountedRef.current = false;
+    };
+  }, []);
   
   // Clean up maps resources on unmount
   useEffect(() => {
@@ -167,7 +178,7 @@ const FullMapView: React.FC = () => {
   // Initialize the map once the script is loaded and the container is ready
   useEffect(() => {
     // Safety check to ensure we only initialize once and all requirements are met
-    if (!mapContainerRef.current || !mapScriptLoaded || !window.google?.maps || googleInitialized || mapInitializedRef.current) {
+    if (!mapContainerRef.current || !mapScriptLoaded || !window.google?.maps || googleInitialized || mapInitializedRef.current || !componentMountedRef.current) {
       return;
     }
     
@@ -192,8 +203,8 @@ const FullMapView: React.FC = () => {
       };
 
       // Create new map instance with a delay to ensure the container is fully rendered
-      setTimeout(() => {
-        if (mapContainerRef.current && window.google?.maps && !mapRef.current) {
+      const timeoutId = setTimeout(() => {
+        if (mapContainerRef.current && window.google?.maps && !mapRef.current && componentMountedRef.current) {
           try {
             // Create map instance
             const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
@@ -201,6 +212,10 @@ const FullMapView: React.FC = () => {
             
             // Wait for map to be initialized before adding markers
             const mapIdleListener = map.addListener('idle', () => {
+              if (!componentMountedRef.current) {
+                return;
+              }
+              
               // Create marker only after map is idle
               if (mapRef.current) {
                 try {
@@ -215,24 +230,28 @@ const FullMapView: React.FC = () => {
                   // Get initial location address
                   reverseGeocode(initialLat, initialLng);
                   
-                  setMapLoaded(true);
+                  if (componentMountedRef.current) {
+                    setMapLoaded(true);
+                  }
   
                   // Add event listeners
-                  const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
-                    if (e.latLng && markerRef.current) {
-                      markerRef.current.setPosition(e.latLng);
-                      reverseGeocode(e.latLng.lat(), e.latLng.lng());
-                    }
-                  });
-                  listenersRef.current.push(clickListener);
-  
-                  const dragendListener = marker.addListener('dragend', () => {
-                    const position = marker.getPosition();
-                    if (position) {
-                      reverseGeocode(position.lat(), position.lng());
-                    }
-                  });
-                  listenersRef.current.push(dragendListener);
+                  if (componentMountedRef.current) {
+                    const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+                      if (e.latLng && markerRef.current) {
+                        markerRef.current.setPosition(e.latLng);
+                        reverseGeocode(e.latLng.lat(), e.latLng.lng());
+                      }
+                    });
+                    listenersRef.current.push(clickListener);
+    
+                    const dragendListener = marker.addListener('dragend', () => {
+                      const position = marker.getPosition();
+                      if (position) {
+                        reverseGeocode(position.lat(), position.lng());
+                      }
+                    });
+                    listenersRef.current.push(dragendListener);
+                  }
 
                   // Remove the idle listener after first use
                   if (mapIdleListener) {
@@ -240,9 +259,11 @@ const FullMapView: React.FC = () => {
                   }
                   
                   // Request location access after map is loaded
-                  if (!locationPermissionRequested) {
+                  if (!locationPermissionRequested && componentMountedRef.current) {
                     setTimeout(() => {
-                      requestLocationAccess();
+                      if (componentMountedRef.current) {
+                        requestLocationAccess();
+                      }
                     }, 1000);
                   }
                 } catch (error) {
@@ -253,27 +274,36 @@ const FullMapView: React.FC = () => {
             
           } catch (error) {
             console.error("Error creating map:", error);
-            toast({
-              title: "خطأ",
-              description: "حدث خطأ أثناء إنشاء الخريطة",
-              variant: "destructive"
-            });
+            if (componentMountedRef.current) {
+              toast({
+                title: "خطأ",
+                description: "حدث خطأ أثناء إنشاء الخريطة",
+                variant: "destructive"
+              });
+            }
           }
         }
       }, 500); // Increased timeout for more reliability
       
+      return () => {
+        clearTimeout(timeoutId);
+      };
+      
     } catch (error) {
       console.error("Error initializing map:", error);
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تهيئة الخريطة",
-        variant: "destructive"
-      });
+      if (componentMountedRef.current) {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ أثناء تهيئة الخريطة",
+          variant: "destructive"
+        });
+      }
     }
   }, [initialLat, initialLng, mapScriptLoaded, toast, googleInitialized, darkMapStyle, locationPermissionRequested]);
 
   // Request user's location permission
   const requestLocationAccess = () => {
+    if (!componentMountedRef.current) return;
     setLocationPermissionRequested(true);
     
     toast({
@@ -307,7 +337,7 @@ const FullMapView: React.FC = () => {
 
   // Get user's current location
   const getUserLocation = () => {
-    if (!mapRef.current || !markerRef.current) {
+    if (!mapRef.current || !markerRef.current || !componentMountedRef.current) {
       toast({
         title: "خطأ",
         description: "الخريطة غير جاهزة بعد",
@@ -324,6 +354,8 @@ const FullMapView: React.FC = () => {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          if (!componentMountedRef.current) return;
+          
           console.log("Got user location:", position.coords);
           const userLocation = {
             lat: position.coords.latitude,
@@ -344,6 +376,8 @@ const FullMapView: React.FC = () => {
           });
         },
         (error) => {
+          if (!componentMountedRef.current) return;
+          
           console.error("Geolocation error:", error);
           let errorMessage = "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا";
           
@@ -388,7 +422,7 @@ const FullMapView: React.FC = () => {
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = (lat: number, lng: number) => {
-    if (!window.google || !window.google.maps) {
+    if (!window.google || !window.google.maps || !componentMountedRef.current) {
       console.error("Google Maps not loaded");
       return;
     }
@@ -396,6 +430,8 @@ const FullMapView: React.FC = () => {
     try {
       const geocoder = new window.google.maps.Geocoder();
       geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (!componentMountedRef.current) return;
+        
         if (status === "OK" && results && results[0]) {
           const addressText = results[0].formatted_address;
           setSelectedLocation({ lat, lng, address: addressText });
