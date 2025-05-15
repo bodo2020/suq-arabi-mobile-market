@@ -21,6 +21,7 @@ const FullMapView: React.FC = () => {
   const [mapScriptLoaded, setMapScriptLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   const [googleInitialized, setGoogleInitialized] = useState(false);
+  const [locationPermissionRequested, setLocationPermissionRequested] = useState(false);
   const mapInitializedRef = useRef(false);
   
   // Refs for Google Maps objects
@@ -29,8 +30,9 @@ const FullMapView: React.FC = () => {
   const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
   
   const queryParams = new URLSearchParams(location.search);
-  const initialLat = parseFloat(queryParams.get('lat') || '30.0444');
-  const initialLng = parseFloat(queryParams.get('lng') || '31.2357');
+  // Using the specified coordinates as default, or get them from query params if present
+  const initialLat = parseFloat(queryParams.get('lat') || '31.256702071282238');
+  const initialLng = parseFloat(queryParams.get('lng') || '31.167919046401884');
   const addressId = queryParams.get('addressId');
 
   // Dark mode map style
@@ -179,7 +181,7 @@ const FullMapView: React.FC = () => {
       // Create map options
       const mapOptions: google.maps.MapOptions = {
         center: { lat: initialLat, lng: initialLng },
-        zoom: 9, // More zoomed out view
+        zoom: 14, // Closer zoom level for better view of the area
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
@@ -234,7 +236,14 @@ const FullMapView: React.FC = () => {
 
                   // Remove the idle listener after first use
                   if (mapIdleListener) {
-                    google.maps.event.removeListener(mapIdleListener);
+                    mapIdleListener.remove();
+                  }
+                  
+                  // Request location access after map is loaded
+                  if (!locationPermissionRequested) {
+                    setTimeout(() => {
+                      requestLocationAccess();
+                    }, 1000);
                   }
                 } catch (error) {
                   console.error("Error setting up marker:", error);
@@ -261,7 +270,40 @@ const FullMapView: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [initialLat, initialLng, mapScriptLoaded, toast, googleInitialized, darkMapStyle]);
+  }, [initialLat, initialLng, mapScriptLoaded, toast, googleInitialized, darkMapStyle, locationPermissionRequested]);
+
+  // Request user's location permission
+  const requestLocationAccess = () => {
+    setLocationPermissionRequested(true);
+    
+    toast({
+      title: "تحديد الموقع",
+      description: "هل تسمح للتطبيق بالوصول إلى موقعك الحالي؟",
+      action: (
+        <div className="flex gap-2 mt-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              toast({
+                title: "تم الرفض",
+                description: "يمكنك تغيير رأيك لاحقاً بالضغط على زر تحديد موقعي"
+              });
+            }}
+          >
+            رفض
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={getUserLocation}
+          >
+            السماح
+          </Button>
+        </div>
+      ),
+    });
+  };
 
   // Get user's current location
   const getUserLocation = () => {
@@ -290,7 +332,7 @@ const FullMapView: React.FC = () => {
           
           if (mapRef.current && markerRef.current) {
             mapRef.current.setCenter(userLocation);
-            mapRef.current.setZoom(14); // More zoomed in when finding user location
+            mapRef.current.setZoom(16); // More zoomed in when finding user location
             markerRef.current.setPosition(userLocation);
             
             reverseGeocode(userLocation.lat, userLocation.lng);
@@ -303,9 +345,20 @@ const FullMapView: React.FC = () => {
         },
         (error) => {
           console.error("Geolocation error:", error);
+          let errorMessage = "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا";
+          
+          // Provide more specific error messages based on the error code
+          if (error.code === 1) {
+            errorMessage = "تم رفض الوصول إلى الموقع. يرجى تفعيل خدمة تحديد المواقع في إعدادات المتصفح";
+          } else if (error.code === 2) {
+            errorMessage = "تعذر تحديد موقعك الحالي. يرجى التأكد من تفعيل خدمة GPS";
+          } else if (error.code === 3) {
+            errorMessage = "انتهت مهلة تحديد الموقع. يرجى المحاولة مرة أخرى";
+          }
+          
           toast({
             title: "تعذر الوصول إلى موقعك",
-            description: "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا",
+            description: errorMessage,
             variant: "destructive"
           });
         },
