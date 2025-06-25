@@ -113,6 +113,13 @@ const AddressDisplay = ({
     }
   };
 
+  const handleOpenMap = () => {
+    // Navigate to map view with current location if available
+    const lat = latitude || localStorage.getItem('userLatitude') || '30.0444';
+    const lng = longitude || localStorage.getItem('userLongitude') || '31.2357';
+    navigate(`/map-view?lat=${lat}&lng=${lng}`);
+  };
+
   return (
     <div className={cn("flex items-center gap-2 mb-2", className)}>
       <div className="flex items-center flex-1">
@@ -146,7 +153,7 @@ const AddressDisplay = ({
           </div>
         )}
       </div>
-      <Button variant="ghost" size="sm" onClick={onEdit || handleChangeAddress} className="text-xs">
+      <Button variant="ghost" size="sm" onClick={onEdit || handleOpenMap} className="text-xs">
         تغيير
       </Button>
     </div>
