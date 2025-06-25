@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -197,14 +196,6 @@ const Index = () => {
               عرض الكل
               <ChevronLeft size={16} />
             </Link>
-          </div>
-          
-          <div className="mb-4">
-            <SearchBar 
-              placeholder="البحث داخل الأقسام..."
-              onFocus={handleFocusSearchBar} 
-              readOnly 
-            />
           </div>
           
           <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
