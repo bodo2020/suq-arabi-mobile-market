@@ -1,7 +1,7 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { useGuestDataMigration } from '@/hooks/useGuestDataMigration';
 
 type UserContextType = {
   user: User | null;
@@ -27,11 +27,14 @@ export const useUser = () => {
   return context;
 };
 
-export const UserProvider = ({ children }) => {
+const UserProviderInternal = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+
+  // Initialize guest data migration
+  useGuestDataMigration();
 
   useEffect(() => {
     const getSession = async () => {
@@ -258,5 +261,13 @@ export const UserProvider = ({ children }) => {
     >
       {children}
     </UserContext.Provider>
+  );
+};
+
+export const UserProvider = ({ children }) => {
+  return (
+    <UserProviderInternal>
+      {children}
+    </UserProviderInternal>
   );
 };
