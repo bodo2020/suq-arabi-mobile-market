@@ -34,21 +34,7 @@ const PhoneVerify = () => {
       { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' },
       { name: 'السعودية', code: 'SA', dialCode: '+966', flag: '🇸🇦' },
       { name: 'الإمارات', code: 'AE', dialCode: '+971', flag: '🇦🇪' },
-      { name: 'الكويت', code: 'KW', dialCode: '+965', flag: '🇰🇼' },
-      { name: 'البحرين', code: 'BH', dialCode: '+973', flag: '🇧🇭' },
-      { name: 'قطر', code: 'QA', dialCode: '+974', flag: '🇶🇦' },
-      { name: 'عمان', code: 'OM', dialCode: '+968', flag: '🇴🇲' },
-      { name: 'الأردن', code: 'JO', dialCode: '+962', flag: '🇯🇴' },
-      { name: 'لبنان', code: 'LB', dialCode: '+961', flag: '🇱🇧' },
-      { name: 'فلسطين', code: 'PS', dialCode: '+970', flag: '🇵🇸' },
-      { name: 'سوريا', code: 'SY', dialCode: '+963', flag: '🇸🇾' },
-      { name: 'العراق', code: 'IQ', dialCode: '+964', flag: '🇮🇶' },
-      { name: 'ليبيا', code: 'LY', dialCode: '+218', flag: '🇱🇾' },
-      { name: 'تونس', code: 'TN', dialCode: '+216', flag: '🇹🇳' },
-      { name: 'الجزائر', code: 'DZ', dialCode: '+213', flag: '🇩🇿' },
-      { name: 'المغرب', code: 'MA', dialCode: '+212', flag: '🇲🇦' },
-      { name: 'السودان', code: 'SD', dialCode: '+249', flag: '🇸🇩' },
-      { name: 'اليمن', code: 'YE', dialCode: '+967', flag: '🇾🇪' }
+      // ... keep existing code (other countries)
     ];
     return countries.find(c => c.code === countryCodeFromQuery) || 
       { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' };
@@ -116,7 +102,7 @@ const PhoneVerify = () => {
       const fullPhone = formatInternationalPhone(phone, countryCode);
       console.log("Sending verification for phone:", fullPhone);
       
-      const { error } = await signInWithPhone(fullPhone);
+      const { data, error } = await signInWithPhone(fullPhone);
       
       if (error) {
         console.error("Error sending verification code:", error);
@@ -132,7 +118,29 @@ const PhoneVerify = () => {
           throw error;
         }
         
+        // Check for blocked number error from our custom function
+        if (data?.blockedNumber) {
+          setBlockedNumber(true);
+          // If we're in development mode, show the verification code
+          if (data.code) {
+            setCodeForTesting(data.code);
+          }
+          toast({
+            title: "تم حظر رقم الهاتف",
+            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار.",
+            variant: "destructive"
+          });
+          setStep('verification');
+          setLoading(false);
+          return;
+        }
+        
         throw error;
+      }
+      
+      // Check if we got a code for development purposes
+      if (data?.code) {
+        setCodeForTesting(data.code);
       }
       
       toast({
@@ -168,7 +176,7 @@ const PhoneVerify = () => {
       const fullPhone = formatInternationalPhone(phone, countryCode);
       console.log("Resending verification for phone:", fullPhone);
       
-      const { error } = await signInWithPhone(fullPhone);
+      const { data, error } = await signInWithPhone(fullPhone);
       
       if (error) {
         console.error("Error resending verification code:", error);
@@ -184,7 +192,27 @@ const PhoneVerify = () => {
           throw error;
         }
         
+        // Check for blocked number error from our custom function
+        if (data?.blockedNumber) {
+          setBlockedNumber(true);
+          // If we're in development mode, show the verification code
+          if (data.code) {
+            setCodeForTesting(data.code);
+          }
+          toast({
+            title: "تم حظر رقم الهاتف",
+            description: "تم حظر رقم الهاتف مؤقتًا من قبل Twilio. يمكنك استخدام رمز التحقق أدناه للاختبار.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         throw error;
+      }
+      
+      // Check if we got a code for development purposes
+      if (data?.code) {
+        setCodeForTesting(data.code);
       }
       
       toast({

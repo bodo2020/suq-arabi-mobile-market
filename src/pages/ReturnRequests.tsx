@@ -18,6 +18,10 @@ const ReturnRequests = () => {
   const [loading, setLoading] = useState(true);
   const location = useLocation();
   const { toast } = useToast();
+  
+  // Get stored location data
+  const savedAreaName = localStorage.getItem('userArea');
+  const savedNeighborhoodName = localStorage.getItem('userNeighborhood');
 
   useEffect(() => {
     if (!session) {
@@ -63,6 +67,8 @@ const ReturnRequests = () => {
         <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
           <AddressDisplay 
             address={localStorage.getItem('userAddress') || ''}
+            areaName={savedAreaName}
+            neighborhoodName={savedNeighborhoodName}
             latitude={location.latitude || undefined}
             longitude={location.longitude || undefined}
             onEdit={() => navigate('/address-manager')}

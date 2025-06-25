@@ -59,7 +59,7 @@ declare namespace google.maps {
   }
   
   interface Icon {
-    url?: string;
+    url: string;
     size?: Size;
     scaledSize?: Size;
     origin?: Point;

@@ -104,16 +104,23 @@ const Register = () => {
       const cleanPhone = formatPhoneNumber(phone, countryCode);
       const fullPhone = formatInternationalPhone(phone, countryCode);
       
-      const { error } = await signUp(email, password, {
-        first_name: firstName,
-        last_name: lastName,
-        phone: fullPhone,
-        countryCode: countryCode.code,
-        name: `${firstName} ${lastName}`.trim(),
-        address,
-        location: locationValue
-      });
-      
+      const {
+        data,
+        error
+      } = await signUp(
+        email,
+        fullPhone, // Use the full international phone number
+        password,
+        {
+          first_name: firstName,
+          last_name: lastName,
+          phone: fullPhone, // Store the phone number directly
+          countryCode: countryCode.code,
+          name: `${firstName} ${lastName}`.trim(),
+          address,
+          location: locationValue
+        }
+      );
       if (error) throw error;
       
       // Retrieve the user ID after successful signup

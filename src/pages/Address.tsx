@@ -1,48 +1,68 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, MapPin, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
+import LocationPicker from '@/components/ui/LocationPicker';
+import Script from '@/components/ui/Script';
+import '@/types/google-maps.d.ts';
 
 const Address = () => {
   const navigate = useNavigate();
   const { id: addressId } = useParams();
   const { toast } = useToast();
   const { user } = useUser();
+  const location = useLocation();
   const [address, setAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [mapLocation, setMapLocation] = useState<{
+    government?: string; 
+    city?: string; 
+    area?: string; 
+    neighborhood?: string;
     latitude?: number;
     longitude?: number;
   }>({});
+  const [mapsLoaded, setMapsLoaded] = useState(false);
   const [addressFromMap, setAddressFromMap] = useState('');
 
-  // Check for location data from map
+  // Check for location data in URL parameters (coming back from map view)
   useEffect(() => {
-    const savedLat = localStorage.getItem('selectedLat');
-    const savedLng = localStorage.getItem('selectedLng');
-    const savedAddress = localStorage.getItem('selectedAddress');
+    const queryParams = new URLSearchParams(location.search);
+    const lat = queryParams.get('lat');
+    const lng = queryParams.get('lng');
+    const mapAddress = queryParams.get('address');
     
-    if (savedLat && savedLng) {
-      setMapLocation({
-        latitude: parseFloat(savedLat),
-        longitude: parseFloat(savedLng)
-      });
+    if (lat && lng) {
+      // Save coordinates in local storage for persistence
+      localStorage.setItem('selectedLat', lat);
+      localStorage.setItem('selectedLng', lng);
       
-      if (savedAddress) {
-        setAddressFromMap(savedAddress);
+      if (mapAddress) {
+        localStorage.setItem('selectedAddress', decodeURIComponent(mapAddress));
+        setAddressFromMap(decodeURIComponent(mapAddress));
+      }
+      
+      // Update state with new coordinates
+      setMapLocation(prev => ({
+        ...prev,
+        latitude: parseFloat(lat),
+        longitude: parseFloat(lng)
+      }));
+      
+      // Show success message if we have a complete address
+      if (mapAddress) {
         toast({
           title: "تم تحديد الموقع",
           description: "تم تحديد موقعك بنجاح على الخريطة"
         });
       }
     }
-  }, [toast]);
+  }, [location.search, toast]);
 
   useEffect(() => {
     // Load saved address if any
@@ -51,7 +71,13 @@ const Address = () => {
         try {
           const { data, error } = await supabase
             .from('customer_addresses')
-            .select('*')
+            .select(`
+              *,
+              governorates(id, name),
+              cities(id, name),
+              areas(id, name),
+              neighborhoods(id, name)
+            `)
             .eq('id', addressId)
             .eq('user_id', user.id)
             .single();
@@ -63,6 +89,10 @@ const Address = () => {
           if (data) {
             setAddress(data.address || '');
             setMapLocation({
+              government: data.governorate_id || undefined,
+              city: data.city_id || undefined,
+              area: data.area_id || undefined,
+              neighborhood: data.neighborhood_id || undefined,
               latitude: data.latitude !== null ? Number(data.latitude) : undefined,
               longitude: data.longitude !== null ? Number(data.longitude) : undefined
             });
@@ -115,6 +145,10 @@ const Address = () => {
         const addressData = {
           address,
           user_id: user.id,
+          governorate_id: mapLocation.government || null,
+          city_id: mapLocation.city || null,
+          area_id: mapLocation.area || null,
+          neighborhood_id: mapLocation.neighborhood || null,
           latitude: mapLocation.latitude || null,
           longitude: mapLocation.longitude || null,
           // Set as default if this is the user's first address
@@ -141,6 +175,9 @@ const Address = () => {
           throw result.error;
         }
 
+        // Store area and neighborhood names in customer profile for quick access
+        await updateCustomerProfileWithAddress();
+
         // Store in localStorage for quick access
         localStorage.setItem('userAddress', address);
 
@@ -148,6 +185,30 @@ const Address = () => {
         if (mapLocation.latitude && mapLocation.longitude) {
           localStorage.setItem('userLatitude', mapLocation.latitude.toString());
           localStorage.setItem('userLongitude', mapLocation.longitude.toString());
+        }
+
+        if (mapLocation.area) {
+          const { data: areaData } = await supabase
+            .from('areas')
+            .select('name')
+            .eq('id', mapLocation.area)
+            .single();
+
+          if (areaData?.name) {
+            localStorage.setItem('userArea', areaData.name);
+          }
+        }
+
+        if (mapLocation.neighborhood) {
+          const { data: neighborhoodData } = await supabase
+            .from('neighborhoods')
+            .select('name')
+            .eq('id', mapLocation.neighborhood)
+            .single();
+
+          if (neighborhoodData?.name) {
+            localStorage.setItem('userNeighborhood', neighborhoodData.name);
+          }
         }
 
         toast({
@@ -195,16 +256,54 @@ const Address = () => {
     
     return data.length === 0;
   };
+  
+  // Helper function to update customer profile with address details
+  const updateCustomerProfileWithAddress = async () => {
+    if (!user) return;
+    
+    try {
+      const updateData: Record<string, any> = {
+        address: address
+      };
+      
+      if (mapLocation.government) {
+        updateData.governorate_id = mapLocation.government;
+      }
+      
+      if (mapLocation.city) {
+        updateData.city_id = mapLocation.city;
+      }
+      
+      if (mapLocation.area) {
+        updateData.area_id = mapLocation.area;
+      }
+      
+      if (mapLocation.neighborhood) {
+        updateData.neighborhood_id = mapLocation.neighborhood;
+      }
+      
+      await supabase
+        .from('customers')
+        .update(updateData)
+        .eq('user_id', user.id);
+    } catch (error) {
+      console.error('Error updating customer profile:', error);
+      // Don't throw error as this is a non-critical operation
+    }
+  };
 
   const handleOpenMapView = () => {
-    // Navigate to simple map view
-    const lat = mapLocation.latitude || 31.2566;
-    const lng = mapLocation.longitude || 31.1671;
+    // Navigate to full map view with current location or saved coordinates
+    const savedLat = localStorage.getItem('selectedLat');
+    const savedLng = localStorage.getItem('selectedLng');
+    
+    const lat = mapLocation.latitude || (savedLat ? parseFloat(savedLat) : 30.0444);
+    const lng = mapLocation.longitude || (savedLng ? parseFloat(savedLng) : 31.2357);
     
     // Save any current form state to localStorage before navigating
     if (address) localStorage.setItem('draftAddress', address);
     
-    navigate('/simple-map');
+    navigate(`/map-view?lat=${lat}&lng=${lng}${addressId ? `&addressId=${addressId}` : ''}`);
   };
 
   const handleUseMapAddress = () => {
@@ -215,6 +314,11 @@ const Address = () => {
 
   return (
     <MainLayout>
+      <Script 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype"
+        onLoad={() => setMapsLoaded(true)} 
+      />
+      
       <div className="py-4">
         {/* Header with back button */}
         <div className="flex items-center mb-6">
@@ -232,6 +336,14 @@ const Address = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-lg p-4">
             <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <MapPin size={18} className="ml-2 text-gray-500" />
+                <label className="font-medium">الموقع</label>
+              </div>
+              <LocationPicker value={mapLocation} onChange={setMapLocation} />
+            </div>
+
+            <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center">
                   <MapPin size={18} className="ml-2 text-gray-500" />
@@ -243,7 +355,6 @@ const Address = () => {
                 onClick={handleOpenMapView} 
                 variant="outline" 
                 className="w-full flex justify-center items-center mb-3"
-                type="button"
               >
                 <MapIcon size={18} className="ml-2" />
                 فتح الخريطة لتحديد موقعك بدقة
