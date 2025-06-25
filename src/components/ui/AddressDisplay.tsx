@@ -13,20 +13,16 @@ import { useNavigate } from 'react-router-dom';
 interface AddressDisplayProps {
   address?: string;
   onEdit?: () => void;
-  areaName?: string;
   className?: string;
   showAddressSelector?: boolean;
-  neighborhoodName?: string;
   latitude?: number;
   longitude?: number;
 }
 
 const AddressDisplay = ({
   address,
-  areaName,
   className,
   showAddressSelector = false,
-  neighborhoodName,
   latitude,
   longitude,
   onEdit
@@ -41,13 +37,7 @@ const AddressDisplay = ({
       if (!user?.id) return [];
       const { data } = await supabase
         .from('customer_addresses')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('is_default', { ascending: false });
       return data || [];
@@ -71,19 +61,11 @@ const AddressDisplay = ({
       const selectedAddress = addresses.find(addr => addr.id === addressId);
       if (selectedAddress) {
         localStorage.setItem('userAddress', selectedAddress.address || '');
-        localStorage.setItem('userArea', selectedAddress.areas?.name || '');
-        localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
-
-        await supabase
-          .from('customers')
-          .update({
-            governorate_id: selectedAddress.governorate_id,
-            city_id: selectedAddress.city_id,
-            area_id: selectedAddress.area_id,
-            neighborhood_id: selectedAddress.neighborhood_id,
-            address: selectedAddress.address
-          })
-          .eq('user_id', user.id);
+        
+        if (selectedAddress.latitude && selectedAddress.longitude) {
+          localStorage.setItem('userLatitude', selectedAddress.latitude.toString());
+          localStorage.setItem('userLongitude', selectedAddress.longitude.toString());
+        }
       }
 
       await refetch();
@@ -105,11 +87,11 @@ const AddressDisplay = ({
 
   const handleChangeAddress = () => {
     if (user) {
-      navigate('/map-view');
+      navigate('/simple-map');
     } else {
       // Reset location selection to show selector again
       localStorage.removeItem('locationSelected');
-      window.location.reload();
+      navigate('/simple-map');
     }
   };
 
@@ -121,18 +103,14 @@ const AddressDisplay = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center text-sm hover:underline">
-                {areaName || address || "اختر عنوانك"}
-                {neighborhoodName && <span className="text-gray-500 mr-1">- {neighborhoodName}</span>}
+                {address || "اختر عنوانك"}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               {addresses.map((addr) => (
                 <DropdownMenuItem key={addr.id} onClick={() => handleAddressSelect(addr.id)}>
                   <div className={cn("flex flex-col w-full", addr.is_default && "font-bold")}>
-                    <span>
-                      {addr.areas?.name} {addr.neighborhoods?.name ? `- ${addr.neighborhoods?.name}` : ''}
-                    </span>
-                    {addr.address && <span className="text-xs text-gray-500">{addr.address}</span>}
+                    <span>{addr.address}</span>
                     {addr.is_default && <span className="text-xs text-primary">العنوان الافتراضي</span>}
                   </div>
                 </DropdownMenuItem>
@@ -141,8 +119,7 @@ const AddressDisplay = ({
           </DropdownMenu>
         ) : (
           <div className="text-sm">
-            {areaName || address || "لم يتم تحديد عنوان"}
-            {neighborhoodName && <span className="text-gray-500 mr-1">- {neighborhoodName}</span>}
+            {address || "لم يتم تحديد عنوان"}
           </div>
         )}
       </div>
