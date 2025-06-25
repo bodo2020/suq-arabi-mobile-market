@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Scan } from 'lucide-react';
+import { ArrowRight, Scan, RefreshCw } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 const BarcodeScanner = () => {
   const navigate = useNavigate();
@@ -79,7 +80,7 @@ const BarcodeScanner = () => {
   }, [navigate, toast]);
 
   const stopScannerAndNavigate = (scannerInstance: Html5Qrcode, decodedText?: string) => {
-    // Only attempt to stop if it's scanning
+    // Only attempt to stop if it's running
     if (scannerInstance.isScanning) {
       scannerInstance.stop().then(() => {
         setScanner(null);
@@ -120,38 +121,59 @@ const BarcodeScanner = () => {
     <MainLayout>
       <div className="py-4">
         {/* Header with back button */}
-        <div className="flex items-center mb-4">
+        <div className="flex items-center mb-6">
           <button
             onClick={handleBack}
-            className="p-2"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="الرجوع"
           >
-            <ArrowRight size={24} />
+            <ArrowRight size={24} className="text-primary" />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">ماسح الباركود</h1>
+          <h1 className="text-xl font-bold flex-1 text-center text-primary">ماسح الباركود</h1>
           <div className="w-10"></div> {/* Spacer for alignment */}
         </div>
 
-        <div className="flex flex-col items-center">
-          <div id="barcode-reader" className="w-full max-w-md h-64 bg-gray-200 rounded-lg"></div>
-          
-          <p className="mt-4 text-center text-gray-600">
-            قم بتوجيه الكاميرا نحو الباركود للبحث عن المنتج
-          </p>
+        <div className="flex flex-col items-center px-4">
+          <Card className="w-full max-w-md shadow-lg border-2 border-primary/10">
+            <CardContent className="p-6">
+              <div className="text-center mb-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Scan size={32} className="text-primary" />
+                </div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">امسح الباركود</h2>
+                <p className="text-sm text-gray-600">
+                  قم بتوجيه الكاميرا نحو الباركود للبحث عن المنتج
+                </p>
+              </div>
 
-          {scanning ? (
-            <div className="mt-4 flex items-center text-primary">
-              <span className="ml-2">جارِ المسح</span>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <Button
-              onClick={() => window.location.reload()}
-              className="mt-4"
-            >
-              إعادة المحاولة
-            </Button>
-          )}
+              <div 
+                id="barcode-reader" 
+                className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-primary/20"
+              ></div>
+              
+              {scanning ? (
+                <div className="mt-4 flex items-center justify-center text-primary">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary ml-2"></div>
+                  <span className="text-sm font-medium">جارِ المسح...</span>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 w-full bg-primary hover:bg-primary/90 text-white"
+                  size="lg"
+                >
+                  <RefreshCw size={18} className="ml-2" />
+                  إعادة المحاولة
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500 mb-2">
+              تأكد من وضوح الباركود وإضاءة المكان جيداً
+            </p>
+          </div>
         </div>
       </div>
     </MainLayout>

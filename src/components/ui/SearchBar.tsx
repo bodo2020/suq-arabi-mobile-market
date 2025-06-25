@@ -49,10 +49,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`flex items-center gap-2 px-4 py-3 bg-white/50 backdrop-blur-sm rounded-lg shadow-sm border border-gray-100 relative ${backgroundImage ? 'bg-cover bg-center' : ''}`}
+      className={`flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-sm border border-gray-100 relative hover:shadow-md transition-shadow ${backgroundImage ? 'bg-cover bg-center' : ''}`}
       style={backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {}}
     >
-      <Search className="w-5 h-5 text-gray-400" />
+      <Search className="w-5 h-5 text-primary" />
       <input
         type="text"
         placeholder={placeholder}
@@ -67,10 +67,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
       <button
         type="button"
         onClick={handleBarcodeClick}
-        className="p-2 hover:bg-gray-50/50 rounded-full transition-colors"
+        className="p-2 hover:bg-primary/10 rounded-full transition-colors group"
         aria-label="مسح الباركود"
       >
-        <Barcode className="w-5 h-5 text-gray-400" />
+        <Barcode className="w-5 h-5 text-primary group-hover:text-primary/80" />
       </button>
     </form>
   );

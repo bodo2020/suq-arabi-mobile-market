@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
-import LocationSelector from '@/components/ui/LocationSelector';
+import ModernLocationSelector from '@/components/ui/ModernLocationSelector';
 import { getCategories, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
@@ -22,6 +22,8 @@ const Index = () => {
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{
+    governorate?: string | null;
+    city?: string | null;
     area?: string | null;
     neighborhood?: string | null;
   } | null>(null);
@@ -66,10 +68,13 @@ const Index = () => {
         const savedAddress = localStorage.getItem('userAddress');
         if (savedAddress) setUserAddress(savedAddress);
         
+        const governorate = localStorage.getItem('userGovernorate');
+        const city = localStorage.getItem('userCity');
         const area = localStorage.getItem('userArea');
         const neighborhood = localStorage.getItem('userNeighborhood');
-        if (area || neighborhood) {
-          setUserLocation({ area, neighborhood });
+        
+        if (governorate || city || area || neighborhood) {
+          setUserLocation({ governorate, city, area, neighborhood });
         }
         
         // Then fetch banner data which is less critical
@@ -102,6 +107,8 @@ const Index = () => {
   const handleLocationSelected = async (location: any) => {
     setShowLocationSelector(false);
     setUserLocation({
+      governorate: location.governorate,
+      city: location.city,
       area: location.area,
       neighborhood: location.neighborhood
     });
@@ -150,7 +157,7 @@ const Index = () => {
 
   // Show location selector if user hasn't selected location
   if (showLocationSelector) {
-    return <LocationSelector onLocationSelected={handleLocationSelected} />;
+    return <ModernLocationSelector onLocationSelected={handleLocationSelected} />;
   }
 
   // Loading skeleton for better user experience
@@ -237,6 +244,16 @@ const Index = () => {
               <ChevronLeft size={16} />
             </Link>
           </div>
+          
+          {/* Search Bar inside categories section */}
+          <div className="mb-4">
+            <SearchBar 
+              placeholder="البحث داخل الأقسام..."
+              onFocus={handleFocusSearchBar} 
+              readOnly 
+            />
+          </div>
+          
           <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
             {visibleCategories.map(category => (
               <CategoryItem 

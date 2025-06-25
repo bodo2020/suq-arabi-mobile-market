@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Barcode, Search as SearchIcon } from 'lucide-react';
+import { ArrowRight, Barcode, Search as SearchIcon, X, Scan } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import ProductCard from '@/components/ui/ProductCard';
@@ -9,6 +8,7 @@ import { searchProducts } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -198,12 +198,12 @@ const Search = () => {
         <div className="flex items-center mb-4">
           <button
             onClick={handleBack}
-            className="p-2"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="الرجوع"
           >
-            <ArrowRight size={24} />
+            <ArrowRight size={24} className="text-primary" />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">البحث</h1>
+          <h1 className="text-xl font-bold flex-1 text-center text-primary">البحث</h1>
           <div className="w-10"></div> {/* Spacer for alignment */}
         </div>
 
@@ -215,29 +215,55 @@ const Search = () => {
           />
         </div>
 
-        {/* Barcode Scanner */}
+        {/* Modern Barcode Scanner Overlay */}
         {showScanner && (
-          <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex flex-col items-center justify-center p-4">
-            <div id="barcode-reader" className="w-full max-w-md h-64 bg-gray-200 rounded-lg overflow-hidden"></div>
-            <p className="text-white my-4 text-center">قم بتوجيه الكاميرا نحو الباركود</p>
-            <Button 
-              onClick={stopBarcodeScanner}
-              variant="destructive"
-              className="mt-4"
-            >
-              إلغاء
-            </Button>
+          <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center p-4">
+            <Card className="w-full max-w-md shadow-2xl border-2 border-primary/20">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-primary">ماسح الباركود</h3>
+                  <button 
+                    onClick={stopBarcodeScanner}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X size={20} className="text-gray-500" />
+                  </button>
+                </div>
+                
+                <div className="text-center mb-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <Scan size={24} className="text-primary" />
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    قم بتوجيه الكاميرا نحو الباركود
+                  </p>
+                </div>
+
+                <div 
+                  id="barcode-reader" 
+                  className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-primary/30"
+                ></div>
+                
+                <Button 
+                  onClick={stopBarcodeScanner}
+                  variant="outline"
+                  className="w-full mt-4 border-primary text-primary hover:bg-primary hover:text-white"
+                >
+                  إلغاء
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 
         {/* Recent Searches */}
         {!query && recentSearches.length > 0 && (
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-bold">عمليات البحث الأخيرة</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-bold text-primary">عمليات البحث الأخيرة</h2>
               <button 
                 onClick={handleClearHistory}
-                className="text-sm text-primary"
+                className="text-sm text-primary hover:text-primary/80"
               >
                 مسح
               </button>
@@ -247,7 +273,7 @@ const Search = () => {
                 <button 
                   key={index}
                   onClick={() => handleSearchClick(search)}
-                  className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center"
+                  className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm flex items-center hover:bg-primary/20 transition-colors"
                 >
                   <SearchIcon size={14} className="ml-1" />
                   {search}
@@ -260,7 +286,7 @@ const Search = () => {
         {/* Search Results */}
         {query && (
           <>
-            <h2 className="text-lg font-bold mb-3">نتائج البحث عن "{query}"</h2>
+            <h2 className="text-lg font-bold mb-3 text-primary">نتائج البحث عن "{query}"</h2>
             
             {loading ? (
               <div className="flex justify-center items-center h-40">
@@ -274,8 +300,8 @@ const Search = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <SearchIcon size={48} className="text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-500 mb-1">لا توجد نتائج</h3>
+                <SearchIcon size={48} className="text-primary/30 mb-4" />
+                <h3 className="text-lg font-medium text-primary mb-1">لا توجد نتائج</h3>
                 <p className="text-sm text-gray-400">لم نتمكن من العثور على منتجات تطابق "{query}"</p>
               </div>
             )}
