@@ -29,7 +29,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [scriptError, setScriptError] = useState(false);
   
   // Default to Cairo if no initial location provided
   const defaultLat = initialLocation?.lat || 30.0444;
@@ -40,38 +40,57 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const markerRef = useRef<google.maps.Marker | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
 
-  // Load Google Maps script
+  // Load Google Maps script with better error handling
   useEffect(() => {
     const loadGoogleMapsScript = () => {
       // Check if Google Maps is already loaded
       if (window.google && window.google.maps) {
-        setIsScriptLoaded(true);
+        console.log('Google Maps already available');
+        initializeMap();
         return;
       }
 
       // Check if script is already being loaded
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
       if (existingScript) {
-        existingScript.addEventListener('load', () => setIsScriptLoaded(true));
+        console.log('Google Maps script already exists, waiting for load...');
+        const checkGoogleMaps = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(checkGoogleMaps);
+            initializeMap();
+          }
+        }, 100);
+        
+        // Clear interval after 10 seconds to prevent infinite loop
+        setTimeout(() => {
+          clearInterval(checkGoogleMaps);
+          if (!window.google || !window.google.maps) {
+            console.error('Google Maps failed to load after timeout');
+            setScriptError(true);
+          }
+        }, 10000);
         return;
       }
 
       // Create and load the script
+      console.log('Loading Google Maps script...');
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=initMap`;
       script.async = true;
       script.defer = true;
       
-      script.onload = () => {
-        console.log('Google Maps script loaded');
-        setIsScriptLoaded(true);
+      // Create global callback
+      (window as any).initMap = () => {
+        console.log('Google Maps callback triggered');
+        initializeMap();
       };
       
       script.onerror = (error) => {
         console.error('Error loading Google Maps script:', error);
+        setScriptError(true);
         toast({
           title: "خطأ في تحميل الخريطة",
-          description: "يرجى المحاولة مرة أخرى",
+          description: "تحقق من اتصال الإنترنت وحاول مرة أخرى",
           variant: "destructive"
         });
       };
@@ -80,16 +99,23 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     };
 
     loadGoogleMapsScript();
-  }, [toast]);
+  }, []);
 
   // Initialize the map
-  useEffect(() => {
-    if (!isScriptLoaded || !mapContainerRef.current || !window.google?.maps) {
+  const initializeMap = () => {
+    if (!mapContainerRef.current) {
+      console.error('Map container not available');
+      return;
+    }
+
+    if (!window.google?.maps) {
+      console.error('Google Maps not available');
+      setScriptError(true);
       return;
     }
 
     try {
-      console.log("Initializing Google Maps");
+      console.log("Initializing Google Maps with container:", mapContainerRef.current);
       
       const mapOptions: google.maps.MapOptions = {
         center: { lat: defaultLat, lng: defaultLng },
@@ -112,7 +138,8 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         position: { lat: defaultLat, lng: defaultLng },
         map: map,
         draggable: true,
-        animation: window.google.maps.Animation.DROP
+        animation: window.google.maps.Animation.DROP,
+        title: 'اسحبني لتحديد الموقع'
       });
       markerRef.current = marker;
       
@@ -135,16 +162,18 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       });
       
       setMapLoaded(true);
+      console.log("Map initialized successfully");
       
     } catch (error) {
       console.error("Error initializing map:", error);
+      setScriptError(true);
       toast({
-        title: "خطأ في تهيئة الخريطة",
+        title: "خطأ في إنشاء الخريطة",
         description: "حدث خطأ أثناء تحميل الخريطة",
         variant: "destructive"
       });
     }
-  }, [isScriptLoaded, defaultLat, defaultLng, toast]);
+  };
 
   // Reverse geocode to get address
   const reverseGeocode = (lat: number, lng: number) => {
@@ -281,6 +310,45 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     }
   };
 
+  // Render error state
+  if (scriptError) {
+    return (
+      <div className="fixed inset-0 bg-white flex flex-col z-50">
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm">
+          {showBackButton && (
+            <button
+              onClick={handleBack}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="الرجوع"
+            >
+              <ArrowRight size={24} className="text-primary" />
+            </button>
+          )}
+          <h1 className="text-lg font-bold text-primary">تحديد الموقع</h1>
+          <div className="w-10"></div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center max-w-md">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MapPin className="w-8 h-8 text-red-500" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">خطأ في تحميل الخريطة</h2>
+            <p className="text-gray-600 mb-6">
+              لم نتمكن من تحميل خدمة الخرائط. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.
+            </p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-primary hover:bg-primary/90 text-white"
+            >
+              إعادة المحاولة
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-white flex flex-col z-50">
       {/* Header */}
@@ -328,6 +396,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
           <div 
             ref={mapContainerRef}
             className="h-full w-full"
+            style={{ minHeight: '400px' }}
           />
           
           {!mapLoaded && (
@@ -335,6 +404,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-gray-600">جاري تحميل الخريطة...</p>
+                <p className="text-sm text-gray-500 mt-2">قد يستغرق هذا بضع ثوانٍ</p>
               </div>
             </div>
           )}

@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductFilters from '@/components/ui/ProductFilters';
+import SearchBar from '@/components/ui/SearchBar';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 
 const sortOptions = [
@@ -105,6 +106,10 @@ const CategoryDetail = () => {
     e.stopPropagation();
   };
 
+  const handleSearchFocus = () => {
+    navigate('/search');
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -126,6 +131,15 @@ const CategoryDetail = () => {
             {categoryInfo?.name}
           </h1>
           <div className="w-10"></div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-4 px-4">
+          <SearchBar 
+            placeholder={`البحث في ${categoryInfo?.name || 'القسم'}...`}
+            readOnly={true}
+            onFocus={handleSearchFocus}
+          />
         </div>
 
         <div className="sticky top-0 z-10 mb-4 bg-white">
