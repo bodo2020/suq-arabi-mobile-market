@@ -173,7 +173,9 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
 
   const refreshUser = async () => {
     try {
-      const { data: { user, session } } = await supabase.auth.getUser();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      
       setUser(user);
       setSession(session);
       

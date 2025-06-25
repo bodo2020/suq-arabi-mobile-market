@@ -81,9 +81,10 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
 
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
       if (existingScript) {
-        console.log('Google Maps script already exists');
+        console.log('Google Maps script already exists, waiting for load...');
         const checkGoogleMaps = setInterval(() => {
           if (window.google && window.google.maps) {
+            console.log('Google Maps loaded successfully');
             clearInterval(checkGoogleMaps);
             setScriptLoaded(true);
           }
@@ -92,27 +93,33 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         setTimeout(() => {
           clearInterval(checkGoogleMaps);
           if (!window.google || !window.google.maps) {
+            console.error('Google Maps failed to load after timeout');
             setScriptError(true);
             setIsLoading(false);
           }
-        }, 10000);
+        }, 15000); // Increased timeout to 15 seconds
         return;
       }
 
       console.log('Loading Google Maps script...');
       const script = document.createElement('script');
       const API_KEY = 'AIzaSyC4KH_ddrMJ1mVX2v0DruGWG7WeSZVSbtU';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&callback=initMap`;
       script.async = true;
       script.defer = true;
       
-      script.onload = () => {
-        console.log('Google Maps script loaded successfully');
+      // Add global callback for Google Maps
+      (window as any).initMap = () => {
+        console.log('Google Maps callback executed');
         setScriptLoaded(true);
       };
       
-      script.onerror = () => {
-        console.error('Error loading Google Maps script');
+      script.onload = () => {
+        console.log('Google Maps script loaded');
+      };
+      
+      script.onerror = (error) => {
+        console.error('Error loading Google Maps script:', error);
         setScriptError(true);
         setIsLoading(false);
       };
@@ -149,7 +156,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
           },
           {
             featureType: "poi.business",
-            elementType: "labels",
+            elementType: "labels", 
             stylers: [{ visibility: "on" }]
           }
         ]
@@ -160,7 +167,10 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       
       geocoderRef.current = new window.google.maps.Geocoder();
       
+      // Wait for map to be fully loaded
       const idleListener = map.addListener('idle', () => {
+        console.log('Map idle event triggered');
+        
         if (!mapRef.current) return;
         
         const marker = new window.google.maps.Marker({
@@ -184,6 +194,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         reverseGeocode(defaultLat, defaultLng);
         
         const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+          console.log('Map clicked:', e.latLng?.lat(), e.latLng?.lng());
           if (e.latLng && marker) {
             marker.setPosition(e.latLng);
             reverseGeocode(e.latLng.lat(), e.latLng.lng());
@@ -192,6 +203,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         
         const dragendListener = marker.addListener('dragend', () => {
           const position = marker.getPosition();
+          console.log('Marker dragged to:', position?.lat(), position?.lng());
           if (position) {
             reverseGeocode(position.lat(), position.lng());
           }
@@ -206,18 +218,34 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         console.log("Map initialized successfully");
       });
       
+      // Add timeout fallback in case idle event doesn't fire
+      setTimeout(() => {
+        if (!mapLoaded) {
+          console.log("Map idle timeout, forcing initialization");
+          setMapLoaded(true);
+          setIsLoading(false);
+        }
+      }, 5000);
+      
     } catch (error) {
       console.error("Error initializing map:", error);
       setScriptError(true);
       setIsLoading(false);
     }
-  }, [scriptLoaded, defaultLat, defaultLng]);
+  }, [scriptLoaded, defaultLat, defaultLng, mapLoaded]);
 
   // Reverse geocode to get address
   const reverseGeocode = (lat: number, lng: number) => {
-    if (!geocoderRef.current) return;
+    if (!geocoderRef.current) {
+      console.log('Geocoder not available');
+      const location = { lat, lng, address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` };
+      setSelectedLocation(location);
+      return;
+    }
 
+    console.log('Reverse geocoding:', lat, lng);
     geocoderRef.current.geocode({ location: { lat, lng } }, (results, status) => {
+      console.log('Geocoding result:', status, results);
       if (status === "OK" && results && results[0]) {
         const addressText = results[0].formatted_address;
         const location = { lat, lng, address: addressText };
@@ -231,7 +259,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     });
   };
 
-  // Handle search
   const handleSearch = () => {
     if (!searchQuery.trim() || !geocoderRef.current || !mapRef.current || !markerRef.current) {
       return;
@@ -263,7 +290,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     });
   };
 
-  // Get user's current location with permission request
   const getUserLocation = () => {
     if (!mapRef.current || !markerRef.current) {
       toast({
@@ -275,7 +301,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     }
 
     if (navigator.geolocation) {
-      // Check if permission is already granted
       if (navigator.permissions) {
         navigator.permissions.query({ name: 'geolocation' }).then(result => {
           if (result.state === 'denied') {
@@ -290,7 +315,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
           
           requestLocation();
         }).catch(() => {
-          // Fallback if permissions API is not available
           requestLocation();
         });
       } else {
@@ -495,6 +519,9 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-gray-600">جاري تحميل الخريطة...</p>
                 <p className="text-sm text-gray-500 mt-2">قد يستغرق هذا بضع ثوانٍ</p>
+                {scriptError && (
+                  <p className="text-sm text-red-500 mt-2">خطأ في تحميل Google Maps API</p>
+                )}
               </div>
             </div>
           )}
