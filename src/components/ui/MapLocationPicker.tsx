@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Search, Navigation } from 'lucide-react';
@@ -30,6 +31,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [scriptError, setScriptError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
   
   // Default to Cairo if no initial location provided
   const defaultLat = initialLocation?.lat || 30.0444;
@@ -39,103 +41,106 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
+
+  // Clean up function
+  const cleanup = () => {
+    console.log('Cleaning up map resources');
+    
+    // Remove all event listeners
+    if (listenersRef.current.length > 0) {
+      listenersRef.current.forEach(listener => {
+        try {
+          listener.remove();
+        } catch (e) {
+          console.error('Error removing listener:', e);
+        }
+      });
+      listenersRef.current = [];
+    }
+    
+    // Remove marker
+    if (markerRef.current) {
+      try {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      } catch (e) {
+        console.error('Error removing marker:', e);
+      }
+    }
+    
+    // Clear map reference
+    mapRef.current = null;
+  };
 
   // Load Google Maps script
   useEffect(() => {
-    const loadGoogleMapsScript = async () => {
-      try {
-        // Check if Google Maps is already loaded
-        if (window.google && window.google.maps) {
-          console.log('Google Maps already loaded');
-          initializeMap();
-          return;
-        }
+    const loadGoogleMapsScript = () => {
+      // Check if Google Maps is already loaded
+      if (window.google && window.google.maps) {
+        console.log('Google Maps already loaded');
+        setScriptLoaded(true);
+        return;
+      }
 
-        // Check if script is already being loaded
-        const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-        if (existingScript) {
-          console.log('Google Maps script already exists, waiting for load...');
-          
-          // Wait for the script to load
-          const checkInterval = setInterval(() => {
-            if (window.google && window.google.maps) {
-              clearInterval(checkInterval);
-              initializeMap();
-            }
-          }, 100);
-          
-          // Timeout after 10 seconds
-          setTimeout(() => {
-            clearInterval(checkInterval);
-            if (!window.google || !window.google.maps) {
-              console.error('Google Maps failed to load after timeout');
-              setScriptError(true);
-              setIsLoading(false);
-            }
-          }, 10000);
-          return;
-        }
+      // Check if script already exists
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        console.log('Google Maps script already exists');
+        const checkGoogleMaps = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(checkGoogleMaps);
+            setScriptLoaded(true);
+          }
+        }, 100);
+        
+        setTimeout(() => {
+          clearInterval(checkGoogleMaps);
+          if (!window.google || !window.google.maps) {
+            setScriptError(true);
+            setIsLoading(false);
+          }
+        }, 10000);
+        return;
+      }
 
-        // Create and load the script
-        console.log('Loading Google Maps script...');
-        const script = document.createElement('script');
-        const API_KEY = 'AIzaSyC4KH_ddrMJ1mVX2v0DruGWG7WeSZVSbtU';
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        
-        script.onload = () => {
-          console.log('Google Maps script loaded successfully');
-          // Small delay to ensure everything is ready
-          setTimeout(() => {
-            initializeMap();
-          }, 100);
-        };
-        
-        script.onerror = (error) => {
-          console.error('Error loading Google Maps script:', error);
-          setScriptError(true);
-          setIsLoading(false);
-          toast({
-            title: "خطأ في تحميل الخريطة",
-            description: "تحقق من اتصال الإنترنت وحاول مرة أخرى",
-            variant: "destructive"
-          });
-        };
-        
-        document.head.appendChild(script);
-        
-      } catch (error) {
-        console.error('Error in loadGoogleMapsScript:', error);
+      // Create and load the script
+      console.log('Loading Google Maps script...');
+      const script = document.createElement('script');
+      const API_KEY = 'AIzaSyC4KH_ddrMJ1mVX2v0DruGWG7WeSZVSbtU';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => {
+        console.log('Google Maps script loaded successfully');
+        setScriptLoaded(true);
+      };
+      
+      script.onerror = () => {
+        console.error('Error loading Google Maps script');
         setScriptError(true);
         setIsLoading(false);
-      }
+      };
+      
+      document.head.appendChild(script);
     };
 
     loadGoogleMapsScript();
+
+    // Cleanup on unmount
+    return cleanup;
   }, []);
 
-  // Initialize the map
-  const initializeMap = () => {
+  // Initialize the map when script is loaded
+  useEffect(() => {
+    if (!scriptLoaded || !mapContainerRef.current || mapRef.current) {
+      return;
+    }
+
+    console.log("Initializing map...");
+    
     try {
-      console.log("Starting map initialization...");
-      
-      if (!mapContainerRef.current) {
-        console.error('Map container not available');
-        setScriptError(true);
-        setIsLoading(false);
-        return;
-      }
-
-      if (!window.google?.maps) {
-        console.error('Google Maps not available');
-        setScriptError(true);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("Creating Google Maps instance...");
-      
       const mapOptions: google.maps.MapOptions = {
         center: { lat: defaultLat, lng: defaultLng },
         zoom: 15,
@@ -152,50 +157,54 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       // Initialize geocoder
       geocoderRef.current = new window.google.maps.Geocoder();
       
-      // Create marker
-      const marker = new window.google.maps.Marker({
-        position: { lat: defaultLat, lng: defaultLng },
-        map: map,
-        draggable: true,
-        animation: window.google.maps.Animation.DROP,
-        title: 'اسحبني لتحديد الموقع'
+      // Wait for map to be idle before adding marker
+      const idleListener = map.addListener('idle', () => {
+        if (!mapRef.current) return;
+        
+        // Create marker
+        const marker = new window.google.maps.Marker({
+          position: { lat: defaultLat, lng: defaultLng },
+          map: mapRef.current,
+          draggable: true,
+          animation: window.google.maps.Animation.DROP,
+          title: 'اسحبني لتحديد الموقع'
+        });
+        markerRef.current = marker;
+        
+        // Get initial address
+        reverseGeocode(defaultLat, defaultLng);
+        
+        // Add event listeners
+        const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+          if (e.latLng && marker) {
+            marker.setPosition(e.latLng);
+            reverseGeocode(e.latLng.lat(), e.latLng.lng());
+          }
+        });
+        
+        const dragendListener = marker.addListener('dragend', () => {
+          const position = marker.getPosition();
+          if (position) {
+            reverseGeocode(position.lat(), position.lng());
+          }
+        });
+        
+        listenersRef.current.push(clickListener, dragendListener);
+        
+        // Remove idle listener and mark as loaded
+        idleListener.remove();
+        setMapLoaded(true);
+        setIsLoading(false);
+        
+        console.log("Map initialized successfully");
       });
-      markerRef.current = marker;
-      
-      // Get initial location address
-      reverseGeocode(defaultLat, defaultLng);
-      
-      // Add event listeners
-      marker.addListener('dragend', () => {
-        const position = marker.getPosition();
-        if (position) {
-          reverseGeocode(position.lat(), position.lng());
-        }
-      });
-      
-      map.addListener('click', (e: google.maps.MapMouseEvent) => {
-        if (e.latLng && marker) {
-          marker.setPosition(e.latLng);
-          reverseGeocode(e.latLng.lat(), e.latLng.lng());
-        }
-      });
-      
-      // Map is ready
-      console.log("Map initialized successfully");
-      setMapLoaded(true);
-      setIsLoading(false);
       
     } catch (error) {
       console.error("Error initializing map:", error);
       setScriptError(true);
       setIsLoading(false);
-      toast({
-        title: "خطأ في إنشاء الخريطة",
-        description: "حدث خطأ أثناء تحميل الخريطة",
-        variant: "destructive"
-      });
     }
-  };
+  }, [scriptLoaded, defaultLat, defaultLng]);
 
   // Reverse geocode to get address
   const reverseGeocode = (lat: number, lng: number) => {
