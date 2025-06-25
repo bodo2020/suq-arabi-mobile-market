@@ -1,15 +1,21 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Customer } from '@/lib/supabase';
 
 interface UserContextType {
   user: User | null;
   customer: Customer | null;
+  session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, metadata?: any) => Promise<{ error: any }>;
+  signInWithPhone: (phone: string) => Promise<{ error: any }>;
+  verifyPhone: (phone: string, code: string) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -29,6 +35,7 @@ interface UserProviderInternalProps {
 const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Guest data migration function - moved here to avoid circular dependency
@@ -62,8 +69,7 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
                   user_id: userId,
                   product_id: item.product_id,
                   quantity: item.quantity,
-                  weight_option: item.weight_option || null,
-                  price: item.price
+                  metadata: item.weight_option ? { weight_option: item.weight_option, price: item.price } : null
                 });
             }
             
@@ -90,7 +96,7 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
                 user_id: userId,
                 latitude: locationData.coordinates.lat,
                 longitude: locationData.coordinates.lng,
-                address_text: locationData.address,
+                address: locationData.address,
                 is_default: true
               });
           }
@@ -115,14 +121,14 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
             
             // Clear existing favorites for this user
             await supabase
-              .from('customer_favorites')
+              .from('favorites')
               .delete()
               .eq('user_id', userId);
 
             // Insert guest favorites
             for (const productId of favorites) {
               await supabase
-                .from('customer_favorites')
+                .from('favorites')
                 .insert({
                   user_id: userId,
                   product_id: productId
@@ -167,8 +173,9 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
 
   const refreshUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user, session } } = await supabase.auth.getUser();
       setUser(user);
+      setSession(session);
       
       if (user) {
         await fetchCustomer(user.id);
@@ -185,9 +192,53 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
       await supabase.auth.signOut();
       setUser(null);
       setCustomer(null);
+      setSession(null);
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signUp = async (email: string, password: string, metadata?: any) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata,
+        emailRedirectTo: `${window.location.origin}/`
+      }
+    });
+    return { error };
+  };
+
+  const signInWithPhone = async (phone: string) => {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      phone,
+    });
+    return { error };
+  };
+
+  const verifyPhone = async (phone: string, code: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone,
+      token: code,
+      type: 'sms'
+    });
+    return { error };
+  };
+
+  const resetPassword = async (email: string) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
+    return { error };
   };
 
   useEffect(() => {
@@ -195,15 +246,16 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
 
     const getInitialUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (mounted) {
-          setUser(user);
+          setSession(session);
+          setUser(session?.user ?? null);
           
-          if (user) {
-            await fetchCustomer(user.id);
+          if (session?.user) {
+            await fetchCustomer(session.user.id);
             // Migrate guest data when user logs in
-            await migrateGuestData(user.id);
+            await migrateGuestData(session.user.id);
           }
           
           setLoading(false);
@@ -224,6 +276,7 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
 
         console.log('Auth state changed:', event, session?.user?.id);
         
+        setSession(session);
         if (session?.user) {
           setUser(session.user);
           await fetchCustomer(session.user.id);
@@ -250,9 +303,15 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
   const value = {
     user,
     customer,
+    session,
     loading,
     signOut,
     refreshUser,
+    signIn,
+    signUp,
+    signInWithPhone,
+    verifyPhone,
+    resetPassword,
   };
 
   return (

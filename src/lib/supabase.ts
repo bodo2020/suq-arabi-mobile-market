@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 
@@ -67,6 +68,26 @@ export type Company = {
   contact_email?: string;
   address?: string;
   name: string;
+};
+
+// Add Customer type that was missing
+export type Customer = {
+  id: string;
+  user_id?: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+  first_name?: string;
+  last_name?: string;
+  created_at?: string;
+  updated_at?: string;
+  phone_verified?: boolean;
+  governorate_id?: string;
+  city_id?: string;
+  area_id?: string;
+  neighborhood_id?: string;
 };
 
 export type CartItem = {
