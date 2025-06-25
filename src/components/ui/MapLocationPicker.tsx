@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, Check, Search } from 'lucide-react';
+import { ArrowRight, MapPin, Check, Search, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -243,6 +243,66 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     });
   };
 
+  // Get user's current location
+  const getUserLocation = () => {
+    if (!mapRef.current || !markerRef.current) {
+      toast({
+        title: "خطأ",
+        description: "الخريطة غير جاهزة بعد",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (navigator.geolocation) {
+      toast({
+        title: "جاري تحديد موقعك",
+        description: "يرجى الانتظار...",
+      });
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          if (mapRef.current && markerRef.current) {
+            mapRef.current.setCenter(userLocation);
+            mapRef.current.setZoom(16);
+            markerRef.current.setPosition(userLocation);
+            
+            reverseGeocode(userLocation.lat, userLocation.lng);
+          }
+          
+          toast({
+            title: "تم تحديد موقعك",
+            description: "يمكنك تحريك المؤشر لضبط الموقع بدقة",
+          });
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast({
+            title: "تعذر الوصول إلى موقعك",
+            description: "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا",
+            variant: "destructive"
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      toast({
+        title: "خدمة تحديد الموقع غير متوفرة",
+        description: "يرجى تحديد موقعك يدويًا",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleBack = () => {
     navigate(-1);
   };
@@ -287,7 +347,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             <ArrowRight size={24} className="text-primary" />
           </button>
         )}
-        <h1 className="text-lg font-bold text-primary">اختر موقعك</h1>
+        <h1 className="text-lg font-bold text-primary">Pin Your Location</h1>
         <div className="w-10"></div>
       </div>
 
@@ -298,7 +358,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="text"
-              placeholder="ابحث عن مكان أو عنوان"
+              placeholder="Search a place"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -329,14 +389,18 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             </div>
           )}
           
-          {/* Instructions overlay */}
+          {/* My Location Button */}
           {mapLoaded && (
-            <div className="absolute top-4 left-4 right-4 z-10">
-              <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-sm">
-                <p className="text-sm text-gray-700 text-center">
-                  اضغط على الخريطة أو اسحب المؤشر لتحديد موقعك
-                </p>
-              </div>
+            <div className="absolute bottom-4 right-4 z-10">
+              <Button
+                onClick={getUserLocation}
+                variant="secondary"
+                size="icon"
+                className="bg-primary hover:bg-primary/90 text-white shadow-lg rounded-full w-12 h-12"
+                aria-label="تحديد موقعي"
+              >
+                <Navigation size={20} />
+              </Button>
             </div>
           )}
         </div>
@@ -363,8 +427,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             onClick={handleConfirmLocation}
             className="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-xl font-medium"
           >
-            <Check size={20} className="ml-2" />
-            تأكيد الموقع
+            Select Location
           </Button>
         </div>
       )}
