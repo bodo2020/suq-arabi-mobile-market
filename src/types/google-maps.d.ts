@@ -22,8 +22,33 @@ declare namespace google.maps {
     setAnimation(animation: Animation | null): void;
   }
   
+  class Polyline {
+    constructor(opts?: PolylineOptions);
+    setMap(map: Map | null): void;
+    setPath(path: LatLng[] | LatLngLiteral[]): void;
+    getPath(): MVCArray<LatLng>;
+  }
+  
+  class LatLng {
+    constructor(lat: number, lng: number);
+    lat(): number;
+    lng(): number;
+    toJSON(): LatLngLiteral;
+  }
+  
+  class MVCArray<T> {
+    getLength(): number;
+    getAt(i: number): T;
+  }
+  
   class Geocoder {
     geocode(request: GeocoderRequest, callback: (results: GeocoderResult[], status: GeocoderStatus) => void): void;
+  }
+  
+  namespace geometry {
+    namespace spherical {
+      function computeDistanceBetween(from: LatLng, to: LatLng): number;
+    }
   }
   
   interface MapOptions {
@@ -58,6 +83,15 @@ declare namespace google.maps {
     icon?: string | Icon;
   }
   
+  interface PolylineOptions {
+    path?: LatLng[] | LatLngLiteral[];
+    geodesic?: boolean;
+    strokeColor?: string;
+    strokeOpacity?: number;
+    strokeWeight?: number;
+    map?: Map | null;
+  }
+  
   interface Icon {
     url?: string;
     size?: Size;
@@ -89,12 +123,6 @@ declare namespace google.maps {
       location: LatLng;
     };
     types: string[];
-  }
-  
-  interface LatLng {
-    lat(): number;
-    lng(): number;
-    toJSON(): LatLngLiteral;
   }
   
   interface LatLngLiteral {
