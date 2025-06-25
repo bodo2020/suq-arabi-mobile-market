@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Search, Navigation, Camera } from 'lucide-react';
@@ -171,12 +170,13 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
           animation: window.google.maps.Animation.DROP,
           title: 'اسحبني لتحديد الموقع',
           icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: '#00b894',
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 3
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="8" fill="#00b894" stroke="#ffffff" stroke-width="3"/>
+              </svg>
+            `),
+            scaledSize: new window.google.maps.Size(32, 32),
+            anchor: new window.google.maps.Point(16, 16)
           }
         });
         markerRef.current = marker;
