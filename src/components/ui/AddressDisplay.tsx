@@ -105,7 +105,7 @@ const AddressDisplay = ({
 
   const handleChangeAddress = () => {
     if (user) {
-      navigate('/address-manager');
+      navigate('/map-view');
     } else {
       // Reset location selection to show selector again
       localStorage.removeItem('locationSelected');

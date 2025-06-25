@@ -1,16 +1,9 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import MapLocationPicker from '@/components/ui/MapLocationPicker';
 
 const FullMapView: React.FC = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Navigate back immediately when this route is accessed
-    navigate(-1);
-  }, [navigate]);
-
-  return null;
+  return <MapLocationPicker />;
 };
 
 export default FullMapView;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, MapPin, Map as MapIcon } from 'lucide-react';
@@ -7,8 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import LocationPicker from '@/components/ui/LocationPicker';
-import Script from '@/components/ui/Script';
-import '@/types/google-maps.d.ts';
 
 const Address = () => {
   const navigate = useNavigate();
@@ -27,42 +26,30 @@ const Address = () => {
     latitude?: number;
     longitude?: number;
   }>({});
-  const [mapsLoaded, setMapsLoaded] = useState(false);
   const [addressFromMap, setAddressFromMap] = useState('');
 
-  // Check for location data in URL parameters (coming back from map view)
+  // Check for location data from map
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const lat = queryParams.get('lat');
-    const lng = queryParams.get('lng');
-    const mapAddress = queryParams.get('address');
+    const savedLat = localStorage.getItem('selectedLat');
+    const savedLng = localStorage.getItem('selectedLng');
+    const savedAddress = localStorage.getItem('selectedAddress');
     
-    if (lat && lng) {
-      // Save coordinates in local storage for persistence
-      localStorage.setItem('selectedLat', lat);
-      localStorage.setItem('selectedLng', lng);
-      
-      if (mapAddress) {
-        localStorage.setItem('selectedAddress', decodeURIComponent(mapAddress));
-        setAddressFromMap(decodeURIComponent(mapAddress));
-      }
-      
-      // Update state with new coordinates
+    if (savedLat && savedLng) {
       setMapLocation(prev => ({
         ...prev,
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lng)
+        latitude: parseFloat(savedLat),
+        longitude: parseFloat(savedLng)
       }));
       
-      // Show success message if we have a complete address
-      if (mapAddress) {
+      if (savedAddress) {
+        setAddressFromMap(savedAddress);
         toast({
           title: "تم تحديد الموقع",
           description: "تم تحديد موقعك بنجاح على الخريطة"
         });
       }
     }
-  }, [location.search, toast]);
+  }, [toast]);
 
   useEffect(() => {
     // Load saved address if any
@@ -294,11 +281,8 @@ const Address = () => {
 
   const handleOpenMapView = () => {
     // Navigate to full map view with current location or saved coordinates
-    const savedLat = localStorage.getItem('selectedLat');
-    const savedLng = localStorage.getItem('selectedLng');
-    
-    const lat = mapLocation.latitude || (savedLat ? parseFloat(savedLat) : 30.0444);
-    const lng = mapLocation.longitude || (savedLng ? parseFloat(savedLng) : 31.2357);
+    const lat = mapLocation.latitude || 30.0444;
+    const lng = mapLocation.longitude || 31.2357;
     
     // Save any current form state to localStorage before navigating
     if (address) localStorage.setItem('draftAddress', address);
@@ -314,11 +298,6 @@ const Address = () => {
 
   return (
     <MainLayout>
-      <Script 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype"
-        onLoad={() => setMapsLoaded(true)} 
-      />
-      
       <div className="py-4">
         {/* Header with back button */}
         <div className="flex items-center mb-6">
@@ -355,6 +334,7 @@ const Address = () => {
                 onClick={handleOpenMapView} 
                 variant="outline" 
                 className="w-full flex justify-center items-center mb-3"
+                type="button"
               >
                 <MapIcon size={18} className="ml-2" />
                 فتح الخريطة لتحديد موقعك بدقة
