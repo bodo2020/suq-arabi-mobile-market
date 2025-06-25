@@ -32,7 +32,7 @@ import MapView from '@/pages/MapView';
 import FullMapView from '@/pages/FullMapView';
 import NotFound from '@/pages/NotFound';
 import { UserProvider } from '@/contexts/UserContext';
-import { CartProvider } from '@/contexts/CartContext';
+import { CartProvider } from '@/contexts/CartProvider';
 import SimpleMap from '@/pages/SimpleMap';
 
 const queryClient = new QueryClient();

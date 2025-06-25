@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -60,13 +61,7 @@ const Payment = () => {
 
       const { data: address } = await supabase
         .from('customer_addresses')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .eq('is_default', true)
         .maybeSingle();
@@ -79,26 +74,8 @@ const Payment = () => {
     enabled: !!user?.id
   });
 
-  const { data: deliveryPricing } = useQuery({
-    queryKey: ['deliveryPricing', customerData?.default_address],
-    queryFn: async () => {
-      if (!customerData?.default_address) return null;
-      const locationId = customerData.default_address.neighborhood_id || 
-                        customerData.default_address.area_id || 
-                        customerData.default_address.city_id || 
-                        customerData.default_address.governorate_id;
-      
-      if (!locationId) return null;
-      const { data } = await supabase
-        .from('delivery_type_pricing')
-        .select('*')
-        .eq('delivery_location_id', locationId)
-        .maybeSingle();
-      
-      return data;
-    },
-    enabled: !!customerData?.default_address
-  });
+  // Remove delivery pricing query since we don't have location hierarchy anymore
+  const deliveryPricing = { price: 20 }; // Default delivery price
 
   useEffect(() => {
     if (deliveryPricing?.price !== undefined) {
@@ -182,10 +159,7 @@ const Payment = () => {
         customer_id: customerId,
         shipping_address: customerData?.default_address.address,
         notes: '',
-        delivery_location_id: customerData?.default_address?.neighborhood_id || 
-                           customerData?.default_address?.area_id || 
-                           customerData?.default_address?.city_id || 
-                           customerData?.default_address?.governorate_id
+        delivery_location_id: null // Removed reference to location hierarchy
       };
 
       console.log("Submitting order data:", orderData);
@@ -248,10 +222,7 @@ const Payment = () => {
         customer_id: customerId,
         shipping_address: customerData?.default_address.address,
         notes: '',
-        delivery_location_id: customerData?.default_address?.neighborhood_id || 
-                               customerData?.default_address?.area_id || 
-                               customerData?.default_address?.city_id || 
-                               customerData?.default_address?.governorate_id
+        delivery_location_id: null // Removed reference to location hierarchy
       };
       
       console.log("Submitting wallet order data:", orderData);
@@ -372,16 +343,14 @@ const Payment = () => {
               {customerData?.default_address ? (
                 <AddressDisplay
                   address={customerData.default_address.address || ''}
-                  areaName={customerData.default_address.areas?.name || undefined}
-                  neighborhoodName={customerData.default_address.neighborhoods?.name || undefined}
-                  onEdit={() => navigate('/addresses')}
+                  onEdit={() => navigate('/address-manager')}
                 />
               ) : (
                 <div className="text-center py-4">
                   <p className="text-gray-500 mb-2">لا يوجد عنوان للتوصيل</p>
                   <Button 
                     variant="outline" 
-                    onClick={() => navigate('/addresses')} 
+                    onClick={() => navigate('/address-manager')} 
                     className="text-primary border-primary hover:bg-primary/10"
                   >
                     إضافة عنوان جديد

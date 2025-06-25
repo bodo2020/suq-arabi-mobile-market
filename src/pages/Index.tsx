@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { getProducts } from '@/lib/supabase';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +15,7 @@ import SimpleAddressDisplay from '@/components/ui/SimpleAddressDisplay';
 const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { addItemToCart } = useCart();
+  const { addToCart } = useCart();
   const { toast } = useToast();
   const { user } = useUser();
   const navigate = useNavigate();
@@ -41,7 +42,10 @@ const Index = () => {
   };
 
   const handleAddToCart = (product: Product) => {
-    addItemToCart(product);
+    addToCart({
+      ...product,
+      quantity: 1
+    });
     toast({
       title: "تمت الإضافة إلى السلة",
       description: `${product.name} added to cart.`,
@@ -75,7 +79,6 @@ const Index = () => {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onAddToCart={() => handleAddToCart(product)}
                 />
               ))}
             </div>
