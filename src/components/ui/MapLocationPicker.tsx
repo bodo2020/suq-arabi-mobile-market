@@ -30,6 +30,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [scriptError, setScriptError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Default to Cairo if no initial location provided
   const defaultLat = initialLocation?.lat || 30.0444;
@@ -40,62 +41,76 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const markerRef = useRef<google.maps.Marker | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
 
-  // Load Google Maps script with better error handling
+  // Load Google Maps script
   useEffect(() => {
-    const loadGoogleMapsScript = () => {
-      // Check if Google Maps is already loaded
-      if (window.google && window.google.maps) {
-        console.log('Google Maps already available');
-        initializeMap();
-        return;
-      }
+    const loadGoogleMapsScript = async () => {
+      try {
+        // Check if Google Maps is already loaded
+        if (window.google && window.google.maps) {
+          console.log('Google Maps already loaded');
+          initializeMap();
+          return;
+        }
 
-      // Check if script is already being loaded
-      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-      if (existingScript) {
-        console.log('Google Maps script already exists, waiting for load...');
-        const checkGoogleMaps = setInterval(() => {
-          if (window.google && window.google.maps) {
-            clearInterval(checkGoogleMaps);
-            initializeMap();
-          }
-        }, 100);
+        // Check if script is already being loaded
+        const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+        if (existingScript) {
+          console.log('Google Maps script already exists, waiting for load...');
+          
+          // Wait for the script to load
+          const checkInterval = setInterval(() => {
+            if (window.google && window.google.maps) {
+              clearInterval(checkInterval);
+              initializeMap();
+            }
+          }, 100);
+          
+          // Timeout after 10 seconds
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            if (!window.google || !window.google.maps) {
+              console.error('Google Maps failed to load after timeout');
+              setScriptError(true);
+              setIsLoading(false);
+            }
+          }, 10000);
+          return;
+        }
+
+        // Create and load the script
+        console.log('Loading Google Maps script...');
+        const script = document.createElement('script');
+        const API_KEY = 'AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw';
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
         
-        // Clear interval after 10 seconds to prevent infinite loop
-        setTimeout(() => {
-          clearInterval(checkGoogleMaps);
-          if (!window.google || !window.google.maps) {
-            console.error('Google Maps failed to load after timeout');
-            setScriptError(true);
-          }
-        }, 10000);
-        return;
-      }
-
-      // Create and load the script
-      console.log('Loading Google Maps script...');
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=initMap`;
-      script.async = true;
-      script.defer = true;
-      
-      // Create global callback
-      (window as any).initMap = () => {
-        console.log('Google Maps callback triggered');
-        initializeMap();
-      };
-      
-      script.onerror = (error) => {
-        console.error('Error loading Google Maps script:', error);
+        script.onload = () => {
+          console.log('Google Maps script loaded successfully');
+          // Small delay to ensure everything is ready
+          setTimeout(() => {
+            initializeMap();
+          }, 100);
+        };
+        
+        script.onerror = (error) => {
+          console.error('Error loading Google Maps script:', error);
+          setScriptError(true);
+          setIsLoading(false);
+          toast({
+            title: "خطأ في تحميل الخريطة",
+            description: "تحقق من اتصال الإنترنت وحاول مرة أخرى",
+            variant: "destructive"
+          });
+        };
+        
+        document.head.appendChild(script);
+        
+      } catch (error) {
+        console.error('Error in loadGoogleMapsScript:', error);
         setScriptError(true);
-        toast({
-          title: "خطأ في تحميل الخريطة",
-          description: "تحقق من اتصال الإنترنت وحاول مرة أخرى",
-          variant: "destructive"
-        });
-      };
-      
-      document.head.appendChild(script);
+        setIsLoading(false);
+      }
     };
 
     loadGoogleMapsScript();
@@ -103,19 +118,24 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
 
   // Initialize the map
   const initializeMap = () => {
-    if (!mapContainerRef.current) {
-      console.error('Map container not available');
-      return;
-    }
-
-    if (!window.google?.maps) {
-      console.error('Google Maps not available');
-      setScriptError(true);
-      return;
-    }
-
     try {
-      console.log("Initializing Google Maps with container:", mapContainerRef.current);
+      console.log("Starting map initialization...");
+      
+      if (!mapContainerRef.current) {
+        console.error('Map container not available');
+        setScriptError(true);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!window.google?.maps) {
+        console.error('Google Maps not available');
+        setScriptError(true);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Creating Google Maps instance...");
       
       const mapOptions: google.maps.MapOptions = {
         center: { lat: defaultLat, lng: defaultLng },
@@ -161,12 +181,15 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         }
       });
       
-      setMapLoaded(true);
+      // Map is ready
       console.log("Map initialized successfully");
+      setMapLoaded(true);
+      setIsLoading(false);
       
     } catch (error) {
       console.error("Error initializing map:", error);
       setScriptError(true);
+      setIsLoading(false);
       toast({
         title: "خطأ في إنشاء الخريطة",
         description: "حدث خطأ أثناء تحميل الخريطة",
@@ -399,7 +422,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             style={{ minHeight: '400px' }}
           />
           
-          {!mapLoaded && (
+          {(isLoading || !mapLoaded) && (
             <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
