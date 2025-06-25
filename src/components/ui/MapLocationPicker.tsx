@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Search, Navigation, Camera } from 'lucide-react';
@@ -86,7 +85,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         existingScript.remove();
       }
 
-      console.log('Loading Google Maps script with new API key...');
+      console.log('Loading Google Maps script...');
       const script = document.createElement('script');
       const API_KEY = 'AIzaSyCXShIlIaYEMOMSpbvL8xHArXK0QVw4xSE';
       script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
@@ -147,7 +146,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       
       geocoderRef.current = new window.google.maps.Geocoder();
       
-      // Create marker immediately
+      // Create marker with proper icon using SVG path
       const marker = new window.google.maps.Marker({
         position: { lat: defaultLat, lng: defaultLng },
         map: map,
@@ -155,12 +154,14 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         animation: window.google.maps.Animation.DROP,
         title: 'اسحبني لتحديد الموقع',
         icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          fillColor: '#00b894',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 3,
-          scale: 8
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="8" fill="#00b894" stroke="#ffffff" stroke-width="3"/>
+              <circle cx="12" cy="12" r="3" fill="#ffffff"/>
+            </svg>
+          `),
+          scaledSize: new window.google.maps.Size(24, 24),
+          anchor: new window.google.maps.Point(12, 12)
         }
       });
       markerRef.current = marker;
