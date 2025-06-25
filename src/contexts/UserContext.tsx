@@ -199,7 +199,7 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -207,7 +207,7 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
   };
 
   const signUp = async (email: string, password: string, metadata?: any) => {
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -219,14 +219,14 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
   };
 
   const signInWithPhone = async (phone: string) => {
-    const { data, error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithOtp({
       phone,
     });
     return { error };
   };
 
   const verifyPhone = async (phone: string, code: string) => {
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { error } = await supabase.auth.verifyOtp({
       phone,
       token: code,
       type: 'sms'
@@ -235,7 +235,7 @@ const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children })
   };
 
   const resetPassword = async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`
     });
     return { error };
