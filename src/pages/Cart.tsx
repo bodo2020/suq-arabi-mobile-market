@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -242,6 +241,11 @@ const Cart = () => {
     return item.product.price;
   };
 
+  // Get the selected product for weight selector
+  const selectedProduct = openWeightSelector 
+    ? items.find(item => item.product.id === openWeightSelector)?.product 
+    : null;
+
   return (
     <MainLayout>
       <div className="py-4">
@@ -420,16 +424,11 @@ const Cart = () => {
         )}
 
         {/* Weight Selector Modal */}
-        {openWeightSelector && (
+        {openWeightSelector && selectedProduct && (
           <WeightSelector
             isOpen={!!openWeightSelector}
             onClose={() => setOpenWeightSelector(null)}
-            productId={openWeightSelector}
-            currentWeight={items.find(item => item.product.id === openWeightSelector)?.quantity || 100}
-            onWeightSelect={(weight) => {
-              updateQuantity(openWeightSelector, weight);
-              setOpenWeightSelector(null);
-            }}
+            product={selectedProduct}
           />
         )}
       </div>
