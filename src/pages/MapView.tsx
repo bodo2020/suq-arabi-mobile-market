@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Search, MapPin, Navigation } from 'lucide-react';
@@ -26,18 +27,47 @@ const MapView: React.FC = () => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const queryParams = new URLSearchParams(location.search);
   const initialLat = parseFloat(queryParams.get('lat') || localStorage.getItem('userLatitude') || '30.0444');
   const initialLng = parseFloat(queryParams.get('lng') || localStorage.getItem('userLongitude') || '31.2357');
 
+  // Cleanup function
+  const cleanup = () => {
+    console.log('Cleaning up map resources');
+    
+    if (markerRef.current) {
+      try {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      } catch (e) {
+        console.error('Error cleaning up marker:', e);
+      }
+    }
+    
+    if (mapRef.current) {
+      try {
+        mapRef.current = null;
+      } catch (e) {
+        console.error('Error cleaning up map:', e);
+      }
+    }
+    
+    geocoderRef.current = null;
+  };
+
   // Load Google Maps script
   useEffect(() => {
+    let isMounted = true;
+    
     const loadGoogleMapsScript = async () => {
       try {
         if (window.google && window.google.maps) {
           console.log('Google Maps already loaded');
-          initializeMap();
+          if (isMounted) {
+            initializeMap();
+          }
           return;
         }
 
@@ -48,13 +78,15 @@ const MapView: React.FC = () => {
           const checkInterval = setInterval(() => {
             if (window.google && window.google.maps) {
               clearInterval(checkInterval);
-              initializeMap();
+              if (isMounted) {
+                initializeMap();
+              }
             }
           }, 100);
           
           setTimeout(() => {
             clearInterval(checkInterval);
-            if (!window.google || !window.google.maps) {
+            if (isMounted && (!window.google || !window.google.maps)) {
               console.error('Google Maps failed to load after timeout');
               setScriptError(true);
               setIsLoading(false);
@@ -73,31 +105,44 @@ const MapView: React.FC = () => {
         script.onload = () => {
           console.log('Google Maps script loaded successfully');
           setTimeout(() => {
-            initializeMap();
+            if (isMounted) {
+              initializeMap();
+            }
           }, 100);
         };
         
         script.onerror = (error) => {
           console.error('Error loading Google Maps script:', error);
-          setScriptError(true);
-          setIsLoading(false);
-          toast({
-            title: "خطأ في تحميل الخريطة",
-            description: "تحقق من اتصال الإنترنت وحاول مرة أخرى",
-            variant: "destructive"
-          });
+          if (isMounted) {
+            setScriptError(true);
+            setIsLoading(false);
+            toast({
+              title: "خطأ في تحميل الخريطة",
+              description: "تحقق من اتصال الإنترنت وحاول مرة أخرى",
+              variant: "destructive"
+            });
+          }
         };
         
         document.head.appendChild(script);
         
       } catch (error) {
         console.error('Error in loadGoogleMapsScript:', error);
-        setScriptError(true);
-        setIsLoading(false);
+        if (isMounted) {
+          setScriptError(true);
+          setIsLoading(false);
+        }
       }
     };
 
     loadGoogleMapsScript();
+    
+    return () => {
+      isMounted = false;
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+    };
   }, []);
 
   // Initialize the map
@@ -144,18 +189,12 @@ const MapView: React.FC = () => {
       // Initialize geocoder
       geocoderRef.current = new window.google.maps.Geocoder();
       
-      // Create marker with custom icon
+      // Create marker with simple configuration
       const marker = new window.google.maps.Marker({
         position: { lat: initialLat, lng: initialLng },
         map: map,
         draggable: true,
-        icon: {
-          url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#10B981" stroke="#ffffff" stroke-width="3"><circle cx="12" cy="12" r="8" /></svg>'
-          ),
-          scaledSize: new google.maps.Size(24, 24),
-          anchor: new google.maps.Point(12, 12)
-        }
+        title: 'اسحب لتحديد الموقع'
       });
       markerRef.current = marker;
       
@@ -163,19 +202,30 @@ const MapView: React.FC = () => {
       reverseGeocode(initialLat, initialLng);
       
       // Add event listeners
-      marker.addListener('dragend', () => {
+      const dragEndListener = marker.addListener('dragend', () => {
         const position = marker.getPosition();
         if (position) {
           reverseGeocode(position.lat(), position.lng());
         }
       });
       
-      map.addListener('click', (e: google.maps.MapMouseEvent) => {
+      const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
         if (e.latLng && marker) {
           marker.setPosition(e.latLng);
           reverseGeocode(e.latLng.lat(), e.latLng.lng());
         }
       });
+      
+      // Set up cleanup function
+      cleanupRef.current = () => {
+        try {
+          if (dragEndListener) dragEndListener.remove();
+          if (clickListener) clickListener.remove();
+          cleanup();
+        } catch (e) {
+          console.error('Error in cleanup:', e);
+        }
+      };
       
       console.log("Map initialized successfully");
       setMapLoaded(true);
@@ -202,7 +252,7 @@ const MapView: React.FC = () => {
         const addressText = results[0].formatted_address;
         const location = { lat, lng, address: addressText };
         setSelectedLocation(location);
-        console.log("Location selected:", location);
+        console.log("Location selected and saved:", location);
       } else {
         console.error("Geocoder failed:", status);
         const location = { lat, lng, address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` };
