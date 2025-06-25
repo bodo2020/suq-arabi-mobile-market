@@ -20,120 +20,46 @@ export const useLocation = () => {
   });
   const { toast } = useToast();
   const { user } = useUser();
-  const watchIdRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
-  
-  // Function to clean up geolocation watch
-  const cleanupGeolocationWatch = () => {
-    if (watchIdRef.current !== null) {
-      try {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        console.log("Geolocation watch cleared:", watchIdRef.current);
-      } catch (e) {
-        console.error("Error clearing geolocation watch:", e);
-      }
-      watchIdRef.current = null;
-    }
-  };
 
   useEffect(() => {
     // Set mounted ref to true when component mounts
     isMountedRef.current = true;
     
-    // Function to handle getting the location
-    const getLocation = () => {
-      if (!navigator.geolocation) {
-        if (isMountedRef.current) {
-          setLocation(prev => ({ ...prev, error: 'Geolocation is not supported', loading: false }));
-        }
-        return;
-      }
-
-      const savedLat = localStorage.getItem('userLatitude');
-      const savedLng = localStorage.getItem('userLongitude');
+    // Function to handle getting the location from localStorage only
+    const getStoredLocation = () => {
+      const savedLat = localStorage.getItem('userLatitude') || localStorage.getItem('selectedLat');
+      const savedLng = localStorage.getItem('userLongitude') || localStorage.getItem('selectedLng');
       
-      if (savedLat && savedLng) {
-        // Only update state if component is still mounted
-        if (isMountedRef.current) {
-          setLocation({
-            latitude: parseFloat(savedLat),
-            longitude: parseFloat(savedLng),
-            error: null,
-            loading: false
-          });
-          
-          // If user is logged in, update the location in the database
-          if (user) {
-            updateLocationInDatabase(parseFloat(savedLat), parseFloat(savedLng));
-          }
-        }
-      }
-
-      // Always try to get current location regardless of saved coordinates
-      try {
-        const watchId = navigator.geolocation.watchPosition(
-          (position) => {
-            // Only update state if component is still mounted
-            if (!isMountedRef.current) return;
-            
-            const { latitude, longitude } = position.coords;
-            localStorage.setItem('userLatitude', latitude.toString());
-            localStorage.setItem('userLongitude', longitude.toString());
-            
-            setLocation({
-              latitude,
-              longitude,
-              error: null,
-              loading: false
-            });
-            console.log('Location updated:', latitude, longitude);
-            
-            // If user is logged in, update the location in the database
-            if (user && isMountedRef.current) {
-              updateLocationInDatabase(latitude, longitude);
-            }
-          },
-          (error) => {
-            // Only update state if component is still mounted
-            if (!isMountedRef.current) return;
-            
-            console.error('Location error:', error);
-            // Only update error if we don't have saved coordinates
-            if (!savedLat || !savedLng) {
-              setLocation(prev => ({
-                ...prev,
-                error: error.message,
-                loading: false
-              }));
-            }
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
+      if (savedLat && savedLng && isMountedRef.current) {
+        setLocation({
+          latitude: parseFloat(savedLat),
+          longitude: parseFloat(savedLng),
+          error: null,
+          loading: false
+        });
         
-        // Store watch ID for cleanup
-        watchIdRef.current = watchId;
-      } catch (e) {
-        if (!isMountedRef.current) return;
-        
-        console.error("Error setting up geolocation watch:", e);
-        if (isMountedRef.current) {
-          setLocation(prev => ({
-            ...prev,
-            error: e instanceof Error ? e.message : "Unknown error setting up location tracking",
-            loading: false
-          }));
+        // If user is logged in, update the location in the database
+        if (user) {
+          updateLocationInDatabase(parseFloat(savedLat), parseFloat(savedLng));
         }
+      } else if (isMountedRef.current) {
+        // No stored location available
+        setLocation(prev => ({
+          ...prev,
+          error: "لم يتم تحديد موقع بعد",
+          loading: false
+        }));
       }
     };
 
-    // Start getting location
-    getLocation();
+    // Get stored location only
+    getStoredLocation();
 
-    // Cleanup function to clear watch and prevent memory leaks
+    // Cleanup function
     return () => {
       console.log("useLocation hook cleaning up");
       isMountedRef.current = false;
-      cleanupGeolocationWatch();
     };
   }, [user]);
   
