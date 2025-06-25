@@ -23,9 +23,9 @@ const DistanceCalculator: React.FC = () => {
   const [points, setPoints] = useState<LocationPoint[]>([]);
   const [distance, setDistance] = useState<number | null>(null);
   
-  // Default to Cairo
-  const defaultLat = 30.0444;
-  const defaultLng = 31.2357;
+  // Updated default location to the specified coordinates
+  const defaultLat = 31.2566;
+  const defaultLng = 31.1671;
   
   // Refs for Google Maps objects
   const mapRef = useRef<google.maps.Map | null>(null);
