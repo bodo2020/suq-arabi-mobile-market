@@ -1,10 +1,10 @@
+
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
-import ModernLocationSelector from '@/components/ui/ModernLocationSelector';
 import { getCategories, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
@@ -13,7 +13,6 @@ import AddressDisplay from '@/components/ui/AddressDisplay';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 
-// Lazy load components that aren't immediately visible
 const ProductCollectionsSection = lazy(() => import('@/components/sections/ProductCollectionsSection'));
 const BannersContainer = lazy(() => import('@/components/ui/BannersContainer'));
 
@@ -30,41 +29,29 @@ const Index = () => {
   const [searchBackground, setSearchBackground] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
   const [activeBanner, setActiveBanner] = useState(0);
-  const [showLocationSelector, setShowLocationSelector] = useState(false);
   const bannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useUser();
   
-  // Optimize queries with proper caching strategy
   const {
     data: categories = [],
     isLoading: categoriesLoading
   } = useQuery({
     queryKey: ['categories'],
     queryFn: getCategories,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false
   });
 
-  // Show only essential categories on initial load
   const visibleCategories = categories.slice(0, 12);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Check if user has selected a location before
-        const locationSelected = localStorage.getItem('locationSelected');
-        if (!locationSelected) {
-          setShowLocationSelector(true);
-          return;
-        }
-
-        // Fetch critical data first
         const storeInfoData = await getStoreInfo();
         setStoreInfo(storeInfoData);
         
-        // Fetch user location data from localStorage
         const savedAddress = localStorage.getItem('userAddress');
         if (savedAddress) setUserAddress(savedAddress);
         
@@ -77,7 +64,6 @@ const Index = () => {
           setUserLocation({ governorate, city, area, neighborhood });
         }
         
-        // Then fetch banner data which is less critical
         const bannersData = await supabase.from('banners')
           .select('*')
           .eq('active', true)
@@ -104,31 +90,6 @@ const Index = () => {
     };
   }, [banners.length]);
 
-  const handleLocationSelected = async (location: any) => {
-    setShowLocationSelector(false);
-    setUserLocation({
-      governorate: location.governorate,
-      city: location.city,
-      area: location.area,
-      neighborhood: location.neighborhood
-    });
-    
-    // Fetch the rest of the data after location is selected
-    try {
-      const storeInfoData = await getStoreInfo();
-      setStoreInfo(storeInfoData);
-      
-      const bannersData = await supabase.from('banners')
-        .select('*')
-        .eq('active', true)
-        .order('position');
-        
-      if (bannersData.data) setBanners(bannersData.data);
-    } catch (error) {
-      console.error('Error fetching data after location selection:', error);
-    }
-  };
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -148,19 +109,13 @@ const Index = () => {
   };
 
   const handleChangeLocation = () => {
-    navigate('/account/addresses');
+    navigate('/address-manager');
   };
 
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
 
-  // Show location selector if user hasn't selected location
-  if (showLocationSelector) {
-    return <ModernLocationSelector onLocationSelected={handleLocationSelected} />;
-  }
-
-  // Loading skeleton for better user experience
   if (categoriesLoading) {
     return (
       <MainLayout>
@@ -227,7 +182,6 @@ const Index = () => {
 
         {addressSection}
 
-        {/* Lazy load banners */}
         <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
           {banners.length > 0 && (
             <div className="mb-6 relative">
@@ -245,7 +199,6 @@ const Index = () => {
             </Link>
           </div>
           
-          {/* Search Bar inside categories section */}
           <div className="mb-4">
             <SearchBar 
               placeholder="البحث داخل الأقسام..."
@@ -276,7 +229,6 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Lazy load product collections */}
         <Suspense fallback={
           <div className="space-y-6">
             <Skeleton className="h-8 w-40 mb-2" />

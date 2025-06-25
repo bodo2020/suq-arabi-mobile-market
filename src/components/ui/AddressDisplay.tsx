@@ -27,8 +27,6 @@ const AddressDisplay = ({
   className,
   showAddressSelector = false,
   neighborhoodName,
-  latitude,
-  longitude,
   onEdit
 }: AddressDisplayProps) => {
   const { user } = useUser();
@@ -107,9 +105,7 @@ const AddressDisplay = ({
     if (user) {
       navigate('/address-manager');
     } else {
-      // Reset location selection to show selector again
-      localStorage.removeItem('locationSelected');
-      window.location.reload();
+      navigate('/add-address');
     }
   };
 
@@ -141,13 +137,13 @@ const AddressDisplay = ({
           </DropdownMenu>
         ) : (
           <div className="text-sm">
-            {areaName || address || "لم يتم تحديد عنوان"}
+            {areaName || address || "اضغط لإضافة عنوان"}
             {neighborhoodName && <span className="text-gray-500 mr-1">- {neighborhoodName}</span>}
           </div>
         )}
       </div>
       <Button variant="ghost" size="sm" onClick={onEdit || handleChangeAddress} className="text-xs">
-        تغيير
+        {address ? "تغيير" : "إضافة"}
       </Button>
     </div>
   );

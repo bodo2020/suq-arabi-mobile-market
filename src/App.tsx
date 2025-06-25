@@ -28,7 +28,6 @@ import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
 import BarcodeScanner from './pages/BarcodeScanner';
-import FullMapView from './pages/FullMapView';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -72,7 +71,6 @@ function App() {
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/return-requests" element={<ReturnRequests />} />
             <Route path="/create-return/:orderId" element={<CreateReturnRequest />} />
-            <Route path="/map-view" element={<FullMapView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
