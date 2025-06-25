@@ -107,7 +107,9 @@ const AddressDisplay = ({
     if (user) {
       navigate('/address-manager');
     } else {
-      navigate('/add-address');
+      // Reset location selection to show selector again
+      localStorage.removeItem('locationSelected');
+      window.location.reload();
     }
   };
 

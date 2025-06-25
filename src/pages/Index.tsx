@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryItem from '@/components/ui/CategoryItem';
+import LocationSelector from '@/components/ui/LocationSelector';
 import { getCategories, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
@@ -28,6 +28,7 @@ const Index = () => {
   const [searchBackground, setSearchBackground] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
   const [activeBanner, setActiveBanner] = useState(0);
+  const [showLocationSelector, setShowLocationSelector] = useState(false);
   const bannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -50,6 +51,13 @@ const Index = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Check if user has selected a location before
+        const locationSelected = localStorage.getItem('locationSelected');
+        if (!locationSelected) {
+          setShowLocationSelector(true);
+          return;
+        }
+
         // Fetch critical data first
         const storeInfoData = await getStoreInfo();
         setStoreInfo(storeInfoData);
@@ -91,6 +99,29 @@ const Index = () => {
     };
   }, [banners.length]);
 
+  const handleLocationSelected = async (location: any) => {
+    setShowLocationSelector(false);
+    setUserLocation({
+      area: location.area,
+      neighborhood: location.neighborhood
+    });
+    
+    // Fetch the rest of the data after location is selected
+    try {
+      const storeInfoData = await getStoreInfo();
+      setStoreInfo(storeInfoData);
+      
+      const bannersData = await supabase.from('banners')
+        .select('*')
+        .eq('active', true)
+        .order('position');
+        
+      if (bannersData.data) setBanners(bannersData.data);
+    } catch (error) {
+      console.error('Error fetching data after location selection:', error);
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -116,6 +147,11 @@ const Index = () => {
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
+
+  // Show location selector if user hasn't selected location
+  if (showLocationSelector) {
+    return <LocationSelector onLocationSelected={handleLocationSelected} />;
+  }
 
   // Loading skeleton for better user experience
   if (categoriesLoading) {
