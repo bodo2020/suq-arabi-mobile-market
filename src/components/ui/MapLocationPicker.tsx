@@ -41,7 +41,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
 
   // Handle Google Maps script loading
@@ -79,7 +78,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       
       mapRef.current = null;
       geocoderRef.current = null;
-      placesServiceRef.current = null;
       setMapInitialized(false);
     };
   }, []);
@@ -121,7 +119,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       
       // Initialize services
       geocoderRef.current = new window.google.maps.Geocoder();
-      placesServiceRef.current = new window.google.maps.places.PlacesService(map);
       
       setMapInitialized(true);
 
@@ -137,12 +134,13 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
               draggable: true,
               animation: window.google.maps.Animation.DROP,
               icon: {
-                path: window.google.maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: '#22c55e',
-                fillOpacity: 1,
-                strokeColor: '#ffffff',
-                strokeWeight: 2
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#22c55e">
+                    <circle cx="12" cy="12" r="8" stroke="#ffffff" stroke-width="2"/>
+                  </svg>
+                `),
+                scaledSize: new window.google.maps.Size(24, 24),
+                anchor: new window.google.maps.Point(12, 12)
               }
             });
             markerRef.current = marker;
@@ -333,7 +331,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   return (
     <div className="fixed inset-0 bg-white flex flex-col z-50">
       <Script 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&callback=Function.prototype"
         onLoad={handleMapScriptLoad} 
         onError={(error) => console.error("Google Maps script error:", error)}
       />
