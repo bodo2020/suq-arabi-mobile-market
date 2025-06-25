@@ -18,19 +18,6 @@ import { Button } from '@/components/ui/button';
 import LocationDisplay from '@/components/ui/LocationDisplay';
 import AddressDisplay from '@/components/ui/AddressDisplay';
 
-interface CustomerAddress {
-  id: string;
-  address: string;
-  governorate_id?: string | null;
-  city_id?: string | null;
-  area_id?: string | null;
-  neighborhood_id?: string | null;
-  governorates?: { id: string; name: string } | null;
-  cities?: { id: string; name: string } | null;
-  areas?: { id: string; name: string } | null;
-  neighborhoods?: { id: string; name: string } | null;
-}
-
 const Cart = () => {
   const navigate = useNavigate();
   const {
@@ -77,17 +64,14 @@ const Cart = () => {
         data: addresses
       } = await supabase.from('customer_addresses').select(`
           *,
-          governorates(id, name),
-          cities(id, name),
-          areas(id, name),
-          neighborhoods(id, name)
+          governorates(name),
+          cities(name),
+          areas(name),
+          neighborhoods(name)
         `).eq('user_id', user.id).eq('is_default', true).maybeSingle();
-        
-      const defaultAddress = addresses as CustomerAddress | null;
-      
       return {
         ...customer,
-        default_address: defaultAddress
+        default_address: addresses
       };
     },
     enabled: !!user?.id
@@ -234,206 +218,218 @@ const Cart = () => {
   };
   const getItemPrice = item => {
     if (item.is_bulk) {
-      return item.product.bulk_price || item.product.price;
-    } else if (item.product.offer_price && item.product.is_offer) {
-      return item.product.offer_price;
+      return item.product.bulk_price;
     }
-    return item.product.price;
+    return item.product.offer_price || item.product.price;
   };
-
-  // Get the selected product for weight selector
-  const selectedProduct = openWeightSelector 
-    ? items.find(item => item.product.id === openWeightSelector)?.product 
-    : null;
-
-  return (
-    <MainLayout>
-      <div className="py-4">
+  const getItemTotal = item => {
+    if (item.is_bulk) {
+      return (item.product.bulk_price || 0) * item.quantity;
+    }
+    if (item.unit_of_measure === 'weight') {
+      const pricePerKg = item.product.offer_price || item.product.price || 0;
+      return pricePerKg * (item.quantity / 1000);
+    }
+    return (item.product.offer_price || item.product.price) * item.quantity;
+  };
+  const formatBulkQuantity = item => {
+    if (item.is_bulk && item.product.bulk_quantity) {
+      return `${item.product.bulk_quantity} قطعة`;
+    }
+    return `${item.quantity}`;
+  };
+  const handleDeliverySelect = (id: string) => {
+    const selectedType = deliveryTypes.find(type => type.id === id);
+    if (selectedType) {
+      setDeliveryPrice(selectedType.price);
+    }
+  };
+  const handleProceedToCheckout = () => {
+    if (!user) {
+      toast({
+        title: "تسجيل الدخول مطلوب",
+        description: "يرجى تسجيل الدخول أو إنشاء حساب للمتابعة",
+        variant: "destructive"
+      });
+      navigate('/phone-login');
+      return;
+    }
+    
+    navigate('/checkout');
+  };
+  return <MainLayout>
+      <div className="py-4 pb-24" dir="rtl">
         <h1 className="text-xl font-bold text-center mb-4">سلة التسوق</h1>
-
-        {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
+        
+        {items.length === 0 ? <div className="flex flex-col items-center justify-center py-12">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
               <circle cx="8" cy="21" r="1"></circle>
               <circle cx="19" cy="21" r="1"></circle>
               <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
             </svg>
-            <h3 className="text-lg font-medium text-gray-500 mb-1">السلة فارغة</h3>
+            <h3 className="text-lg font-medium text-gray-500 mb-1">لم تقم بإضافة أي منتجات بعد</h3>
             <p className="text-sm text-gray-400 mb-4">لم تقم بإضافة أي منتجات بعد</p>
             <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
               تسوق الآن
             </Link>
-          </div>
-        ) : (
-          <>
-            <div className="bg-white rounded-lg mb-4">
-              {items.map((item) => (
-                <div 
-                  key={`${item.product.id}-${item.is_bulk}`} 
-                  className="flex items-center p-3 border-b last:border-b-0"
-                >
-                  <div className="flex-1 flex items-center">
-                    <div className="ml-3 flex-1">
+          </div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg mb-4 order-1">
+              {items.map(item => <div key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex items-center p-3 border-b last:border-b-0">
+                  <div className="relative">
+                    <img src={getProductImage(item)} alt={item.product.name} className="h-16 w-16 object-contain ml-3" />
+                    {item.is_bulk && <div className="absolute bottom-0 right-0 bg-primary text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+                        {item.product.bulk_quantity}
+                      </div>}
+                  </div>
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex items-center gap-2">
                       <Link to={`/product/${item.product.id}`} className="font-semibold text-sm line-clamp-1">
                         {item.product.name}
-                        {item.is_bulk && (
-                          <Badge variant="secondary" className="mr-2 text-xs">
-                            <Package size={12} className="ml-1" />
-                            {item.product.bulk_quantity}x جملة
-                          </Badge>
-                        )}
-                        {item.product.unit_of_measure === 'weight' && (
-                          <Badge variant="outline" className="mr-2 text-xs">
-                            <Scale size={12} className="ml-1" />
-                            {item.quantity}g
-                          </Badge>
-                        )}
                       </Link>
-                      <div className="flex items-center mt-1">
-                        <span className="text-sm font-bold text-primary ml-2">
-                          {getItemPrice(item)} ج.م
-                        </span>
-                        {item.product.offer_price && item.product.is_offer && !item.is_bulk && (
+                      {item.is_bulk && <Badge variant="secondary" className="flex items-center gap-1">
+                          <Package className="w-3 h-3" />
+                          جملة
+                        </Badge>}
+                      {item.unit_of_measure === 'weight' && <Badge variant="secondary" className="flex items-center gap-1">
+                          <Scale className="w-3 h-3" />
+                          وزن
+                        </Badge>}
+                    </div>
+                    <div className="flex items-center mt-1">
+                      {item.is_bulk ? <span className="text-sm font-bold text-primary">
+                          {item.product.bulk_price} ج.م (سعر الوحدة)
+                        </span> : item.unit_of_measure === 'weight' ? <span className="text-sm font-bold">
+                          {item.product.price} ج.م/كجم
+                        </span> : item.product.offer_price ? <>
+                          <span className="text-sm font-bold text-primary ml-2">
+                            {item.product.offer_price} ج.م
+                          </span>
                           <span className="text-xs line-through text-gray-500">
                             {item.product.price} ج.م
                           </span>
-                        )}
-                      </div>
+                        </> : <span className="text-sm font-bold">
+                          {item.product.price} ج.م
+                        </span>}
                     </div>
-                    <img 
-                      src={getProductImage(item)} 
-                      alt={item.product.name} 
-                      className="h-16 w-16 object-contain"
-                    />
                   </div>
 
                   <div className="flex flex-col items-center mr-3">
                     <div className="flex items-center justify-between bg-gray-100 rounded-lg mb-2">
-                      <button 
-                        onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk, item.product.unit_of_measure)}
-                        className="p-1"
-                        aria-label="تقليل الكمية"
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span 
-                        className="mx-2 font-medium cursor-pointer hover:text-primary"
-                        onClick={() => handleQuantityClick(item.product.id, item.product.unit_of_measure)}
-                      >
-                        {item.quantity}
-                        {item.product.unit_of_measure === 'weight' ? 'g' : ''}
-                      </span>
-                      <button 
-                        onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk, item.product.unit_of_measure)}
-                        className="p-1"
-                        aria-label="زيادة الكمية"
-                      >
-                        <Plus size={16} />
-                      </button>
+                      {item.unit_of_measure === 'weight' ? <div onClick={() => handleQuantityClick(item.product.id, item.unit_of_measure)} className="px-4 py-2 cursor-pointer flex items-center gap-2">
+                          <span className="font-medium">{item.quantity}جم</span>
+                        </div> : <>
+                          <button onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)} className="p-1" aria-label="تقليل الكمية">
+                            <Minus size={16} />
+                          </button>
+                          <span className="mx-2 font-medium">
+                            {item.quantity}
+                          </span>
+                          <button onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)} className="p-1" aria-label="زيادة الكمية">
+                            <Plus size={16} />
+                          </button>
+                        </>}
                     </div>
-                    <button 
-                      onClick={() => handleRemoveItem(item.product.id, item.is_bulk)}
-                      className="text-red-500"
-                      aria-label="حذف المنتج"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center">
+                      <button onClick={() => handleRemoveItem(item.product.id, item.is_bulk)} className="text-red-500" aria-label="حذف المنتج">
+                        <Trash2 size={16} />
+                      </button>
+                      <span className="mr-2 font-semibold text-green-700">
+                        {getItemTotal(item).toFixed(2)} ج.م
+                      </span>
+                    </div>
+                    {item.is_bulk && item.product.bulk_quantity && <div className="text-xs text-gray-500 mt-1">
+                        {item.quantity} × {item.product.bulk_quantity} = {item.quantity * item.product.bulk_quantity} قطعة
+                      </div>}
                   </div>
-                </div>
-              ))}
+                  
+                  {openWeightSelector === item.product.id && <WeightSelector product={item.product} isOpen={true} onClose={() => setOpenWeightSelector(null)} />}
+                </div>)}
             </div>
 
-            {/* Location display */}
-            <div className="bg-white rounded-lg p-4 mb-4">
-              <h3 className="text-lg font-bold mb-3">عنوان التوصيل</h3>
-              {customerData?.default_address ? (
-                <AddressDisplay
-                  address={customerData.default_address.address}
-                  areaName={customerData.default_address.areas?.name || ''}
-                  neighborhoodName={customerData.default_address.neighborhoods?.name || ''}
-                  showAddressSelector={true}
-                />
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500 mb-2">لم يتم تحديد عنوان التوصيل</p>
-                  <Button onClick={() => navigate('/add-address')} variant="outline">
-                    إضافة عنوان
+            <div className="space-y-4 order-2">
+              {!isFreeDelivery && progressToFreeDelivery > 0 && <div className="bg-white rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-primary font-medium">التوصيل المجاني</span>
+                    <span className="text-sm text-gray-500">{progressToFreeDelivery.toFixed(0)}%</span>
+                  </div>
+                  <Progress value={progressToFreeDelivery} className="h-2" />
+                  <p className="text-sm text-gray-500 mt-2">
+                    أضف المزيد من المنتجات للحصول على توصيل مجاني
+                  </p>
+                </div>}
+              
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-bold">عنوان التوصيل</h3>
+                  <Button variant="ghost" onClick={() => navigate('/addresses')} className="text-primary">
+                    {customerData?.default_address ? 'تغيير العنوان' : 'إضافة عنوان'}
                   </Button>
                 </div>
-              )}
-            </div>
-
-            {/* Free delivery progress */}
-            {progressToFreeDelivery > 0 && progressToFreeDelivery < 100 && (
-              <div className="bg-white rounded-lg p-4 mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">التوصيل المجاني</span>
-                  <span className="text-sm text-gray-500">{progressToFreeDelivery.toFixed(0)}%</span>
-                </div>
-                <Progress value={progressToFreeDelivery} className="mb-2" />
-                <p className="text-xs text-gray-500">
-                  أضف منتجات بقيمة {(50 - getTotalPrice()).toFixed(2)} ج.م للحصول على توصيل مجاني
-                </p>
-              </div>
-            )}
-
-            {isFreeDelivery && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                <p className="text-green-700 font-medium">تهانينا! لقد حصلت على توصيل مجاني</p>
-              </div>
-            )}
-
-            <div className="bg-white rounded-lg p-4 mb-4">
-              <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>المجموع الفرعي</span>
-                  <span>{getTotalPrice().toFixed(2)} ج.م</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>رسوم التوصيل</span>
-                  <span>{isFreeDelivery ? 'مجاني' : `${deliveryPrice} ج.م`}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>الخصم</span>
-                    <span>-{discount.toFixed(2)} ج.م</span>
+                
+                {customerData?.default_address ? (
+                  <div className="text-sm space-y-1">
+                    <p className="font-medium">
+                      {customerData.default_address.neighborhoods?.name && `${customerData.default_address.neighborhoods.name}، `}
+                      {customerData.default_address.areas?.name && `${customerData.default_address.areas.name}، `}
+                      {customerData.default_address.cities?.name && `${customerData.default_address.cities.name}، `}
+                      {customerData.default_address.governorates?.name}
+                    </p>
+                    <p className="text-gray-600">{customerData.default_address.address}</p>
+                    {deliveryPricing && (
+                      <p className="text-sm text-primary mt-2">
+                        رسوم التوصيل: {deliveryPricing.price} ج.م
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 mb-2">لا يوجد عنوان للتوصيل</p>
+                    <Button variant="outline" onClick={() => navigate('/addresses')} className="text-primary border-primary hover:bg-primary/10">
+                      إضافة عنوان جديد
+                    </Button>
                   </div>
                 )}
-                <hr />
-                <div className="flex justify-between py-2 mt-2">
-                  <span className="font-bold text-lg">
-                    {(getTotalPrice() + (isFreeDelivery ? 0 : deliveryPrice) - discount).toFixed(2)} ج.م
-                  </span>
-                  <span className="font-bold">الإجمالي</span>
+              </div>
+
+              <div className="bg-white rounded-lg p-4">
+                <CouponInput subtotal={getTotalPrice()} onApply={setDiscount} />
+              </div>
+
+              <div className="bg-white rounded-lg p-4">
+                <h3 className="text-lg font-bold mb-3">ملخص الطلب</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between py-2 border-b">
+                    <span>المجموع</span>
+                    <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
+                  </div>
+                  
+                  {discount > 0 && <div className="flex justify-between py-2 border-b text-primary">
+                      <span>الخصم</span>
+                      <span>- {discount.toFixed(2)} ج.م</span>
+                    </div>}
+                  
+                  <div className="flex justify-between py-2 border-b">
+                    <span>التوصيل</span>
+                    <span className="font-bold">
+                      {isFreeDelivery ? <span className="text-primary">مجاناً</span> : `${deliveryPrice.toFixed(2)} ج.م`}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2 font-bold">
+                    <span>الإجمالي</span>
+                    <span className="text-lg">
+                      {(getTotalPrice() - discount + (isFreeDelivery ? 0 : deliveryPrice)).toFixed(2)} ج.م
+                    </span>
+                  </div>
                 </div>
               </div>
+              
+              <Button onClick={handleProceedToCheckout} className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center">
+                متابعة الطلب
+              </Button>
             </div>
-
-            <div className="bg-white rounded-lg p-4 mb-4">
-              <CouponInput 
-                subtotal={getTotalPrice()} 
-                onApply={(discountAmount) => setDiscount(discountAmount)}
-              />
-            </div>
-
-            <Link to="/checkout" className="bg-primary text-white py-3 rounded-lg flex items-center justify-center w-full">
-              متابعة الطلب
-            </Link>
-          </>
-        )}
-
-        {/* Weight Selector Modal */}
-        {openWeightSelector && selectedProduct && (
-          <WeightSelector
-            isOpen={!!openWeightSelector}
-            onClose={() => setOpenWeightSelector(null)}
-            product={selectedProduct}
-          />
-        )}
+          </div>}
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 };
-
 export default Cart;

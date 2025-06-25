@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, MapPin, Map as MapIcon } from 'lucide-react';
@@ -9,21 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import LocationPicker from '@/components/ui/LocationPicker';
 import Script from '@/components/ui/Script';
-
-interface AddressData {
-  id: string;
-  address: string;
-  governorate_id?: string | null;
-  city_id?: string | null;
-  area_id?: string | null;
-  neighborhood_id?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  governorates?: { id: string; name: string } | null;
-  cities?: { id: string; name: string } | null;
-  areas?: { id: string; name: string } | null;
-  neighborhoods?: { id: string; name: string } | null;
-}
+import '@/types/google-maps.d.ts';
 
 const Address = () => {
   const navigate = useNavigate();
@@ -102,15 +87,14 @@ const Address = () => {
           }
 
           if (data) {
-            const addressData = data as AddressData;
-            setAddress(addressData.address || '');
+            setAddress(data.address || '');
             setMapLocation({
-              government: addressData.governorate_id || undefined,
-              city: addressData.city_id || undefined,
-              area: addressData.area_id || undefined,
-              neighborhood: addressData.neighborhood_id || undefined,
-              latitude: addressData.latitude !== null ? Number(addressData.latitude) : undefined,
-              longitude: addressData.longitude !== null ? Number(addressData.longitude) : undefined
+              government: data.governorate_id || undefined,
+              city: data.city_id || undefined,
+              area: data.area_id || undefined,
+              neighborhood: data.neighborhood_id || undefined,
+              latitude: data.latitude !== null ? Number(data.latitude) : undefined,
+              longitude: data.longitude !== null ? Number(data.longitude) : undefined
             });
           }
         } catch (error) {

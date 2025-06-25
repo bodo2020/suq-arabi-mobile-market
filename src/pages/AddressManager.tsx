@@ -4,26 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { MapPin, Plus, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
-
-interface AddressData {
-  id: string;
-  address: string;
-  is_default: boolean;
-  governorate_id?: string | null;
-  city_id?: string | null;
-  area_id?: string | null;
-  neighborhood_id?: string | null;
-  governorates?: { id: string; name: string } | null;
-  cities?: { id: string; name: string } | null;
-  areas?: { id: string; name: string } | null;
-  neighborhoods?: { id: string; name: string } | null;
-}
+import { supabase, Address } from '@/lib/supabase';
+import LocationPicker from "@/components/ui/LocationPicker";
 
 const AddressManager = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [addresses, setAddresses] = useState<AddressData[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,7 +43,7 @@ const AddressManager = () => {
       }
       
       console.log("Fetched addresses:", data);
-      setAddresses((data || []) as AddressData[]);
+      setAddresses(data as Address[] || []);
     } catch (error) {
       console.error('Error fetching addresses:', error);
       toast({
@@ -98,14 +85,8 @@ const AddressManager = () => {
       const selectedAddress = addresses.find(addr => addr.id === addressId);
       if (selectedAddress) {
         localStorage.setItem('userAddress', selectedAddress.address || '');
-        
-        if (selectedAddress.areas?.name) {
-          localStorage.setItem('userArea', selectedAddress.areas.name);
-        }
-        
-        if (selectedAddress.neighborhoods?.name) {
-          localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods.name);
-        }
+        localStorage.setItem('userArea', selectedAddress.areas?.name || '');
+        localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
         
         // Also update the customer profile with this address
         await supabase
@@ -213,7 +194,7 @@ const AddressManager = () => {
                           <MapPin size={16} className="ml-1 text-primary" />
                           <span className="font-medium">
                             {address.areas?.name || ''}
-                            {address.neighborhoods?.name ? ` - ${address.neighborhoods.name}` : ''}
+                            {address.neighborhoods?.name ? ` - ${address.neighborhoods?.name}` : ''}
                           </span>
                           {address.is_default && (
                             <span className="mr-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
