@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Search, Navigation, Camera } from 'lucide-react';
@@ -81,41 +82,20 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
 
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
       if (existingScript) {
-        console.log('Google Maps script already exists, waiting for load...');
-        const checkGoogleMaps = setInterval(() => {
-          if (window.google && window.google.maps) {
-            console.log('Google Maps loaded successfully');
-            clearInterval(checkGoogleMaps);
-            setScriptLoaded(true);
-          }
-        }, 100);
-        
-        setTimeout(() => {
-          clearInterval(checkGoogleMaps);
-          if (!window.google || !window.google.maps) {
-            console.error('Google Maps failed to load after timeout');
-            setScriptError(true);
-            setIsLoading(false);
-          }
-        }, 15000); // Increased timeout to 15 seconds
-        return;
+        console.log('Removing existing Google Maps script');
+        existingScript.remove();
       }
 
-      console.log('Loading Google Maps script...');
+      console.log('Loading Google Maps script with new API key...');
       const script = document.createElement('script');
-      const API_KEY = 'AIzaSyC4KH_ddrMJ1mVX2v0DruGWG7WeSZVSbtU';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&callback=initMap`;
+      const API_KEY = 'AIzaSyCXShIlIaYEMOMSpbvL8xHArXK0QVw4xSE';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
       
-      // Add global callback for Google Maps
-      (window as any).initMap = () => {
-        console.log('Google Maps callback executed');
-        setScriptLoaded(true);
-      };
-      
       script.onload = () => {
-        console.log('Google Maps script loaded');
+        console.log('Google Maps script loaded successfully');
+        setScriptLoaded(true);
       };
       
       script.onerror = (error) => {
@@ -137,7 +117,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       return;
     }
 
-    console.log("Initializing map...");
+    console.log("Initializing map with coordinates:", defaultLat, defaultLng);
     
     try {
       const mapOptions: google.maps.MapOptions = {
@@ -167,77 +147,75 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
       
       geocoderRef.current = new window.google.maps.Geocoder();
       
-      // Wait for map to be fully loaded
-      const idleListener = map.addListener('idle', () => {
-        console.log('Map idle event triggered');
-        
-        if (!mapRef.current) return;
-        
-        const marker = new window.google.maps.Marker({
-          position: { lat: defaultLat, lng: defaultLng },
-          map: mapRef.current,
-          draggable: true,
-          animation: window.google.maps.Animation.DROP,
-          title: 'اسحبني لتحديد الموقع',
-          icon: {
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-              <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="16" cy="16" r="8" fill="#00b894" stroke="#ffffff" stroke-width="3"/>
-              </svg>
-            `),
-            scaledSize: new window.google.maps.Size(32, 32),
-            anchor: new window.google.maps.Point(16, 16)
-          }
-        });
-        markerRef.current = marker;
-        
-        reverseGeocode(defaultLat, defaultLng);
-        
-        const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
-          console.log('Map clicked:', e.latLng?.lat(), e.latLng?.lng());
-          if (e.latLng && marker) {
-            marker.setPosition(e.latLng);
-            reverseGeocode(e.latLng.lat(), e.latLng.lng());
-          }
-        });
-        
-        const dragendListener = marker.addListener('dragend', () => {
-          const position = marker.getPosition();
-          console.log('Marker dragged to:', position?.lat(), position?.lng());
-          if (position) {
-            reverseGeocode(position.lat(), position.lng());
-          }
-        });
-        
-        listenersRef.current.push(clickListener, dragendListener);
-        
-        idleListener.remove();
-        setMapLoaded(true);
-        setIsLoading(false);
-        
-        console.log("Map initialized successfully");
+      // Create marker immediately
+      const marker = new window.google.maps.Marker({
+        position: { lat: defaultLat, lng: defaultLng },
+        map: map,
+        draggable: true,
+        animation: window.google.maps.Animation.DROP,
+        title: 'اسحبني لتحديد الموقع',
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: '#00b894',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 3,
+          scale: 8
+        }
+      });
+      markerRef.current = marker;
+      
+      console.log("Marker created at:", defaultLat, defaultLng);
+      
+      // Get initial address
+      reverseGeocode(defaultLat, defaultLng);
+      
+      // Add event listeners
+      const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+        console.log('Map clicked:', e.latLng?.lat(), e.latLng?.lng());
+        if (e.latLng && marker) {
+          marker.setPosition(e.latLng);
+          reverseGeocode(e.latLng.lat(), e.latLng.lng());
+        }
       });
       
-      // Add timeout fallback in case idle event doesn't fire
-      setTimeout(() => {
-        if (!mapLoaded) {
-          console.log("Map idle timeout, forcing initialization");
-          setMapLoaded(true);
-          setIsLoading(false);
+      const dragendListener = marker.addListener('dragend', () => {
+        const position = marker.getPosition();
+        console.log('Marker dragged to:', position?.lat(), position?.lng());
+        if (position) {
+          reverseGeocode(position.lat(), position.lng());
         }
-      }, 5000);
+      });
+      
+      listenersRef.current.push(clickListener, dragendListener);
+      
+      // Wait for map to be fully loaded
+      map.addListener('tilesloaded', () => {
+        console.log('Map tiles loaded');
+        setMapLoaded(true);
+        setIsLoading(false);
+      });
+      
+      // Fallback timeout
+      setTimeout(() => {
+        console.log("Setting map as loaded (timeout fallback)");
+        setMapLoaded(true);
+        setIsLoading(false);
+      }, 3000);
+      
+      console.log("Map initialized successfully");
       
     } catch (error) {
       console.error("Error initializing map:", error);
       setScriptError(true);
       setIsLoading(false);
     }
-  }, [scriptLoaded, defaultLat, defaultLng, mapLoaded]);
+  }, [scriptLoaded, defaultLat, defaultLng]);
 
   // Reverse geocode to get address
   const reverseGeocode = (lat: number, lng: number) => {
     if (!geocoderRef.current) {
-      console.log('Geocoder not available');
+      console.log('Geocoder not available, using coordinates');
       const location = { lat, lng, address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` };
       setSelectedLocation(location);
       return;
@@ -301,25 +279,46 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     }
 
     if (navigator.geolocation) {
-      if (navigator.permissions) {
-        navigator.permissions.query({ name: 'geolocation' }).then(result => {
-          if (result.state === 'denied') {
-            setLocationPermissionDenied(true);
-            toast({
-              title: "الإذن مطلوب",
-              description: "يرجى السماح بالوصول إلى الموقع في إعدادات المتصفح",
-              variant: "destructive"
-            });
-            return;
+      toast({
+        title: "جاري تحديد موقعك",
+        description: "يرجى الانتظار...",
+      });
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          if (mapRef.current && markerRef.current) {
+            mapRef.current.setCenter(userLocation);
+            mapRef.current.setZoom(16);
+            markerRef.current.setPosition(userLocation);
+            
+            reverseGeocode(userLocation.lat, userLocation.lng);
           }
           
-          requestLocation();
-        }).catch(() => {
-          requestLocation();
-        });
-      } else {
-        requestLocation();
-      }
+          toast({
+            title: "تم تحديد موقعك",
+            description: "يمكنك تحريك المؤشر لضبط الموقع بدقة",
+          });
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          setLocationPermissionDenied(true);
+          toast({
+            title: "تعذر الوصول إلى موقعك",
+            description: "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا",
+            variant: "destructive"
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
     } else {
       setLocationPermissionDenied(true);
       toast({
@@ -328,49 +327,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         variant: "destructive"
       });
     }
-  };
-
-  const requestLocation = () => {
-    toast({
-      title: "جاري تحديد موقعك",
-      description: "يرجى الانتظار...",
-    });
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const userLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        
-        if (mapRef.current && markerRef.current) {
-          mapRef.current.setCenter(userLocation);
-          mapRef.current.setZoom(16);
-          markerRef.current.setPosition(userLocation);
-          
-          reverseGeocode(userLocation.lat, userLocation.lng);
-        }
-        
-        toast({
-          title: "تم تحديد موقعك",
-          description: "يمكنك تحريك المؤشر لضبط الموقع بدقة",
-        });
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
-        setLocationPermissionDenied(true);
-        toast({
-          title: "تعذر الوصول إلى موقعك",
-          description: "يرجى السماح بالوصول إلى الموقع أو تحديده يدويًا",
-          variant: "destructive"
-        });
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
   };
 
   const handleBack = () => {
@@ -519,9 +475,6 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-gray-600">جاري تحميل الخريطة...</p>
                 <p className="text-sm text-gray-500 mt-2">قد يستغرق هذا بضع ثوانٍ</p>
-                {scriptError && (
-                  <p className="text-sm text-red-500 mt-2">خطأ في تحميل Google Maps API</p>
-                )}
               </div>
             </div>
           )}
