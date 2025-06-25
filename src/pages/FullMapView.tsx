@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Check, ZoomIn } from 'lucide-react';
@@ -444,7 +443,7 @@ const FullMapView: React.FC = () => {
   return (
     <div className="fixed inset-0 bg-[#222222] flex flex-col z-50">
       <Script 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw&libraries=places&callback=Function.prototype"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KH_ddrMJ1mVX2v0DruGWG7WeSZVSbtU&libraries=places&callback=Function.prototype"
         onLoad={handleMapScriptLoad}
         onError={(error) => console.error("Google Maps script error:", error)}
       />

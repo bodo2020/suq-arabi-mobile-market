@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Search, Navigation } from 'lucide-react';
@@ -80,7 +79,7 @@ const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
         // Create and load the script
         console.log('Loading Google Maps script...');
         const script = document.createElement('script');
-        const API_KEY = 'AIzaSyCkV_5RhFvcX-kXdGh5IsIZzwexnvrx6Fw';
+        const API_KEY = 'AIzaSyC4KH_ddrMJ1mVX2v0DruGWG7WeSZVSbtU';
         script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
         script.async = true;
         script.defer = true;
