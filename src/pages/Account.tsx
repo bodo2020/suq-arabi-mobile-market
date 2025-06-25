@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from "@/components/ui/button"
-import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft, Calculator } from 'lucide-react';
+import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 import { supabase } from '@/lib/supabase';
 
@@ -105,18 +105,6 @@ const Account = () => {
                   <div className="flex items-center">
                     <MapPin className="h-6 w-6 text-primary ml-3" />
                     <span className="text-sm font-medium">عناوين التوصيل</span>
-                  </div>
-                  <ChevronLeft className="h-5 w-5 text-gray-400" />
-                </Button>
-                
-                <Button 
-                  onClick={() => navigate('/distance-calculator')} 
-                  variant="ghost" 
-                  className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
-                >
-                  <div className="flex items-center">
-                    <Calculator className="h-6 w-6 text-primary ml-3" />
-                    <span className="text-sm font-medium">الخريطة وحاسبة المسافات</span>
                   </div>
                   <ChevronLeft className="h-5 w-5 text-gray-400" />
                 </Button>
