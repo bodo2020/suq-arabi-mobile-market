@@ -1,270 +1,268 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
-import { useGuestDataMigration } from '@/hooks/useGuestDataMigration';
 
-type UserContextType = {
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import { Customer } from '@/lib/supabase';
+
+interface UserContextType {
   user: User | null;
-  session: Session | null;
-  authLoading: boolean;
+  customer: Customer | null;
   loading: boolean;
-  signIn: (username: string, password: string) => Promise<any>;
-  signUp: (email: string, phone: string, password: string, additionalData?: any) => Promise<any>;
   signOut: () => Promise<void>;
-  updateUser: (data: any) => Promise<any>;
-  resetPassword: (username: string) => Promise<any>;
-  signInWithPhone: (phone: string) => Promise<any>;
-  verifyPhone: (phone: string, code: string) => Promise<any>;
-};
+  refreshUser: () => Promise<void>;
+}
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const useUser = () => {
   const context = useContext(UserContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useUser must be used within a UserProvider');
   }
   return context;
 };
 
-const UserProviderInternal = ({ children }) => {
+interface UserProviderInternalProps {
+  children: React.ReactNode;
+}
+
+const UserProviderInternal: React.FC<UserProviderInternalProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize guest data migration
-  useGuestDataMigration();
+  // Guest data migration function - moved here to avoid circular dependency
+  const migrateGuestData = async (userId: string) => {
+    try {
+      console.log('Starting guest data migration for user:', userId);
+      
+      // Get guest data from localStorage
+      const guestCartData = localStorage.getItem('guestCart');
+      const guestLocationData = localStorage.getItem('guestLocationData');
+      const guestFavorites = localStorage.getItem('guestFavorites');
+      
+      // Migrate cart data
+      if (guestCartData) {
+        try {
+          const cartItems = JSON.parse(guestCartData);
+          if (Array.isArray(cartItems) && cartItems.length > 0) {
+            console.log('Migrating cart items:', cartItems.length);
+            
+            // Clear existing cart items for this user
+            await supabase
+              .from('cart_items')
+              .delete()
+              .eq('user_id', userId);
 
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      setLoading(false);
-    };
+            // Insert guest cart items
+            for (const item of cartItems) {
+              await supabase
+                .from('cart_items')
+                .insert({
+                  user_id: userId,
+                  product_id: item.product_id,
+                  quantity: item.quantity,
+                  weight_option: item.weight_option || null,
+                  price: item.price
+                });
+            }
+            
+            // Clear guest cart from localStorage
+            localStorage.removeItem('guestCart');
+            console.log('Cart migration completed');
+          }
+        } catch (error) {
+          console.error('Error migrating cart data:', error);
+        }
+      }
 
-    getSession();
+      // Migrate location data
+      if (guestLocationData) {
+        try {
+          const locationData = JSON.parse(guestLocationData);
+          console.log('Migrating location data:', locationData);
+          
+          // Save location to user's addresses
+          if (locationData.coordinates && locationData.address) {
+            await supabase
+              .from('customer_addresses')
+              .insert({
+                user_id: userId,
+                latitude: locationData.coordinates.lat,
+                longitude: locationData.coordinates.lng,
+                address_text: locationData.address,
+                is_default: true
+              });
+          }
+          
+          // Clear guest location from localStorage
+          localStorage.removeItem('guestLocationData');
+          localStorage.removeItem('selectedLat');
+          localStorage.removeItem('selectedLng');
+          localStorage.removeItem('selectedAddress');
+          console.log('Location migration completed');
+        } catch (error) {
+          console.error('Error migrating location data:', error);
+        }
+      }
 
-    supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
-      if (event === 'INITIAL_SESSION') {
+      // Migrate favorites
+      if (guestFavorites) {
+        try {
+          const favorites = JSON.parse(guestFavorites);
+          if (Array.isArray(favorites) && favorites.length > 0) {
+            console.log('Migrating favorites:', favorites.length);
+            
+            // Clear existing favorites for this user
+            await supabase
+              .from('customer_favorites')
+              .delete()
+              .eq('user_id', userId);
+
+            // Insert guest favorites
+            for (const productId of favorites) {
+              await supabase
+                .from('customer_favorites')
+                .insert({
+                  user_id: userId,
+                  product_id: productId
+                });
+            }
+            
+            // Clear guest favorites from localStorage
+            localStorage.removeItem('guestFavorites');
+            console.log('Favorites migration completed');
+          }
+        } catch (error) {
+          console.error('Error migrating favorites data:', error);
+        }
+      }
+
+      console.log('Guest data migration completed successfully');
+    } catch (error) {
+      console.error('Error during guest data migration:', error);
+    }
+  };
+
+  const fetchCustomer = async (userId: string) => {
+    try {
+      const { data: customerData, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching customer:', error);
         return;
       }
 
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      setLoading(false);
-    });
-  }, []);
+      if (customerData) {
+        setCustomer(customerData);
+      }
+    } catch (error) {
+      console.error('Error in fetchCustomer:', error);
+    }
+  };
 
-  // Function to sign in with email or phone and password
-  const signIn = async (username: string, password: string) => {
+  const refreshUser = async () => {
     try {
-      // Check if the username is an email or phone
-      const isEmail = username.includes('@');
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
       
-      if (isEmail) {
-        // Sign in with email
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: username,
-          password,
-        });
-
-        if (error) throw error;
-        return { data };
+      if (user) {
+        await fetchCustomer(user.id);
       } else {
-        // For phone numbers, no longer convert to email format
-        // Instead, check if we need to directly use the phone number
-        // or look up the user by phone number from the customers table
-        
-        // First try direct signin if the user registered with phone
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: username,
-          password,
-        });
-        
-        // If direct sign in fails, try looking up the user by phone number
-        if (error) {
-          // Look up the user by phone number from customers table
-          const { data: customerData } = await supabase
-            .from('customers')
-            .select('user_id')
-            .eq('phone', username)
-            .single();
-            
-          if (customerData?.user_id) {
-            // If we found a user with this phone, try to get their email
-            const { data: userData } = await supabase.auth.admin.getUserById(
-              customerData.user_id
-            );
-            
-            if (userData?.user?.email) {
-              // Try to sign in with the retrieved email
-              const signInResult = await supabase.auth.signInWithPassword({
-                email: userData.user.email,
-                password,
-              });
-              
-              if (!signInResult.error) {
-                return { data: signInResult.data };
-              }
-            }
-          }
-          
-          // If all attempts failed, throw the original error
-          throw error;
-        }
-        
-        return { data };
+        setCustomer(null);
       }
     } catch (error) {
-      console.error("Error signing in:", error);
-      return { error };
+      console.error('Error refreshing user:', error);
     }
   };
 
-  // Function to sign up with both email and phone
-  const signUp = async (email: string, phone: string, password: string, additionalData?: any) => {
-    try {
-      // Store the real phone number without formatting it as an email
-      const loginEmail = email || phone;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email: loginEmail,
-        password,
-        options: {
-          data: {
-            ...additionalData,
-            email: email,
-            phone: phone,
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      // Since we're not requiring email verification, we can immediately sign in the user
-      if (data.user && !data.session) {
-        const signInResult = await signIn(loginEmail, password);
-        return signInResult;
-      }
-
-      return { data };
-    } catch (error) {
-      console.error("Error signing up:", error);
-      return { error };
-    }
-  };
-
-  // Function to sign out
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setUser(null);
+      setCustomer(null);
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error('Error signing out:', error);
     }
   };
 
-  // Function to update user data
-  const updateUser = async (data: any) => {
-    try {
-      const { data: user, error } = await supabase.auth.updateUser({ data });
+  useEffect(() => {
+    let mounted = true;
 
-      if (error) {
-        throw error;
+    const getInitialUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (mounted) {
+          setUser(user);
+          
+          if (user) {
+            await fetchCustomer(user.id);
+            // Migrate guest data when user logs in
+            await migrateGuestData(user.id);
+          }
+          
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error getting initial user:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
+    };
 
-      return { user };
-    } catch (error) {
-      console.error("Error updating user:", error);
-      return { error };
-    }
-  };
+    getInitialUser();
 
-  // Function to reset password
-  const resetPassword = async (username: string) => {
-    try {
-      // Check if username is email or phone
-      const isEmail = username.includes('@');
-      const resetEmail = isEmail ? username : username;
-      
-      const { data, error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/update-password`,
-      });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
 
-      if (error) throw error;
-      return { data };
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      return { error };
-    }
-  };
-
-  // Function to sign in with phone verification
-  const signInWithPhone = async (phone: string) => {
-    try {
-      // This is a placeholder for actual phone verification logic
-      // In a real implementation, this would call a serverless function to send SMS/WhatsApp
-      console.log("Sending verification code to phone:", phone);
-      
-      // For development, we can simulate a code
-      const testCode = "123456";
-      
-      return { 
-        data: { 
-          code: testCode, // In production, you'd never return this to the client
-          message: "Verification code sent successfully" 
-        } 
-      };
-    } catch (error) {
-      console.error("Error sending verification code:", error);
-      return { error };
-    }
-  };
-
-  // Function to verify phone code
-  const verifyPhone = async (phone: string, code: string) => {
-    try {
-      // This is a placeholder for actual phone verification logic
-      console.log("Verifying code for phone:", phone, "Code:", code);
-      
-      // In a real implementation, you would verify the code against what was sent
-      // Here we'll just assume code "123456" is valid for testing
-      if (code !== "123456") {
-        throw new Error("Invalid verification code");
+        console.log('Auth state changed:', event, session?.user?.id);
+        
+        if (session?.user) {
+          setUser(session.user);
+          await fetchCustomer(session.user.id);
+          
+          // Migrate guest data when user signs in
+          if (event === 'SIGNED_IN') {
+            await migrateGuestData(session.user.id);
+          }
+        } else {
+          setUser(null);
+          setCustomer(null);
+        }
+        
+        setLoading(false);
       }
-      
-      return { data: { verified: true } };
-    } catch (error) {
-      console.error("Error verifying code:", error);
-      return { error };
-    }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const value = {
+    user,
+    customer,
+    loading,
+    signOut,
+    refreshUser,
   };
 
   return (
-    <UserContext.Provider
-      value={{
-        user,
-        session,
-        authLoading,
-        loading,
-        signIn,
-        signUp,
-        signOut,
-        updateUser,
-        resetPassword,
-        signInWithPhone,
-        verifyPhone,
-      }}
-    >
+    <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );
 };
 
-export const UserProvider = ({ children }) => {
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <UserProviderInternal>
       {children}
