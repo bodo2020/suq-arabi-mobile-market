@@ -75,17 +75,13 @@ const DistanceCalculator: React.FC = () => {
       if (window.google && window.google.maps) {
         console.log('Google Maps already loaded');
         setScriptLoaded(true);
-        setIsLoading(false);
         return;
       }
 
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
       if (existingScript) {
         console.log('Google Maps script already exists');
-        existingScript.addEventListener('load', () => {
-          setScriptLoaded(true);
-          setIsLoading(false);
-        });
+        setScriptLoaded(true);
         return;
       }
 
@@ -99,7 +95,6 @@ const DistanceCalculator: React.FC = () => {
       script.onload = () => {
         console.log('Google Maps script loaded successfully');
         setScriptLoaded(true);
-        setIsLoading(false);
       };
       
       script.onerror = (error) => {
@@ -131,24 +126,7 @@ const DistanceCalculator: React.FC = () => {
         streetViewControl: false,
         fullscreenControl: true,
         zoomControl: true,
-        gestureHandling: 'greedy',
-        styles: [
-          {
-            featureType: "all",
-            elementType: "geometry.fill",
-            stylers: [{ weight: "2.00" }]
-          },
-          {
-            featureType: "all",
-            elementType: "geometry.stroke",
-            stylers: [{ color: "#9c9c9c" }]
-          },
-          {
-            featureType: "all",
-            elementType: "labels.text",
-            stylers: [{ visibility: "on" }]
-          }
-        ]
+        gestureHandling: 'greedy'
       };
 
       const map = new window.google.maps.Map(mapContainerRef.current, mapOptions);
@@ -164,18 +142,18 @@ const DistanceCalculator: React.FC = () => {
       listenersRef.current.push(clickListener);
       
       // Wait for map to be fully loaded
-      const tilesLoadedListener = map.addListener('tilesloaded', () => {
+      map.addListener('tilesloaded', () => {
         console.log('Distance calculator map tiles loaded');
         setMapLoaded(true);
+        setIsLoading(false);
       });
-      
-      listenersRef.current.push(tilesLoadedListener);
       
       // Fallback timeout
       setTimeout(() => {
         console.log("Setting distance calculator map as loaded (timeout fallback)");
         setMapLoaded(true);
-      }, 2000);
+        setIsLoading(false);
+      }, 3000);
       
       console.log("Distance calculator map initialized successfully");
       
@@ -198,20 +176,20 @@ const DistanceCalculator: React.FC = () => {
     const newPoints = [...points, newPoint];
     setPoints(newPoints);
     
-    // Create marker with custom icon
+    // Create marker
     const marker = new window.google.maps.Marker({
       position: { lat, lng },
       map: mapRef.current,
       title: newPoint.label,
       icon: {
-        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-            <circle cx="20" cy="20" r="15" fill="${points.length === 0 ? '#00b894' : '#e74c3c'}" stroke="#ffffff" stroke-width="3"/>
-            <text x="20" y="25" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${points.length + 1}</text>
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="12" fill="${points.length === 0 ? '#00b894' : '#e74c3c'}" stroke="#ffffff" stroke-width="3"/>
+            <text x="16" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${points.length + 1}</text>
           </svg>
-        `)}`,
-        scaledSize: new window.google.maps.Size(40, 40),
-        anchor: new window.google.maps.Point(20, 20)
+        `),
+        scaledSize: new window.google.maps.Size(32, 32),
+        anchor: new window.google.maps.Point(16, 16)
       }
     });
     
@@ -292,7 +270,7 @@ const DistanceCalculator: React.FC = () => {
   // Render error state
   if (scriptError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="fixed inset-0 bg-white flex flex-col z-50">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm">
           <button
             onClick={handleBack}
@@ -327,7 +305,7 @@ const DistanceCalculator: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="fixed inset-0 bg-white flex flex-col z-50">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm">
         <button
@@ -353,15 +331,16 @@ const DistanceCalculator: React.FC = () => {
       </div>
       
       {/* Map container */}
-      <div className="flex-1 p-4">
-        <div className="h-full w-full relative bg-white rounded-xl overflow-hidden shadow-lg" style={{ minHeight: '400px' }}>
+      <div className="flex-1 p-4 bg-gray-50">
+        <div className="h-full w-full relative bg-white rounded-3xl overflow-hidden shadow-lg">
           <div 
             ref={mapContainerRef}
             className="h-full w-full"
+            style={{ minHeight: '400px' }}
           />
           
           {(isLoading || !mapLoaded) && (
-            <div className="absolute inset-0 bg-white flex items-center justify-center">
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-gray-600">جاري تحميل الخريطة...</p>
