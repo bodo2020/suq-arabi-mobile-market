@@ -10,6 +10,20 @@ import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
+interface AddressData {
+  id: string;
+  address: string;
+  is_default: boolean;
+  governorate_id?: string | null;
+  city_id?: string | null;
+  area_id?: string | null;
+  neighborhood_id?: string | null;
+  governorates?: { id: string; name: string } | null;
+  cities?: { id: string; name: string } | null;
+  areas?: { id: string; name: string } | null;
+  neighborhoods?: { id: string; name: string } | null;
+}
+
 interface AddressDisplayProps {
   address?: string;
   onEdit?: () => void;
@@ -39,18 +53,24 @@ const AddressDisplay = ({
     queryKey: ['addresses', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('customer_addresses')
         .select(`
           *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
+          governorates(id, name),
+          cities(id, name),
+          areas(id, name),
+          neighborhoods(id, name)
         `)
         .eq('user_id', user.id)
         .order('is_default', { ascending: false });
-      return data || [];
+        
+      if (error) {
+        console.error('Error fetching addresses:', error);
+        return [];
+      }
+      
+      return (data || []) as AddressData[];
     },
     enabled: !!user?.id
   });
@@ -71,8 +91,16 @@ const AddressDisplay = ({
       const selectedAddress = addresses.find(addr => addr.id === addressId);
       if (selectedAddress) {
         localStorage.setItem('userAddress', selectedAddress.address || '');
-        localStorage.setItem('userArea', selectedAddress.areas?.name || '');
-        localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
+        
+        // Use the area name from the joined data if available
+        if (selectedAddress.areas?.name) {
+          localStorage.setItem('userArea', selectedAddress.areas.name);
+        }
+        
+        // Use the neighborhood name from the joined data if available
+        if (selectedAddress.neighborhoods?.name) {
+          localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods.name);
+        }
 
         await supabase
           .from('customers')
@@ -130,7 +158,7 @@ const AddressDisplay = ({
                 <DropdownMenuItem key={addr.id} onClick={() => handleAddressSelect(addr.id)}>
                   <div className={cn("flex flex-col w-full", addr.is_default && "font-bold")}>
                     <span>
-                      {addr.areas?.name} {addr.neighborhoods?.name ? `- ${addr.neighborhoods?.name}` : ''}
+                      {addr.areas?.name || ''} {addr.neighborhoods?.name ? `- ${addr.neighborhoods.name}` : ''}
                     </span>
                     {addr.address && <span className="text-xs text-gray-500">{addr.address}</span>}
                     {addr.is_default && <span className="text-xs text-primary">العنوان الافتراضي</span>}

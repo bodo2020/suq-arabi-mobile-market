@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Search, MapPin, Navigation } from 'lucide-react';
@@ -151,12 +150,11 @@ const MapView: React.FC = () => {
         map: map,
         draggable: true,
         icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: '#10B981',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 3
+          url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#10B981" stroke="#ffffff" stroke-width="3"><circle cx="12" cy="12" r="8" /></svg>'
+          ),
+          scaledSize: new google.maps.Size(24, 24),
+          anchor: new google.maps.Point(12, 12)
         }
       });
       markerRef.current = marker;
