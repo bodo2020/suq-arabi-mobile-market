@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Barcode, Search as SearchIcon, X, Scan } from 'lucide-react';
+import { ArrowRight, Barcode, Search as SearchIcon, X, Scan, MapPin } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import ProductCard from '@/components/ui/ProductCard';
@@ -17,6 +17,11 @@ const Search = () => {
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showScanner, setShowScanner] = useState(false);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    area?: string | null;
+    neighborhood?: string | null;
+  } | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -26,6 +31,15 @@ const Search = () => {
     const savedSearches = localStorage.getItem('recentSearches');
     if (savedSearches) {
       setRecentSearches(JSON.parse(savedSearches));
+    }
+
+    // Load user location
+    const savedAddress = localStorage.getItem('userAddress');
+    if (savedAddress) setUserAddress(savedAddress);
+    const area = localStorage.getItem('userArea');
+    const neighborhood = localStorage.getItem('userNeighborhood');
+    if (area || neighborhood) {
+      setUserLocation({ area, neighborhood });
     }
   }, []);
 
@@ -99,6 +113,10 @@ const Search = () => {
   const handleClearHistory = () => {
     setRecentSearches([]);
     localStorage.removeItem('recentSearches');
+  };
+
+  const handleChangeLocation = () => {
+    navigate('/address-manager');
   };
 
   const startBarcodeScanner = () => {
@@ -193,120 +211,148 @@ const Search = () => {
 
   return (
     <MainLayout>
-      <div className="py-4">
-        {/* Header with back button */}
-        <div className="flex items-center mb-4">
-          <button
-            onClick={handleBack}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="الرجوع"
-          >
-            <ArrowRight size={24} className="text-primary" />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center text-primary">البحث</h1>
-          <div className="w-10"></div> {/* Spacer for alignment */}
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-4">
-          <SearchBar 
-            initialQuery={query} 
-            onBarcodeClick={startBarcodeScanner}
-          />
-        </div>
-
-        {/* Modern Barcode Scanner Overlay */}
-        {showScanner && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center p-4">
-            <Card className="w-full max-w-md shadow-2xl border-2 border-primary/20">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold text-primary">ماسح الباركود</h3>
-                  <button 
-                    onClick={stopBarcodeScanner}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <X size={20} className="text-gray-500" />
-                  </button>
-                </div>
-                
-                <div className="text-center mb-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Scan size={24} className="text-primary" />
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    قم بتوجيه الكاميرا نحو الباركود
-                  </p>
-                </div>
-
-                <div 
-                  id="barcode-reader" 
-                  className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-primary/30"
-                ></div>
-                
-                <Button 
-                  onClick={stopBarcodeScanner}
-                  variant="outline"
-                  className="w-full mt-4 border-primary text-primary hover:bg-primary hover:text-white"
-                >
-                  إلغاء
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Recent Searches */}
-        {!query && recentSearches.length > 0 && (
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold text-primary">عمليات البحث الأخيرة</h2>
-              <button 
-                onClick={handleClearHistory}
-                className="text-sm text-primary hover:text-primary/80"
-              >
-                مسح
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {recentSearches.map((search, index) => (
-                <button 
-                  key={index}
-                  onClick={() => handleSearchClick(search)}
-                  className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm flex items-center hover:bg-primary/20 transition-colors"
-                >
-                  <SearchIcon size={14} className="ml-1" />
-                  {search}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Search Results */}
-        {query && (
-          <>
-            <h2 className="text-lg font-bold mb-3 text-primary">نتائج البحث عن "{query}"</h2>
-            
-            {loading ? (
-              <div className="flex justify-center items-center h-40">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="py-0">
+        {/* Header Section with Primary Color Background */}
+        <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-3 rounded-b-3xl">
+          <div className="max-w-md mx-auto px-4">
+            <div className="flex items-start mb-2">
+              <div className="flex flex-col items-center ml-3">
+                <img src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" alt="المعداوي" className="h-16 w-16 mb-1 object-contain" loading="eager" />
+                <span className="text-white text-sm font-bold">المعداوي</span>
               </div>
-            ) : products.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+              
+              <div className="flex-1">
+                <SearchBar 
+                  initialQuery={query} 
+                  onBarcodeClick={startBarcodeScanner}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Address Section - Outside the colored background */}
+        <div className="max-w-md mx-auto px-4 mb-4">
+          <div className="flex items-center">
+            <MapPin size={16} className="text-primary ml-2" />
+            <span className="text-gray-600 text-sm">التوصيل إلى</span>
+            <button 
+              onClick={handleChangeLocation}
+              className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
+            >
+              {userLocation?.area || userAddress || "اختر عنوانك"}
+              {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+            </button>
+          </div>
+        </div>
+
+        <div className="px-4">
+          {/* Header with back button */}
+          <div className="flex items-center mb-4">
+            <button
+              onClick={handleBack}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="الرجوع"
+            >
+              <ArrowRight size={24} className="text-primary" />
+            </button>
+            <h1 className="text-xl font-bold flex-1 text-center text-primary">البحث</h1>
+            <div className="w-10"></div>
+          </div>
+
+          {/* Modern Barcode Scanner Overlay */}
+          {showScanner && (
+            <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center p-4">
+              <Card className="w-full max-w-md shadow-2xl border-2 border-primary/20">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-primary">ماسح الباركود</h3>
+                    <button 
+                      onClick={stopBarcodeScanner}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X size={20} className="text-gray-500" />
+                    </button>
+                  </div>
+                  
+                  <div className="text-center mb-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <Scan size={24} className="text-primary" />
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      قم بتوجيه الكاميرا نحو الباركود
+                    </p>
+                  </div>
+
+                  <div 
+                    id="barcode-reader" 
+                    className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-primary/30"
+                  ></div>
+                  
+                  <Button 
+                    onClick={stopBarcodeScanner}
+                    variant="outline"
+                    className="w-full mt-4 border-primary text-primary hover:bg-primary hover:text-white"
+                  >
+                    إلغاء
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Recent Searches */}
+          {!query && recentSearches.length > 0 && (
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-lg font-bold text-primary">عمليات البحث الأخيرة</h2>
+                <button 
+                  onClick={handleClearHistory}
+                  className="text-sm text-primary hover:text-primary/80"
+                >
+                  مسح
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map((search, index) => (
+                  <button 
+                    key={index}
+                    onClick={() => handleSearchClick(search)}
+                    className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm flex items-center hover:bg-primary/20 transition-colors"
+                  >
+                    <SearchIcon size={14} className="ml-1" />
+                    {search}
+                  </button>
                 ))}
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <SearchIcon size={48} className="text-primary/30 mb-4" />
-                <h3 className="text-lg font-medium text-primary mb-1">لا توجد نتائج</h3>
-                <p className="text-sm text-gray-400">لم نتمكن من العثور على منتجات تطابق "{query}"</p>
-              </div>
-            )}
-          </>
-        )}
+            </div>
+          )}
+
+          {/* Search Results */}
+          {query && (
+            <>
+              <h2 className="text-lg font-bold mb-3 text-primary">نتائج البحث عن "{query}"</h2>
+              
+              {loading ? (
+                <div className="flex justify-center items-center h-40">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : products.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {products.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <SearchIcon size={48} className="text-primary/30 mb-4" />
+                  <h3 className="text-lg font-medium text-primary mb-1">لا توجد نتائج</h3>
+                  <p className="text-sm text-gray-400">لم نتمكن من العثور على منتجات تطابق "{query}"</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </MainLayout>
   );

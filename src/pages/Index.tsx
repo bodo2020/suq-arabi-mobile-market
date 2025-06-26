@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 const ProductCollectionsSection = lazy(() => import('@/components/sections/ProductCollectionsSection'));
 const BannersContainer = lazy(() => import('@/components/ui/BannersContainer'));
+
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
@@ -42,6 +43,7 @@ const Index = () => {
     refetchOnWindowFocus: false
   });
   const visibleCategories = categories.slice(0, 12);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -69,6 +71,7 @@ const Index = () => {
     };
     fetchData();
   }, []);
+
   useEffect(() => {
     if (banners.length > 1) {
       bannerIntervalRef.current = setInterval(() => {
@@ -81,6 +84,7 @@ const Index = () => {
       }
     };
   }, [banners.length]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -94,15 +98,19 @@ const Index = () => {
       setProcessingImage(false);
     }
   };
+
   const handleFocusSearchBar = () => {
     navigate('/search');
   };
+
   const handleChangeLocation = () => {
     navigate('/address-manager');
   };
+
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
+
   if (categoriesLoading) {
     return <MainLayout>
         <div className="py-4">
@@ -121,16 +129,17 @@ const Index = () => {
         </div>
       </MainLayout>;
   }
+
   return <div className="min-h-screen bg-gray-50">
       <div className="mb-16 pb-16">
         {/* Header Section with Primary Color Background - Full Screen Width */}
-        <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-8 mb-6 rounded-b-3xl">
+        <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-3 rounded-b-3xl">
           <div className="max-w-md mx-auto px-4">
-            {/* Logo and Store Name - Updated Layout */}
-            <div className="flex items-start mb-6">
-              <div className="flex flex-col items-center ml-4">
-                <img src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" alt="المعداوي" className="h-16 w-16 mb-2 object-contain" loading="eager" />
-                
+            {/* Logo and Search Bar - Reduced gap */}
+            <div className="flex items-start mb-2">
+              <div className="flex flex-col items-center ml-3">
+                <img src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" alt="المعداوي" className="h-16 w-16 mb-1 object-contain" loading="eager" />
+                <span className="text-white text-sm font-bold">المعداوي</span>
               </div>
               
               {/* Search Bar */}
@@ -138,18 +147,21 @@ const Index = () => {
                 <SearchBar placeholder="البحث عن منتجات، أقسام..." backgroundImage={searchBackground} onFocus={handleFocusSearchBar} readOnly />
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Address Section - Inside the colored background */}
-            <div className="flex items-center">
-              <div className="bg-transparent backdrop-blur-sm px-3 py-2 flex items-center">
-                <MapPin size={16} className="text-white ml-2" />
-                <span className="text-white/90 text-sm">التوصيل إلى</span>
-                <span className="text-white font-bold text-sm mr-2 underline decoration-2 underline-offset-2">
-                  {userLocation?.area || userAddress || "اختر عنوانك"}
-                  {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
-                </span>
-              </div>
-            </div>
+        {/* Address Section - Outside the colored background */}
+        <div className="max-w-md mx-auto px-4 mb-4">
+          <div className="flex items-center">
+            <MapPin size={16} className="text-primary ml-2" />
+            <span className="text-gray-600 text-sm">التوصيل إلى</span>
+            <button 
+              onClick={handleChangeLocation}
+              className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
+            >
+              {userLocation?.area || userAddress || "اختر عنوانك"}
+              {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+            </button>
           </div>
         </div>
 
@@ -195,4 +207,5 @@ const Index = () => {
       </div>
     </div>;
 };
+
 export default Index;
