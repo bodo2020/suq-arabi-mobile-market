@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
 import { MapPin, Search, Ruler, Route } from 'lucide-react';
@@ -25,7 +24,12 @@ interface MapPin {
   title: string;
 }
 
-const GoogleMap = () => {
+interface GoogleMapProps {
+  height?: string;
+  className?: string;
+}
+
+const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const referenceMarkerRef = useRef<google.maps.Marker | null>(null);
@@ -412,7 +416,7 @@ const GoogleMap = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+    <div className={`w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col ${className}`} style={{ height }}>
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 shadow-sm">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
