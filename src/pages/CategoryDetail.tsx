@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -30,6 +29,7 @@ const CategoryDetail = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [currentSort, setCurrentSort] = useState("newest");
+  const [subcategoriesWithProducts, setSubcategoriesWithProducts] = useState<Subcategory[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,6 +49,12 @@ const CategoryDetail = () => {
           const productsData = await getProducts(id, false);
           setAllProducts(productsData);
           setProducts(productsData);
+
+          // Filter subcategories that have products
+          const subcategoriesWithProductsFiltered = subcategoriesData.filter(subcat => 
+            productsData.some(product => product.subcategory_id === subcat.id)
+          );
+          setSubcategoriesWithProducts(subcategoriesWithProductsFiltered);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -151,8 +157,8 @@ const CategoryDetail = () => {
               </div>
 
               <div className="sticky top-0 z-10 mb-4 bg-white">
-                {/* Only show subcategories filter if there are subcategories */}
-                {subcategories.length > 0 && (
+                {/* Only show subcategories filter if there are subcategories with products */}
+                {subcategoriesWithProducts.length > 0 && (
                   <div className="overflow-x-auto scrollbar-hide">
                     <div className="flex gap-2 p-2 whitespace-nowrap min-w-max" onClick={handleFiltersClick}>
                       <button
@@ -168,7 +174,7 @@ const CategoryDetail = () => {
                       >
                         جميع المنتجات
                       </button>
-                      {subcategories.map(subcat => (
+                      {subcategoriesWithProducts.map(subcat => (
                         <button
                           key={subcat.id}
                           onClick={(e) => {
