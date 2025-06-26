@@ -222,24 +222,28 @@ const Search = () => {
             onBarcodeClick: startBarcodeScanner,
             readOnly: false
           }}
+          hideLogo={true}
+          pageTitle="البحث"
         />
 
         {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-32' : ''}`}>
+        <div className={`${!isMobile ? 'mt-24' : ''}`}>
           <div className="w-full px-4">
             <div className="max-w-md mx-auto md:max-w-4xl">
-              {/* Header with back button */}
-              <div className="flex items-center mb-4">
-                <button
-                  onClick={handleBack}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="الرجوع"
-                >
-                  <ArrowRight size={24} className="text-primary" />
-                </button>
-                <h1 className="text-xl font-bold flex-1 text-center text-primary">البحث</h1>
-                <div className="w-10"></div>
-              </div>
+              {/* Header with back button - only show on desktop */}
+              {!isMobile && (
+                <div className="flex items-center mb-4">
+                  <button
+                    onClick={handleBack}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="الرجوع"
+                  >
+                    <ArrowRight size={24} className="text-primary" />
+                  </button>
+                  <h1 className="text-xl font-bold flex-1 text-center text-primary">البحث</h1>
+                  <div className="w-10"></div>
+                </div>
+              )}
 
               {/* Modern Barcode Scanner Overlay */}
               {showScanner && (

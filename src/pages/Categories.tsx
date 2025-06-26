@@ -54,26 +54,30 @@ const Categories = () => {
         <TopNavBar 
           searchPlaceholder="البحث في الأقسام..."
           onSearchFocus={handleSearchFocus}
+          hideLogo={true}
+          pageTitle="جميع الأقسام"
         />
 
         {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-32' : ''}`}>
-          {/* Header with back button */}
-          <div className="w-full px-4 mb-6">
-            <div className="max-w-md mx-auto md:max-w-4xl">
-              <div className="flex items-center">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="الرجوع"
-                >
-                  <ArrowRight size={24} className="text-primary" />
-                </button>
-                <h1 className="text-xl font-bold flex-1 text-center text-primary">جميع الأقسام</h1>
-                <div className="w-10"></div>
+        <div className={`${!isMobile ? 'mt-24' : ''}`}>
+          {/* Header with back button - only show on desktop */}
+          {!isMobile && (
+            <div className="w-full px-4 mb-6">
+              <div className="max-w-md mx-auto md:max-w-4xl">
+                <div className="flex items-center">
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="الرجوع"
+                  >
+                    <ArrowRight size={24} className="text-primary" />
+                  </button>
+                  <h1 className="text-xl font-bold flex-1 text-center text-primary">جميع الأقسام</h1>
+                  <div className="w-10"></div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Categories Grid */}
           <div className="w-full px-4">

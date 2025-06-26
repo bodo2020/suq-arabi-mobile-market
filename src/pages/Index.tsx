@@ -147,7 +147,7 @@ const Index = () => {
           />
 
           {/* Main Content with proper spacing */}
-          <div className={`${!isMobile ? 'mt-32' : ''}`}>
+          <div className={`${!isMobile ? 'mt-24' : ''}`}>
             {/* Address Section */}
             <div className="w-full px-4 mb-4">
               <div className="max-w-md mx-auto md:max-w-4xl">
