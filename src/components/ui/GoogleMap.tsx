@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-const API_KEY = 'AIzaSyAAVw59DZPSHu3MKe78lz0EvI-QXTJSCqE';
+const API_KEY = 'AIzaSyAAVw5DZPSHu3MKe78lz0EvI-QXTJSCqE';
 
 // Reference location (Riyadh, Saudi Arabia)
 const REFERENCE_LOCATION = { lat: 24.7136, lng: 46.6753 };
