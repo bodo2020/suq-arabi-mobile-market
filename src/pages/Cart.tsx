@@ -2,7 +2,6 @@ import React from 'react';
 import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import TopNavBar from '@/components/layout/TopNavBar';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -18,12 +17,9 @@ import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import LocationDisplay from '@/components/ui/LocationDisplay';
 import AddressDisplay from '@/components/ui/AddressDisplay';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  
   const {
     items,
     updateQuantity,
@@ -47,10 +43,6 @@ const Cart = () => {
     area?: string;
     neighborhood?: string;
   }>({});
-
-  const handleSearchFocus = () => {
-    navigate('/search');
-  };
 
   const {
     data: customerData
@@ -265,21 +257,11 @@ const Cart = () => {
     
     navigate('/checkout');
   };
-  return (
-    <MainLayout>
-      <div className="container px-0 py-0">
-        {/* Top Navigation Bar */}
-        <TopNavBar 
-          searchPlaceholder="البحث في السلة..."
-          onSearchFocus={handleSearchFocus}
-          hideLogo={true}
-          hideSearch={true}
-          pageTitle="سلة التسوق"
-        />
-
-        {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} py-4 pb-24`} dir="rtl">
-          {items.length === 0 ? <div className="flex flex-col items-center justify-center py-12">
+  return <MainLayout>
+      <div className="py-4 pb-24" dir="rtl">
+        <h1 className="text-xl font-bold text-center mb-4">سلة التسوق</h1>
+        
+        {items.length === 0 ? <div className="flex flex-col items-center justify-center py-12">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
               <circle cx="8" cy="21" r="1"></circle>
               <circle cx="19" cy="21" r="1"></circle>
@@ -447,10 +429,7 @@ const Cart = () => {
               </Button>
             </div>
           </div>}
-        </div>
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 };
-
 export default Cart;
