@@ -24,12 +24,15 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   const [loading, setLoading] = useState(true);
   const [locationLoading, setLocationLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const initMap = async () => {
       if (!mapRef.current) return;
 
+      console.log('Initializing Google Maps...');
+      
       const loader = new Loader({
         apiKey: 'AIzaSyBhWG1SZE7DCk9qiC4dCs82oqq3GWkVEhg',
         version: 'weekly',
@@ -37,7 +40,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       });
 
       try {
+        console.log('Loading Google Maps API...');
         await loader.load();
+        console.log('Google Maps API loaded successfully');
         
         // Default location (Cairo, Egypt)
         const defaultLocation = { lat: 30.0444, lng: 31.2357 };
@@ -51,6 +56,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           fullscreenControl: true,
         });
 
+        console.log('Map instance created');
+
         const markerInstance = new google.maps.Marker({
           position: defaultLocation,
           map: mapInstance,
@@ -62,18 +69,24 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
             fillOpacity: 1,
             strokeColor: '#ffffff',
             strokeWeight: 2,
-          } as any
+          }
         });
+
+        console.log('Marker created');
 
         setMap(mapInstance);
         setMarker(markerInstance);
         setLoading(false);
+        setError(null);
+
+        console.log('Map initialization complete');
 
         // Try to get user's location automatically
         requestLocation();
       } catch (error) {
         console.error('Error loading Google Maps:', error);
         setLoading(false);
+        setError('Failed to load Google Maps. Please check your internet connection.');
         toast({
           title: 'خطأ في تحميل الخريطة',
           description: 'حدث خطأ أثناء تحميل الخريطة. يرجى المحاولة مرة أخرى.',
@@ -87,6 +100,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
+      console.error('Geolocation not supported');
       toast({
         title: 'الموقع غير مدعوم',
         description: 'متصفحك لا يدعم خدمات الموقع.',
@@ -95,10 +109,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       return;
     }
 
+    console.log('Requesting location...');
     setLocationLoading(true);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log('Location obtained:', position.coords);
         const { latitude, longitude } = position.coords;
         const newLocation = { lat: latitude, lng: longitude };
         
@@ -164,6 +180,33 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
           <p className="text-sm text-gray-600">جاري تحميل الخريطة...</p>
+          {error && (
+            <p className="text-xs text-red-600 mt-2">{error}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div 
+        style={{ height, width }}
+        className="flex items-center justify-center bg-red-50 rounded-lg border border-red-200"
+      >
+        <div className="text-center p-4">
+          <p className="text-sm text-red-600 mb-2">{error}</p>
+          <Button 
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              window.location.reload();
+            }}
+            size="sm"
+            variant="outline"
+          >
+            إعادة المحاولة
+          </Button>
         </div>
       </div>
     );
