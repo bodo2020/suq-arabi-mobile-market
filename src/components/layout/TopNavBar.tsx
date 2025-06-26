@@ -37,7 +37,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
 
   return (
-    <div className={`bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pb-4 ${!isMobile ? 'fixed top-0 z-50' : ''} ${pageTitle && (hideLogo || hideSearch) ? 'pt-2' : 'pt-4'}`}>
+    <div className={`bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] ${!isMobile ? 'fixed top-0 z-50' : ''} ${pageTitle && (hideLogo || hideSearch) ? 'pt-2 pb-8' : 'pt-4 pb-8'}`}>
       <div className="w-full px-4">
         <div className="max-w-md mx-auto md:max-w-7xl">
           {/* Page Title for mobile when logo is hidden or search is hidden */}
@@ -71,6 +71,21 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
                   {...searchProps}
                 />
               </div>
+            )}
+
+            {/* Mobile Cart Icon - Right Side (when search is hidden) */}
+            {isMobile && hideSearch && (
+              <button
+                onClick={() => navigate('/cart')}
+                className="relative p-2"
+              >
+                <ShoppingCart size={24} className="text-white" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
             )}
 
             {/* Desktop Navigation Icons - Right Side */}
@@ -117,6 +132,12 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Curved bottom design */}
+      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gray-50" style={{
+        borderTopLeftRadius: '24px',
+        borderTopRightRadius: '24px'
+      }}></div>
     </div>
   );
 };

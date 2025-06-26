@@ -60,7 +60,7 @@ const Categories = () => {
         />
 
         {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-24' : ''}`}>
+        <div className={`${!isMobile ? 'mt-24' : 'mt-6'}`}>
           {/* Header with back button - only show on desktop */}
           {!isMobile && (
             <div className="w-full px-4 mb-6">
