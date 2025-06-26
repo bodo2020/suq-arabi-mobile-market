@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -136,83 +137,85 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mb-16 pb-16">
-        {/* Top Navigation Bar */}
-        <TopNavBar 
-          onSearchFocus={handleFocusSearchBar}
-          searchProps={{ backgroundImage: searchBackground }}
-        />
+    <MainLayout>
+      <div className="min-h-screen bg-gray-50">
+        <div className="mb-16 pb-16">
+          {/* Top Navigation Bar */}
+          <TopNavBar 
+            onSearchFocus={handleFocusSearchBar}
+            searchProps={{ backgroundImage: searchBackground }}
+          />
 
-        {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-32' : ''}`}>
-          {/* Address Section */}
-          <div className="w-full px-4 mb-4">
-            <div className="max-w-md mx-auto md:max-w-4xl">
-              <div className="flex items-center">
-                <MapPin size={16} className="text-primary ml-2" />
-                <span className="text-gray-600 text-sm">التوصيل إلى</span>
-                <button 
-                  onClick={handleChangeLocation}
-                  className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
-                >
-                  {userLocation?.area || userAddress || "اختر عنوانك"}
-                  {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
-                </button>
+          {/* Main Content with proper spacing */}
+          <div className={`${!isMobile ? 'mt-32' : ''}`}>
+            {/* Address Section */}
+            <div className="w-full px-4 mb-4">
+              <div className="max-w-md mx-auto md:max-w-4xl">
+                <div className="flex items-center">
+                  <MapPin size={16} className="text-primary ml-2" />
+                  <span className="text-gray-600 text-sm">التوصيل إلى</span>
+                  <button 
+                    onClick={handleChangeLocation}
+                    className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
+                  >
+                    {userLocation?.area || userAddress || "اختر عنوانك"}
+                    {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Content Container */}
-          <div className="max-w-md mx-auto px-4 md:max-w-4xl">
-            <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
-              {banners.length > 0 && (
-                <div className="mb-6 relative">
-                  <BannersContainer banners={banners} />
+            {/* Content Container */}
+            <div className="max-w-md mx-auto px-4 md:max-w-4xl">
+              <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
+                {banners.length > 0 && (
+                  <div className="mb-6 relative">
+                    <BannersContainer banners={banners} />
+                  </div>
+                )}
+              </Suspense>
+
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-bold">الأقسام</h2>
+                  <Link to="/categories" className="flex items-center text-primary text-sm">
+                    عرض الكل
+                    <ChevronLeft size={16} />
+                  </Link>
                 </div>
-              )}
-            </Suspense>
-
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-lg font-bold">الأقسام</h2>
-                <Link to="/categories" className="flex items-center text-primary text-sm">
-                  عرض الكل
-                  <ChevronLeft size={16} />
-                </Link>
+                
+                <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-1">
+                  {visibleCategories.map(category => (
+                    <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
+                  ))}
+                  {categories.length > 12 && (
+                    <Link to="/categories" className="category-item flex flex-col items-center">
+                      <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{ aspectRatio: '1' }}>
+                        <ChevronLeft size={24} />
+                      </div>
+                      <span className="text-sm text-center mt-1">عرض الكل</span>
+                    </Link>
+                  )}
+                </div>
               </div>
               
-              <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-1">
-                {visibleCategories.map(category => (
-                  <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
-                ))}
-                {categories.length > 12 && (
-                  <Link to="/categories" className="category-item flex flex-col items-center">
-                    <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{ aspectRatio: '1' }}>
-                      <ChevronLeft size={24} />
-                    </div>
-                    <span className="text-sm text-center mt-1">عرض الكل</span>
-                  </Link>
-                )}
-              </div>
-            </div>
-            
-            <Suspense fallback={
-              <div className="space-y-6">
-                <Skeleton className="h-8 w-40 mb-2" />
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-44 w-full rounded-lg" />
-                  ))}
+              <Suspense fallback={
+                <div className="space-y-6">
+                  <Skeleton className="h-8 w-40 mb-2" />
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[...Array(4)].map((_, i) => (
+                      <Skeleton key={i} className="h-44 w-full rounded-lg" />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            }>
-              <ProductCollectionsSection />
-            </Suspense>
+              }>
+                <ProductCollectionsSection />
+              </Suspense>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 

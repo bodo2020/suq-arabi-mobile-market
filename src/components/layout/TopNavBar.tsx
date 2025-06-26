@@ -35,7 +35,28 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       <div className="w-full px-4">
         <div className="max-w-md mx-auto md:max-w-7xl">
           <div className="flex items-center mb-2 gap-3">
-            {/* Desktop Navigation Icons - Left Side */}
+            {/* Logo - Left Side */}
+            <div className="flex flex-col items-center">
+              <img 
+                src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
+                alt="المعداوي" 
+                className="h-16 w-16 mb-1 object-contain" 
+                loading="eager" 
+              />
+              <span className="text-white text-sm font-bold">المعداوي</span>
+            </div>
+            
+            {/* Search Bar - Center */}
+            <div className="flex-1">
+              <SearchBar 
+                placeholder={searchPlaceholder}
+                onFocus={handleSearchFocus} 
+                readOnly 
+                {...searchProps}
+              />
+            </div>
+
+            {/* Desktop Navigation Icons - Right Side */}
             {!isMobile && (
               <div className="flex gap-6">
                 <button
@@ -76,27 +97,6 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
                 </button>
               </div>
             )}
-            
-            {/* Search Bar - Center */}
-            <div className="flex-1">
-              <SearchBar 
-                placeholder={searchPlaceholder}
-                onFocus={handleSearchFocus} 
-                readOnly 
-                {...searchProps}
-              />
-            </div>
-
-            {/* Logo - Right Side */}
-            <div className="flex flex-col items-center">
-              <img 
-                src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
-                alt="المعداوي" 
-                className="h-16 w-16 mb-1 object-contain" 
-                loading="eager" 
-              />
-              <span className="text-white text-sm font-bold">المعداوي</span>
-            </div>
           </div>
         </div>
       </div>
