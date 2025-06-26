@@ -11,8 +11,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AddressDisplay from '@/components/ui/AddressDisplay';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
+
 const ProductCollectionsSection = lazy(() => import('@/components/sections/ProductCollectionsSection'));
 const BannersContainer = lazy(() => import('@/components/ui/BannersContainer'));
+
 const Index = () => {
   const [banners, setBanners] = useState<any[]>([]);
   const [storeInfo, setStoreInfo] = useState<any>(null);
@@ -29,9 +31,8 @@ const Index = () => {
   const bannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const {
-    user
-  } = useUser();
+  const { user } = useUser();
+  
   const {
     data: categories = [],
     isLoading: categoriesLoading
@@ -41,27 +42,32 @@ const Index = () => {
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false
   });
+
   const visibleCategories = categories.slice(0, 12);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const storeInfoData = await getStoreInfo();
         setStoreInfo(storeInfoData);
+        
         const savedAddress = localStorage.getItem('userAddress');
         if (savedAddress) setUserAddress(savedAddress);
+        
         const governorate = localStorage.getItem('userGovernorate');
         const city = localStorage.getItem('userCity');
         const area = localStorage.getItem('userArea');
         const neighborhood = localStorage.getItem('userNeighborhood');
+        
         if (governorate || city || area || neighborhood) {
-          setUserLocation({
-            governorate,
-            city,
-            area,
-            neighborhood
-          });
+          setUserLocation({ governorate, city, area, neighborhood });
         }
-        const bannersData = await supabase.from('banners').select('*').eq('active', true).order('position');
+        
+        const bannersData = await supabase.from('banners')
+          .select('*')
+          .eq('active', true)
+          .order('position');
+          
         if (bannersData.data) setBanners(bannersData.data);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -69,6 +75,7 @@ const Index = () => {
     };
     fetchData();
   }, []);
+
   useEffect(() => {
     if (banners.length > 1) {
       bannerIntervalRef.current = setInterval(() => {
@@ -81,6 +88,7 @@ const Index = () => {
       }
     };
   }, [banners.length]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -94,17 +102,22 @@ const Index = () => {
       setProcessingImage(false);
     }
   };
+
   const handleFocusSearchBar = () => {
     navigate('/search');
   };
+
   const handleChangeLocation = () => {
     navigate('/address-manager');
   };
+
   const handleMainCategoryClick = (cat: MainCategory) => {
     navigate(`/category/${cat.id}`);
   };
+
   if (categoriesLoading) {
-    return <MainLayout>
+    return (
+      <MainLayout>
         <div className="py-4">
           <div className="flex justify-center mb-4">
             <Skeleton className="h-12 w-32 rounded" />
@@ -119,21 +132,35 @@ const Index = () => {
             </div>
           </div>
         </div>
-      </MainLayout>;
+      </MainLayout>
+    );
   }
-  return <div className="min-h-screen bg-gray-50">
+
+  return (
+    <div className="min-h-screen bg-gray-50">
       <div className="mb-16 pb-16">
         {/* Header Section with Primary Color Background - Full Screen Width */}
         <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-8 mb-6 rounded-b-3xl">
           <div className="max-w-md mx-auto px-4">
             {/* Logo and Store Name */}
             <div className="flex items-center mb-6">
-              <span className="text-xl font-bold text-2xl ">ماركت المعداوي</span>
+              <img 
+                src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
+                alt="ماركت المعداوي" 
+                className="h-12 w-12 mr-3"
+                loading="eager" 
+              />
+              <span className="text-xl font-bold text-white">ماركت المعداوي</span>
             </div>
 
             {/* Modern Search Bar */}
             <div className="mb-4">
-              <SearchBar placeholder="البحث عن منتجات، أقسام..." backgroundImage={searchBackground} onFocus={handleFocusSearchBar} readOnly />
+              <SearchBar 
+                placeholder="البحث عن منتجات، أقسام..."
+                backgroundImage={searchBackground} 
+                onFocus={handleFocusSearchBar} 
+                readOnly 
+              />
             </div>
 
             {/* Address Section - Inside the colored background */}
@@ -153,9 +180,11 @@ const Index = () => {
         {/* Content Container */}
         <div className="max-w-md mx-auto px-4">
           <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
-            {banners.length > 0 && <div className="mb-6 relative">
+            {banners.length > 0 && (
+              <div className="mb-6 relative">
                 <BannersContainer banners={banners} />
-              </div>}
+              </div>
+            )}
           </Suspense>
 
           <div className="mb-6">
@@ -168,28 +197,41 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
-              {visibleCategories.map(category => <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />)}
-              {categories.length > 12 && <Link to="/categories" className="category-item flex flex-col items-center">
-                  <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{
-                aspectRatio: '1'
-              }}>
+              {visibleCategories.map(category => (
+                <CategoryItem 
+                  key={category.id} 
+                  category={category} 
+                  onClick={handleMainCategoryClick} 
+                />
+              ))}
+              {categories.length > 12 && (
+                <Link to="/categories" className="category-item flex flex-col items-center">
+                  <div 
+                    className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" 
+                    style={{aspectRatio: '1'}}
+                  >
                     <ChevronLeft size={24} />
                   </div>
                   <span className="text-sm text-center mt-1">عرض الكل</span>
-                </Link>}
+                </Link>
+              )}
             </div>
           </div>
           
-          <Suspense fallback={<div className="space-y-6">
+          <Suspense fallback={
+            <div className="space-y-6">
               <Skeleton className="h-8 w-40 mb-2" />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-lg" />)}
               </div>
-            </div>}>
+            </div>
+          }>
             <ProductCollectionsSection />
           </Suspense>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
