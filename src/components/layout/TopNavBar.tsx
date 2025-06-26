@@ -37,7 +37,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
 
   return (
-    <div className={`bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pb-4 ${!isMobile ? 'fixed top-0 z-50' : ''} ${pageTitle && (hideLogo || hideSearch) ? 'pt-2' : 'pt-4'}`}>
+    <div className={`bg-primary w-full pb-4 ${!isMobile ? 'fixed top-0 z-50' : ''} ${pageTitle && (hideLogo || hideSearch) ? 'pt-2' : 'pt-4'}`}>
       <div className="w-full px-4">
         <div className="max-w-md mx-auto md:max-w-7xl">
           {/* Page Title for mobile when logo is hidden or search is hidden */}
