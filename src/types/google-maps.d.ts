@@ -11,6 +11,7 @@ declare namespace google.maps {
     setOptions(options: MapOptions): void;
     setMapTypeId(mapTypeId: string | MapTypeId): void;
     setStyles(styles: MapTypeStyle[]): void;
+    get(key: string): any;
   }
   
   class Marker {
@@ -23,7 +24,40 @@ declare namespace google.maps {
   }
   
   class Geocoder {
+    constructor();
+    geocode(request: GeocoderRequest): Promise<GeocoderResponse>;
     geocode(request: GeocoderRequest, callback: (results: GeocoderResult[], status: GeocoderStatus) => void): void;
+  }
+
+  class DirectionsService {
+    constructor();
+    route(request: DirectionsRequest, callback: (result: DirectionsResult | null, status: DirectionsStatus) => void): void;
+  }
+
+  class DirectionsRenderer {
+    constructor(opts?: DirectionsRendererOptions);
+    setMap(map: Map | null): void;
+    setDirections(directions: DirectionsResult): void;
+  }
+
+  class InfoWindow {
+    constructor(opts?: InfoWindowOptions);
+    open(map?: Map, anchor?: Marker): void;
+    close(): void;
+    setContent(content: string | Element): void;
+  }
+
+  class LatLng {
+    constructor(lat: number, lng: number);
+    lat(): number;
+    lng(): number;
+    toJSON(): LatLngLiteral;
+  }
+
+  namespace geometry {
+    namespace spherical {
+      function computeDistanceBetween(from: LatLng, to: LatLng): number;
+    }
   }
   
   interface MapOptions {
@@ -34,6 +68,9 @@ declare namespace google.maps {
     streetViewControl?: boolean;
     fullscreenControl?: boolean;
     zoomControl?: boolean;
+    zoomControlOptions?: {
+      position: ControlPosition;
+    };
     styles?: MapTypeStyle[];
     backgroundColor?: string;
     gestureHandling?: string;
@@ -55,7 +92,7 @@ declare namespace google.maps {
     title?: string;
     animation?: Animation | null;
     draggable?: boolean;
-    icon?: string | Icon;
+    icon?: string | Icon | Symbol;
   }
   
   interface Icon {
@@ -64,6 +101,19 @@ declare namespace google.maps {
     scaledSize?: Size;
     origin?: Point;
     anchor?: Point;
+  }
+
+  interface Symbol {
+    path: SymbolPath | string;
+    anchor?: Point;
+    fillColor?: string;
+    fillOpacity?: number;
+    labelOrigin?: Point;
+    rotation?: number;
+    scale?: number;
+    strokeColor?: string;
+    strokeOpacity?: number;
+    strokeWeight?: number;
   }
   
   class Size {
@@ -82,6 +132,10 @@ declare namespace google.maps {
     address?: string;
     location?: LatLng | LatLngLiteral;
   }
+
+  interface GeocoderResponse {
+    results: GeocoderResult[];
+  }
   
   interface GeocoderResult {
     formatted_address: string;
@@ -90,11 +144,117 @@ declare namespace google.maps {
     };
     types: string[];
   }
-  
-  interface LatLng {
-    lat(): number;
-    lng(): number;
-    toJSON(): LatLngLiteral;
+
+  interface DirectionsRequest {
+    origin: LatLng | LatLngLiteral | string;
+    destination: LatLng | LatLngLiteral | string;
+    travelMode: TravelMode;
+    waypoints?: DirectionsWaypoint[];
+    optimizeWaypoints?: boolean;
+    provideRouteAlternatives?: boolean;
+    avoidFerries?: boolean;
+    avoidHighways?: boolean;
+    avoidTolls?: boolean;
+    region?: string;
+  }
+
+  interface DirectionsWaypoint {
+    location: LatLng | LatLngLiteral | string;
+    stopover?: boolean;
+  }
+
+  interface DirectionsResult {
+    routes: DirectionsRoute[];
+  }
+
+  interface DirectionsRoute {
+    legs: DirectionsLeg[];
+    overview_path: LatLng[];
+    overview_polyline: DirectionsPolyline;
+    summary: string;
+    warnings: string[];
+    waypoint_order: number[];
+  }
+
+  interface DirectionsLeg {
+    distance?: Distance;
+    duration?: Duration;
+    end_address: string;
+    end_location: LatLng;
+    start_address: string;
+    start_location: LatLng;
+    steps: DirectionsStep[];
+  }
+
+  interface DirectionsStep {
+    distance: Distance;
+    duration: Duration;
+    end_location: LatLng;
+    instructions: string;
+    path: LatLng[];
+    start_location: LatLng;
+    travel_mode: TravelMode;
+  }
+
+  interface DirectionsPolyline {
+    points: string;
+  }
+
+  interface Distance {
+    text: string;
+    value: number;
+  }
+
+  interface Duration {
+    text: string;
+    value: number;
+  }
+
+  interface DirectionsRendererOptions {
+    draggable?: boolean;
+    hideRouteList?: boolean;
+    infoWindow?: InfoWindow;
+    map?: Map;
+    markerOptions?: MarkerOptions;
+    panel?: Element;
+    polylineOptions?: PolylineOptions;
+    preserveViewport?: boolean;
+    routeIndex?: number;
+    suppressBicyclingLayer?: boolean;
+    suppressInfoWindows?: boolean;
+    suppressMarkers?: boolean;
+    suppressPolylines?: boolean;
+  }
+
+  interface PolylineOptions {
+    clickable?: boolean;
+    draggable?: boolean;
+    editable?: boolean;
+    geodesic?: boolean;
+    icons?: IconSequence[];
+    map?: Map;
+    path?: LatLng[] | LatLngLiteral[];
+    strokeColor?: string;
+    strokeOpacity?: number;
+    strokeWeight?: number;
+    visible?: boolean;
+    zIndex?: number;
+  }
+
+  interface IconSequence {
+    fixedRotation?: boolean;
+    icon?: Symbol;
+    offset?: string;
+    repeat?: string;
+  }
+
+  interface InfoWindowOptions {
+    content?: string | Element;
+    disableAutoPan?: boolean;
+    maxWidth?: number;
+    pixelOffset?: Size;
+    position?: LatLng | LatLngLiteral;
+    zIndex?: number;
   }
   
   interface LatLngLiteral {
@@ -111,12 +271,42 @@ declare namespace google.maps {
   }
   
   type GeocoderStatus = 'OK' | 'ZERO_RESULTS' | 'OVER_QUERY_LIMIT' | 'REQUEST_DENIED' | 'INVALID_REQUEST' | 'UNKNOWN_ERROR';
-  
+  type DirectionsStatus = 'OK' | 'NOT_FOUND' | 'ZERO_RESULTS' | 'MAX_WAYPOINTS_EXCEEDED' | 'MAX_ROUTE_LENGTH_EXCEEDED' | 'INVALID_REQUEST' | 'OVER_DAILY_LIMIT' | 'OVER_QUERY_LIMIT' | 'REQUEST_DENIED' | 'UNKNOWN_ERROR';
   type MapTypeId = 'roadmap' | 'satellite' | 'hybrid' | 'terrain';
   
   enum Animation {
     BOUNCE = 1,
     DROP = 2,
+  }
+
+  enum ControlPosition {
+    BOTTOM_CENTER = 11,
+    BOTTOM_LEFT = 10,
+    BOTTOM_RIGHT = 12,
+    LEFT_BOTTOM = 6,
+    LEFT_CENTER = 4,
+    LEFT_TOP = 5,
+    RIGHT_BOTTOM = 9,
+    RIGHT_CENTER = 8,
+    RIGHT_TOP = 7,
+    TOP_CENTER = 2,
+    TOP_LEFT = 1,
+    TOP_RIGHT = 3,
+  }
+
+  enum SymbolPath {
+    BACKWARD_CLOSED_ARROW = 3,
+    BACKWARD_OPEN_ARROW = 4,
+    CIRCLE = 0,
+    FORWARD_CLOSED_ARROW = 1,
+    FORWARD_OPEN_ARROW = 2,
+  }
+
+  enum TravelMode {
+    BICYCLING = 'BICYCLING',
+    DRIVING = 'DRIVING',
+    TRANSIT = 'TRANSIT',
+    WALKING = 'WALKING',
   }
 }
 
