@@ -16,8 +16,8 @@ declare global {
 
 const API_KEY = 'AIzaSyALemtop_wdl7U6nmnTfflwlbFuU1gxc7c';
 
-// Reference location (Riyadh, Saudi Arabia)
-const REFERENCE_LOCATION = { lat: 24.7136, lng: 46.6753 };
+// Reference location
+const REFERENCE_LOCATION = { lat: 31.2566, lng: 31.1671 };
 
 interface MapPin {
   id: string;
@@ -25,19 +25,7 @@ interface MapPin {
   title: string;
 }
 
-interface GoogleMapProps {
-  center?: { lat: number; lng: number };
-  zoom?: number;
-  height?: string;
-  className?: string;
-}
-
-const GoogleMap: React.FC<GoogleMapProps> = ({
-  center = REFERENCE_LOCATION,
-  zoom = 10,
-  height = '400px',
-  className = ''
-}) => {
+const GoogleMap = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const referenceMarkerRef = useRef<google.maps.Marker | null>(null);
@@ -65,48 +53,34 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         if (!mapRef.current) return;
 
         const map = new google.maps.Map(mapRef.current, {
-          center: center,
-          zoom: zoom,
+          center: REFERENCE_LOCATION,
+          zoom: 12,
+          // Updated styles to show places and street names
           styles: [
             {
-              featureType: 'water',
-              elementType: 'geometry',
-              stylers: [{ color: '#e9e9e9' }, { lightness: 17 }]
-            },
-            {
-              featureType: 'landscape',
-              elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }, { lightness: 20 }]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'geometry.fill',
-              stylers: [{ color: '#ffffff' }, { lightness: 17 }]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'geometry.stroke',
-              stylers: [{ color: '#ffffff' }, { lightness: 29 }, { weight: 0.2 }]
-            },
-            {
-              featureType: 'road.arterial',
-              elementType: 'geometry',
-              stylers: [{ color: '#ffffff' }, { lightness: 18 }]
-            },
-            {
-              featureType: 'road.local',
-              elementType: 'geometry',
-              stylers: [{ color: '#ffffff' }, { lightness: 16 }]
-            },
-            {
               featureType: 'poi',
-              elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }, { lightness: 21 }]
+              elementType: 'labels',
+              stylers: [{ visibility: 'on' }]
+            },
+            {
+              featureType: 'road',
+              elementType: 'labels',
+              stylers: [{ visibility: 'on' }]
+            },
+            {
+              featureType: 'transit',
+              elementType: 'labels',
+              stylers: [{ visibility: 'on' }]
+            },
+            {
+              featureType: 'administrative',
+              elementType: 'labels',
+              stylers: [{ visibility: 'on' }]
             }
           ],
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
+          mapTypeControl: true,
+          streetViewControl: true,
+          fullscreenControl: true,
           zoomControl: true,
           zoomControlOptions: {
             position: google.maps.ControlPosition.RIGHT_BOTTOM
@@ -129,9 +103,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
         // Add reference marker
         const referenceMarker = new google.maps.Marker({
-          position: center,
+          position: REFERENCE_LOCATION,
           map: map,
-          title: 'الموقع المرجعي',
+          title: 'Reference Location',
           animation: google.maps.Animation.DROP,
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
@@ -149,9 +123,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         const referenceInfoWindow = new google.maps.InfoWindow({
           content: `
             <div class="p-2">
-              <h3 class="font-semibold text-red-600">الموقع المرجعي</h3>
-              <p class="text-sm text-gray-600">خط العرض: ${center.lat}</p>
-              <p class="text-sm text-gray-600">خط الطول: ${center.lng}</p>
+              <h3 class="font-semibold text-red-600">Reference Location</h3>
+              <p class="text-sm text-gray-600">Lat: ${REFERENCE_LOCATION.lat}</p>
+              <p class="text-sm text-gray-600">Lng: ${REFERENCE_LOCATION.lng}</p>
             </div>
           `
         });
@@ -163,7 +137,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         // Add click listener to place pins
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) {
-            addPin(event.latLng, 'موقع جديد');
+            addPin(event.latLng, 'New Location');
           }
         });
 
@@ -184,19 +158,19 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     };
 
     initMap();
-  }, [center, zoom]);
+  }, []);
 
   const calculateRoute = (destination: google.maps.LatLng) => {
     if (!directionsServiceRef.current || !directionsRendererRef.current) return;
 
     const request = {
-      origin: center,
+      origin: REFERENCE_LOCATION,
       destination: destination,
       travelMode: google.maps.TravelMode.DRIVING,
     };
 
     directionsServiceRef.current.route(request, (result, status) => {
-      if (status === 'OK' && result) {
+      if (status === google.maps.DirectionsStatus.OK && result) {
         directionsRendererRef.current?.setDirections(result);
         
         const route = result.routes[0];
@@ -221,7 +195,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   };
 
   const calculateDistanceFromReference = (targetPosition: google.maps.LatLng) => {
-    const referenceLatLng = new google.maps.LatLng(center.lat, center.lng);
+    const referenceLatLng = new google.maps.LatLng(REFERENCE_LOCATION.lat, REFERENCE_LOCATION.lng);
     
     const distance = google.maps.geometry.spherical.computeDistanceBetween(
       referenceLatLng,
@@ -271,8 +245,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       content: `
         <div class="p-2">
           <h3 class="font-semibold text-gray-900">${title}</h3>
-          <p class="text-sm text-gray-600">خط العرض: ${position.lat().toFixed(6)}</p>
-          <p class="text-sm text-gray-600">خط الطول: ${position.lng().toFixed(6)}</p>
+          <p class="text-sm text-gray-600">Lat: ${position.lat().toFixed(6)}</p>
+          <p class="text-sm text-gray-600">Lng: ${position.lng().toFixed(6)}</p>
         </div>
       `
     });
@@ -293,30 +267,30 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     const geocoder = new google.maps.Geocoder();
     
     try {
-      const result = await geocoder.geocode({ address: searchQuery });
-      
-      if (result.results[0]) {
-        const location = result.results[0].geometry.location;
-        const address = result.results[0].formatted_address;
-        
-        mapInstanceRef.current?.setCenter(location);
-        mapInstanceRef.current?.setZoom(15);
-        
-        addPin(location, address);
-        setSelectedLocation(address);
-        setSearchQuery('');
-        
-        toast({
-          title: "تم العثور على الموقع!",
-          description: address
-        });
-      } else {
-        toast({
-          title: "لم يتم العثور على الموقع",
-          description: "يرجى المحاولة بكلمة بحث مختلفة.",
-          variant: "destructive"
-        });
-      }
+      geocoder.geocode({ address: searchQuery }, (results, status) => {
+        if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
+          const location = results[0].geometry.location;
+          const address = results[0].formatted_address;
+          
+          mapInstanceRef.current?.setCenter(location);
+          mapInstanceRef.current?.setZoom(15);
+          
+          addPin(location, address);
+          setSelectedLocation(address);
+          setSearchQuery('');
+          
+          toast({
+            title: "تم العثور على الموقع!",
+            description: address
+          });
+        } else {
+          toast({
+            title: "لم يتم العثور على الموقع",
+            description: "يرجى المحاولة بكلمة بحث مختلفة.",
+            variant: "destructive"
+          });
+        }
+      });
     } catch (error) {
       console.error('Geocoding error:', error);
       toast({
@@ -341,16 +315,38 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     
     // Reload the map to clear all markers except reference
     if (mapInstanceRef.current) {
-      const mapCenter = mapInstanceRef.current.getCenter();
-      const mapZoom = mapInstanceRef.current.getZoom();
+      const center = mapInstanceRef.current.getCenter();
+      const zoom = mapInstanceRef.current.getZoom();
       
       const newMap = new google.maps.Map(mapRef.current!, {
-        center: mapCenter,
-        zoom: mapZoom,
-        styles: mapInstanceRef.current.get('styles'),
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
+        center: center,
+        zoom: zoom,
+        // Updated styles to show places and street names
+        styles: [
+          {
+            featureType: 'poi',
+            elementType: 'labels',
+            stylers: [{ visibility: 'on' }]
+          },
+          {
+            featureType: 'road',
+            elementType: 'labels',
+            stylers: [{ visibility: 'on' }]
+          },
+          {
+            featureType: 'transit',
+            elementType: 'labels',
+            stylers: [{ visibility: 'on' }]
+          },
+          {
+            featureType: 'administrative',
+            elementType: 'labels',
+            stylers: [{ visibility: 'on' }]
+          }
+        ],
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true,
         zoomControl: true,
         zoomControlOptions: {
           position: google.maps.ControlPosition.RIGHT_BOTTOM
@@ -370,9 +366,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
       // Re-add reference marker
       const referenceMarker = new google.maps.Marker({
-        position: center,
+        position: REFERENCE_LOCATION,
         map: newMap,
-        title: 'الموقع المرجعي',
+        title: 'Reference Location',
         animation: google.maps.Animation.DROP,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
@@ -389,9 +385,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       const referenceInfoWindow = new google.maps.InfoWindow({
         content: `
           <div class="p-2">
-            <h3 class="font-semibold text-red-600">الموقع المرجعي</h3>
-            <p class="text-sm text-gray-600">خط العرض: ${center.lat}</p>
-            <p class="text-sm text-gray-600">خط الطول: ${center.lng}</p>
+            <h3 class="font-semibold text-red-600">Reference Location</h3>
+            <p class="text-sm text-gray-600">Lat: ${REFERENCE_LOCATION.lat}</p>
+            <p class="text-sm text-gray-600">Lng: ${REFERENCE_LOCATION.lng}</p>
           </div>
         `
       });
@@ -402,7 +398,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
       newMap.addListener('click', (event: google.maps.MapMouseEvent) => {
         if (event.latLng) {
-          addPin(event.latLng, 'موقع جديد');
+          addPin(event.latLng, 'New Location');
         }
       });
 
@@ -416,69 +412,105 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`} style={{ height }}>
-      {/* Search Controls */}
-      <div className="absolute top-2 right-2 z-10 flex gap-2">
-        <Input
-          placeholder="ابحث عن موقع..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && searchLocation()}
-          className="w-48 bg-white/90 backdrop-blur-sm"
-        />
-        <Button onClick={searchLocation} size="icon" variant="outline" className="bg-white/90 backdrop-blur-sm">
-          <Search className="h-4 w-4" />
-        </Button>
-        <Button onClick={clearPins} variant="outline" size="sm" className="bg-white/90 backdrop-blur-sm">
-          مسح
-        </Button>
+    <div className="w-full h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 shadow-sm">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-6 w-6 text-blue-600" />
+            <h1 className="text-2xl font-bold text-gray-900">خريطة تفاعلية مع الطرق</h1>
+          </div>
+          
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-2 flex-1 sm:flex-initial">
+              <Input
+                placeholder="ابحث عن موقع..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && searchLocation()}
+                className="min-w-[250px]"
+              />
+              <Button onClick={searchLocation} size="icon" variant="outline">
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button onClick={clearPins} variant="outline" size="sm">
+              مسح النقاط
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Map Container */}
-      <div ref={mapRef} className="w-full h-full rounded-lg" />
-      
-      {!isLoaded && (
-        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center rounded-lg">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">جاري تحميل الخريطة...</p>
+      <div className="flex-1 relative">
+        <div ref={mapRef} className="w-full h-full" />
+        
+        {!isLoaded && (
+          <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">جاري تحميل الخريطة...</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Stats Card */}
-      <Card className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm border-0 shadow-lg max-w-xs">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-            <MapPin className="h-4 w-4 text-blue-600" />
-            <span>{pins.length} نقطة مضافة</span>
-          </div>
-          {distance && (
+        {/* Stats Card */}
+        <Card className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+          <CardContent className="p-4">
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-              <Ruler className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-green-700">
-                مسافة مباشرة: {distance.toFixed(2)} كم
-              </span>
+              <MapPin className="h-4 w-4 text-blue-600" />
+              <span>{pins.length} نقطة مضافة</span>
             </div>
-          )}
-          {routeDistance && (
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-              <Route className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-blue-700">
-                مسافة الطريق: {routeDistance}
-              </span>
+              <MapPin className="h-4 w-4 text-red-600" />
+              <span>النقطة المرجعية</span>
             </div>
-          )}
-          {routeDuration && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Route className="h-4 w-4 text-purple-600" />
-              <span className="font-medium text-purple-700">
-                وقت الوصول: {routeDuration}
-              </span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {distance && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                <Ruler className="h-4 w-4 text-green-600" />
+                <span className="font-medium text-green-700">
+                  مسافة مباشرة: {distance.toFixed(2)} كم
+                </span>
+              </div>
+            )}
+            {routeDistance && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                <Route className="h-4 w-4 text-blue-600" />
+                <span className="font-medium text-blue-700">
+                  مسافة الطريق: {routeDistance}
+                </span>
+              </div>
+            )}
+            {routeDuration && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Route className="h-4 w-4 text-purple-600" />
+                <span className="font-medium text-purple-700">
+                  وقت الوصول: {routeDuration}
+                </span>
+              </div>
+            )}
+            {selectedLocation && (
+              <p className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
+                {selectedLocation}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Instructions */}
+        <Card className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+          <CardContent className="p-4">
+            <p className="text-sm text-gray-600 mb-2 font-medium">كيفية الاستخدام:</p>
+            <ul className="text-xs text-gray-500 space-y-1">
+              <li>• انقر في أي مكان لإضافة نقطة وعرض الطريق</li>
+              <li>• ابحث عن مواقع محددة</li>
+              <li>• انقر على النقاط لرؤية التفاصيل</li>
+              <li>• الخط الأزرق يوضح الطريق بين النقاط</li>
+              <li>• المسافة والوقت محسوبان من النقطة الحمراء</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
