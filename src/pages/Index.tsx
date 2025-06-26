@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -145,12 +144,6 @@ const Index = () => {
           <div className="max-w-md mx-auto px-4">
             {/* Logo and Store Name */}
             <div className="flex items-center mb-6">
-              <img 
-                src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
-                alt={storeInfo?.name} 
-                className="h-12 w-12 mr-3 bg-white rounded-full p-2"
-                loading="eager" 
-              />
               <span className="text-xl font-bold text-white">ماركت المعداوي</span>
             </div>
 
@@ -166,7 +159,7 @@ const Index = () => {
 
             {/* Address Section - Inside the colored background */}
             <div className="flex items-center">
-              <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-2 flex items-center">
+              <div className="bg-transparent backdrop-blur-sm px-3 py-2 flex items-center">
                 <MapPin size={16} className="text-white ml-2" />
                 <span className="text-white/90 text-sm">التوصيل إلى</span>
                 <span className="text-white font-bold text-sm mr-2 underline decoration-2 underline-offset-2">
