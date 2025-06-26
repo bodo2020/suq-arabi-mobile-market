@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
-import { ChevronLeft, MapPin } from 'lucide-react';
+import { ChevronLeft, MapPin, Home, Grid, ShoppingCart, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
@@ -12,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AddressDisplay from '@/components/ui/AddressDisplay';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
+import { useCart } from '@/contexts/useCart';
+
 const ProductCollectionsSection = lazy(() => import('@/components/sections/ProductCollectionsSection'));
 const BannersContainer = lazy(() => import('@/components/ui/BannersContainer'));
 
@@ -31,9 +32,10 @@ const Index = () => {
   const bannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const {
-    user
-  } = useUser();
+  const { user } = useUser();
+  const { getTotalItems } = useCart();
+  const cartCount = getTotalItems();
+
   const {
     data: categories = [],
     isLoading: categoriesLoading
@@ -43,6 +45,7 @@ const Index = () => {
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false
   });
+
   const visibleCategories = categories.slice(0, 12);
 
   useEffect(() => {
@@ -113,7 +116,8 @@ const Index = () => {
   };
 
   if (categoriesLoading) {
-    return <MainLayout>
+    return (
+      <MainLayout>
         <div className="py-4">
           <div className="flex justify-center mb-4">
             <Skeleton className="h-12 w-32 rounded" />
@@ -124,14 +128,18 @@ const Index = () => {
           <div className="mb-6">
             <Skeleton className="h-8 w-36 mb-2" />
             <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-lg" />
+              ))}
             </div>
           </div>
         </div>
-      </MainLayout>;
+      </MainLayout>
+    );
   }
 
-  return <div className="min-h-screen bg-gray-50">
+  return (
+    <div className="min-h-screen bg-gray-50">
       <div className="mb-16 pb-16">
         {/* Header Section with Primary Color Background - Full Screen Width */}
         <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-3 rounded-b-3xl">
@@ -148,40 +156,128 @@ const Index = () => {
                 <span className="text-white text-sm font-bold">المعداوي</span>
               </div>
               
-              {/* Search Bar */}
-              <div className="flex-1">
+              {/* Search Bar with Desktop Navigation */}
+              <div className="flex-1 relative">
                 <SearchBar 
                   placeholder="البحث عن منتجات، أقسام..." 
                   backgroundImage={searchBackground} 
                   onFocus={handleFocusSearchBar} 
                   readOnly 
                 />
+                
+                {/* Desktop Navigation - Inside Search Area */}
+                {!isMobile && (
+                  <div className="absolute left-20 top-1/2 transform -translate-y-1/2 flex gap-6">
+                    <button
+                      onClick={() => navigate('/')}
+                      className="flex flex-col items-center text-white transition-colors"
+                    >
+                      <Home size={20} />
+                      <span className="text-xs mt-1">الرئيسية</span>
+                    </button>
+
+                    <button
+                      onClick={() => navigate('/categories')}
+                      className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                    >
+                      <Grid size={20} />
+                      <span className="text-xs mt-1">الأقسام</span>
+                    </button>
+
+                    <button
+                      onClick={() => navigate('/cart')}
+                      className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
+                    >
+                      <ShoppingCart size={20} />
+                      <span className="text-xs mt-1">السلة</span>
+                      {cartCount > 0 && (
+                        <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          {cartCount}
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => navigate('/account')}
+                      className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                    >
+                      <User size={20} />
+                      <span className="text-xs mt-1">الحساب</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Mobile Navigation - Below Search Bar */}
+            {isMobile && (
+              <div className="flex justify-center gap-8 mt-4">
+                <button
+                  onClick={() => navigate('/')}
+                  className="flex flex-col items-center text-white transition-colors"
+                >
+                  <Home size={24} />
+                  <span className="text-xs mt-1">الرئيسية</span>
+                </button>
+
+                <button
+                  onClick={() => navigate('/categories')}
+                  className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                >
+                  <Grid size={24} />
+                  <span className="text-xs mt-1">الأقسام</span>
+                </button>
+
+                <button
+                  onClick={() => navigate('/cart')}
+                  className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
+                >
+                  <ShoppingCart size={24} />
+                  <span className="text-xs mt-1">السلة</span>
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => navigate('/account')}
+                  className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                >
+                  <User size={24} />
+                  <span className="text-xs mt-1">الحساب</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Address Section - Outside the colored background */}
-        <div className="max-w-md mx-auto px-4 mb-4 md:max-w-4xl">
-          <div className="flex items-center">
-            <MapPin size={16} className="text-primary ml-2" />
-            <span className="text-gray-600 text-sm">التوصيل إلى</span>
-            <button 
-              onClick={handleChangeLocation}
-              className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
-            >
-              {userLocation?.area || userAddress || "اختر عنوانك"}
-              {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
-            </button>
+        <div className="w-full px-4 mb-4">
+          <div className="max-w-md mx-auto md:max-w-4xl">
+            <div className="flex items-center">
+              <MapPin size={16} className="text-primary ml-2" />
+              <span className="text-gray-600 text-sm">التوصيل إلى</span>
+              <button 
+                onClick={handleChangeLocation}
+                className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
+              >
+                {userLocation?.area || userAddress || "اختر عنوانك"}
+                {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Content Container */}
         <div className="max-w-md mx-auto px-4 md:max-w-4xl">
           <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
-            {banners.length > 0 && <div className="mb-6 relative">
+            {banners.length > 0 && (
+              <div className="mb-6 relative">
                 <BannersContainer banners={banners} />
-              </div>}
+              </div>
+            )}
           </Suspense>
 
           <div className="mb-6">
@@ -194,29 +290,36 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-1">
-              {visibleCategories.map(category => <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />)}
-              {categories.length > 12 && <Link to="/categories" className="category-item flex flex-col items-center">
-                  <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{
-                aspectRatio: '1'
-              }}>
+              {visibleCategories.map(category => (
+                <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
+              ))}
+              {categories.length > 12 && (
+                <Link to="/categories" className="category-item flex flex-col items-center">
+                  <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{ aspectRatio: '1' }}>
                     <ChevronLeft size={24} />
                   </div>
                   <span className="text-sm text-center mt-1">عرض الكل</span>
-                </Link>}
+                </Link>
+              )}
             </div>
           </div>
           
-          <Suspense fallback={<div className="space-y-6">
+          <Suspense fallback={
+            <div className="space-y-6">
               <Skeleton className="h-8 w-40 mb-2" />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-lg" />)}
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-44 w-full rounded-lg" />
+                ))}
               </div>
-            </div>}>
+            </div>
+          }>
             <ProductCollectionsSection />
           </Suspense>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default Index;
