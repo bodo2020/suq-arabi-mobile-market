@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -72,6 +71,7 @@ const Account = () => {
         <TopNavBar 
           hideLogo={true}
           hideSearch={true}
+          hideCart={true}
           pageTitle="حسابي"
         />
         <div className={`flex justify-center items-center h-[60vh] ${!isMobile ? 'mt-24' : ''}`}>
@@ -84,10 +84,11 @@ const Account = () => {
   return (
     <MainLayout>
       <div className="pt-0">
-        {/* Top Navigation Bar */}
+        {/* Top Navigation Bar without cart icon */}
         <TopNavBar 
           hideLogo={true}
           hideSearch={true}
+          hideCart={true}
           pageTitle="حسابي"
         />
 

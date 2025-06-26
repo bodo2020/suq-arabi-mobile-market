@@ -268,12 +268,13 @@ const Cart = () => {
   return (
     <MainLayout>
       <div className="container px-0 py-0">
-        {/* Top Navigation Bar */}
+        {/* Top Navigation Bar without cart icon */}
         <TopNavBar 
           searchPlaceholder="البحث في السلة..."
           onSearchFocus={handleSearchFocus}
           hideLogo={true}
           hideSearch={true}
+          hideCart={true}
           pageTitle="سلة التسوق"
         />
 
