@@ -1,21 +1,23 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Grid, ShoppingCart, User } from 'lucide-react';
 import { useCart } from '@/contexts/useCart';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 interface MainLayoutProps {
   children: React.ReactNode;
 }
+
 const MainLayout: React.FC<MainLayoutProps> = ({
   children
 }) => {
   const location = useLocation();
   const path = location.pathname;
-  const {
-    getTotalItems
-  } = useCart();
+  const { getTotalItems } = useCart();
   const isMobile = useIsMobile();
   const cartCount = getTotalItems();
+
   React.useEffect(() => {
     document.body.dir = "rtl";
 
@@ -43,16 +45,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     });
     return () => observer.disconnect();
   }, []);
+
   const isActive = (route: string) => {
     return path === route;
   };
-  return <div className="pb-16 md:pb-0 min-h-screen bg-gray-50 hide-scrollbar" dir="rtl">
+
+  return (
+    <div className="pb-16 md:pb-0 min-h-screen bg-gray-50 hide-scrollbar" dir="rtl">
       {/* Main content */}
       <main className="container mx-auto px-4 md:max-w-6xl hide-scrollbar">
-        {!isMobile}
         {children}
       </main>
-      {isMobile && <nav className="bottom-nav">
+      
+      {/* Bottom Navigation - Always show on mobile */}
+      {isMobile && (
+        <nav className="bottom-nav">
           <Link to="/" className={`bottom-nav-item ${isActive('/') ? 'active' : ''}`}>
             <Home size={24} />
             <span>الرئيسية</span>
@@ -66,16 +73,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           <Link to="/cart" className={`bottom-nav-item relative ${isActive('/cart') ? 'active' : ''}`}>
             <ShoppingCart size={24} />
             <span>السلة</span>
-            {cartCount > 0 && <span className="absolute -top-1 right-6 md:right-10 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            {cartCount > 0 && (
+              <span className="absolute -top-1 right-6 md:right-10 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {cartCount}
-              </span>}
+              </span>
+            )}
           </Link>
 
           <Link to="/account" className={`bottom-nav-item ${isActive('/account') ? 'active' : ''}`}>
             <User size={24} />
             <span>الحساب</span>
           </Link>
-        </nav>}
-    </div>;
+        </nav>
+      )}
+    </div>
+  );
 };
+
 export default MainLayout;
