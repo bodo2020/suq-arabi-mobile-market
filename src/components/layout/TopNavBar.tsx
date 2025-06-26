@@ -48,8 +48,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
           )}
           
           <div className="flex items-center gap-3">
-            {/* Logo - Left Side (hidden when hideLogo is true and on mobile) */}
-            {!(hideLogo && isMobile) && !hideLogo && (
+            {/* Logo - Left Side (always show on desktop, conditionally on mobile) */}
+            {(!isMobile || !hideLogo) && (
               <div className="flex flex-col items-center">
                 <img 
                   src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
@@ -61,8 +61,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               </div>
             )}
             
-            {/* Search Bar - Center (hidden when hideSearch is true) */}
-            {!hideSearch && (
+            {/* Search Bar - Center (always show on desktop, conditionally on mobile) */}
+            {(!isMobile || !hideSearch) && (
               <div className="flex-1">
                 <SearchBar 
                   placeholder={searchPlaceholder}
