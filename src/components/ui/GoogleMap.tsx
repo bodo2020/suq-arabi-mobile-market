@@ -13,7 +13,7 @@ declare global {
   }
 }
 
-const API_KEY = 'AIzaSyB0xcsR9nIjT5db5-1G0b1jc1irU35yITQ';
+const API_KEY = 'AIzaSyBUsExqMiqYIpfVnfZGkzeZbkDDDJP0wSU';
 
 // Reference location
 const REFERENCE_LOCATION = { lat: 31.2566, lng: 31.1671 };
