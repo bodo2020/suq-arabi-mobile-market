@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -114,10 +115,11 @@ const CategoryDetail = () => {
     return (
       <MainLayout>
         <TopNavBar 
-          searchPlaceholder={`البحث في ${categoryInfo?.name || 'القسم'}...`}
-          onSearchFocus={handleSearchFocus}
+          hideLogo={true}
+          hideSearch={true}
+          pageTitle={categoryInfo?.name || 'القسم'}
         />
-        <div className={`flex justify-center items-center h-40 ${!isMobile ? 'mt-32' : ''}`}>
+        <div className={`flex justify-center items-center h-40 ${!isMobile ? 'mt-24' : ''}`}>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </MainLayout>
@@ -129,12 +131,13 @@ const CategoryDetail = () => {
       <div className="container px-0 py-0">
         {/* Top Navigation Bar */}
         <TopNavBar 
-          searchPlaceholder={`البحث في ${categoryInfo?.name || 'القسم'}...`}
-          onSearchFocus={handleSearchFocus}
+          hideLogo={true}
+          hideSearch={true}
+          pageTitle={categoryInfo?.name || 'القسم'}
         />
 
         {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-32' : ''}`}>
+        <div className={`${!isMobile ? 'mt-24' : ''}`}>
           <div className="w-full px-4">
             <div className="max-w-md mx-auto md:max-w-4xl">
               <div className="flex items-center mb-4">

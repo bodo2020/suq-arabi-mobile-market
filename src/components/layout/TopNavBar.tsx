@@ -11,6 +11,7 @@ interface TopNavBarProps {
   onSearchFocus?: () => void;
   searchProps?: any;
   hideLogo?: boolean;
+  hideSearch?: boolean;
   pageTitle?: string;
 }
 
@@ -19,6 +20,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   onSearchFocus,
   searchProps = {},
   hideLogo = false,
+  hideSearch = false,
   pageTitle
 }) => {
   const navigate = useNavigate();
@@ -35,11 +37,11 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
 
   return (
-    <div className={`bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-4 pb-4 ${!isMobile ? 'fixed top-0 z-50' : ''}`}>
+    <div className={`bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pb-4 ${!isMobile ? 'fixed top-0 z-50' : ''} ${pageTitle && (hideLogo || hideSearch) ? 'pt-2' : 'pt-4'}`}>
       <div className="w-full px-4">
         <div className="max-w-md mx-auto md:max-w-7xl">
-          {/* Page Title for mobile when logo is hidden */}
-          {hideLogo && pageTitle && isMobile && (
+          {/* Page Title for mobile when logo is hidden or search is hidden */}
+          {pageTitle && (hideLogo || hideSearch) && isMobile && (
             <div className="text-center mb-3">
               <h1 className="text-white text-lg font-bold">{pageTitle}</h1>
             </div>
@@ -47,7 +49,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
           
           <div className="flex items-center gap-3">
             {/* Logo - Left Side (hidden when hideLogo is true and on mobile) */}
-            {!(hideLogo && isMobile) && (
+            {!(hideLogo && isMobile) && !hideLogo && (
               <div className="flex flex-col items-center">
                 <img 
                   src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
@@ -59,15 +61,17 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               </div>
             )}
             
-            {/* Search Bar - Center */}
-            <div className="flex-1">
-              <SearchBar 
-                placeholder={searchPlaceholder}
-                onFocus={handleSearchFocus} 
-                readOnly 
-                {...searchProps}
-              />
-            </div>
+            {/* Search Bar - Center (hidden when hideSearch is true) */}
+            {!hideSearch && (
+              <div className="flex-1">
+                <SearchBar 
+                  placeholder={searchPlaceholder}
+                  onFocus={handleSearchFocus} 
+                  readOnly 
+                  {...searchProps}
+                />
+              </div>
+            )}
 
             {/* Desktop Navigation Icons - Right Side */}
             {!isMobile && (
