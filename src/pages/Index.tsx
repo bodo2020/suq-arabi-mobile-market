@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -136,50 +137,56 @@ const Index = () => {
     );
   }
 
-  const addressSection = (
-    <div className="mb-4">
-      <AddressDisplay 
-        address={userAddress || ''} 
-        areaName={userLocation?.area || undefined} 
-        neighborhoodName={userLocation?.neighborhood || undefined} 
-        onEdit={handleChangeLocation}
-        showAddressSelector={true}
-      />
-    </div>
-  );
-
   return (
     <MainLayout>
       <div className="mb-16 pb-16">
-        <div className="flex flex-col items-center mb-6 pt-4">
-          <img 
-            src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
-            alt={storeInfo?.name} 
-            className="h-16 w-16 mb-1"
-            loading="eager" 
-          />
-          <span className="text-xl font-bold text-primary">ماركت المعداوي</span>
-        </div>
+        {/* Modern Header Section with Green Background */}
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 mx-[-16px] px-4 pt-6 pb-8 mb-6 rounded-b-3xl shadow-lg">
+          {/* Logo and Store Name */}
+          <div className="flex flex-col items-center mb-6">
+            <img 
+              src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
+              alt={storeInfo?.name} 
+              className="h-16 w-16 mb-2 bg-white rounded-full p-2 shadow-md"
+              loading="eager" 
+            />
+            <span className="text-xl font-bold text-white">ماركت المعداوي</span>
+          </div>
 
-        <div className="relative mb-2">
-          <SearchBar 
-            backgroundImage={searchBackground} 
-            onFocus={handleFocusSearchBar} 
-            readOnly 
-          />
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
-            <input 
-              id="bgImageUpload" 
-              type="file" 
-              className="hidden" 
-              accept="image/*" 
-              onChange={handleImageUpload} 
-              disabled={processingImage} 
+          {/* Modern Search Bar */}
+          <div className="relative mb-4">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-1 shadow-lg">
+              <SearchBar 
+                placeholder="البحث عن منتجات، أقسام..."
+                backgroundImage={searchBackground} 
+                onFocus={handleFocusSearchBar} 
+                readOnly 
+              />
+            </div>
+            <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
+              <input 
+                id="bgImageUpload" 
+                type="file" 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+                disabled={processingImage} 
+              />
+            </div>
+          </div>
+
+          {/* Address Section with Modern Style */}
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+            <AddressDisplay 
+              address={userAddress || ''} 
+              areaName={userLocation?.area || undefined} 
+              neighborhoodName={userLocation?.neighborhood || undefined} 
+              onEdit={handleChangeLocation}
+              showAddressSelector={true}
+              className="text-white"
             />
           </div>
         </div>
-
-        {addressSection}
 
         <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
           {banners.length > 0 && (

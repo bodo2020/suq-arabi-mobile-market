@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,7 +52,56 @@ const AddressDisplay = ({
     enabled: !!user?.id
   });
 
-  const handleAddressSelect = async (addressId: string) => {
+  return (
+    <div className={cn("flex items-center gap-2 mb-2", className)}>
+      <div className="flex items-center flex-1">
+        <MapPin size={18} className="text-current mr-2" />
+        <div className="flex items-center text-sm font-medium">
+          <span className="opacity-90">التوصيل إلى</span>
+          <span className="mr-2 font-bold underline decoration-2 underline-offset-2">
+            {areaName || address || "اختر عنوانك"}
+            {neighborhoodName && <span className="mr-1">، {neighborhoodName}</span>}
+          </span>
+        </div>
+        
+        {showAddressSelector && user && addresses.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="ml-2 text-xs opacity-75 hover:opacity-100 transition-opacity">
+                تغيير
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-white">
+              {addresses.map((addr) => (
+                <DropdownMenuItem key={addr.id} onClick={() => handleAddressSelect(addr.id)}>
+                  <div className={cn("flex flex-col w-full", addr.is_default && "font-bold")}>
+                    <span>
+                      {addr.areas?.name} {addr.neighborhoods?.name ? `- ${addr.neighborhoods?.name}` : ''}
+                    </span>
+                    {addr.address && <span className="text-xs text-gray-500">{addr.address}</span>}
+                    {addr.is_default && <span className="text-xs text-primary">العنوان الافتراضي</span>}
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </div>
+      
+      {!showAddressSelector && (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onEdit || handleChangeAddress} 
+          className="text-xs text-current opacity-75 hover:opacity-100"
+        >
+          {address ? "تغيير" : "إضافة"}
+        </Button>
+      )}
+    </div>
+  );
+
+  async function handleAddressSelect(addressId: string) {
     if (!user) return;
     try {
       await supabase
@@ -99,54 +147,15 @@ const AddressDisplay = ({
         description: "حدث خطأ أثناء تحديث العنوان"
       });
     }
-  };
+  }
 
-  const handleChangeAddress = () => {
+  function handleChangeAddress() {
     if (user) {
       navigate('/address-manager');
     } else {
       navigate('/add-address');
     }
-  };
-
-  return (
-    <div className={cn("flex items-center gap-2 mb-2", className)}>
-      <div className="flex items-center flex-1">
-        <MapPin size={18} className="text-primary mr-1" />
-        {showAddressSelector && user && addresses.length > 0 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center text-sm hover:underline">
-                {areaName || address || "اختر عنوانك"}
-                {neighborhoodName && <span className="text-gray-500 mr-1">- {neighborhoodName}</span>}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {addresses.map((addr) => (
-                <DropdownMenuItem key={addr.id} onClick={() => handleAddressSelect(addr.id)}>
-                  <div className={cn("flex flex-col w-full", addr.is_default && "font-bold")}>
-                    <span>
-                      {addr.areas?.name} {addr.neighborhoods?.name ? `- ${addr.neighborhoods?.name}` : ''}
-                    </span>
-                    {addr.address && <span className="text-xs text-gray-500">{addr.address}</span>}
-                    {addr.is_default && <span className="text-xs text-primary">العنوان الافتراضي</span>}
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <div className="text-sm">
-            {areaName || address || "اضغط لإضافة عنوان"}
-            {neighborhoodName && <span className="text-gray-500 mr-1">- {neighborhoodName}</span>}
-          </div>
-        )}
-      </div>
-      <Button variant="ghost" size="sm" onClick={onEdit || handleChangeAddress} className="text-xs">
-        {address ? "تغيير" : "إضافة"}
-      </Button>
-    </div>
-  );
+  }
 };
 
 export default AddressDisplay;
