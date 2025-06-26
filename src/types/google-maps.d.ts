@@ -40,7 +40,7 @@ declare namespace google {
       position: LatLng | LatLngLiteral;
       map?: Map;
       title?: string;
-      icon?: string;
+      icon?: string | Symbol;
     }
 
     enum MapTypeId {
@@ -48,6 +48,24 @@ declare namespace google {
       SATELLITE = 'satellite',
       HYBRID = 'hybrid',
       TERRAIN = 'terrain'
+    }
+
+    enum SymbolPath {
+      CIRCLE = 0,
+      FORWARD_CLOSED_ARROW = 1,
+      FORWARD_OPEN_ARROW = 2,
+      BACKWARD_CLOSED_ARROW = 3,
+      BACKWARD_OPEN_ARROW = 4
+    }
+
+    interface Symbol {
+      path: SymbolPath | string;
+      scale?: number;
+      fillColor?: string;
+      fillOpacity?: number;
+      strokeColor?: string;
+      strokeWeight?: number;
+      strokeOpacity?: number;
     }
   }
 }

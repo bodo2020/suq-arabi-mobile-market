@@ -24,6 +24,7 @@ import PhoneLogin from './pages/PhoneLogin';
 import ForgotPassword from './pages/ForgotPassword';
 import ReturnRequests from './pages/ReturnRequests';
 import CreateReturnRequest from './pages/CreateReturnRequest';
+import MapPage from './pages/MapPage';
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
