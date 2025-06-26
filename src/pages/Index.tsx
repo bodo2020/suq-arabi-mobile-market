@@ -142,25 +142,27 @@ const Index = () => {
         {/* Header Section with Primary Color Background - Full Screen Width */}
         <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-8 mb-6 rounded-b-3xl">
           <div className="max-w-md mx-auto px-4">
-            {/* Logo and Store Name */}
-            <div className="flex items-center mb-6">
-              <img 
-                src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
-                alt="ماركت المعداوي" 
-                className="h-12 w-12 mr-3"
-                loading="eager" 
-              />
-              <span className="text-xl font-bold text-white">ماركت المعداوي</span>
-            </div>
-
-            {/* Modern Search Bar */}
-            <div className="mb-4">
-              <SearchBar 
-                placeholder="البحث عن منتجات، أقسام..."
-                backgroundImage={searchBackground} 
-                onFocus={handleFocusSearchBar} 
-                readOnly 
-              />
+            {/* Logo and Store Name - Updated Layout */}
+            <div className="flex items-start mb-6">
+              <div className="flex flex-col items-center ml-4">
+                <img 
+                  src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
+                  alt="المعداوي" 
+                  className="h-12 w-12 mb-2"
+                  loading="eager" 
+                />
+                <span className="text-sm font-bold text-white">المعداوي</span>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="flex-1">
+                <SearchBar 
+                  placeholder="البحث عن منتجات، أقسام..."
+                  backgroundImage={searchBackground} 
+                  onFocus={handleFocusSearchBar} 
+                  readOnly 
+                />
+              </div>
             </div>
 
             {/* Address Section - Inside the colored background */}
