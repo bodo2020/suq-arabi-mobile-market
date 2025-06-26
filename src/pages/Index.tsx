@@ -210,48 +210,6 @@ const Index = () => {
                   </button>
                 </div>
               )}
-
-              {/* Mobile Navigation - Below Search Bar */}
-              {isMobile && (
-                <div className="flex justify-center gap-8 mt-4">
-                  <button
-                    onClick={() => navigate('/')}
-                    className="flex flex-col items-center text-white transition-colors"
-                  >
-                    <Home size={24} />
-                    <span className="text-xs mt-1">الرئيسية</span>
-                  </button>
-
-                  <button
-                    onClick={() => navigate('/categories')}
-                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                  >
-                    <Grid size={24} />
-                    <span className="text-xs mt-1">الأقسام</span>
-                  </button>
-
-                  <button
-                    onClick={() => navigate('/cart')}
-                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
-                  >
-                    <ShoppingCart size={24} />
-                    <span className="text-xs mt-1">السلة</span>
-                    {cartCount > 0 && (
-                      <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {cartCount}
-                      </span>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => navigate('/account')}
-                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                  >
-                    <User size={24} />
-                    <span className="text-xs mt-1">الحساب</span>
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
