@@ -1,16 +1,19 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Home, Grid, ShoppingCart, User } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import CategoryItem from '@/components/ui/CategoryItem';
 import SearchBar from '@/components/ui/SearchBar';
 import { MainCategory, getCategories } from '@/lib/supabase';
+import { useCart } from '@/contexts/useCart';
 
 const Categories = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { getTotalItems } = useCart();
+  const cartCount = getTotalItems();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -51,7 +54,7 @@ const Categories = () => {
         {/* Header Section with Primary Color Background - Full Screen Width */}
         <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-6 rounded-b-3xl">
           <div className="max-w-md mx-auto px-4 md:max-w-4xl">
-            <div className="flex items-center mb-2 gap-3">
+            <div className="flex items-center mb-4 gap-3">
               <div className="flex flex-col items-center">
                 <img 
                   src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
@@ -69,6 +72,46 @@ const Categories = () => {
                   readOnly 
                 />
               </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-center gap-8">
+              <button
+                onClick={() => navigate('/')}
+                className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+              >
+                <Home size={24} />
+                <span className="text-xs mt-1">الرئيسية</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/categories')}
+                className="flex flex-col items-center text-white transition-colors"
+              >
+                <Grid size={24} />
+                <span className="text-xs mt-1">الأقسام</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/cart')}
+                className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
+              >
+                <ShoppingCart size={24} />
+                <span className="text-xs mt-1">السلة</span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => navigate('/account')}
+                className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+              >
+                <User size={24} />
+                <span className="text-xs mt-1">الحساب</span>
+              </button>
             </div>
           </div>
         </div>
@@ -88,7 +131,7 @@ const Categories = () => {
           </div>
 
           {/* Categories Grid */}
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 px-0">
             {categories.map(category => (
               <CategoryItem 
                 key={category.id} 
