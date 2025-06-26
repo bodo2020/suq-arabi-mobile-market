@@ -423,37 +423,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
         {/* Stats Card */}
         <Card className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-              <MapPin className="h-4 w-4 text-blue-600" />
-              <span>{pins.length} نقطة مضافة</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-              <MapPin className="h-4 w-4 text-red-600" />
-              <span>النقطة المرجعية</span>
-            </div>
-            {distance && <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <Ruler className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-green-700">
-                  مسافة مباشرة: {distance.toFixed(2)} كم
-                </span>
-              </div>}
-            {routeDistance && <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <Route className="h-4 w-4 text-blue-600" />
-                <span className="font-medium text-blue-700">
-                  مسافة الطريق: {routeDistance}
-                </span>
-              </div>}
-            {routeDuration && <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Route className="h-4 w-4 text-purple-600" />
-                <span className="font-medium text-purple-700">
-                  وقت الوصول: {routeDuration}
-                </span>
-              </div>}
-            {selectedLocation && <p className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
-                {selectedLocation}
-              </p>}
-          </CardContent>
+          
         </Card>
 
         {/* Instructions */}
