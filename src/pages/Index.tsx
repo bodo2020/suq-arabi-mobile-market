@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -137,97 +138,100 @@ const Index = () => {
   }
 
   return (
-    <MainLayout>
+    <div className="min-h-screen bg-gray-50">
       <div className="mb-16 pb-16">
-        {/* Header Section with Primary Color Background - Full Width */}
-        <div className="bg-primary mx-[-16px] sm:mx-[-16px] md:mx-[-16px] lg:mx-[-16px] px-4 pt-6 pb-6 mb-6 rounded-b-3xl">
-          {/* Logo and Store Name */}
-          <div className="flex items-center mb-6">
-            <img 
-              src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
-              alt={storeInfo?.name} 
-              className="h-12 w-12 mr-3 bg-white rounded-full p-2"
-              loading="eager" 
-            />
-            <span className="text-xl font-bold text-white">ماركت المعداوي</span>
-          </div>
+        {/* Header Section with Primary Color Background - Full Screen Width */}
+        <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-8 mb-6 rounded-b-3xl">
+          <div className="max-w-md mx-auto px-4">
+            {/* Logo and Store Name */}
+            <div className="flex items-center mb-6">
+              <img 
+                src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
+                alt={storeInfo?.name} 
+                className="h-12 w-12 mr-3 bg-white rounded-full p-2"
+                loading="eager" 
+              />
+              <span className="text-xl font-bold text-white">ماركت المعداوي</span>
+            </div>
 
-          {/* Modern Search Bar */}
-          <div className="mb-4">
-            <SearchBar 
-              placeholder="البحث عن منتجات، أقسام..."
-              backgroundImage={searchBackground} 
-              onFocus={handleFocusSearchBar} 
-              readOnly 
-            />
-          </div>
-        </div>
+            {/* Modern Search Bar */}
+            <div className="mb-4">
+              <SearchBar 
+                placeholder="البحث عن منتجات، أقسام..."
+                backgroundImage={searchBackground} 
+                onFocus={handleFocusSearchBar} 
+                readOnly 
+              />
+            </div>
 
-        {/* Address Section - Outside the colored background */}
-        <div className="px-4 mb-6 -mt-3">
-          <div className="flex items-center">
-            <div className="bg-white shadow-sm border rounded-xl px-3 py-2 flex items-center">
-              <MapPin size={16} className="text-primary ml-2" />
-              <span className="text-gray-600 text-sm">التوصيل إلى</span>
-              <span className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2">
-                {userLocation?.area || userAddress || "اختر عنوانك"}
-                {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
-              </span>
+            {/* Address Section - Inside the colored background */}
+            <div className="flex items-center">
+              <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-2 flex items-center">
+                <MapPin size={16} className="text-white ml-2" />
+                <span className="text-white/90 text-sm">التوصيل إلى</span>
+                <span className="text-white font-bold text-sm mr-2 underline decoration-2 underline-offset-2">
+                  {userLocation?.area || userAddress || "اختر عنوانك"}
+                  {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
-          {banners.length > 0 && (
-            <div className="mb-6 relative">
-              <BannersContainer banners={banners} />
-            </div>
-          )}
-        </Suspense>
+        {/* Content Container */}
+        <div className="max-w-md mx-auto px-4">
+          <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
+            {banners.length > 0 && (
+              <div className="mb-6 relative">
+                <BannersContainer banners={banners} />
+              </div>
+            )}
+          </Suspense>
 
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-bold">الأقسام</h2>
-            <Link to="/categories" className="flex items-center text-primary text-sm">
-              عرض الكل
-              <ChevronLeft size={16} />
-            </Link>
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-bold">الأقسام</h2>
+              <Link to="/categories" className="flex items-center text-primary text-sm">
+                عرض الكل
+                <ChevronLeft size={16} />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
+              {visibleCategories.map(category => (
+                <CategoryItem 
+                  key={category.id} 
+                  category={category} 
+                  onClick={handleMainCategoryClick} 
+                />
+              ))}
+              {categories.length > 12 && (
+                <Link to="/categories" className="category-item flex flex-col items-center">
+                  <div 
+                    className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" 
+                    style={{aspectRatio: '1'}}
+                  >
+                    <ChevronLeft size={24} />
+                  </div>
+                  <span className="text-sm text-center mt-1">عرض الكل</span>
+                </Link>
+              )}
+            </div>
           </div>
           
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
-            {visibleCategories.map(category => (
-              <CategoryItem 
-                key={category.id} 
-                category={category} 
-                onClick={handleMainCategoryClick} 
-              />
-            ))}
-            {categories.length > 12 && (
-              <Link to="/categories" className="category-item flex flex-col items-center">
-                <div 
-                  className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" 
-                  style={{aspectRatio: '1'}}
-                >
-                  <ChevronLeft size={24} />
-                </div>
-                <span className="text-sm text-center mt-1">عرض الكل</span>
-              </Link>
-            )}
-          </div>
-        </div>
-        
-        <Suspense fallback={
-          <div className="space-y-6">
-            <Skeleton className="h-8 w-40 mb-2" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-lg" />)}
+          <Suspense fallback={
+            <div className="space-y-6">
+              <Skeleton className="h-8 w-40 mb-2" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-lg" />)}
+              </div>
             </div>
-          </div>
-        }>
-          <ProductCollectionsSection />
-        </Suspense>
+          }>
+            <ProductCollectionsSection />
+          </Suspense>
+        </div>
       </div>
-    </MainLayout>
+    </div>
   );
 };
 
