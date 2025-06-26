@@ -144,6 +144,12 @@ const Index = () => {
           <div className="max-w-md mx-auto px-4">
             {/* Logo and Store Name */}
             <div className="flex items-center mb-6">
+              <img 
+                src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
+                alt="ماركت المعداوي" 
+                className="h-12 w-12 mr-3"
+                loading="eager" 
+              />
               <span className="text-xl font-bold text-white">ماركت المعداوي</span>
             </div>
 
