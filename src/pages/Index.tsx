@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin, Home, Grid, ShoppingCart, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -143,113 +144,115 @@ const Index = () => {
       <div className="mb-16 pb-16">
         {/* Header Section with Primary Color Background - Full Screen Width */}
         <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-3 rounded-b-3xl">
-          <div className="max-w-md mx-auto px-4 md:max-w-4xl">
-            {/* Logo and Search Bar */}
-            <div className="flex items-center mb-2 gap-3">
-              <div className="flex flex-col items-center">
-                <img 
-                  src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
-                  alt="المعداوي" 
-                  className="h-16 w-16 mb-1 object-contain" 
-                  loading="eager" 
-                />
-                <span className="text-white text-sm font-bold">المعداوي</span>
-              </div>
-              
-              {/* Search Bar with Desktop Navigation */}
-              <div className="flex-1 relative">
-                <SearchBar 
-                  placeholder="البحث عن منتجات، أقسام..." 
-                  backgroundImage={searchBackground} 
-                  onFocus={handleFocusSearchBar} 
-                  readOnly 
-                />
+          <div className="w-full px-4">
+            <div className="max-w-md mx-auto md:max-w-7xl">
+              {/* Logo and Search Bar */}
+              <div className="flex items-center mb-2 gap-3">
+                <div className="flex flex-col items-center">
+                  <img 
+                    src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
+                    alt="المعداوي" 
+                    className="h-16 w-16 mb-1 object-contain" 
+                    loading="eager" 
+                  />
+                  <span className="text-white text-sm font-bold">المعداوي</span>
+                </div>
                 
-                {/* Desktop Navigation - Inside Search Area */}
-                {!isMobile && (
-                  <div className="absolute left-20 top-1/2 transform -translate-y-1/2 flex gap-6">
-                    <button
-                      onClick={() => navigate('/')}
-                      className="flex flex-col items-center text-white transition-colors"
-                    >
-                      <Home size={20} />
-                      <span className="text-xs mt-1">الرئيسية</span>
-                    </button>
-
-                    <button
-                      onClick={() => navigate('/categories')}
-                      className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                    >
-                      <Grid size={20} />
-                      <span className="text-xs mt-1">الأقسام</span>
-                    </button>
-
-                    <button
-                      onClick={() => navigate('/cart')}
-                      className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
-                    >
-                      <ShoppingCart size={20} />
-                      <span className="text-xs mt-1">السلة</span>
-                      {cartCount > 0 && (
-                        <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {cartCount}
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => navigate('/account')}
-                      className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                    >
-                      <User size={20} />
-                      <span className="text-xs mt-1">الحساب</span>
-                    </button>
-                  </div>
-                )}
+                {/* Search Bar */}
+                <div className="flex-1">
+                  <SearchBar 
+                    placeholder="البحث عن منتجات، أقسام..." 
+                    backgroundImage={searchBackground} 
+                    onFocus={handleFocusSearchBar} 
+                    readOnly 
+                  />
+                </div>
               </div>
+
+              {/* Desktop Navigation - Outside Search Bar */}
+              {!isMobile && (
+                <div className="flex justify-center gap-8 mt-4">
+                  <button
+                    onClick={() => navigate('/')}
+                    className="flex flex-col items-center text-white transition-colors"
+                  >
+                    <Home size={20} />
+                    <span className="text-xs mt-1">الرئيسية</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/categories')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                  >
+                    <Grid size={20} />
+                    <span className="text-xs mt-1">الأقسام</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/cart')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
+                  >
+                    <ShoppingCart size={20} />
+                    <span className="text-xs mt-1">السلة</span>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/account')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                  >
+                    <User size={20} />
+                    <span className="text-xs mt-1">الحساب</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Mobile Navigation - Below Search Bar */}
+              {isMobile && (
+                <div className="flex justify-center gap-8 mt-4">
+                  <button
+                    onClick={() => navigate('/')}
+                    className="flex flex-col items-center text-white transition-colors"
+                  >
+                    <Home size={24} />
+                    <span className="text-xs mt-1">الرئيسية</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/categories')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                  >
+                    <Grid size={24} />
+                    <span className="text-xs mt-1">الأقسام</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/cart')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
+                  >
+                    <ShoppingCart size={24} />
+                    <span className="text-xs mt-1">السلة</span>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/account')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                  >
+                    <User size={24} />
+                    <span className="text-xs mt-1">الحساب</span>
+                  </button>
+                </div>
+              )}
             </div>
-
-            {/* Mobile Navigation - Below Search Bar */}
-            {isMobile && (
-              <div className="flex justify-center gap-8 mt-4">
-                <button
-                  onClick={() => navigate('/')}
-                  className="flex flex-col items-center text-white transition-colors"
-                >
-                  <Home size={24} />
-                  <span className="text-xs mt-1">الرئيسية</span>
-                </button>
-
-                <button
-                  onClick={() => navigate('/categories')}
-                  className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                >
-                  <Grid size={24} />
-                  <span className="text-xs mt-1">الأقسام</span>
-                </button>
-
-                <button
-                  onClick={() => navigate('/cart')}
-                  className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
-                >
-                  <ShoppingCart size={24} />
-                  <span className="text-xs mt-1">السلة</span>
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {cartCount}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => navigate('/account')}
-                  className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                >
-                  <User size={24} />
-                  <span className="text-xs mt-1">الحساب</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
 

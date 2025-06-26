@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Home, Grid, ShoppingCart, User } from 'lucide-react';
@@ -129,7 +130,7 @@ const CategoryDetail = () => {
         {/* Header Section with Primary Color Background - Full Screen Width */}
         <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-6 rounded-b-3xl">
           <div className="w-full px-4">
-            <div className="max-w-md mx-auto md:max-w-4xl">
+            <div className="max-w-md mx-auto md:max-w-7xl">
               <div className="flex items-center mb-2 gap-3">
                 <div className="flex flex-col items-center">
                   <img 
@@ -141,57 +142,57 @@ const CategoryDetail = () => {
                   <span className="text-white text-sm font-bold">المعداوي</span>
                 </div>
                 
-                {/* Search Bar with Desktop Navigation */}
-                <div className="flex-1 relative">
+                {/* Search Bar */}
+                <div className="flex-1">
                   <SearchBar 
                     placeholder={`البحث في ${categoryInfo?.name || 'القسم'}...`}
                     readOnly={true}
                     onFocus={handleSearchFocus}
                   />
-                  
-                  {/* Desktop Navigation - Inside Search Area */}
-                  {!isMobile && (
-                    <div className="absolute left-20 top-1/2 transform -translate-y-1/2 flex gap-6">
-                      <button
-                        onClick={() => navigate('/')}
-                        className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                      >
-                        <Home size={20} />
-                        <span className="text-xs mt-1">الرئيسية</span>
-                      </button>
-
-                      <button
-                        onClick={() => navigate('/categories')}
-                        className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                      >
-                        <Grid size={20} />
-                        <span className="text-xs mt-1">الأقسام</span>
-                      </button>
-
-                      <button
-                        onClick={() => navigate('/cart')}
-                        className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
-                      >
-                        <ShoppingCart size={20} />
-                        <span className="text-xs mt-1">السلة</span>
-                        {cartCount > 0 && (
-                          <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                            {cartCount}
-                          </span>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => navigate('/account')}
-                        className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
-                      >
-                        <User size={20} />
-                        <span className="text-xs mt-1">الحساب</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
+
+              {/* Desktop Navigation - Outside Search Bar */}
+              {!isMobile && (
+                <div className="flex justify-center gap-8 mt-4">
+                  <button
+                    onClick={() => navigate('/')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                  >
+                    <Home size={20} />
+                    <span className="text-xs mt-1">الرئيسية</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/categories')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                  >
+                    <Grid size={20} />
+                    <span className="text-xs mt-1">الأقسام</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/cart')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors relative"
+                  >
+                    <ShoppingCart size={20} />
+                    <span className="text-xs mt-1">السلة</span>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-2 bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/account')}
+                    className="flex flex-col items-center text-white/80 hover:text-white transition-colors"
+                  >
+                    <User size={20} />
+                    <span className="text-xs mt-1">الحساب</span>
+                  </button>
+                </div>
+              )}
 
               {/* Mobile Navigation - Below Search Bar */}
               {isMobile && (
