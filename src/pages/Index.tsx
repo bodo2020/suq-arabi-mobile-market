@@ -148,7 +148,7 @@ const Index = () => {
                 <img 
                   src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
                   alt="المعداوي" 
-                  className="h-12 w-12 mb-2"
+                  className="h-16 w-16 mb-2 object-contain"
                   loading="eager" 
                 />
                 <span className="text-sm font-bold text-white">المعداوي</span>
