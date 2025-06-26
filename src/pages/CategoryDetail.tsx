@@ -151,39 +151,42 @@ const CategoryDetail = () => {
               </div>
 
               <div className="sticky top-0 z-10 mb-4 bg-white">
-                <div className="overflow-x-auto scrollbar-hide">
-                  <div className="flex gap-2 p-2 whitespace-nowrap min-w-max" onClick={handleFiltersClick}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSubcategorySelect(null);
-                      }}
-                      className={`px-4 py-2 rounded-full text-sm ${
-                        selectedSubcategory === null 
-                          ? 'bg-[#d3ffb3] text-[#005931]' 
-                          : 'bg-transparent border border-[#005931] text-[#005931]'
-                      }`}
-                    >
-                      جميع المنتجات
-                    </button>
-                    {subcategories.map(subcat => (
+                {/* Only show subcategories filter if there are subcategories */}
+                {subcategories.length > 0 && (
+                  <div className="overflow-x-auto scrollbar-hide">
+                    <div className="flex gap-2 p-2 whitespace-nowrap min-w-max" onClick={handleFiltersClick}>
                       <button
-                        key={subcat.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleSubcategorySelect(subcat.id);
+                          handleSubcategorySelect(null);
                         }}
                         className={`px-4 py-2 rounded-full text-sm ${
-                          selectedSubcategory === subcat.id 
+                          selectedSubcategory === null 
                             ? 'bg-[#d3ffb3] text-[#005931]' 
                             : 'bg-transparent border border-[#005931] text-[#005931]'
                         }`}
                       >
-                        {subcat.name}
+                        جميع المنتجات
                       </button>
-                    ))}
+                      {subcategories.map(subcat => (
+                        <button
+                          key={subcat.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSubcategorySelect(subcat.id);
+                          }}
+                          className={`px-4 py-2 rounded-full text-sm ${
+                            selectedSubcategory === subcat.id 
+                              ? 'bg-[#d3ffb3] text-[#005931]' 
+                              : 'bg-transparent border border-[#005931] text-[#005931]'
+                          }`}
+                        >
+                          {subcat.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div onClick={handleFiltersClick}>
                   <ProductFilters

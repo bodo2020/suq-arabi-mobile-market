@@ -279,7 +279,7 @@ const Cart = () => {
         />
 
         {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} py-4 pb-24`} dir="rtl">
+        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} py-4 pb-32`} dir="rtl">
           {items.length === 0 ? <div className="flex flex-col items-center justify-center py-12">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
               <circle cx="8" cy="21" r="1"></circle>
@@ -443,9 +443,11 @@ const Cart = () => {
                 </div>
               </div>
               
-              <Button onClick={handleProceedToCheckout} className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center">
-                متابعة الطلب
-              </Button>
+              <div className="px-4 pb-4">
+                <Button onClick={handleProceedToCheckout} className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center">
+                  متابعة الطلب
+                </Button>
+              </div>
             </div>
           </div>}
         </div>
