@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -134,24 +135,34 @@ const Index = () => {
       <div className="mb-16 pb-16">
         {/* Header Section with Primary Color Background - Full Screen Width */}
         <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-3 rounded-b-3xl">
-          <div className="max-w-md mx-auto px-4">
-            {/* Logo and Search Bar - Reduced gap */}
-            <div className="flex items-start mb-2">
-              <div className="flex flex-col items-center ml-3">
-                <img src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" alt="المعداوي" className="h-16 w-16 mb-1 object-contain" loading="eager" />
+          <div className="max-w-md mx-auto px-4 md:max-w-4xl">
+            {/* Logo and Search Bar */}
+            <div className="flex items-center mb-2 gap-3">
+              <div className="flex flex-col items-center">
+                <img 
+                  src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
+                  alt="المعداوي" 
+                  className="h-16 w-16 mb-1 object-contain" 
+                  loading="eager" 
+                />
                 <span className="text-white text-sm font-bold">المعداوي</span>
               </div>
               
               {/* Search Bar */}
               <div className="flex-1">
-                <SearchBar placeholder="البحث عن منتجات، أقسام..." backgroundImage={searchBackground} onFocus={handleFocusSearchBar} readOnly />
+                <SearchBar 
+                  placeholder="البحث عن منتجات، أقسام..." 
+                  backgroundImage={searchBackground} 
+                  onFocus={handleFocusSearchBar} 
+                  readOnly 
+                />
               </div>
             </div>
           </div>
         </div>
 
         {/* Address Section - Outside the colored background */}
-        <div className="max-w-md mx-auto px-4 mb-4">
+        <div className="max-w-md mx-auto px-4 mb-4 md:max-w-4xl">
           <div className="flex items-center">
             <MapPin size={16} className="text-primary ml-2" />
             <span className="text-gray-600 text-sm">التوصيل إلى</span>
@@ -166,7 +177,7 @@ const Index = () => {
         </div>
 
         {/* Content Container */}
-        <div className="max-w-md mx-auto px-4">
+        <div className="max-w-md mx-auto px-4 md:max-w-4xl">
           <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
             {banners.length > 0 && <div className="mb-6 relative">
                 <BannersContainer banners={banners} />
@@ -182,7 +193,7 @@ const Index = () => {
               </Link>
             </div>
             
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
+            <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-1">
               {visibleCategories.map(category => <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />)}
               {categories.length > 12 && <Link to="/categories" className="category-item flex flex-col items-center">
                   <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{

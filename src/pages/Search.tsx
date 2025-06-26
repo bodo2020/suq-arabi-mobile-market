@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Barcode, Search as SearchIcon, X, Scan, MapPin } from 'lucide-react';
+import { ArrowRight, Barcode, Search as SearchIcon, X, Scan } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import ProductCard from '@/components/ui/ProductCard';
-import { searchProducts } from '@/lib/supabase';
+import { searchProducts, getProducts } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
@@ -14,14 +15,10 @@ const Search = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const [products, setProducts] = useState<any[]>([]);
+  const [popularProducts, setPopularProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [userAddress, setUserAddress] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<{
-    area?: string | null;
-    neighborhood?: string | null;
-  } | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,15 +29,22 @@ const Search = () => {
     if (savedSearches) {
       setRecentSearches(JSON.parse(savedSearches));
     }
+  }, []);
 
-    // Load user location
-    const savedAddress = localStorage.getItem('userAddress');
-    if (savedAddress) setUserAddress(savedAddress);
-    const area = localStorage.getItem('userArea');
-    const neighborhood = localStorage.getItem('userNeighborhood');
-    if (area || neighborhood) {
-      setUserLocation({ area, neighborhood });
-    }
+  // Fetch popular products when component mounts
+  useEffect(() => {
+    const fetchPopularProducts = async () => {
+      try {
+        const allProducts = await getProducts();
+        // Get random products as "popular" products
+        const shuffled = allProducts.sort(() => 0.5 - Math.random());
+        setPopularProducts(shuffled.slice(0, 8));
+      } catch (error) {
+        console.error('Error fetching popular products:', error);
+      }
+    };
+
+    fetchPopularProducts();
   }, []);
 
   // Save search query to recent searches
@@ -113,10 +117,6 @@ const Search = () => {
   const handleClearHistory = () => {
     setRecentSearches([]);
     localStorage.removeItem('recentSearches');
-  };
-
-  const handleChangeLocation = () => {
-    navigate('/address-manager');
   };
 
   const startBarcodeScanner = () => {
@@ -212,12 +212,17 @@ const Search = () => {
   return (
     <MainLayout>
       <div className="py-0">
-        {/* Header Section with Primary Color Background */}
-        <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-3 rounded-b-3xl">
-          <div className="max-w-md mx-auto px-4">
-            <div className="flex items-start mb-2">
-              <div className="flex flex-col items-center ml-3">
-                <img src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" alt="المعداوي" className="h-16 w-16 mb-1 object-contain" loading="eager" />
+        {/* Header Section with Primary Color Background - Full Screen Width */}
+        <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-6 rounded-b-3xl">
+          <div className="max-w-md mx-auto px-4 md:max-w-4xl">
+            <div className="flex items-center mb-2 gap-3">
+              <div className="flex flex-col items-center">
+                <img 
+                  src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
+                  alt="المعداوي" 
+                  className="h-16 w-16 mb-1 object-contain" 
+                  loading="eager" 
+                />
                 <span className="text-white text-sm font-bold">المعداوي</span>
               </div>
               
@@ -231,22 +236,7 @@ const Search = () => {
           </div>
         </div>
 
-        {/* Address Section - Outside the colored background */}
-        <div className="max-w-md mx-auto px-4 mb-4">
-          <div className="flex items-center">
-            <MapPin size={16} className="text-primary ml-2" />
-            <span className="text-gray-600 text-sm">التوصيل إلى</span>
-            <button 
-              onClick={handleChangeLocation}
-              className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
-            >
-              {userLocation?.area || userAddress || "اختر عنوانك"}
-              {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
-            </button>
-          </div>
-        </div>
-
-        <div className="px-4">
+        <div className="max-w-md mx-auto px-4 md:max-w-4xl">
           {/* Header with back button */}
           <div className="flex items-center mb-4">
             <button
@@ -328,6 +318,18 @@ const Search = () => {
             </div>
           )}
 
+          {/* Popular Products - Show when no search query */}
+          {!query && popularProducts.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-lg font-bold mb-3 text-primary">منتجات مميزة</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {popularProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Search Results */}
           {query && (
             <>
@@ -338,7 +340,7 @@ const Search = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               ) : products.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}

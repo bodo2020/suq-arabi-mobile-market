@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductFilters from '@/components/ui/ProductFilters';
@@ -27,11 +28,6 @@ const CategoryDetail = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [currentSort, setCurrentSort] = useState("newest");
-  const [userAddress, setUserAddress] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<{
-    area?: string | null;
-    neighborhood?: string | null;
-  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,15 +47,6 @@ const CategoryDetail = () => {
           const productsData = await getProducts(id, false);
           setAllProducts(productsData);
           setProducts(productsData);
-        }
-
-        // Load user location
-        const savedAddress = localStorage.getItem('userAddress');
-        if (savedAddress) setUserAddress(savedAddress);
-        const area = localStorage.getItem('userArea');
-        const neighborhood = localStorage.getItem('userNeighborhood');
-        if (area || neighborhood) {
-          setUserLocation({ area, neighborhood });
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -122,10 +109,6 @@ const CategoryDetail = () => {
     navigate('/search');
   };
 
-  const handleChangeLocation = () => {
-    navigate('/address-manager');
-  };
-
   if (loading) {
     return (
       <MainLayout>
@@ -139,12 +122,17 @@ const CategoryDetail = () => {
   return (
     <MainLayout>
       <div className="container px-0 py-0">
-        {/* Header Section with Primary Color Background */}
-        <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-3 rounded-b-3xl">
-          <div className="max-w-md mx-auto px-4">
-            <div className="flex items-start mb-2">
-              <div className="flex flex-col items-center ml-3">
-                <img src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" alt="المعداوي" className="h-16 w-16 mb-1 object-contain" loading="eager" />
+        {/* Header Section with Primary Color Background - Full Screen Width */}
+        <div className="bg-primary w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] pt-6 pb-6 mb-6 rounded-b-3xl">
+          <div className="max-w-md mx-auto px-4 md:max-w-4xl">
+            <div className="flex items-center mb-2 gap-3">
+              <div className="flex flex-col items-center">
+                <img 
+                  src="/lovable-uploads/f2dcd6d9-e684-4c8f-ba39-879321421b5e.png" 
+                  alt="المعداوي" 
+                  className="h-16 w-16 mb-1 object-contain" 
+                  loading="eager" 
+                />
                 <span className="text-white text-sm font-bold">المعداوي</span>
               </div>
               
@@ -159,88 +147,75 @@ const CategoryDetail = () => {
           </div>
         </div>
 
-        {/* Address Section - Outside the colored background */}
-        <div className="max-w-md mx-auto px-4 mb-4">
-          <div className="flex items-center">
-            <MapPin size={16} className="text-primary ml-2" />
-            <span className="text-gray-600 text-sm">التوصيل إلى</span>
-            <button 
-              onClick={handleChangeLocation}
-              className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
-            >
-              {userLocation?.area || userAddress || "اختر عنوانك"}
-              {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+        <div className="max-w-md mx-auto px-4 md:max-w-4xl">
+          <div className="flex items-center mb-4">
+            <button onClick={() => navigate(-1)} className="p-2">
+              <ArrowRight size={24} />
             </button>
+            <h1 className="text-xl font-bold flex-1 text-center">
+              {categoryInfo?.name}
+            </h1>
+            <div className="w-10"></div>
           </div>
-        </div>
 
-        <div className="flex items-center mb-4 px-4">
-          <button onClick={() => navigate(-1)} className="p-2">
-            <ArrowRight size={24} />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center">
-            {categoryInfo?.name}
-          </h1>
-          <div className="w-10"></div>
-        </div>
-
-        <div className="sticky top-0 z-10 mb-4 bg-white">
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 p-2 whitespace-nowrap min-w-max" onClick={handleFiltersClick}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSubcategorySelect(null);
-                }}
-                className={`px-4 py-2 rounded-full text-sm ${
-                  selectedSubcategory === null 
-                    ? 'bg-[#d3ffb3] text-[#005931]' 
-                    : 'bg-transparent border border-[#005931] text-[#005931]'
-                }`}
-              >
-                جميع المنتجات
-              </button>
-              {subcategories.map(subcat => (
+          <div className="sticky top-0 z-10 mb-4 bg-white">
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 p-2 whitespace-nowrap min-w-max" onClick={handleFiltersClick}>
                 <button
-                  key={subcat.id}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleSubcategorySelect(subcat.id);
+                    handleSubcategorySelect(null);
                   }}
                   className={`px-4 py-2 rounded-full text-sm ${
-                    selectedSubcategory === subcat.id 
+                    selectedSubcategory === null 
                       ? 'bg-[#d3ffb3] text-[#005931]' 
                       : 'bg-transparent border border-[#005931] text-[#005931]'
                   }`}
                 >
-                  {subcat.name}
+                  جميع المنتجات
                 </button>
-              ))}
+                {subcategories.map(subcat => (
+                  <button
+                    key={subcat.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubcategorySelect(subcat.id);
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm ${
+                      selectedSubcategory === subcat.id 
+                        ? 'bg-[#d3ffb3] text-[#005931]' 
+                        : 'bg-transparent border border-[#005931] text-[#005931]'
+                    }`}
+                  >
+                    {subcat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div onClick={handleFiltersClick}>
+              <ProductFilters
+                onSortChange={handleSortChange}
+                sortOptions={sortOptions}
+                currentSort={currentSort}
+              />
             </div>
           </div>
 
-          <div onClick={handleFiltersClick}>
-            <ProductFilters
-              onSortChange={handleSortChange}
-              sortOptions={sortOptions}
-              currentSort={currentSort}
-            />
+          <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {products.map((product) => (
+              <div key={product.id} className="flex-shrink-0">
+                <ProductCard key={product.id} product={product} />
+              </div>
+            ))}
           </div>
-        </div>
 
-        <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 px-4">
-          {products.map((product) => (
-            <div key={product.id} className="flex-shrink-0">
-              <ProductCard key={product.id} product={product} />
+          {products.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              لا توجد منتجات في هذا القسم
             </div>
-          ))}
+          )}
         </div>
-
-        {products.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            لا توجد منتجات في هذا القسم
-          </div>
-        )}
       </div>
     </MainLayout>
   );
