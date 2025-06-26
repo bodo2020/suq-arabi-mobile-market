@@ -14,8 +14,8 @@ declare global {
   }
 }
 
-// REPLACE THIS WITH YOUR GOOGLE MAPS API KEY
-const API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
+// Your Google Maps API Key
+const API_KEY = 'AIzaSyBhWG1SZE7DCk9qiC4dCs82oqq3GWkVEhg';
 
 // Reference location
 const REFERENCE_LOCATION = { lat: 31.2566, lng: 31.1671 };
@@ -48,12 +48,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
 
   useEffect(() => {
     const initMap = async () => {
-      // Check if API key is set
-      if (API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
-        setLoadingError('يرجى تعيين مفتاح Google Maps API صحيح في الكود');
-        return;
-      }
-
       const loader = new Loader({
         apiKey: API_KEY,
         version: 'weekly',
@@ -404,13 +398,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
             
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4 text-right">كيفية الحصول على مفتاح Google Maps API:</h3>
+                <h3 className="text-lg font-semibold mb-4 text-right">تحقق من إعدادات API:</h3>
                 <ol className="text-sm space-y-2 text-right list-decimal list-inside">
-                  <li>اذهب إلى <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a></li>
-                  <li>أنشئ مشروع جديد أو اختر مشروع موجود</li>
-                  <li>فعّل Maps JavaScript API</li>
-                  <li>أنشئ مفتاح API جديد</li>
-                  <li>انسخ المفتاح واستبدله في الكود</li>
+                  <li>تأكد من تفعيل Maps JavaScript API</li>
+                  <li>تأكد من تفعيل Places API</li>
+                  <li>تأكد من تفعيل Directions API</li>
+                  <li>تحقق من إعدادات النطاق المسموح</li>
                 </ol>
               </CardContent>
             </Card>
