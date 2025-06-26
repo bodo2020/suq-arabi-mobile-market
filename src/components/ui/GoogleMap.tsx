@@ -12,24 +12,26 @@ declare global {
     google: typeof google;
   }
 }
-
 const API_KEY = 'AIzaSyBUsExqMiqYIpfVnfZGkzeZbkDDDJP0wSU';
 
 // Reference location
-const REFERENCE_LOCATION = { lat: 31.2566, lng: 31.1671 };
-
+const REFERENCE_LOCATION = {
+  lat: 31.2566,
+  lng: 31.1671
+};
 interface MapPin {
   id: string;
   position: google.maps.LatLng;
   title: string;
 }
-
 interface GoogleMapProps {
   height?: string;
   className?: string;
 }
-
-const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' }) => {
+const GoogleMap: React.FC<GoogleMapProps> = ({
+  height = '100vh',
+  className = ''
+}) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const referenceMarkerRef = useRef<google.maps.Marker | null>(null);
@@ -42,7 +44,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
   const [distance, setDistance] = useState<number | null>(null);
   const [routeDistance, setRouteDistance] = useState<string | null>(null);
   const [routeDuration, setRouteDuration] = useState<string | null>(null);
-
   useEffect(() => {
     const initMap = async () => {
       const loader = new Loader({
@@ -50,38 +51,38 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
         version: 'weekly',
         libraries: ['places', 'geometry']
       });
-
       try {
         await loader.load();
-        
         if (!mapRef.current) return;
-
         const map = new google.maps.Map(mapRef.current, {
           center: REFERENCE_LOCATION,
           zoom: 12,
           // Updated styles to show places and street names
-          styles: [
-            {
-              featureType: 'poi',
-              elementType: 'labels',
-              stylers: [{ visibility: 'on' }]
-            },
-            {
-              featureType: 'road',
-              elementType: 'labels',
-              stylers: [{ visibility: 'on' }]
-            },
-            {
-              featureType: 'transit',
-              elementType: 'labels',
-              stylers: [{ visibility: 'on' }]
-            },
-            {
-              featureType: 'administrative',
-              elementType: 'labels',
-              stylers: [{ visibility: 'on' }]
-            }
-          ],
+          styles: [{
+            featureType: 'poi',
+            elementType: 'labels',
+            stylers: [{
+              visibility: 'on'
+            }]
+          }, {
+            featureType: 'road',
+            elementType: 'labels',
+            stylers: [{
+              visibility: 'on'
+            }]
+          }, {
+            featureType: 'transit',
+            elementType: 'labels',
+            stylers: [{
+              visibility: 'on'
+            }]
+          }, {
+            featureType: 'administrative',
+            elementType: 'labels',
+            stylers: [{
+              visibility: 'on'
+            }]
+          }],
           mapTypeControl: true,
           streetViewControl: true,
           fullscreenControl: true,
@@ -90,7 +91,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
             position: google.maps.ControlPosition.RIGHT_BOTTOM
           }
         });
-
         mapInstanceRef.current = map;
 
         // Initialize directions service and renderer
@@ -120,7 +120,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
             strokeWeight: 3
           }
         });
-
         referenceMarkerRef.current = referenceMarker;
 
         // Add info window for reference marker
@@ -133,7 +132,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
             </div>
           `
         });
-
         referenceMarker.addListener('click', () => {
           referenceInfoWindow.open(map, referenceMarker);
         });
@@ -144,13 +142,11 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
             addPin(event.latLng, 'New Location');
           }
         });
-
         setIsLoaded(true);
         toast({
           title: "تم تحميل الخريطة بنجاح!",
           description: "انقر في أي مكان على الخريطة لإضافة نقطة جديدة وعرض الطريق."
         });
-
       } catch (error) {
         console.error('Error loading Google Maps:', error);
         toast({
@@ -160,29 +156,22 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
         });
       }
     };
-
     initMap();
   }, []);
-
   const calculateRoute = (destination: google.maps.LatLng) => {
     if (!directionsServiceRef.current || !directionsRendererRef.current) return;
-
     const request = {
       origin: REFERENCE_LOCATION,
       destination: destination,
-      travelMode: google.maps.TravelMode.DRIVING,
+      travelMode: google.maps.TravelMode.DRIVING
     };
-
     directionsServiceRef.current.route(request, (result, status) => {
       if (status === google.maps.DirectionsStatus.OK && result) {
         directionsRendererRef.current?.setDirections(result);
-        
         const route = result.routes[0];
         const leg = route.legs[0];
-        
         setRouteDistance(leg.distance?.text || null);
         setRouteDuration(leg.duration?.text || null);
-        
         toast({
           title: "تم إنشاء الطريق!",
           description: `المسافة: ${leg.distance?.text} - الوقت: ${leg.duration?.text}`
@@ -197,23 +186,16 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
       }
     });
   };
-
   const calculateDistanceFromReference = (targetPosition: google.maps.LatLng) => {
     const referenceLatLng = new google.maps.LatLng(REFERENCE_LOCATION.lat, REFERENCE_LOCATION.lng);
-    
-    const distance = google.maps.geometry.spherical.computeDistanceBetween(
-      referenceLatLng,
-      targetPosition
-    );
-    
+    const distance = google.maps.geometry.spherical.computeDistanceBetween(referenceLatLng, targetPosition);
+
     // Convert from meters to kilometers
     const distanceInKm = distance / 1000;
     setDistance(distanceInKm);
   };
-
   const addPin = (position: google.maps.LatLng, title: string) => {
     if (!mapInstanceRef.current) return;
-
     const marker = new google.maps.Marker({
       position: position,
       map: mapInstanceRef.current,
@@ -228,19 +210,17 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
         strokeWeight: 2
       }
     });
-
     const newPin: MapPin = {
       id: Date.now().toString(),
       position: position,
       title: title
     };
-
     const updatedPins = [...pins, newPin];
     setPins(updatedPins);
-    
+
     // Calculate straight line distance from reference location
     calculateDistanceFromReference(position);
-    
+
     // Calculate and display route
     calculateRoute(position);
 
@@ -254,35 +234,29 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
         </div>
       `
     });
-
     marker.addListener('click', () => {
       infoWindow.open(mapInstanceRef.current, marker);
     });
-
     toast({
       title: "تم إضافة نقطة!",
       description: `الموقع: ${position.lat().toFixed(4)}, ${position.lng().toFixed(4)}`
     });
   };
-
   const searchLocation = async () => {
     if (!searchQuery.trim() || !isLoaded) return;
-
     const geocoder = new google.maps.Geocoder();
-    
     try {
-      geocoder.geocode({ address: searchQuery }, (results, status) => {
+      geocoder.geocode({
+        address: searchQuery
+      }, (results, status) => {
         if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
           const location = results[0].geometry.location;
           const address = results[0].formatted_address;
-          
           mapInstanceRef.current?.setCenter(location);
           mapInstanceRef.current?.setZoom(15);
-          
           addPin(location, address);
           setSelectedLocation(address);
           setSearchQuery('');
-          
           toast({
             title: "تم العثور على الموقع!",
             description: address
@@ -304,50 +278,53 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
       });
     }
   };
-
   const clearPins = () => {
     setPins([]);
     setSelectedLocation('');
     setDistance(null);
     setRouteDistance(null);
     setRouteDuration(null);
-    
+
     // Clear directions
     if (directionsRendererRef.current) {
-      directionsRendererRef.current.setDirections({routes: []} as google.maps.DirectionsResult);
+      directionsRendererRef.current.setDirections({
+        routes: []
+      } as google.maps.DirectionsResult);
     }
-    
+
     // Reload the map to clear all markers except reference
     if (mapInstanceRef.current) {
       const center = mapInstanceRef.current.getCenter();
       const zoom = mapInstanceRef.current.getZoom();
-      
       const newMap = new google.maps.Map(mapRef.current!, {
         center: center,
         zoom: zoom,
         // Updated styles to show places and street names
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          },
-          {
-            featureType: 'road',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          },
-          {
-            featureType: 'transit',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          },
-          {
-            featureType: 'administrative',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          }
-        ],
+        styles: [{
+          featureType: 'poi',
+          elementType: 'labels',
+          stylers: [{
+            visibility: 'on'
+          }]
+        }, {
+          featureType: 'road',
+          elementType: 'labels',
+          stylers: [{
+            visibility: 'on'
+          }]
+        }, {
+          featureType: 'transit',
+          elementType: 'labels',
+          stylers: [{
+            visibility: 'on'
+          }]
+        }, {
+          featureType: 'administrative',
+          elementType: 'labels',
+          stylers: [{
+            visibility: 'on'
+          }]
+        }],
         mapTypeControl: true,
         streetViewControl: true,
         fullscreenControl: true,
@@ -383,9 +360,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
           strokeWeight: 3
         }
       });
-
       referenceMarkerRef.current = referenceMarker;
-
       const referenceInfoWindow = new google.maps.InfoWindow({
         content: `
           <div class="p-2">
@@ -395,28 +370,24 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
           </div>
         `
       });
-
       referenceMarker.addListener('click', () => {
         referenceInfoWindow.open(newMap, referenceMarker);
       });
-
       newMap.addListener('click', (event: google.maps.MapMouseEvent) => {
         if (event.latLng) {
           addPin(event.latLng, 'New Location');
         }
       });
-
       mapInstanceRef.current = newMap;
     }
-    
     toast({
       title: "تم مسح النقاط",
       description: "تم حذف جميع النقاط والطرق من الخريطة."
     });
   };
-
-  return (
-    <div className={`w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col ${className}`} style={{ height }}>
+  return <div className={`w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col ${className}`} style={{
+    height
+  }}>
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 shadow-sm">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -427,13 +398,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
           
           <div className="flex gap-2 w-full sm:w-auto">
             <div className="flex gap-2 flex-1 sm:flex-initial">
-              <Input
-                placeholder="ابحث عن موقع..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && searchLocation()}
-                className="min-w-[250px]"
-              />
+              <Input placeholder="ابحث عن موقع..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchLocation()} className="min-w-[250px]" />
               <Button onClick={searchLocation} size="icon" variant="outline">
                 <Search className="h-4 w-4" />
               </Button>
@@ -449,14 +414,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
       <div className="flex-1 relative">
         <div ref={mapRef} className="w-full h-full" />
         
-        {!isLoaded && (
-          <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+        {!isLoaded && <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">جاري تحميل الخريطة...</p>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Stats Card */}
         <Card className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
@@ -469,54 +432,35 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
               <MapPin className="h-4 w-4 text-red-600" />
               <span>النقطة المرجعية</span>
             </div>
-            {distance && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+            {distance && <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                 <Ruler className="h-4 w-4 text-green-600" />
                 <span className="font-medium text-green-700">
                   مسافة مباشرة: {distance.toFixed(2)} كم
                 </span>
-              </div>
-            )}
-            {routeDistance && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+              </div>}
+            {routeDistance && <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                 <Route className="h-4 w-4 text-blue-600" />
                 <span className="font-medium text-blue-700">
                   مسافة الطريق: {routeDistance}
                 </span>
-              </div>
-            )}
-            {routeDuration && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              </div>}
+            {routeDuration && <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Route className="h-4 w-4 text-purple-600" />
                 <span className="font-medium text-purple-700">
                   وقت الوصول: {routeDuration}
                 </span>
-              </div>
-            )}
-            {selectedLocation && (
-              <p className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
+              </div>}
+            {selectedLocation && <p className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
                 {selectedLocation}
-              </p>
-            )}
+              </p>}
           </CardContent>
         </Card>
 
         {/* Instructions */}
         <Card className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-4">
-            <p className="text-sm text-gray-600 mb-2 font-medium">كيفية الاستخدام:</p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• انقر في أي مكان لإضافة نقطة وعرض الطريق</li>
-              <li>• ابحث عن مواقع محددة</li>
-              <li>• انقر على النقاط لرؤية التفاصيل</li>
-              <li>• الخط الأزرق يوضح الطريق بين النقاط</li>
-              <li>• المسافة والوقت محسوبان من النقطة الحمراء</li>
-            </ul>
-          </CardContent>
+          
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default GoogleMap;
