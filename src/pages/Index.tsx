@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -140,51 +139,39 @@ const Index = () => {
   return (
     <MainLayout>
       <div className="mb-16 pb-16">
-        {/* Modern Header Section with Green Background */}
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 mx-[-16px] px-4 pt-6 pb-8 mb-6 rounded-b-3xl shadow-lg">
+        {/* Header Section with Primary Color Background */}
+        <div className="bg-primary mx-[-16px] px-4 pt-6 pb-6 mb-6 rounded-b-3xl">
           {/* Logo and Store Name */}
-          <div className="flex flex-col items-center mb-6">
+          <div className="flex items-center mb-6">
             <img 
               src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
               alt={storeInfo?.name} 
-              className="h-16 w-16 mb-2 bg-white rounded-full p-2 shadow-md"
+              className="h-12 w-12 mr-3 bg-white rounded-full p-2"
               loading="eager" 
             />
             <span className="text-xl font-bold text-white">ماركت المعداوي</span>
           </div>
 
           {/* Modern Search Bar */}
-          <div className="relative mb-4">
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-1 shadow-lg">
-              <SearchBar 
-                placeholder="البحث عن منتجات، أقسام..."
-                backgroundImage={searchBackground} 
-                onFocus={handleFocusSearchBar} 
-                readOnly 
-              />
-            </div>
-            <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
-              <input 
-                id="bgImageUpload" 
-                type="file" 
-                className="hidden" 
-                accept="image/*" 
-                onChange={handleImageUpload} 
-                disabled={processingImage} 
-              />
-            </div>
+          <div className="mb-4">
+            <SearchBar 
+              placeholder="البحث عن منتجات، أقسام..."
+              backgroundImage={searchBackground} 
+              onFocus={handleFocusSearchBar} 
+              readOnly 
+            />
           </div>
 
-          {/* Address Section with Modern Style */}
-          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-            <AddressDisplay 
-              address={userAddress || ''} 
-              areaName={userLocation?.area || undefined} 
-              neighborhoodName={userLocation?.neighborhood || undefined} 
-              onEdit={handleChangeLocation}
-              showAddressSelector={true}
-              className="text-white"
-            />
+          {/* Address Section */}
+          <div className="flex items-center">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center">
+              <MapPin size={16} className="text-white ml-2" />
+              <span className="text-white text-sm">التوصيل إلى</span>
+              <span className="text-white font-bold text-sm mr-2 underline decoration-2 underline-offset-2">
+                {userLocation?.area || userAddress || "اختر عنوانك"}
+                {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+              </span>
+            </div>
           </div>
         </div>
 

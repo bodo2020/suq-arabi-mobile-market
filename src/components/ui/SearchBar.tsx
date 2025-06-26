@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Barcode, QrCode } from 'lucide-react';
+import { Search, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface SearchBarProps {
@@ -59,16 +59,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div 
-        className="relative flex items-center bg-white rounded-xl border-0 overflow-hidden shadow-sm"
-        style={backgroundImage ? { 
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        } : undefined}
-      >
+      <div className="relative flex items-center bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 overflow-hidden">
         <div className="flex items-center flex-1 relative">
-          <Search size={20} className="absolute left-4 text-gray-400" />
+          <Search size={20} className="absolute left-4 text-white/70" />
           <input
             type="text"
             value={query}
@@ -76,19 +69,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onFocus={handleFocus}
             placeholder={placeholder}
             readOnly={readOnly}
-            className={`w-full pl-12 pr-16 py-4 bg-transparent border-none outline-none text-gray-700 placeholder-gray-500 ${
+            className={`w-full pl-12 pr-16 py-4 bg-transparent border-none outline-none text-white placeholder-white/70 ${
               readOnly ? 'cursor-pointer' : ''
-            } ${backgroundImage ? 'text-white placeholder-white' : ''}`}
+            }`}
           />
         </div>
         <button
           type="button"
           onClick={handleBarcodeClick}
-          className={`p-4 hover:bg-gray-100 transition-colors rounded-r-xl ${
-            backgroundImage ? 'hover:bg-white/20' : ''
-          }`}
+          className="p-4 hover:bg-white/10 transition-colors rounded-r-2xl"
         >
-          <QrCode size={20} className={backgroundImage ? 'text-white' : 'text-emerald-600'} />
+          <QrCode size={20} className="text-white" />
         </button>
       </div>
     </form>
