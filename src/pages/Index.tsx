@@ -140,7 +140,7 @@ const Index = () => {
     <MainLayout>
       <div className="mb-16 pb-16">
         {/* Header Section with Primary Color Background - Full Width */}
-        <div className="bg-primary mx-[-20px] px-5 pt-6 pb-6 mb-6 rounded-b-3xl">
+        <div className="bg-primary mx-[-16px] sm:mx-[-16px] md:mx-[-16px] lg:mx-[-16px] px-4 pt-6 pb-6 mb-6 rounded-b-3xl">
           {/* Logo and Store Name */}
           <div className="flex items-center mb-6">
             <img 
@@ -161,15 +161,19 @@ const Index = () => {
               readOnly 
             />
           </div>
+        </div>
 
-          {/* Address Section - Inside the colored background */}
+        {/* Address Section - Outside the colored background */}
+        <div className="px-4 mb-6 -mt-3">
           <div className="flex items-center">
-            <MapPin size={16} className="text-white ml-2" />
-            <span className="text-white text-sm">التوصيل إلى</span>
-            <span className="text-white font-bold text-sm mr-2 underline decoration-2 underline-offset-2">
-              {userLocation?.area || userAddress || "اختر عنوانك"}
-              {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
-            </span>
+            <div className="bg-white shadow-sm border rounded-xl px-3 py-2 flex items-center">
+              <MapPin size={16} className="text-primary ml-2" />
+              <span className="text-gray-600 text-sm">التوصيل إلى</span>
+              <span className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2">
+                {userLocation?.area || userAddress || "اختر عنوانك"}
+                {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+              </span>
+            </div>
           </div>
         </div>
 
