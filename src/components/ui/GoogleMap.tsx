@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
-import { MapPin, Search, Ruler, Route } from 'lucide-react';
+import { MapPin, Search, Ruler, Route, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 
 // Declare global google maps types
@@ -13,7 +14,8 @@ declare global {
   }
 }
 
-const API_KEY = 'AIzaSyBhWG1SZE7DCk9qiC4dCs82oqq3GWkVEhg';
+// REPLACE THIS WITH YOUR GOOGLE MAPS API KEY
+const API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
 
 // Reference location
 const REFERENCE_LOCATION = { lat: 31.2566, lng: 31.1671 };
@@ -36,6 +38,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
   const [pins, setPins] = useState<MapPin[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
@@ -45,6 +48,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
 
   useEffect(() => {
     const initMap = async () => {
+      // Check if API key is set
+      if (API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+        setLoadingError('يرجى تعيين مفتاح Google Maps API صحيح في الكود');
+        return;
+      }
+
       const loader = new Loader({
         apiKey: API_KEY,
         version: 'weekly',
@@ -59,29 +68,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
         const map = new google.maps.Map(mapRef.current, {
           center: REFERENCE_LOCATION,
           zoom: 12,
-          // Updated styles to show places and street names
-          styles: [
-            {
-              featureType: 'poi',
-              elementType: 'labels',
-              stylers: [{ visibility: 'on' }]
-            },
-            {
-              featureType: 'road',
-              elementType: 'labels',
-              stylers: [{ visibility: 'on' }]
-            },
-            {
-              featureType: 'transit',
-              elementType: 'labels',
-              stylers: [{ visibility: 'on' }]
-            },
-            {
-              featureType: 'administrative',
-              elementType: 'labels',
-              stylers: [{ visibility: 'on' }]
-            }
-          ],
           mapTypeControl: true,
           streetViewControl: true,
           fullscreenControl: true,
@@ -101,7 +87,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
             strokeWeight: 4,
             strokeOpacity: 0.8
           },
-          suppressMarkers: true // We'll use custom markers
+          suppressMarkers: true
         });
         directionsRendererRef.current.setMap(map);
 
@@ -153,9 +139,22 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
 
       } catch (error) {
         console.error('Error loading Google Maps:', error);
+        let errorMessage = "خطأ في تحميل الخريطة";
+        
+        if (error instanceof Error) {
+          if (error.message.includes('ApiNotActivatedMapError')) {
+            errorMessage = "يجب تفعيل Maps JavaScript API في Google Cloud Console";
+          } else if (error.message.includes('InvalidKeyMapError')) {
+            errorMessage = "مفتاح Google Maps API غير صحيح";
+          } else if (error.message.includes('RefererNotAllowedMapError')) {
+            errorMessage = "النطاق غير مسموح في إعدادات API";
+          }
+        }
+        
+        setLoadingError(errorMessage);
         toast({
           title: "خطأ في تحميل الخريطة",
-          description: "يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.",
+          description: errorMessage,
           variant: "destructive"
         });
       }
@@ -206,7 +205,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
       targetPosition
     );
     
-    // Convert from meters to kilometers
     const distanceInKm = distance / 1000;
     setDistance(distanceInKm);
   };
@@ -238,13 +236,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
     const updatedPins = [...pins, newPin];
     setPins(updatedPins);
     
-    // Calculate straight line distance from reference location
     calculateDistanceFromReference(position);
-    
-    // Calculate and display route
     calculateRoute(position);
 
-    // Add info window
     const infoWindow = new google.maps.InfoWindow({
       content: `
         <div class="p-2">
@@ -312,12 +306,10 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
     setRouteDistance(null);
     setRouteDuration(null);
     
-    // Clear directions
     if (directionsRendererRef.current) {
       directionsRendererRef.current.setDirections({routes: []} as google.maps.DirectionsResult);
     }
     
-    // Reload the map to clear all markers except reference
     if (mapInstanceRef.current) {
       const center = mapInstanceRef.current.getCenter();
       const zoom = mapInstanceRef.current.getZoom();
@@ -325,29 +317,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
       const newMap = new google.maps.Map(mapRef.current!, {
         center: center,
         zoom: zoom,
-        // Updated styles to show places and street names
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          },
-          {
-            featureType: 'road',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          },
-          {
-            featureType: 'transit',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          },
-          {
-            featureType: 'administrative',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          }
-        ],
         mapTypeControl: true,
         streetViewControl: true,
         fullscreenControl: true,
@@ -357,7 +326,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
         }
       });
 
-      // Re-initialize directions renderer
       directionsRendererRef.current = new google.maps.DirectionsRenderer({
         polylineOptions: {
           strokeColor: '#3b82f6',
@@ -368,7 +336,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
       });
       directionsRendererRef.current.setMap(newMap);
 
-      // Re-add reference marker
       const referenceMarker = new google.maps.Marker({
         position: REFERENCE_LOCATION,
         map: newMap,
@@ -415,6 +382,44 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
     });
   };
 
+  // Show error state if there's a loading error
+  if (loadingError) {
+    return (
+      <div className={`w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col ${className}`} style={{ height }}>
+        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 shadow-sm">
+          <div className="max-w-6xl mx-auto flex items-center gap-2">
+            <MapPin className="h-6 w-6 text-blue-600" />
+            <h1 className="text-2xl font-bold text-gray-900">خريطة تفاعلية مع الطرق</h1>
+          </div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-md w-full">
+            <Alert className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-right">
+                {loadingError}
+              </AlertDescription>
+            </Alert>
+            
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4 text-right">كيفية الحصول على مفتاح Google Maps API:</h3>
+                <ol className="text-sm space-y-2 text-right list-decimal list-inside">
+                  <li>اذهب إلى <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a></li>
+                  <li>أنشئ مشروع جديد أو اختر مشروع موجود</li>
+                  <li>فعّل Maps JavaScript API</li>
+                  <li>أنشئ مفتاح API جديد</li>
+                  <li>انسخ المفتاح واستبدله في الكود</li>
+                </ol>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col ${className}`} style={{ height }}>
       {/* Header */}
@@ -433,12 +438,13 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchLocation()}
                 className="min-w-[250px]"
+                disabled={!isLoaded}
               />
-              <Button onClick={searchLocation} size="icon" variant="outline">
+              <Button onClick={searchLocation} size="icon" variant="outline" disabled={!isLoaded}>
                 <Search className="h-4 w-4" />
               </Button>
             </div>
-            <Button onClick={clearPins} variant="outline" size="sm">
+            <Button onClick={clearPins} variant="outline" size="sm" disabled={!isLoaded}>
               مسح النقاط
             </Button>
           </div>
@@ -449,71 +455,75 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ height = '100vh', className = '' 
       <div className="flex-1 relative">
         <div ref={mapRef} className="w-full h-full" />
         
-        {!isLoaded && (
+        {!isLoaded && !loadingError && (
           <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">جاري تحميل الخريطة...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 text-lg">جاري تحميل الخريطة...</p>
+              <p className="text-gray-500 text-sm mt-2">يرجى الانتظار</p>
             </div>
           </div>
         )}
 
         {/* Stats Card */}
-        <Card className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-              <MapPin className="h-4 w-4 text-blue-600" />
-              <span>{pins.length} نقطة مضافة</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-              <MapPin className="h-4 w-4 text-red-600" />
-              <span>النقطة المرجعية</span>
-            </div>
-            {distance && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <Ruler className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-green-700">
-                  مسافة مباشرة: {distance.toFixed(2)} كم
-                </span>
-              </div>
-            )}
-            {routeDistance && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <Route className="h-4 w-4 text-blue-600" />
-                <span className="font-medium text-blue-700">
-                  مسافة الطريق: {routeDistance}
-                </span>
-              </div>
-            )}
-            {routeDuration && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Route className="h-4 w-4 text-purple-600" />
-                <span className="font-medium text-purple-700">
-                  وقت الوصول: {routeDuration}
-                </span>
-              </div>
-            )}
-            {selectedLocation && (
-              <p className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
-                {selectedLocation}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        {isLoaded && (
+          <>
+            <Card className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                  <MapPin className="h-4 w-4 text-blue-600" />
+                  <span>{pins.length} نقطة مضافة</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                  <MapPin className="h-4 w-4 text-red-600" />
+                  <span>النقطة المرجعية</span>
+                </div>
+                {distance && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <Ruler className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-green-700">
+                      مسافة مباشرة: {distance.toFixed(2)} كم
+                    </span>
+                  </div>
+                )}
+                {routeDistance && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <Route className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-blue-700">
+                      مسافة الطريق: {routeDistance}
+                    </span>
+                  </div>
+                )}
+                {routeDuration && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Route className="h-4 w-4 text-purple-600" />
+                    <span className="font-medium text-purple-700">
+                      وقت الوصول: {routeDuration}
+                    </span>
+                  </div>
+                )}
+                {selectedLocation && (
+                  <p className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
+                    {selectedLocation}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* Instructions */}
-        <Card className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
-          <CardContent className="p-4">
-            <p className="text-sm text-gray-600 mb-2 font-medium">كيفية الاستخدام:</p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• انقر في أي مكان لإضافة نقطة وعرض الطريق</li>
-              <li>• ابحث عن مواقع محددة</li>
-              <li>• انقر على النقاط لرؤية التفاصيل</li>
-              <li>• الخط الأزرق يوضح الطريق بين النقاط</li>
-              <li>• المسافة والوقت محسوبان من النقطة الحمراء</li>
-            </ul>
-          </CardContent>
-        </Card>
+            <Card className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+              <CardContent className="p-4">
+                <p className="text-sm text-gray-600 mb-2 font-medium">كيفية الاستخدام:</p>
+                <ul className="text-xs text-gray-500 space-y-1">
+                  <li>• انقر في أي مكان لإضافة نقطة وعرض الطريق</li>
+                  <li>• ابحث عن مواقع محددة</li>
+                  <li>• انقر على النقاط لرؤية التفاصيل</li>
+                  <li>• الخط الأزرق يوضح الطريق بين النقاط</li>
+                  <li>• المسافة والوقت محسوبان من النقطة الحمراء</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   );
