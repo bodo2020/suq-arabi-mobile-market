@@ -71,6 +71,7 @@ function App() {
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/return-requests" element={<ReturnRequests />} />
             <Route path="/create-return/:orderId" element={<CreateReturnRequest />} />
+            <Route path="/map" element={<MapPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
