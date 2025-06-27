@@ -1,12 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
-import { MapPin, ChevronDown, X } from 'lucide-react';
+import { MapPin, ChevronDown, X, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import MapLocationPicker from '@/components/ui/MapLocationPicker';
+import { useLocation } from '@/hooks/useLocation';
 
 interface Governorate {
   id: string;
@@ -36,6 +37,8 @@ interface ModernLocationSelectorProps {
 }
 
 const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({ onLocationSelected }) => {
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
   const [governorates, setGovernorates] = useState<Governorate[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
@@ -50,10 +53,19 @@ const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({ onLocat
   const { toast } = useToast();
   const { user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    fetchGovernorates();
-  }, []);
+    // Check if user has granted location permission
+    if (location.latitude && location.longitude && !location.error) {
+      setShowMapPicker(true);
+    } else if (location.error) {
+      // If location access denied, show manual entry
+      setShowManualEntry(true);
+      fetchGovernorates();
+    }
+    setLoading(false);
+  }, [location]);
 
   const fetchGovernorates = async () => {
     try {
@@ -72,8 +84,6 @@ const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({ onLocat
         title: "خطأ",
         description: "حدث خطأ أثناء تحميل المحافظات"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -218,6 +228,16 @@ const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({ onLocat
     }
   };
 
+  const handleMapLocationSelected = (mapLocation: any) => {
+    onLocationSelected(mapLocation);
+  };
+
+  const handleManualEntryFromMap = () => {
+    setShowMapPicker(false);
+    setShowManualEntry(true);
+    fetchGovernorates();
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -232,127 +252,170 @@ const ModernLocationSelector: React.FC<ModernLocationSelectorProps> = ({ onLocat
     );
   }
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4 max-h-[90vh] overflow-hidden">
-        <CardContent className="p-6">
-          <div className="text-center mb-6">
-            <MapPin size={48} className="mx-auto mb-4 text-primary" />
-            <h2 className="text-xl font-bold mb-2">اختر موقعك</h2>
-            <p className="text-gray-600 text-sm">
-              يرجى اختيار الموقع الذي تريد التوصيل إليه
-            </p>
-          </div>
+  if (showMapPicker) {
+    return (
+      <MapLocationPicker 
+        onLocationSelected={handleMapLocationSelected}
+        onManualEntry={handleManualEntryFromMap}
+      />
+    );
+  }
 
-          <div className="space-y-4">
-            {/* Governorate Selector */}
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">المحافظة*</label>
-              <div className="relative">
-                <select
-                  value={selectedGovernorate}
-                  onChange={(e) => handleGovernorateChange(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                >
-                  <option value="">اختر...</option>
-                  {governorates.map((gov) => (
-                    <option key={gov.id} value={gov.id}>
-                      {gov.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-              </div>
+  if (showManualEntry) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <Card className="w-full max-w-md mx-4 max-h-[90vh] overflow-hidden">
+          <CardContent className="p-6">
+            <div className="text-center mb-6">
+              <MapPin size={48} className="mx-auto mb-4 text-primary" />
+              <h2 className="text-xl font-bold mb-2">اختر موقعك</h2>
+              <p className="text-gray-600 text-sm">
+                يرجى اختيار الموقع الذي تريد التوصيل إليه
+              </p>
             </div>
 
-            {/* City Selector */}
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">المدينة*</label>
-              <div className="relative">
-                <select
-                  value={selectedCity}
-                  onChange={(e) => handleCityChange(e.target.value)}
-                  disabled={!selectedGovernorate}
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
-                >
-                  <option value="">اختر...</option>
-                  {cities.map((city) => (
-                    <option key={city.id} value={city.id}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-              </div>
-            </div>
-
-            {/* Area Selector */}
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">المنطقة*</label>
-              <div className="relative">
-                <select
-                  value={selectedArea}
-                  onChange={(e) => handleAreaChange(e.target.value)}
-                  disabled={!selectedCity}
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
-                >
-                  <option value="">اختر...</option>
-                  {areas.map((area) => (
-                    <option key={area.id} value={area.id}>
-                      {area.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-              </div>
-            </div>
-
-            {/* Neighborhood Selector */}
-            {areas.length > 0 && selectedArea && (
+            <div className="space-y-4">
+              {/* Governorate Selector */}
               <div>
-                <label className="block text-sm font-medium text-primary mb-2">الحي</label>
+                <label className="block text-sm font-medium text-primary mb-2">المحافظة*</label>
                 <div className="relative">
                   <select
-                    value={selectedNeighborhood}
-                    onChange={(e) => setSelectedNeighborhood(e.target.value)}
+                    value={selectedGovernorate}
+                    onChange={(e) => handleGovernorateChange(e.target.value)}
                     className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="">اختر...</option>
-                    {neighborhoods.map((neighborhood) => (
-                      <option key={neighborhood.id} value={neighborhood.id}>
-                        {neighborhood.name}
+                    {governorates.map((gov) => (
+                      <option key={gov.id} value={gov.id}>
+                        {gov.name}
                       </option>
                     ))}
                   </select>
                   <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
                 </div>
               </div>
-            )}
+
+              {/* City Selector */}
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">المدينة*</label>
+                <div className="relative">
+                  <select
+                    value={selectedCity}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    disabled={!selectedGovernorate}
+                    className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
+                  >
+                    <option value="">اختر...</option>
+                    {cities.map((city) => (
+                      <option key={city.id} value={city.id}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                </div>
+              </div>
+
+              {/* Area Selector */}
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">المنطقة*</label>
+                <div className="relative">
+                  <select
+                    value={selectedArea}
+                    onChange={(e) => handleAreaChange(e.target.value)}
+                    disabled={!selectedCity}
+                    className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
+                  >
+                    <option value="">اختر...</option>
+                    {areas.map((area) => (
+                      <option key={area.id} value={area.id}>
+                        {area.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                </div>
+              </div>
+
+              {/* Neighborhood Selector */}
+              {areas.length > 0 && selectedArea && (
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-2">الحي</label>
+                  <div className="relative">
+                    <select
+                      value={selectedNeighborhood}
+                      onChange={(e) => setSelectedNeighborhood(e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                      <option value="">اختر...</option>
+                      {neighborhoods.map((neighborhood) => (
+                        <option key={neighborhood.id} value={neighborhood.id}>
+                          {neighborhood.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 space-y-3">
+              <Button
+                onClick={handleConfirm}
+                disabled={!selectedArea}
+                className="w-full py-3 text-white font-medium"
+              >
+                تأكيد الموقع
+              </Button>
+              
+              <Button
+                onClick={() => setShowMapPicker(true)}
+                variant="outline"
+                className="w-full py-3 text-primary border-primary hover:bg-primary hover:text-white"
+              >
+                <Map className="ml-2" size={16} />
+                تحديد الموقع على الخريطة
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Initial choice screen
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="p-6">
+          <div className="text-center mb-6">
+            <MapPin size={48} className="mx-auto mb-4 text-primary" />
+            <h2 className="text-xl font-bold mb-2">تحديد الموقع</h2>
+            <p className="text-gray-600 text-sm">
+              اختر طريقة تحديد موقعك للتوصيل
+            </p>
           </div>
 
-          <div className="mt-8 space-y-3">
+          <div className="space-y-3">
             <Button
-              onClick={handleConfirm}
-              disabled={!selectedArea}
-              className="w-full py-3 text-white font-medium"
+              onClick={() => setShowMapPicker(true)}
+              className="w-full py-4 text-white font-medium flex items-center justify-center gap-2"
             >
-              تأكيد الموقع
-            </Button>
-            
-            <Button
-              onClick={() => navigate('/map-view')}
-              variant="outline"
-              className="w-full py-3 text-primary border-primary hover:bg-primary hover:text-white"
-            >
+              <Map size={20} />
               تحديد الموقع على الخريطة
             </Button>
             
             <Button
-              onClick={() => navigate('/add-address')}
-              variant="ghost"
-              className="w-full py-3 text-primary underline"
+              onClick={() => {
+                setShowManualEntry(true);
+                fetchGovernorates();
+              }}
+              variant="outline"
+              className="w-full py-4 text-primary border-primary hover:bg-primary hover:text-white flex items-center justify-center gap-2"
             >
-              لا أستطيع العثور على موقعي
+              <MapPin size={20} />
+              إدخال الموقع يدوياً
             </Button>
           </div>
         </CardContent>

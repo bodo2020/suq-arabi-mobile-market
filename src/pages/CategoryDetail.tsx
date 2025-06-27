@@ -1,12 +1,14 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductFilters from '@/components/ui/ProductFilters';
+import ModernLocationSelector from '@/components/ui/ModernLocationSelector';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useUser } from '@/contexts/UserContext';
 
 const sortOptions = [
   { label: "الأحدث", value: "newest" },
@@ -21,6 +23,7 @@ const CategoryDetail = () => {
   const navigate = useNavigate();
   const productsRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const { user } = useUser();
   
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,6 +33,22 @@ const CategoryDetail = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [currentSort, setCurrentSort] = useState("newest");
   const [subcategoriesWithProducts, setSubcategoriesWithProducts] = useState<Subcategory[]>([]);
+  const [showLocationSelector, setShowLocationSelector] = useState(false);
+
+  // Check if user has location selected
+  useEffect(() => {
+    const checkLocationStatus = () => {
+      const hasLocation = localStorage.getItem('locationSelected') === 'true' || 
+                         localStorage.getItem('userArea') || 
+                         user?.area_id;
+      
+      if (!hasLocation) {
+        setShowLocationSelector(true);
+      }
+    };
+
+    checkLocationStatus();
+  }, [user]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -113,9 +132,17 @@ const CategoryDetail = () => {
     e.stopPropagation();
   };
 
-  const handleSearchFocus = () => {
-    navigate('/search');
+  const handleLocationSelected = (location: any) => {
+    setShowLocationSelector(false);
   };
+
+  if (showLocationSelector) {
+    return (
+      <MainLayout>
+        <ModernLocationSelector onLocationSelected={handleLocationSelected} />
+      </MainLayout>
+    );
+  }
 
   if (loading) {
     return (
@@ -124,6 +151,8 @@ const CategoryDetail = () => {
           hideLogo={true}
           hideSearch={true}
           pageTitle={categoryInfo?.name || 'القسم'}
+          showBackButton={true}
+          onBack={() => navigate(-1)}
         />
         <div className={`flex justify-center items-center h-40 ${!isMobile ? 'mt-24' : ''}`}>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -135,27 +164,19 @@ const CategoryDetail = () => {
   return (
     <MainLayout>
       <div className="container px-0 py-0">
-        {/* Top Navigation Bar */}
+        {/* Top Navigation Bar with back button */}
         <TopNavBar 
           hideLogo={true}
           hideSearch={true}
           pageTitle={categoryInfo?.name || 'القسم'}
+          showBackButton={true}
+          onBack={() => navigate(-1)}
         />
 
         {/* Main Content with proper spacing */}
         <div className={`${!isMobile ? 'mt-24' : ''}`}>
           <div className="w-full px-4">
             <div className="max-w-md mx-auto md:max-w-4xl">
-              <div className="flex items-center mb-4">
-                <button onClick={() => navigate(-1)} className="p-2">
-                  <ArrowRight size={24} />
-                </button>
-                <h1 className="text-xl font-bold flex-1 text-center">
-                  {categoryInfo?.name}
-                </h1>
-                <div className="w-10"></div>
-              </div>
-
               <div className="sticky top-0 z-10 mb-4 bg-white">
                 {/* Only show subcategories filter if there are subcategories with products */}
                 {subcategoriesWithProducts.length > 0 && (
