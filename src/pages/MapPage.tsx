@@ -364,17 +364,7 @@ const MapPage = () => {
 
           {/* Instructions */}
           <Card className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
-            <CardContent className="p-4">
-              <p className="text-sm text-gray-600 mb-2 font-medium">كيفية الاستخدام:</p>
-              <ul className="text-xs text-gray-500 space-y-1">
-                <li>• انقر في أي مكان لإضافة نقطة وعرض الطريق</li>
-                <li>• ابحث عن مواقع محددة</li>
-                <li>• انقر على النقاط لرؤية التفاصيل</li>
-                <li>• الخط الأحمر يوضح الطريق بين النقاط</li>
-                <li>• المسافة والوقت محسوبان من النقطة الحمراء</li>
-                <li>• استخدم عنصر التحكم لتغيير نوع الخريطة</li>
-              </ul>
-            </CardContent>
+            
           </Card>
         </div>
       </div>
