@@ -26,7 +26,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   const loadGoogleMapsScript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
       // Check if Google Maps is already loaded
-      if (window.google && window.google.maps) {
+      if (window.google && window.google.maps && window.google.maps.Map) {
         resolve();
         return;
       }
@@ -34,17 +34,34 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       // Check if script is already being loaded
       const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
       if (existingScript) {
-        existingScript.addEventListener('load', () => resolve());
+        existingScript.addEventListener('load', () => {
+          // Wait a bit more to ensure all APIs are loaded
+          setTimeout(() => {
+            if (window.google && window.google.maps && window.google.maps.Map) {
+              resolve();
+            } else {
+              reject(new Error('Google Maps API not properly loaded'));
+            }
+          }, 100);
+        });
         existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')));
         return;
       }
 
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places,geometry`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places,geometry&callback=initGoogleMaps`;
       script.async = true;
       script.defer = true;
       
-      script.onload = () => resolve();
+      // Create a global callback function
+      (window as any).initGoogleMaps = () => {
+        if (window.google && window.google.maps && window.google.maps.Map) {
+          resolve();
+        } else {
+          reject(new Error('Google Maps API not properly initialized'));
+        }
+      };
+      
       script.onerror = () => reject(new Error('Failed to load Google Maps script'));
       
       document.head.appendChild(script);
@@ -57,6 +74,11 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     try {
       // Ensure Google Maps is loaded
       await loadGoogleMapsScript();
+
+      // Double-check that the API is available
+      if (!window.google || !window.google.maps || !window.google.maps.Map) {
+        throw new Error('Google Maps API not available');
+      }
 
       mapInstanceRef.current = new google.maps.Map(mapRef.current, {
         center,
