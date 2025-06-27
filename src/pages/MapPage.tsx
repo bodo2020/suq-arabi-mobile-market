@@ -9,7 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 
-const API_KEY = 'AIzaSyBhWG1SZE7DCk9qiC4dCs82oqq3GWkVEhg';
+const API_KEY = 'AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw';
 
 // Reference location
 const REFERENCE_LOCATION = { lat: 31.2566, lng: 31.1671 };
