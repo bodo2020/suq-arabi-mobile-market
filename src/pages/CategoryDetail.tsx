@@ -39,8 +39,7 @@ const CategoryDetail = () => {
   useEffect(() => {
     const checkLocationStatus = () => {
       const hasLocation = localStorage.getItem('locationSelected') === 'true' || 
-                         localStorage.getItem('userArea') || 
-                         user?.area_id;
+                         localStorage.getItem('userArea');
       
       if (!hasLocation) {
         setShowLocationSelector(true);
