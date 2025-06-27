@@ -9,13 +9,6 @@ import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 
-// Declare global google maps types
-declare global {
-  interface Window {
-    google: typeof google;
-  }
-}
-
 const API_KEY = 'AIzaSyBhWG1SZE7DCk9qiC4dCs82oqq3GWkVEhg';
 
 // Reference location
@@ -98,10 +91,7 @@ const MapPage = () => {
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
-          zoomControl: true,
-          zoomControlOptions: {
-            position: google.maps.ControlPosition.RIGHT_BOTTOM
-          }
+          zoomControl: true
         });
 
         mapInstanceRef.current = map;
@@ -342,10 +332,7 @@ const MapPage = () => {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
-        zoomControl: true,
-        zoomControlOptions: {
-          position: google.maps.ControlPosition.RIGHT_BOTTOM
-        }
+        zoomControl: true
       });
 
       // Re-initialize directions renderer
