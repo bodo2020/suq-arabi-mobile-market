@@ -50,54 +50,8 @@ const MapPage = () => {
         const map = new google.maps.Map(mapRef.current, {
           center: REFERENCE_LOCATION,
           zoom: 12,
-          styles: [
-            {
-              featureType: 'water',
-              elementType: 'geometry',
-              stylers: [{ color: '#4A90E2' }, { lightness: 10 }]
-            },
-            {
-              featureType: 'landscape',
-              elementType: 'geometry',
-              stylers: [{ color: '#F7F3E9' }, { lightness: 5 }]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'geometry.fill',
-              stylers: [{ color: '#FFB84D' }, { lightness: 10 }]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'geometry.stroke',
-              stylers: [{ color: '#E8A537' }, { lightness: 15 }, { weight: 0.5 }]
-            },
-            {
-              featureType: 'road.arterial',
-              elementType: 'geometry',
-              stylers: [{ color: '#FFC973' }, { lightness: 20 }]
-            },
-            {
-              featureType: 'road.local',
-              elementType: 'geometry',
-              stylers: [{ color: '#FFD699' }, { lightness: 25 }]
-            },
-            {
-              featureType: 'poi',
-              elementType: 'geometry',
-              stylers: [{ color: '#B8E6B8' }, { lightness: 15 }]
-            },
-            {
-              featureType: 'poi.park',
-              elementType: 'geometry',
-              stylers: [{ color: '#7BC87B' }, { lightness: 10 }]
-            },
-            {
-              featureType: 'administrative',
-              elementType: 'geometry.stroke',
-              stylers: [{ color: '#8B4513' }, { weight: 1 }]
-            }
-          ],
-          mapTypeControl: false,
+          mapTypeId: 'satellite',
+          mapTypeControl: true,
           streetViewControl: false,
           fullscreenControl: false,
           zoomControl: true
@@ -337,54 +291,8 @@ const MapPage = () => {
       const newMap = new google.maps.Map(mapRef.current!, {
         center: center,
         zoom: zoom,
-        styles: [
-          {
-            featureType: 'water',
-            elementType: 'geometry',
-            stylers: [{ color: '#4A90E2' }, { lightness: 10 }]
-          },
-          {
-            featureType: 'landscape',
-            elementType: 'geometry',
-            stylers: [{ color: '#F7F3E9' }, { lightness: 5 }]
-          },
-          {
-            featureType: 'road.highway',
-            elementType: 'geometry.fill',
-            stylers: [{ color: '#FFB84D' }, { lightness: 10 }]
-          },
-          {
-            featureType: 'road.highway',
-            elementType: 'geometry.stroke',
-            stylers: [{ color: '#E8A537' }, { lightness: 15 }, { weight: 0.5 }]
-          },
-          {
-            featureType: 'road.arterial',
-            elementType: 'geometry',
-            stylers: [{ color: '#FFC973' }, { lightness: 20 }]
-          },
-          {
-            featureType: 'road.local',
-            elementType: 'geometry',
-            stylers: [{ color: '#FFD699' }, { lightness: 25 }]
-          },
-          {
-            featureType: 'poi',
-            elementType: 'geometry',
-            stylers: [{ color: '#B8E6B8' }, { lightness: 15 }]
-          },
-          {
-            featureType: 'poi.park',
-            elementType: 'geometry',
-            stylers: [{ color: '#7BC87B' }, { lightness: 10 }]
-          },
-          {
-            featureType: 'administrative',
-            elementType: 'geometry.stroke',
-            stylers: [{ color: '#8B4513' }, { weight: 1 }]
-          }
-        ],
-        mapTypeControl: false,
+        mapTypeId: 'satellite',
+        mapTypeControl: true,
         streetViewControl: false,
         fullscreenControl: false,
         zoomControl: true
@@ -465,7 +373,7 @@ const MapPage = () => {
               </Button>
               <div className="flex items-center gap-2">
                 <MapPin className="h-6 w-6 text-orange-600" />
-                <h1 className="text-2xl font-bold text-gray-900">خريطة تفاعلية مع الطرق</h1>
+                <h1 className="text-2xl font-bold text-gray-900">خريطة القمر الصناعي التفاعلية</h1>
               </div>
             </div>
             
@@ -555,6 +463,7 @@ const MapPage = () => {
                 <li>• انقر على النقاط لرؤية التفاصيل</li>
                 <li>• الخط الأحمر يوضح الطريق بين النقاط</li>
                 <li>• المسافة والوقت محسوبان من النقطة الحمراء</li>
+                <li>• استخدم عنصر التحكم لتغيير نوع الخريطة</li>
               </ul>
             </CardContent>
           </Card>
