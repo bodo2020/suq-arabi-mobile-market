@@ -283,19 +283,11 @@ const MapPage = () => {
     const geocoder = new google.maps.Geocoder();
     
     try {
-      const result = await new Promise<google.maps.GeocoderResponse>((resolve, reject) => {
-        geocoder.geocode({ address: searchQuery }, (results, status) => {
-          if (status === 'OK' && results) {
-            resolve({ results } as google.maps.GeocoderResponse);
-          } else {
-            reject(status);
-          }
-        });
-      });
+      const response = await geocoder.geocode({ address: searchQuery });
       
-      if (result.results[0]) {
-        const location = result.results[0].geometry.location;
-        const address = result.results[0].formatted_address;
+      if (response.results[0]) {
+        const location = response.results[0].geometry.location;
+        const address = response.results[0].formatted_address;
         
         mapInstanceRef.current?.setCenter(location);
         mapInstanceRef.current?.setZoom(15);
