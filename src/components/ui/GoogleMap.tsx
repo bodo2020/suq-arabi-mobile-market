@@ -1,32 +1,67 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import Script from './Script';
 
 interface GoogleMapProps {
   center?: { lat: number; lng: number };
   zoom?: number;
   height?: string;
   className?: string;
+  onMapClick?: (lat: number, lng: number) => void;
 }
 
 const GoogleMap: React.FC<GoogleMapProps> = ({
   center = { lat: 24.7136, lng: 46.6753 }, // Default to Riyadh, Saudi Arabia
   zoom = 10,
   height = '400px',
-  className = ''
+  className = '',
+  onMapClick
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const initializeMap = () => {
-    if (!mapRef.current || !window.google) return;
+  const API_KEY = 'AIzaSyAAVw59DZPSHu3MKe78lz0EvI-QXTJSCqE';
+
+  const loadGoogleMapsScript = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      // Check if Google Maps is already loaded
+      if (window.google && window.google.maps) {
+        resolve();
+        return;
+      }
+
+      // Check if script is already being loaded
+      const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve());
+        existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places,geometry`;
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Google Maps script'));
+      
+      document.head.appendChild(script);
+    });
+  };
+
+  const initializeMap = async () => {
+    if (!mapRef.current) return;
 
     try {
-      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+      // Ensure Google Maps is loaded
+      await loadGoogleMapsScript();
+
+      mapInstanceRef.current = new google.maps.Map(mapRef.current, {
         center,
         zoom,
+        mapTypeId: google.maps.MapTypeId.SATELLITE,
         mapTypeControl: true,
         streetViewControl: true,
         fullscreenControl: true,
@@ -34,11 +69,20 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       });
 
       // Add a marker at the center
-      new window.google.maps.Marker({
+      new google.maps.Marker({
         position: center,
         map: mapInstanceRef.current,
         title: 'الموقع',
       });
+
+      // Add click listener if provided
+      if (onMapClick) {
+        mapInstanceRef.current.addListener('click', (event: google.maps.MapMouseEvent) => {
+          if (event.latLng) {
+            onMapClick(event.latLng.lat(), event.latLng.lng());
+          }
+        });
+      }
 
       setIsLoaded(true);
     } catch (err) {
@@ -47,21 +91,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     }
   };
 
-  const handleScriptLoad = () => {
-    console.log('Google Maps script loaded successfully');
-    initializeMap();
-  };
-
-  const handleScriptError = (error: Error) => {
-    console.error('Error loading Google Maps script:', error);
-    setError('فشل في تحميل Google Maps');
-  };
-
   useEffect(() => {
-    if (window.google && window.google.maps) {
-      initializeMap();
-    }
-  }, [center, zoom]);
+    initializeMap();
+  }, [center.lat, center.lng, zoom]);
 
   if (error) {
     return (
@@ -73,11 +105,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
   return (
     <div className={className}>
-      <Script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAAVw59DZPSHu3MKe78lz0EvI-QXTJSCqE&libraries=places"
-        onLoad={handleScriptLoad}
-        onError={handleScriptError}
-      />
       <div
         ref={mapRef}
         style={{ height, width: '100%' }}

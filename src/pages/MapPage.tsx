@@ -1,6 +1,4 @@
-
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
 import { MapPin, Search, Ruler, Route, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,20 +35,18 @@ const MapPage = () => {
 
   useEffect(() => {
     const initMap = async () => {
-      const loader = new Loader({
-        apiKey: API_KEY,
-        version: 'weekly',
-        libraries: ['places', 'geometry']
-      });
-
       try {
-        await loader.load();
+        // Load Google Maps JavaScript API
+        if (!window.google) {
+          await loadGoogleMapsScript();
+        }
         
         if (!mapRef.current) return;
 
         const map = new google.maps.Map(mapRef.current, {
           center: REFERENCE_LOCATION,
           zoom: 12,
+          mapTypeId: google.maps.MapTypeId.SATELLITE,
           styles: [
             {
               featureType: 'water',
@@ -88,7 +84,7 @@ const MapPage = () => {
               stylers: [{ color: '#f5f5f5' }, { lightness: 21 }]
             }
           ],
-          mapTypeControl: false,
+          mapTypeControl: true,
           streetViewControl: false,
           fullscreenControl: false,
           zoomControl: true
@@ -166,6 +162,30 @@ const MapPage = () => {
 
     initMap();
   }, []);
+
+  const loadGoogleMapsScript = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (window.google && window.google.maps) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places,geometry`;
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => {
+        resolve();
+      };
+      
+      script.onerror = () => {
+        reject(new Error('Failed to load Google Maps script'));
+      };
+      
+      document.head.appendChild(script);
+    });
+  };
 
   const calculateRoute = (destination: google.maps.LatLng) => {
     if (!directionsServiceRef.current || !directionsRendererRef.current) return;
@@ -328,8 +348,9 @@ const MapPage = () => {
       const newMap = new google.maps.Map(mapRef.current!, {
         center: center,
         zoom: zoom,
+        mapTypeId: google.maps.MapTypeId.SATELLITE,
         styles: mapInstanceRef.current.get('styles'),
-        mapTypeControl: false,
+        mapTypeControl: true,
         streetViewControl: false,
         fullscreenControl: false,
         zoomControl: true
