@@ -61,7 +61,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       mapInstanceRef.current = new google.maps.Map(mapRef.current, {
         center,
         zoom,
-        mapTypeId: google.maps.MapTypeId.SATELLITE,
+        mapTypeId: 'satellite',
         mapTypeControl: true,
         streetViewControl: true,
         fullscreenControl: true,

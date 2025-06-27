@@ -46,7 +46,7 @@ const MapPage = () => {
         const map = new google.maps.Map(mapRef.current, {
           center: REFERENCE_LOCATION,
           zoom: 12,
-          mapTypeId: google.maps.MapTypeId.SATELLITE,
+          mapTypeId: 'satellite',
           styles: [
             {
               featureType: 'water',
@@ -348,7 +348,7 @@ const MapPage = () => {
       const newMap = new google.maps.Map(mapRef.current!, {
         center: center,
         zoom: zoom,
-        mapTypeId: google.maps.MapTypeId.SATELLITE,
+        mapTypeId: 'satellite',
         styles: mapInstanceRef.current.get('styles'),
         mapTypeControl: true,
         streetViewControl: false,
