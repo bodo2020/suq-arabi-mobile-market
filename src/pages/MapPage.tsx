@@ -320,31 +320,7 @@ const MapPage = () => {
   return <MainLayout>
       <div className="w-full h-screen bg-gradient-to-br from-orange-50 to-blue-100 flex flex-col">
         {/* Header */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 shadow-sm">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button onClick={() => navigate(-1)} variant="ghost" size="sm" className="p-2">
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-6 w-6 text-orange-600" />
-                <h1 className="text-2xl font-bold text-gray-900">خريطة القمر الصناعي التفاعلية</h1>
-              </div>
-            </div>
-            
-            <div className="flex gap-2 w-full sm:w-auto">
-              <div className="flex gap-2 flex-1 sm:flex-initial">
-                <Input placeholder="ابحث عن موقع..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchLocation()} className="min-w-[250px]" />
-                <Button onClick={searchLocation} size="icon" variant="outline">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-              <Button onClick={clearPins} variant="outline" size="sm">
-                مسح النقاط
-              </Button>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Map Container */}
         <div className="flex-1 relative">
