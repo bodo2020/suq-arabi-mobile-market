@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft, Map } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 import { supabase } from '@/lib/supabase';
+import GoogleMap from '@/components/ui/GoogleMap';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Account = () => {
@@ -15,6 +15,7 @@ const Account = () => {
   const navigate = useNavigate();
   const [loadingComplete, setLoadingComplete] = useState(false);
   const [userData, setUserData] = useState<{ name?: string } | null>(null);
+  const [showMap, setShowMap] = useState(false);
   const isMobile = useIsMobile();
   
   useEffect(() => {
@@ -151,7 +152,7 @@ const Account = () => {
                   </Button>
 
                   <Button 
-                    onClick={() => navigate('/map')} 
+                    onClick={() => setShowMap(!showMap)} 
                     variant="ghost" 
                     className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
                   >
@@ -162,6 +163,14 @@ const Account = () => {
                     <ChevronLeft className="h-5 w-5 text-gray-400" />
                   </Button>
                 </div>
+
+                {/* Map Section */}
+                {showMap && (
+                  <div className="bg-white rounded-lg shadow-sm p-4">
+                    <h3 className="text-lg font-semibold mb-3">الخريطة</h3>
+                    <GoogleMap height="300px" className="w-full" />
+                  </div>
+                )}
 
                 <Separator className="my-4" />
 
