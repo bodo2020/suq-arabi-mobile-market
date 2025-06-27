@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
 import { MapPin, Search, Ruler, Route, ArrowRight } from 'lucide-react';
@@ -55,37 +54,47 @@ const MapPage = () => {
             {
               featureType: 'water',
               elementType: 'geometry',
-              stylers: [{ color: '#e9e9e9' }, { lightness: 17 }]
+              stylers: [{ color: '#4A90E2' }, { lightness: 10 }]
             },
             {
               featureType: 'landscape',
               elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }, { lightness: 20 }]
+              stylers: [{ color: '#F7F3E9' }, { lightness: 5 }]
             },
             {
               featureType: 'road.highway',
               elementType: 'geometry.fill',
-              stylers: [{ color: '#ffffff' }, { lightness: 17 }]
+              stylers: [{ color: '#FFB84D' }, { lightness: 10 }]
             },
             {
               featureType: 'road.highway',
               elementType: 'geometry.stroke',
-              stylers: [{ color: '#ffffff' }, { lightness: 29 }, { weight: 0.2 }]
+              stylers: [{ color: '#E8A537' }, { lightness: 15 }, { weight: 0.5 }]
             },
             {
               featureType: 'road.arterial',
               elementType: 'geometry',
-              stylers: [{ color: '#ffffff' }, { lightness: 18 }]
+              stylers: [{ color: '#FFC973' }, { lightness: 20 }]
             },
             {
               featureType: 'road.local',
               elementType: 'geometry',
-              stylers: [{ color: '#ffffff' }, { lightness: 16 }]
+              stylers: [{ color: '#FFD699' }, { lightness: 25 }]
             },
             {
               featureType: 'poi',
               elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }, { lightness: 21 }]
+              stylers: [{ color: '#B8E6B8' }, { lightness: 15 }]
+            },
+            {
+              featureType: 'poi.park',
+              elementType: 'geometry',
+              stylers: [{ color: '#7BC87B' }, { lightness: 10 }]
+            },
+            {
+              featureType: 'administrative',
+              elementType: 'geometry.stroke',
+              stylers: [{ color: '#8B4513' }, { weight: 1 }]
             }
           ],
           mapTypeControl: false,
@@ -100,9 +109,9 @@ const MapPage = () => {
         directionsServiceRef.current = new google.maps.DirectionsService();
         directionsRendererRef.current = new google.maps.DirectionsRenderer({
           polylineOptions: {
-            strokeColor: '#3b82f6',
-            strokeWeight: 4,
-            strokeOpacity: 0.8
+            strokeColor: '#E74C3C',
+            strokeWeight: 5,
+            strokeOpacity: 0.9
           },
           suppressMarkers: true // We'll use custom markers
         });
@@ -116,11 +125,11 @@ const MapPage = () => {
           animation: google.maps.Animation.DROP,
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: '#ef4444',
+            scale: 12,
+            fillColor: '#E74C3C',
             fillOpacity: 1,
             strokeColor: '#ffffff',
-            strokeWeight: 3
+            strokeWeight: 4
           }
         });
 
@@ -224,11 +233,11 @@ const MapPage = () => {
       animation: google.maps.Animation.DROP,
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: '#3b82f6',
+        scale: 10,
+        fillColor: '#27AE60',
         fillOpacity: 1,
         strokeColor: '#ffffff',
-        strokeWeight: 2
+        strokeWeight: 3
       }
     });
 
@@ -274,7 +283,15 @@ const MapPage = () => {
     const geocoder = new google.maps.Geocoder();
     
     try {
-      const result = await geocoder.geocode({ address: searchQuery });
+      const result = await new Promise<google.maps.GeocoderResponse>((resolve, reject) => {
+        geocoder.geocode({ address: searchQuery }, (results, status) => {
+          if (status === 'OK' && results) {
+            resolve({ results } as google.maps.GeocoderResponse);
+          } else {
+            reject(status);
+          }
+        });
+      });
       
       if (result.results[0]) {
         const location = result.results[0].geometry.location;
@@ -328,7 +345,53 @@ const MapPage = () => {
       const newMap = new google.maps.Map(mapRef.current!, {
         center: center,
         zoom: zoom,
-        styles: mapInstanceRef.current.get('styles'),
+        styles: [
+          {
+            featureType: 'water',
+            elementType: 'geometry',
+            stylers: [{ color: '#4A90E2' }, { lightness: 10 }]
+          },
+          {
+            featureType: 'landscape',
+            elementType: 'geometry',
+            stylers: [{ color: '#F7F3E9' }, { lightness: 5 }]
+          },
+          {
+            featureType: 'road.highway',
+            elementType: 'geometry.fill',
+            stylers: [{ color: '#FFB84D' }, { lightness: 10 }]
+          },
+          {
+            featureType: 'road.highway',
+            elementType: 'geometry.stroke',
+            stylers: [{ color: '#E8A537' }, { lightness: 15 }, { weight: 0.5 }]
+          },
+          {
+            featureType: 'road.arterial',
+            elementType: 'geometry',
+            stylers: [{ color: '#FFC973' }, { lightness: 20 }]
+          },
+          {
+            featureType: 'road.local',
+            elementType: 'geometry',
+            stylers: [{ color: '#FFD699' }, { lightness: 25 }]
+          },
+          {
+            featureType: 'poi',
+            elementType: 'geometry',
+            stylers: [{ color: '#B8E6B8' }, { lightness: 15 }]
+          },
+          {
+            featureType: 'poi.park',
+            elementType: 'geometry',
+            stylers: [{ color: '#7BC87B' }, { lightness: 10 }]
+          },
+          {
+            featureType: 'administrative',
+            elementType: 'geometry.stroke',
+            stylers: [{ color: '#8B4513' }, { weight: 1 }]
+          }
+        ],
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
@@ -338,9 +401,9 @@ const MapPage = () => {
       // Re-initialize directions renderer
       directionsRendererRef.current = new google.maps.DirectionsRenderer({
         polylineOptions: {
-          strokeColor: '#3b82f6',
-          strokeWeight: 4,
-          strokeOpacity: 0.8
+          strokeColor: '#E74C3C',
+          strokeWeight: 5,
+          strokeOpacity: 0.9
         },
         suppressMarkers: true
       });
@@ -354,11 +417,11 @@ const MapPage = () => {
         animation: google.maps.Animation.DROP,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 10,
-          fillColor: '#ef4444',
+          scale: 12,
+          fillColor: '#E74C3C',
           fillOpacity: 1,
           strokeColor: '#ffffff',
-          strokeWeight: 3
+          strokeWeight: 4
         }
       });
 
@@ -395,7 +458,7 @@ const MapPage = () => {
 
   return (
     <MainLayout>
-      <div className="w-full h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+      <div className="w-full h-screen bg-gradient-to-br from-orange-50 to-blue-100 flex flex-col">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 shadow-sm">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -409,7 +472,7 @@ const MapPage = () => {
                 <ArrowRight className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-2">
-                <MapPin className="h-6 w-6 text-blue-600" />
+                <MapPin className="h-6 w-6 text-orange-600" />
                 <h1 className="text-2xl font-bold text-gray-900">خريطة تفاعلية مع الطرق</h1>
               </div>
             </div>
@@ -441,7 +504,7 @@ const MapPage = () => {
           {!isLoaded && (
             <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
                 <p className="text-gray-600">جاري تحميل الخريطة...</p>
               </div>
             </div>
@@ -451,7 +514,7 @@ const MapPage = () => {
           <Card className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <MapPin className="h-4 w-4 text-blue-600" />
+                <MapPin className="h-4 w-4 text-green-600" />
                 <span>{pins.length} نقطة مضافة</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
@@ -468,8 +531,8 @@ const MapPage = () => {
               )}
               {routeDistance && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <Route className="h-4 w-4 text-blue-600" />
-                  <span className="font-medium text-blue-700">
+                  <Route className="h-4 w-4 text-orange-600" />
+                  <span className="font-medium text-orange-700">
                     مسافة الطريق: {routeDistance}
                   </span>
                 </div>
@@ -498,7 +561,7 @@ const MapPage = () => {
                 <li>• انقر في أي مكان لإضافة نقطة وعرض الطريق</li>
                 <li>• ابحث عن مواقع محددة</li>
                 <li>• انقر على النقاط لرؤية التفاصيل</li>
-                <li>• الخط الأزرق يوضح الطريق بين النقاط</li>
+                <li>• الخط الأحمر يوضح الطريق بين النقاط</li>
                 <li>• المسافة والوقت محسوبان من النقطة الحمراء</li>
               </ul>
             </CardContent>
