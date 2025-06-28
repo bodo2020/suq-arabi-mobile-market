@@ -34,6 +34,7 @@ declare namespace google {
     }
 
     class LatLng {
+      constructor(lat: number, lng: number);
       lat(): number;
       lng(): number;
     }
@@ -53,21 +54,26 @@ declare namespace google {
     }
 
     class Geocoder {
+      constructor();
       geocode(
         request: GeocoderRequest,
-        callback: (results: GeocoderResult[], status: GeocoderStatus) => void
+        callback: (results: GeocoderResult[] | null, status: GeocoderStatus) => void
       ): void;
     }
 
     interface GeocoderRequest {
       location?: LatLng | LatLngLiteral;
+      address?: string;
     }
 
     interface GeocoderResult {
       formatted_address: string;
+      geometry?: {
+        location: LatLng;
+      };
     }
 
-    type GeocoderStatus = string;
+    type GeocoderStatus = 'OK' | 'ZERO_RESULTS' | 'OVER_QUERY_LIMIT' | 'REQUEST_DENIED' | 'INVALID_REQUEST' | 'UNKNOWN_ERROR';
   }
 }
 
