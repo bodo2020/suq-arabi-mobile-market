@@ -9,7 +9,7 @@ declare namespace google {
   namespace maps {
     class Map {
       constructor(mapDiv: HTMLElement, opts?: MapOptions);
-      addListener(eventName: string, handler: Function): void;
+      addListener(eventName: string, handler: (event: MapMouseEvent) => void): void;
       setCenter(latlng: LatLng | LatLngLiteral): void;
     }
 
