@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Save } from 'lucide-react';
@@ -16,8 +15,8 @@ const Map = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{
     lat: number;
@@ -95,7 +94,7 @@ const Map = () => {
         console.log('Map created successfully');
 
         // Add click listener to map
-        map.addListener('click', (event: google.maps.MapMouseEvent) => {
+        map.addListener('click', (event: any) => {
           console.log('Map clicked:', event);
           if (event.latLng) {
             const lat = event.latLng.lat();
