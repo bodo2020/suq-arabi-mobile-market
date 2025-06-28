@@ -27,6 +27,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     return new Promise((resolve, reject) => {
       // Check if Google Maps is already loaded
       if (window.google && window.google.maps && window.google.maps.Map) {
+        console.log('Google Maps already loaded');
         resolve();
         return;
       }
@@ -34,63 +35,67 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       // Check if script is already being loaded
       const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
       if (existingScript) {
-        existingScript.addEventListener('load', () => {
-          // Wait a bit more to ensure all APIs are loaded
-          setTimeout(() => {
-            if (window.google && window.google.maps && window.google.maps.Map) {
-              resolve();
-            } else {
-              reject(new Error('Google Maps API not properly loaded'));
-            }
-          }, 100);
-        });
+        console.log('Google Maps script already exists, waiting for load');
+        existingScript.addEventListener('load', () => resolve());
         existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')));
         return;
       }
 
+      console.log('Loading Google Maps script');
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places,geometry&callback=initGoogleMaps`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=geometry`;
       script.async = true;
       script.defer = true;
       
-      // Create a global callback function
-      (window as any).initGoogleMaps = () => {
-        if (window.google && window.google.maps && window.google.maps.Map) {
-          resolve();
-        } else {
-          reject(new Error('Google Maps API not properly initialized'));
-        }
+      script.onload = () => {
+        console.log('Google Maps script loaded successfully');
+        // Wait a bit for the API to initialize
+        setTimeout(() => {
+          if (window.google && window.google.maps && window.google.maps.Map) {
+            resolve();
+          } else {
+            reject(new Error('Google Maps API not properly initialized'));
+          }
+        }, 100);
       };
       
-      script.onerror = () => reject(new Error('Failed to load Google Maps script'));
+      script.onerror = () => {
+        console.error('Failed to load Google Maps script');
+        reject(new Error('Failed to load Google Maps script'));
+      };
       
       document.head.appendChild(script);
     });
   };
 
   const initializeMap = async () => {
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.error('Map container not found');
+      return;
+    }
 
     try {
-      // Ensure Google Maps is loaded
+      console.log('Initializing map...');
       await loadGoogleMapsScript();
 
-      // Double-check that the API is available
       if (!window.google || !window.google.maps || !window.google.maps.Map) {
         throw new Error('Google Maps API not available');
       }
 
+      console.log('Creating map instance');
       mapInstanceRef.current = new google.maps.Map(mapRef.current, {
         center,
         zoom,
         mapTypeId: 'satellite',
-        mapTypeControl: true,
-        streetViewControl: true,
-        fullscreenControl: true,
+        // Minimal controls to avoid widget conflicts
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
         zoomControl: true,
+        gestureHandling: 'greedy'
       });
 
-      // Add a marker at the center
+      // Add a simple marker
       new google.maps.Marker({
         position: center,
         map: mapInstanceRef.current,
@@ -106,6 +111,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         });
       }
 
+      console.log('Map initialized successfully');
       setIsLoaded(true);
     } catch (err) {
       console.error('Error initializing map:', err);
@@ -120,7 +126,15 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   if (error) {
     return (
       <div className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`} style={{ height }}>
-        <p className="text-red-500">{error}</p>
+        <div className="text-center">
+          <p className="text-red-500 mb-2">{error}</p>
+          <button 
+            onClick={initializeMap}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
       </div>
     );
   }
@@ -133,8 +147,11 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         className="rounded-lg shadow-sm border"
       />
       {!isLoaded && !error && (
-        <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-gray-600">جاري تحميل الخريطة...</p>
+          </div>
         </div>
       )}
     </div>

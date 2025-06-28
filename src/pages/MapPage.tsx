@@ -1,5 +1,6 @@
+
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Search, Ruler, Route, ArrowRight } from 'lucide-react';
+import { MapPin, Search, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,67 +13,51 @@ const API_KEY = 'AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw';
 // Reference location
 const REFERENCE_LOCATION = { lat: 31.2566, lng: 31.1671 };
 
-interface MapPin {
-  id: string;
-  position: google.maps.LatLng;
-  title: string;
-}
-
 const MapPage = () => {
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const referenceMarkerRef = useRef<google.maps.Marker | null>(null);
-  const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
-  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [pins, setPins] = useState<MapPin[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [distance, setDistance] = useState<number | null>(null);
-  const [routeDistance, setRouteDistance] = useState<string | null>(null);
-  const [routeDuration, setRouteDuration] = useState<string | null>(null);
 
   const loadGoogleMapsScript = (): Promise<void> => {
     return new Promise((resolve, reject) => {
-      // Check if Google Maps is already loaded
       if (window.google && window.google.maps && window.google.maps.Map) {
+        console.log('Google Maps already loaded');
         resolve();
         return;
       }
 
-      // Check if script is already being loaded
       const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
       if (existingScript) {
-        existingScript.addEventListener('load', () => {
-          // Wait a bit more to ensure all APIs are loaded
-          setTimeout(() => {
-            if (window.google && window.google.maps && window.google.maps.Map) {
-              resolve();
-            } else {
-              reject(new Error('Google Maps API not properly loaded'));
-            }
-          }, 100);
-        });
+        console.log('Google Maps script already exists');
+        existingScript.addEventListener('load', () => resolve());
         existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')));
         return;
       }
 
+      console.log('Loading Google Maps script');
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places,geometry&callback=initGoogleMaps`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places,geometry`;
       script.async = true;
       script.defer = true;
       
-      // Create a global callback function
-      (window as any).initGoogleMaps = () => {
-        if (window.google && window.google.maps && window.google.maps.Map) {
-          resolve();
-        } else {
-          reject(new Error('Google Maps API not properly initialized'));
-        }
+      script.onload = () => {
+        console.log('Google Maps script loaded');
+        setTimeout(() => {
+          if (window.google && window.google.maps && window.google.maps.Map) {
+            resolve();
+          } else {
+            reject(new Error('Google Maps API not properly initialized'));
+          }
+        }, 100);
       };
       
-      script.onerror = () => reject(new Error('Failed to load Google Maps script'));
+      script.onerror = () => {
+        console.error('Failed to load Google Maps script');
+        reject(new Error('Failed to load Google Maps script'));
+      };
       
       document.head.appendChild(script);
     });
@@ -81,83 +66,35 @@ const MapPage = () => {
   useEffect(() => {
     const initMap = async () => {
       try {
-        // Load Google Maps JavaScript API
+        console.log('Initializing MapPage...');
         await loadGoogleMapsScript();
         
-        // Double-check that the API is available
         if (!window.google || !window.google.maps || !window.google.maps.Map) {
           throw new Error('Google Maps API not available');
         }
         
         if (!mapRef.current) return;
 
+        console.log('Creating map instance');
         const map = new google.maps.Map(mapRef.current, {
           center: REFERENCE_LOCATION,
           zoom: 12,
           mapTypeId: 'satellite',
-          styles: [
-            {
-              featureType: 'water',
-              elementType: 'geometry',
-              stylers: [{ color: '#e9e9e9' }, { lightness: 17 }]
-            },
-            {
-              featureType: 'landscape',
-              elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }, { lightness: 20 }]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'geometry.fill',
-              stylers: [{ color: '#ffffff' }, { lightness: 17 }]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'geometry.stroke',
-              stylers: [{ color: '#ffffff' }, { lightness: 29 }, { weight: 0.2 }]
-            },
-            {
-              featureType: 'road.arterial',
-              elementType: 'geometry',
-              stylers: [{ color: '#ffffff' }, { lightness: 18 }]
-            },
-            {
-              featureType: 'road.local',
-              elementType: 'geometry',
-              stylers: [{ color: '#ffffff' }, { lightness: 16 }]
-            },
-            {
-              featureType: 'poi',
-              elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }, { lightness: 21 }]
-            }
-          ],
+          // Simplified controls
           mapTypeControl: true,
           streetViewControl: false,
           fullscreenControl: false,
-          zoomControl: true
+          zoomControl: true,
+          gestureHandling: 'greedy'
         });
 
         mapInstanceRef.current = map;
-
-        // Initialize directions service and renderer
-        directionsServiceRef.current = new google.maps.DirectionsService();
-        directionsRendererRef.current = new google.maps.DirectionsRenderer({
-          polylineOptions: {
-            strokeColor: '#3b82f6',
-            strokeWeight: 4,
-            strokeOpacity: 0.8
-          },
-          suppressMarkers: true // We'll use custom markers
-        });
-        directionsRendererRef.current.setMap(map);
 
         // Add reference marker
         const referenceMarker = new google.maps.Marker({
           position: REFERENCE_LOCATION,
           map: map,
           title: 'Reference Location',
-          animation: google.maps.Animation.DROP,
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
             scale: 10,
@@ -168,23 +105,6 @@ const MapPage = () => {
           }
         });
 
-        referenceMarkerRef.current = referenceMarker;
-
-        // Add info window for reference marker
-        const referenceInfoWindow = new google.maps.InfoWindow({
-          content: `
-            <div class="p-2">
-              <h3 class="font-semibold text-red-600">Reference Location</h3>
-              <p class="text-sm text-gray-600">Lat: ${REFERENCE_LOCATION.lat}</p>
-              <p class="text-sm text-gray-600">Lng: ${REFERENCE_LOCATION.lng}</p>
-            </div>
-          `
-        });
-
-        referenceMarker.addListener('click', () => {
-          referenceInfoWindow.open(map, referenceMarker);
-        });
-
         // Add click listener to place pins
         map.addListener('click', (event: google.maps.MapMouseEvent) => {
           if (event.latLng) {
@@ -193,9 +113,10 @@ const MapPage = () => {
         });
 
         setIsLoaded(true);
+        console.log('Map initialized successfully');
         toast({
           title: "تم تحميل الخريطة بنجاح!",
-          description: "انقر في أي مكان على الخريطة لإضافة نقطة جديدة وعرض الطريق."
+          description: "انقر في أي مكان على الخريطة لإضافة نقطة جديدة."
         });
 
       } catch (error) {
@@ -211,53 +132,6 @@ const MapPage = () => {
     initMap();
   }, []);
 
-  const calculateRoute = (destination: google.maps.LatLng) => {
-    if (!directionsServiceRef.current || !directionsRendererRef.current) return;
-
-    const request = {
-      origin: REFERENCE_LOCATION,
-      destination: destination,
-      travelMode: google.maps.TravelMode.DRIVING,
-    };
-
-    directionsServiceRef.current.route(request, (result, status) => {
-      if (status === 'OK' && result) {
-        directionsRendererRef.current?.setDirections(result);
-        
-        const route = result.routes[0];
-        const leg = route.legs[0];
-        
-        setRouteDistance(leg.distance?.text || null);
-        setRouteDuration(leg.duration?.text || null);
-        
-        toast({
-          title: "تم إنشاء الطريق!",
-          description: `المسافة: ${leg.distance?.text} - الوقت: ${leg.duration?.text}`
-        });
-      } else {
-        console.error('Directions request failed:', status);
-        toast({
-          title: "خطأ في الطريق",
-          description: "تعذر إنشاء طريق إلى هذا الموقع.",
-          variant: "destructive"
-        });
-      }
-    });
-  };
-
-  const calculateDistanceFromReference = (targetPosition: google.maps.LatLng) => {
-    const referenceLatLng = new google.maps.LatLng(REFERENCE_LOCATION.lat, REFERENCE_LOCATION.lng);
-    
-    const distance = google.maps.geometry.spherical.computeDistanceBetween(
-      referenceLatLng,
-      targetPosition
-    );
-    
-    // Convert from meters to kilometers
-    const distanceInKm = distance / 1000;
-    setDistance(distanceInKm);
-  };
-
   const addPin = (position: google.maps.LatLng, title: string) => {
     if (!mapInstanceRef.current) return;
 
@@ -265,7 +139,6 @@ const MapPage = () => {
       position: position,
       map: mapInstanceRef.current,
       title: title,
-      animation: google.maps.Animation.DROP,
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
         scale: 8,
@@ -275,21 +148,6 @@ const MapPage = () => {
         strokeWeight: 2
       }
     });
-
-    const newPin: MapPin = {
-      id: Date.now().toString(),
-      position: position,
-      title: title
-    };
-
-    const updatedPins = [...pins, newPin];
-    setPins(updatedPins);
-    
-    // Calculate straight line distance from reference location
-    calculateDistanceFromReference(position);
-    
-    // Calculate and display route
-    calculateRoute(position);
 
     // Add info window
     const infoWindow = new google.maps.InfoWindow({
@@ -352,90 +210,10 @@ const MapPage = () => {
     }
   };
 
-  const clearPins = () => {
-    setPins([]);
-    setSelectedLocation('');
-    setDistance(null);
-    setRouteDistance(null);
-    setRouteDuration(null);
-    
-    // Clear directions
-    if (directionsRendererRef.current) {
-      directionsRendererRef.current.setDirections({routes: []} as google.maps.DirectionsResult);
-    }
-    
-    // Reload the map to clear all markers except reference
-    if (mapInstanceRef.current) {
-      const center = mapInstanceRef.current.getCenter();
-      const zoom = mapInstanceRef.current.getZoom();
-      
-      const newMap = new google.maps.Map(mapRef.current!, {
-        center: center,
-        zoom: zoom,
-        mapTypeId: 'satellite',
-        styles: mapInstanceRef.current.get('styles'),
-        mapTypeControl: true,
-        streetViewControl: false,
-        fullscreenControl: false,
-        zoomControl: true
-      });
-
-      // Re-initialize directions renderer
-      directionsRendererRef.current = new google.maps.DirectionsRenderer({
-        polylineOptions: {
-          strokeColor: '#3b82f6',
-          strokeWeight: 4,
-          strokeOpacity: 0.8
-        },
-        suppressMarkers: true
-      });
-      directionsRendererRef.current.setMap(newMap);
-
-      // Re-add reference marker
-      const referenceMarker = new google.maps.Marker({
-        position: REFERENCE_LOCATION,
-        map: newMap,
-        title: 'Reference Location',
-        animation: google.maps.Animation.DROP,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 10,
-          fillColor: '#ef4444',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 3
-        }
-      });
-
-      referenceMarkerRef.current = referenceMarker;
-
-      const referenceInfoWindow = new google.maps.InfoWindow({
-        content: `
-          <div class="p-2">
-            <h3 class="font-semibold text-red-600">Reference Location</h3>
-            <p class="text-sm text-gray-600">Lat: ${REFERENCE_LOCATION.lat}</p>
-            <p class="text-sm text-gray-600">Lng: ${REFERENCE_LOCATION.lng}</p>
-          </div>
-        `
-      });
-
-      referenceMarker.addListener('click', () => {
-        referenceInfoWindow.open(newMap, referenceMarker);
-      });
-
-      newMap.addListener('click', (event: google.maps.MapMouseEvent) => {
-        if (event.latLng) {
-          addPin(event.latLng, 'New Location');
-        }
-      });
-
-      mapInstanceRef.current = newMap;
-    }
-    
-    toast({
-      title: "تم مسح النقاط",
-      description: "تم حذف جميع النقاط والطرق من الخريطة."
-    });
+  const reloadMap = () => {
+    setIsLoaded(false);
+    // Reload the page to restart the map
+    window.location.reload();
   };
 
   return (
@@ -455,7 +233,7 @@ const MapPage = () => {
               </Button>
               <div className="flex items-center gap-2">
                 <MapPin className="h-6 w-6 text-blue-600" />
-                <h1 className="text-2xl font-bold text-gray-900">خريطة تفاعلية مع الطرق</h1>
+                <h1 className="text-2xl font-bold text-gray-900">خريطة تفاعلية</h1>
               </div>
             </div>
             
@@ -472,8 +250,8 @@ const MapPage = () => {
                   <Search className="h-4 w-4" />
                 </Button>
               </div>
-              <Button onClick={clearPins} variant="outline" size="sm">
-                مسح النقاط
+              <Button onClick={reloadMap} variant="outline" size="sm">
+                إعادة تحميل
               </Button>
             </div>
           </div>
@@ -492,59 +270,14 @@ const MapPage = () => {
             </div>
           )}
 
-          {/* Stats Card */}
-          <Card className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <MapPin className="h-4 w-4 text-blue-600" />
-                <span>{pins.length} نقطة مضافة</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <MapPin className="h-4 w-4 text-red-600" />
-                <span>النقطة المرجعية</span>
-              </div>
-              {distance && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <Ruler className="h-4 w-4 text-green-600" />
-                  <span className="font-medium text-green-700">
-                    مسافة مباشرة: {distance.toFixed(2)} كم
-                  </span>
-                </div>
-              )}
-              {routeDistance && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <Route className="h-4 w-4 text-blue-600" />
-                  <span className="font-medium text-blue-700">
-                    مسافة الطريق: {routeDistance}
-                  </span>
-                </div>
-              )}
-              {routeDuration && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Route className="h-4 w-4 text-purple-600" />
-                  <span className="font-medium text-purple-700">
-                    وقت الوصول: {routeDuration}
-                  </span>
-                </div>
-              )}
-              {selectedLocation && (
-                <p className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
-                  {selectedLocation}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Instructions */}
           <Card className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
             <CardContent className="p-4">
               <p className="text-sm text-gray-600 mb-2 font-medium">كيفية الاستخدام:</p>
               <ul className="text-xs text-gray-500 space-y-1">
-                <li>• انقر في أي مكان لإضافة نقطة وعرض الطريق</li>
+                <li>• انقر في أي مكان لإضافة نقطة</li>
                 <li>• ابحث عن مواقع محددة</li>
                 <li>• انقر على النقاط لرؤية التفاصيل</li>
-                <li>• الخط الأزرق يوضح الطريق بين النقاط</li>
-                <li>• المسافة والوقت محسوبان من النقطة الحمراء</li>
               </ul>
             </CardContent>
           </Card>
