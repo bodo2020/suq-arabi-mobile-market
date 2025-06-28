@@ -1,4 +1,5 @@
 
+/// <reference path="../types/google-maps.d.ts" />
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Save } from 'lucide-react';
@@ -54,7 +55,7 @@ const Map = () => {
       // Default to Cairo, Egypt
       const defaultLocation = { lat: 30.0444, lng: 31.2357 };
       
-      const map = new google.maps.Map(mapRef.current, {
+      const map = new window.google.maps.Map(mapRef.current, {
         center: defaultLocation,
         zoom: 13,
         mapTypeControl: true,
@@ -116,11 +117,11 @@ const Map = () => {
     }
 
     // Add new marker
-    const marker = new google.maps.Marker({
+    const marker = new window.google.maps.Marker({
       position: { lat, lng },
       map: mapInstanceRef.current,
       title: 'الموقع المحدد',
-      animation: google.maps.Animation.DROP,
+      animation: window.google.maps.Animation.DROP,
     });
 
     markerRef.current = marker;
@@ -129,7 +130,7 @@ const Map = () => {
   const getAddressFromCoordinates = (lat: number, lng: number) => {
     if (!window.google) return;
 
-    const geocoder = new google.maps.Geocoder();
+    const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode(
       { location: { lat, lng } },
       (results, status) => {
