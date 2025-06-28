@@ -1,4 +1,3 @@
-
 /// <reference path="../types/google-maps.d.ts" />
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
