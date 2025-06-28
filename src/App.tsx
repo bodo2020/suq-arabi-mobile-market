@@ -24,6 +24,7 @@ import PhoneLogin from './pages/PhoneLogin';
 import ForgotPassword from './pages/ForgotPassword';
 import ReturnRequests from './pages/ReturnRequests';
 import CreateReturnRequest from './pages/CreateReturnRequest';
+import Map from './pages/Map';
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from '@/contexts/CartProvider';
 import { UserProvider } from '@/contexts/UserContext';
@@ -71,6 +72,7 @@ function App() {
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/return-requests" element={<ReturnRequests />} />
             <Route path="/create-return/:orderId" element={<CreateReturnRequest />} />
+            <Route path="/map" element={<Map />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
