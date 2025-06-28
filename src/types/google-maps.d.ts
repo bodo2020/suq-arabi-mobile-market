@@ -77,4 +77,7 @@ declare namespace google {
   }
 }
 
+// Make sure the namespace is available globally
+declare var google: typeof google;
+
 export {};
