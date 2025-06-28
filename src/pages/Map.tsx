@@ -98,6 +98,42 @@ const Map = () => {
       setIsLoaded(true);
     };
 
+    const addMarker = (lat: number, lng: number) => {
+      if (!mapInstanceRef.current) return;
+
+      // Remove existing marker
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+      }
+
+      // Add new marker
+      const marker = new window.google.maps.Marker({
+        position: { lat, lng },
+        map: mapInstanceRef.current,
+        title: 'الموقع المحدد',
+        animation: window.google.maps.Animation.DROP,
+      });
+
+      markerRef.current = marker;
+    };
+
+    const getAddressFromCoordinates = (lat: number, lng: number) => {
+      if (!window.google) return;
+
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode(
+        { location: { lat, lng } },
+        (results, status) => {
+          if (status === 'OK' && results && results[0]) {
+            const formattedAddress = results[0].formatted_address;
+            setAddress(formattedAddress);
+          } else {
+            setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+          }
+        }
+      );
+    };
+
     loadGoogleMaps();
 
     return () => {
@@ -106,42 +142,6 @@ const Map = () => {
       scripts.forEach(script => script.remove());
     };
   }, [toast]);
-
-  const addMarker = (lat: number, lng: number) => {
-    if (!mapInstanceRef.current) return;
-
-    // Remove existing marker
-    if (markerRef.current) {
-      markerRef.current.setMap(null);
-    }
-
-    // Add new marker
-    const marker = new window.google.maps.Marker({
-      position: { lat, lng },
-      map: mapInstanceRef.current,
-      title: 'الموقع المحدد',
-      animation: window.google.maps.Animation.DROP,
-    });
-
-    markerRef.current = marker;
-  };
-
-  const getAddressFromCoordinates = (lat: number, lng: number) => {
-    if (!window.google) return;
-
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode(
-      { location: { lat, lng } },
-      (results, status) => {
-        if (status === 'OK' && results && results[0]) {
-          const formattedAddress = results[0].formatted_address;
-          setAddress(formattedAddress);
-        } else {
-          setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-        }
-      }
-    );
-  };
 
   const saveLocation = () => {
     if (!selectedLocation) {
