@@ -5,7 +5,6 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductFilters from '@/components/ui/ProductFilters';
-import ModernLocationSelector from '@/components/ui/ModernLocationSelector';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
@@ -33,21 +32,6 @@ const CategoryDetail = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [currentSort, setCurrentSort] = useState("newest");
   const [subcategoriesWithProducts, setSubcategoriesWithProducts] = useState<Subcategory[]>([]);
-  const [showLocationSelector, setShowLocationSelector] = useState(false);
-
-  // Check if user has location selected
-  useEffect(() => {
-    const checkLocationStatus = () => {
-      const hasLocation = localStorage.getItem('locationSelected') === 'true' || 
-                         localStorage.getItem('userArea');
-      
-      if (!hasLocation) {
-        setShowLocationSelector(true);
-      }
-    };
-
-    checkLocationStatus();
-  }, [user]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -130,18 +114,6 @@ const CategoryDetail = () => {
   const handleFiltersClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
-
-  const handleLocationSelected = (location: any) => {
-    setShowLocationSelector(false);
-  };
-
-  if (showLocationSelector) {
-    return (
-      <MainLayout>
-        <ModernLocationSelector onLocationSelected={handleLocationSelected} />
-      </MainLayout>
-    );
-  }
 
   if (loading) {
     return (
