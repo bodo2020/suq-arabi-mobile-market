@@ -77,7 +77,15 @@ declare namespace google {
   }
 }
 
-// Make sure the namespace is available globally
-declare var google: typeof google;
+// Declare google as a global variable
+declare var google: {
+  maps: {
+    Map: typeof google.maps.Map;
+    Marker: typeof google.maps.Marker;
+    LatLng: typeof google.maps.LatLng;
+    Geocoder: typeof google.maps.Geocoder;
+    Animation: typeof google.maps.Animation;
+  };
+};
 
 export {};
