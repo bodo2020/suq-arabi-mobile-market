@@ -20,6 +20,20 @@ declare namespace google {
       streetViewControl?: boolean;
       fullscreenControl?: boolean;
       gestureHandling?: string;
+      styles?: MapTypeStyle[];
+    }
+
+    interface MapTypeStyle {
+      featureType?: string;
+      elementType?: string;
+      stylers?: MapTypeStyler[];
+    }
+
+    interface MapTypeStyler {
+      visibility?: string;
+      color?: string;
+      weight?: number;
+      [key: string]: any;
     }
 
     class Marker {
