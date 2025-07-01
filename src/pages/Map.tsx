@@ -1,121 +1,160 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, MapPin } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 const Map = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [address, setAddress] = useState('');
 
   useEffect(() => {
-    const loadGoogleMaps = () => {
-      if (window.google && window.google.maps) {
-        console.log('Google Maps already loaded');
-        initializeMap();
-        return;
-      }
-
-      console.log('Loading Google Maps...');
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&loading=async`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        console.log('Google Maps script loaded');
-        setTimeout(() => {
-          if (window.google && window.google.maps) {
-            console.log('Google Maps fully initialized');
-            initializeMap();
-          } else {
-            console.error('Google Maps failed to initialize properly');
-            toast({
-              variant: "destructive",
-              title: "خطأ",
-              description: "فشل في تحميل الخريطة"
-            });
-          }
-        }, 100);
-      };
-      script.onerror = (error) => {
-        console.error('Failed to load Google Maps script:', error);
-        toast({
-          variant: "destructive",
-          title: "خطأ",
-          description: "فشل في تحميل الخريطة"
-        });
-      };
-      document.head.appendChild(script);
-    };
-
-    const initializeMap = () => {
-      console.log('Initializing map...');
-      if (!mapRef.current) {
-        console.error('Map container not found');
-        return;
-      }
-      
-      if (!window.google || !window.google.maps) {
-        console.error('Google Maps not available');
-        return;
-      }
-
-      try {
-        // Default to Cairo, Egypt
-        const defaultLocation = { lat: 30.0444, lng: 31.2357 };
-        
-        console.log('Creating map instance...');
-        const map = new window.google.maps.Map(mapRef.current, {
-          center: defaultLocation,
-          zoom: 13,
-          mapTypeControl: true,
-          streetViewControl: true,
-          fullscreenControl: true
-        });
-        
-        mapInstanceRef.current = map;
-        console.log('Map created successfully');
-
-        // Try to get user's current location
-        if (navigator.geolocation) {
-          console.log('Getting user location...');
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              console.log('Got user location:', position);
-              const userLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-              };
-              map.setCenter(userLocation);
-            },
-            (error) => {
-              console.log('Could not get user location:', error);
-            }
-          );
-        }
-
-        setIsLoaded(true);
-        console.log('Map initialization complete');
-      } catch (error) {
-        console.error('Error initializing map:', error);
-        toast({
-          variant: "destructive",
-          title: "خطأ",
-          description: "فشل في إنشاء الخريطة"
-        });
-      }
-    };
-
     loadGoogleMaps();
-
     return () => {
       console.log('Cleaning up map component');
     };
-  }, [toast]);
+  }, []);
+
+  const loadGoogleMaps = () => {
+    if (window.google && window.google.maps) {
+      initializeMap();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&loading=async`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      setTimeout(() => {
+        if (window.google && window.google.maps) {
+          initializeMap();
+        } else {
+          console.error('Google Maps failed to initialize properly');
+          toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "فشل في تحميل الخريطة"
+          });
+        }
+      }, 100);
+    };
+    script.onerror = (error) => {
+      console.error('Failed to load Google Maps script:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل في تحميل الخريطة"
+      });
+    };
+    document.head.appendChild(script);
+  };
+
+  const initializeMap = () => {
+    if (!mapRef.current || !window.google || !window.google.maps) return;
+
+    try {
+      const defaultLocation = { lat: 30.0444, lng: 31.2357 };
+      
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: defaultLocation,
+        zoom: 13,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false
+      });
+      
+      mapInstanceRef.current = map;
+
+      // Create draggable marker
+      const marker = new window.google.maps.Marker({
+        position: defaultLocation,
+        map: map,
+        draggable: true,
+        title: "اسحب لتحديد الموقع",
+        animation: window.google.maps.Animation.DROP
+      });
+      
+      markerRef.current = marker;
+      setSelectedLocation(defaultLocation);
+
+      // Handle marker drag
+      marker.addListener('dragend', () => {
+        const position = marker.getPosition();
+        if (position) {
+          const newLocation = {
+            lat: position.lat(),
+            lng: position.lng()
+          };
+          setSelectedLocation(newLocation);
+          reverseGeocode(newLocation);
+        }
+      });
+
+      // Handle map click to move marker
+      map.addListener('click', (event: any) => {
+        if (event.latLng) {
+          const newLocation = {
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng()
+          };
+          marker.setPosition(newLocation);
+          setSelectedLocation(newLocation);
+          reverseGeocode(newLocation);
+        }
+      });
+
+      // Try to get user's current location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            map.setCenter(userLocation);
+            marker.setPosition(userLocation);
+            setSelectedLocation(userLocation);
+            reverseGeocode(userLocation);
+          },
+          (error) => {
+            console.log('Could not get user location:', error);
+          }
+        );
+      }
+
+      setIsLoaded(true);
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل في إنشاء الخريطة"
+      });
+    }
+  };
+
+  const reverseGeocode = (location: {lat: number, lng: number}) => {
+    if (!window.google || !window.google.maps) return;
+
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode(
+      { location: location },
+      (results, status) => {
+        if (status === 'OK' && results && results[0]) {
+          setAddress(results[0].formatted_address);
+        }
+      }
+    );
+  };
 
   const handleBack = () => {
     navigate(-1);
@@ -129,8 +168,18 @@ const Map = () => {
           <button onClick={handleBack} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">الخريطة</h1>
+          <h1 className="text-xl font-bold flex-1 text-center">تحديد الموقع</h1>
           <div className="w-10" />
+        </div>
+
+        {/* Instructions */}
+        <div className="bg-blue-50 p-3 border-l-4 border-blue-400">
+          <div className="flex items-center">
+            <MapPin size={18} className="text-blue-600 ml-2" />
+            <p className="text-blue-800 text-sm">
+              اضغط على الخريطة أو اسحب الدبوس لتحديد موقعك بدقة
+            </p>
+          </div>
         </div>
 
         {/* Map Container */}
@@ -150,6 +199,24 @@ const Map = () => {
             </div>
           )}
         </div>
+
+        {/* Location Info */}
+        {selectedLocation && (
+          <div className="bg-white p-4 border-t shadow-lg">
+            <div className="flex items-start gap-3">
+              <MapPin size={20} className="text-primary mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">الموقع المحدد</h3>
+                {address && (
+                  <p className="text-gray-600 text-sm mb-2">{address}</p>
+                )}
+                <p className="text-xs text-gray-500">
+                  الإحداثيات: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </MainLayout>
   );
