@@ -24,6 +24,9 @@ declare namespace google {
     class Marker {
       constructor(opts?: MarkerOptions);
       setMap(map: Map | null): void;
+      addListener(eventName: string, handler: () => void): void;
+      getPosition(): LatLng | undefined;
+      setPosition(latlng: LatLng | LatLngLiteral): void;
     }
 
     interface MarkerOptions {
@@ -31,6 +34,7 @@ declare namespace google {
       map?: Map;
       title?: string;
       animation?: Animation;
+      draggable?: boolean;
     }
 
     class LatLng {

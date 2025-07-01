@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { UserProvider } from './contexts/UserContext';
-import { CartProvider } from './contexts/CartContext';
+import { CartProvider } from './contexts/CartProvider';
 import Index from './pages/Index';
 import PhoneLogin from './pages/PhoneLogin';
 import PhoneVerify from './pages/PhoneVerify';
@@ -39,139 +39,137 @@ function App() {
   return (
     <UserProvider>
       <CartProvider>
-        <QueryClient>
-          <BrowserRouter>
-            <Routes>
-              {/* Authentication routes - no address guard needed */}
-              <Route path="/phone-login" element={<PhoneLogin />} />
-              <Route path="/phone-verify" element={<PhoneVerify />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              
-              {/* Address registration - no guard needed */}
-              <Route path="/address-registration" element={<AddressRegistration />} />
-              
-              {/* All other routes require address registration */}
-              <Route path="/" element={
-                <AddressGuard>
-                  <Index />
-                </AddressGuard>
-              } />
-              <Route path="/categories" element={
-                <AddressGuard>
-                  <Categories />
-                </AddressGuard>
-              } />
-              <Route path="/category/:id" element={
-                <AddressGuard>
-                  <CategoryDetail />
-                </AddressGuard>
-              } />
-              <Route path="/product/:id" element={
-                <AddressGuard>
-                  <ProductDetail />
-                </AddressGuard>
-              } />
-              <Route path="/search" element={
-                <AddressGuard>
-                  <Search />
-                </AddressGuard>
-              } />
-              <Route path="/cart" element={
-                <AddressGuard>
-                  <Cart />
-                </AddressGuard>
-              } />
-              <Route path="/checkout" element={
-                <AddressGuard>
-                  <Checkout />
-                </AddressGuard>
-              } />
-              <Route path="/payment" element={
-                <AddressGuard>
-                  <Payment />
-                </AddressGuard>
-              } />
-              <Route path="/order-success" element={
-                <AddressGuard>
-                  <OrderSuccess />
-                </AddressGuard>
-              } />
-              <Route path="/account" element={
-                <AddressGuard>
-                  <Account />
-                </AddressGuard>
-              } />
-              <Route path="/edit-account" element={
-                <AddressGuard>
-                  <EditAccount />
-                </AddressGuard>
-              } />
-              <Route path="/orders" element={
-                <AddressGuard>
-                  <Orders />
-                </AddressGuard>
-              } />
-              <Route path="/favorites" element={
-                <AddressGuard>
-                  <Favorites />
-                </AddressGuard>
-              } />
-              <Route path="/address" element={
-                <AddressGuard>
-                  <Address />
-                </AddressGuard>
-              } />
-              <Route path="/address/:id" element={
-                <AddressGuard>
-                  <Address />
-                </AddressGuard>
-              } />
-              <Route path="/address-manager" element={
-                <AddressGuard>
-                  <AddressManager />
-                </AddressGuard>
-              } />
-              <Route path="/map" element={
-                <AddressGuard>
-                  <Map />
-                </AddressGuard>
-              } />
-              <Route path="/barcode-scanner" element={
-                <AddressGuard>
-                  <BarcodeScanner />
-                </AddressGuard>
-              } />
-              <Route path="/bulk-products" element={
-                <AddressGuard>
-                  <BulkProducts />
-                </AddressGuard>
-              } />
-              <Route path="/company/:id" element={
-                <AddressGuard>
-                  <CompanyProducts />
-                </AddressGuard>
-              } />
-              <Route path="/banner/:id" element={
-                <AddressGuard>
-                  <BannerProducts />
-                </AddressGuard>
-              } />
-              <Route path="/return-requests" element={
-                <AddressGuard>
-                  <ReturnRequests />
-                </AddressGuard>
-              } />
-              <Route path="/create-return-request/:orderId" element={
-                <AddressGuard>
-                  <CreateReturnRequest />
-                </AddressGuard>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-          </BrowserRouter>
-        </QueryClient>
+        <BrowserRouter>
+          <Routes>
+            {/* Authentication routes - no address guard needed */}
+            <Route path="/phone-login" element={<PhoneLogin />} />
+            <Route path="/phone-verify" element={<PhoneVerify />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            
+            {/* Address registration - no guard needed */}
+            <Route path="/address-registration" element={<AddressRegistration />} />
+            
+            {/* All other routes require address registration */}
+            <Route path="/" element={
+              <AddressGuard>
+                <Index />
+              </AddressGuard>
+            } />
+            <Route path="/categories" element={
+              <AddressGuard>
+                <Categories />
+              </AddressGuard>
+            } />
+            <Route path="/category/:id" element={
+              <AddressGuard>
+                <CategoryDetail />
+              </AddressGuard>
+            } />
+            <Route path="/product/:id" element={
+              <AddressGuard>
+                <ProductDetail />
+              </AddressGuard>
+            } />
+            <Route path="/search" element={
+              <AddressGuard>
+                <Search />
+              </AddressGuard>
+            } />
+            <Route path="/cart" element={
+              <AddressGuard>
+                <Cart />
+              </AddressGuard>
+            } />
+            <Route path="/checkout" element={
+              <AddressGuard>
+                <Checkout />
+              </AddressGuard>
+            } />
+            <Route path="/payment" element={
+              <AddressGuard>
+                <Payment />
+              </AddressGuard>
+            } />
+            <Route path="/order-success" element={
+              <AddressGuard>
+                <OrderSuccess />
+              </AddressGuard>
+            } />
+            <Route path="/account" element={
+              <AddressGuard>
+                <Account />
+              </AddressGuard>
+            } />
+            <Route path="/edit-account" element={
+              <AddressGuard>
+                <EditAccount />
+              </AddressGuard>
+            } />
+            <Route path="/orders" element={
+              <AddressGuard>
+                <Orders />
+              </AddressGuard>
+            } />
+            <Route path="/favorites" element={
+              <AddressGuard>
+                <Favorites />
+              </AddressGuard>
+            } />
+            <Route path="/address" element={
+              <AddressGuard>
+                <Address />
+              </AddressGuard>
+            } />
+            <Route path="/address/:id" element={
+              <AddressGuard>
+                <Address />
+              </AddressGuard>
+            } />
+            <Route path="/address-manager" element={
+              <AddressGuard>
+                <AddressManager />
+              </AddressGuard>
+            } />
+            <Route path="/map" element={
+              <AddressGuard>
+                <Map />
+              </AddressGuard>
+            } />
+            <Route path="/barcode-scanner" element={
+              <AddressGuard>
+                <BarcodeScanner />
+              </AddressGuard>
+            } />
+            <Route path="/bulk-products" element={
+              <AddressGuard>
+                <BulkProducts />
+              </AddressGuard>
+            } />
+            <Route path="/company/:id" element={
+              <AddressGuard>
+                <CompanyProducts />
+              </AddressGuard>
+            } />
+            <Route path="/banner/:id" element={
+              <AddressGuard>
+                <BannerProducts />
+              </AddressGuard>
+            } />
+            <Route path="/return-requests" element={
+              <AddressGuard>
+                <ReturnRequests />
+              </AddressGuard>
+            } />
+            <Route path="/create-return-request/:orderId" element={
+              <AddressGuard>
+                <CreateReturnRequest />
+              </AddressGuard>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </BrowserRouter>
       </CartProvider>
     </UserProvider>
   );
