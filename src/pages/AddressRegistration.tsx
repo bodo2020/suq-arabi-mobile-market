@@ -20,6 +20,7 @@ const AddressRegistration = () => {
   const [useMap, setUseMap] = useState(true);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [address, setAddress] = useState('');
   const [locationValue, setLocationValue] = useState<LocationValue>({
@@ -31,56 +32,71 @@ const AddressRegistration = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (useMap && !mapError) {
+    if (useMap && !mapError && !isMapLoaded) {
       loadGoogleMaps();
     }
-  }, [useMap, mapError]);
+  }, [useMap, mapError, isMapLoaded]);
 
-  const loadGoogleMaps = () => {
-    console.log('Starting to load Google Maps...');
+  const loadGoogleMaps = async () => {
+    console.log('بدء تحميل خرائط جوجل...');
+    setIsLoadingMap(true);
     
-    // Check if Google Maps is already loaded
-    if (window.google && window.google.maps) {
-      console.log('Google Maps already loaded, initializing...');
+    try {
+      // تحقق من وجود Google Maps مسبقاً
+      if (window.google && window.google.maps) {
+        console.log('خرائط جوجل متاحة بالفعل');
+        initializeMap();
+        return;
+      }
+
+      // إزالة أي سكريبت موجود مسبقاً
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+
+      // إنشاء promise للتحكم في التحميل
+      const loadScript = () => {
+        return new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places`;
+          script.async = true;
+          script.defer = true;
+          
+          script.onload = () => {
+            console.log('تم تحميل سكريبت Google Maps بنجاح');
+            // انتظار قصير للتأكد من جاهزية الـ API
+            setTimeout(() => {
+              if (window.google && window.google.maps) {
+                resolve();
+              } else {
+                reject(new Error('Google Maps API غير متاح'));
+              }
+            }, 200);
+          };
+          
+          script.onerror = () => {
+            reject(new Error('فشل في تحميل Google Maps'));
+          };
+          
+          document.head.appendChild(script);
+        });
+      };
+
+      await loadScript();
       initializeMap();
-      return;
-    }
-
-    // Remove existing script if any
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      existingScript.remove();
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&callback=initMap`;
-    script.async = true;
-    script.defer = true;
-    
-    // Create a global callback function
-    (window as any).initMap = () => {
-      console.log('Google Maps callback triggered');
-      setTimeout(() => {
-        if (window.google && window.google.maps) {
-          console.log('Google Maps is ready, initializing map...');
-          initializeMap();
-        } else {
-          console.error('Google Maps failed to initialize properly');
-          handleMapError();
-        }
-      }, 100);
-    };
-
-    script.onerror = (error) => {
-      console.error('Failed to load Google Maps script:', error);
+    } catch (error) {
+      console.error('خطأ في تحميل Google Maps:', error);
       handleMapError();
-    };
-
-    document.head.appendChild(script);
+    } finally {
+      setIsLoadingMap(false);
+    }
   };
 
   const handleMapError = () => {
+    console.log('حدث خطأ في الخريطة، التبديل للتسجيل اليدوي');
     setMapError(true);
+    setIsLoadingMap(false);
     toast({
       variant: "destructive",
       title: "خطأ في تحميل الخريطة",
@@ -91,27 +107,36 @@ const AddressRegistration = () => {
 
   const initializeMap = () => {
     if (!mapRef.current || !window.google || !window.google.maps) {
-      console.error('Map container or Google Maps not available');
+      console.error('حاوي الخريطة أو Google Maps غير متاح');
+      handleMapError();
       return;
     }
 
     try {
-      console.log('Initializing Google Map...');
-      const defaultLocation = { lat: 30.0444, lng: 31.2357 }; // Cairo coordinates
+      console.log('إنشاء خريطة Google...');
+      const defaultLocation = { lat: 30.0444, lng: 31.2357 }; // إحداثيات القاهرة
       
+      // إنشاء الخريطة مع خيارات محسنة
       const map = new window.google.maps.Map(mapRef.current, {
         center: defaultLocation,
         zoom: 13,
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
-        gestureHandling: 'greedy'
+        gestureHandling: 'greedy',
+        styles: [
+          {
+            featureType: 'poi',
+            elementType: 'labels',
+            stylers: [{ visibility: 'off' }]
+          }
+        ]
       });
       
       mapInstanceRef.current = map;
-      console.log('Map created successfully');
+      console.log('تم إنشاء الخريطة بنجاح');
 
-      // Create draggable marker
+      // إنشاء علامة قابلة للسحب
       const marker = new window.google.maps.Marker({
         position: defaultLocation,
         map: map,
@@ -122,11 +147,11 @@ const AddressRegistration = () => {
       
       markerRef.current = marker;
       setSelectedLocation(defaultLocation);
-      console.log('Marker created successfully');
+      console.log('تم إنشاء العلامة بنجاح');
 
-      // Handle marker drag
+      // معالج سحب العلامة
       marker.addListener('dragend', () => {
-        console.log('Marker dragged');
+        console.log('تم سحب العلامة');
         const position = marker.getPosition();
         if (position) {
           const newLocation = {
@@ -138,9 +163,9 @@ const AddressRegistration = () => {
         }
       });
 
-      // Handle map click
+      // معالج النقر على الخريطة
       map.addListener('click', (event: any) => {
-        console.log('Map clicked');
+        console.log('تم النقر على الخريطة');
         if (event.latLng) {
           const newLocation = {
             lat: event.latLng.lat(),
@@ -152,11 +177,11 @@ const AddressRegistration = () => {
         }
       });
 
-      // Try to get user's current location
+      // محاولة الحصول على موقع المستخدم الحالي
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            console.log('Got user location:', position.coords);
+            console.log('تم الحصول على موقع المستخدم:', position.coords);
             const userLocation = {
               lat: position.coords.latitude,
               lng: position.coords.longitude
@@ -167,16 +192,34 @@ const AddressRegistration = () => {
             reverseGeocode(userLocation);
           },
           (error) => {
-            console.log('Could not get user location:', error);
+            console.log('لا يمكن الحصول على موقع المستخدم:', error);
           },
-          { timeout: 10000, enableHighAccuracy: true }
+          { 
+            timeout: 8000, 
+            enableHighAccuracy: true,
+            maximumAge: 300000 // 5 دقائق
+          }
         );
       }
 
-      setIsMapLoaded(true);
-      console.log('Map initialization completed');
+      // التأكد من اكتمال تحميل الخريطة
+      map.addListener('tilesloaded', () => {
+        console.log('اكتمل تحميل بلاطات الخريطة');
+        setIsMapLoaded(true);
+        setIsLoadingMap(false);
+      });
+
+      // fallback في حالة عدم تحميل البلاطات
+      setTimeout(() => {
+        if (!isMapLoaded) {
+          console.log('انتهت مهلة انتظار تحميل الخريطة، تعيين كـ محملة');
+          setIsMapLoaded(true);
+          setIsLoadingMap(false);
+        }
+      }, 5000);
+
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error('خطأ في إنشاء الخريطة:', error);
       handleMapError();
     }
   };
@@ -190,7 +233,7 @@ const AddressRegistration = () => {
       (results, status) => {
         if (status === 'OK' && results && results[0]) {
           setAddress(results[0].formatted_address);
-          console.log('Address found:', results[0].formatted_address);
+          console.log('تم العثور على العنوان:', results[0].formatted_address);
         }
       }
     );
@@ -268,7 +311,7 @@ const AddressRegistration = () => {
 
       navigate('/');
     } catch (error) {
-      console.error('Error saving address:', error);
+      console.error('خطأ في حفظ العنوان:', error);
       toast({
         variant: "destructive",
         title: "خطأ",
@@ -339,11 +382,13 @@ const AddressRegistration = () => {
                   style={{ minHeight: '320px' }}
                 />
                 
-                {!isMapLoaded && (
+                {(isLoadingMap || !isMapLoaded) && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                      <p className="text-gray-600">جاري تحميل الخريطة...</p>
+                      <p className="text-gray-600">
+                        {isLoadingMap ? 'جاري تحميل الخريطة...' : 'جاري تحضير الخريطة...'}
+                      </p>
                     </div>
                   </div>
                 )}

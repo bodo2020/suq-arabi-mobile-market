@@ -12,78 +12,81 @@ const Map = () => {
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [address, setAddress] = useState('');
 
   useEffect(() => {
     loadGoogleMaps();
     return () => {
-      console.log('Cleaning up map component');
-      // Clean up global callback
-      if ((window as any).initMapForMap) {
-        delete (window as any).initMapForMap;
-      }
+      console.log('تنظيف مكون الخريطة');
     };
   }, []);
 
-  const loadGoogleMaps = () => {
-    console.log('Loading Google Maps for Map page...');
+  const loadGoogleMaps = async () => {
+    console.log('تحميل خرائط جوجل لصفحة الخريطة...');
+    setIsLoadingMap(true);
     
-    if (window.google && window.google.maps) {
-      console.log('Google Maps already available');
+    try {
+      if (window.google && window.google.maps) {
+        console.log('خرائط جوجل متاحة بالفعل');
+        initializeMap();
+        return;
+      }
+
+      // إزالة أي سكريبت موجود مسبقاً
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+
+      const loadScript = () => {
+        return new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places`;
+          script.async = true;
+          script.defer = true;
+
+          script.onload = () => {
+            console.log('تم تحميل سكريبت Google Maps بنجاح');
+            setTimeout(() => {
+              if (window.google && window.google.maps) {
+                resolve();
+              } else {
+                reject(new Error('Google Maps API غير متاح'));
+              }
+            }, 200);
+          };
+
+          script.onerror = () => {
+            reject(new Error('فشل في تحميل Google Maps'));
+          };
+
+          document.head.appendChild(script);
+        });
+      };
+
+      await loadScript();
       initializeMap();
-      return;
-    }
-
-    // Remove existing script if any
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      existingScript.remove();
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&callback=initMapForMap`;
-    script.async = true;
-    script.defer = true;
-
-    // Create a unique global callback function for this component
-    (window as any).initMapForMap = () => {
-      console.log('Google Maps callback for Map page triggered');
-      setTimeout(() => {
-        if (window.google && window.google.maps) {
-          console.log('Initializing map for Map page...');
-          initializeMap();
-        } else {
-          console.error('Google Maps failed to initialize');
-          toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "فشل في تحميل الخريطة"
-          });
-        }
-      }, 100);
-    };
-
-    script.onerror = (error) => {
-      console.error('Failed to load Google Maps script:', error);
+    } catch (error) {
+      console.error('فشل في تحميل سكريبت Google Maps:', error);
       toast({
         variant: "destructive",
         title: "خطأ",
         description: "فشل في تحميل الخريطة"
       });
-    };
-    
-    document.head.appendChild(script);
+      setIsLoadingMap(false);
+    }
   };
 
   const initializeMap = () => {
     if (!mapRef.current || !window.google || !window.google.maps) {
-      console.error('Map container or Google Maps not available');
+      console.error('حاوي الخريطة أو Google Maps غير متاح');
       return;
     }
 
     try {
-      console.log('Creating Google Map instance...');
+      console.log('إنشاء نسخة خريطة Google...');
       const defaultLocation = { lat: 30.0444, lng: 31.2357 };
       
       const map = new window.google.maps.Map(mapRef.current, {
@@ -92,13 +95,20 @@ const Map = () => {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
-        gestureHandling: 'greedy'
+        gestureHandling: 'greedy',
+        styles: [
+          {
+            featureType: 'poi',
+            elementType: 'labels',
+            stylers: [{ visibility: 'off' }]
+          }
+        ]
       });
       
       mapInstanceRef.current = map;
-      console.log('Map instance created');
+      console.log('تم إنشاء نسخة الخريطة');
 
-      // Create draggable marker
+      // إنشاء علامة قابلة للسحب
       const marker = new window.google.maps.Marker({
         position: defaultLocation,
         map: map,
@@ -109,11 +119,11 @@ const Map = () => {
       
       markerRef.current = marker;
       setSelectedLocation(defaultLocation);
-      console.log('Marker created and positioned');
+      console.log('تم إنشاء العلامة ووضعها');
 
-      // Handle marker drag
+      // معالج سحب العلامة
       marker.addListener('dragend', () => {
-        console.log('Marker dragged');
+        console.log('تم سحب العلامة');
         const position = marker.getPosition();
         if (position) {
           const newLocation = {
@@ -125,9 +135,9 @@ const Map = () => {
         }
       });
 
-      // Handle map click to move marker
+      // معالج النقر على الخريطة لنقل العلامة
       map.addListener('click', (event: any) => {
-        console.log('Map clicked');
+        console.log('تم النقر على الخريطة');
         if (event.latLng) {
           const newLocation = {
             lat: event.latLng.lat(),
@@ -139,11 +149,11 @@ const Map = () => {
         }
       });
 
-      // Try to get user's current location
+      // محاولة الحصول على موقع المستخدم الحالي
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            console.log('Got user location for Map page');
+            console.log('تم الحصول على موقع المستخدم لصفحة الخريطة');
             const userLocation = {
               lat: position.coords.latitude,
               lng: position.coords.longitude
@@ -154,21 +164,40 @@ const Map = () => {
             reverseGeocode(userLocation);
           },
           (error) => {
-            console.log('Could not get user location:', error);
+            console.log('لا يمكن الحصول على موقع المستخدم:', error);
           },
-          { timeout: 10000, enableHighAccuracy: true }
+          { 
+            timeout: 8000, 
+            enableHighAccuracy: true,
+            maximumAge: 300000
+          }
         );
       }
 
-      setIsLoaded(true);
-      console.log('Map initialization completed successfully');
+      // التأكد من اكتمال تحميل الخريطة
+      map.addListener('tilesloaded', () => {
+        console.log('اكتمل تحميل بلاطات الخريطة');
+        setIsLoaded(true);
+        setIsLoadingMap(false);
+      });
+
+      // fallback في حالة عدم تحميل البلاطات
+      setTimeout(() => {
+        if (!isLoaded) {
+          console.log('انتهت مهلة انتظار تحميل الخريطة، تعيين كـ محملة');
+          setIsLoaded(true);
+          setIsLoadingMap(false);
+        }
+      }, 5000);
+
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error('خطأ في إنشاء الخريطة:', error);
       toast({
         variant: "destructive",
         title: "خطأ",
         description: "فشل في إنشاء الخريطة"
       });
+      setIsLoadingMap(false);
     }
   };
 
@@ -181,7 +210,7 @@ const Map = () => {
       (results, status) => {
         if (status === 'OK' && results && results[0]) {
           setAddress(results[0].formatted_address);
-          console.log('Address geocoded:', results[0].formatted_address);
+          console.log('تم ترميز العنوان جغرافياً:', results[0].formatted_address);
         }
       }
     );
@@ -221,11 +250,13 @@ const Map = () => {
             style={{ minHeight: '400px' }}
           />
           
-          {!isLoaded && (
+          {(isLoadingMap || !isLoaded) && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                <p className="text-gray-600">جاري تحميل الخريطة...</p>
+                <p className="text-gray-600">
+                  {isLoadingMap ? 'جاري تحميل الخريطة...' : 'جاري تحضير الخريطة...'}
+                </p>
               </div>
             </div>
           )}
