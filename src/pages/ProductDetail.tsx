@@ -5,11 +5,13 @@ import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import CompanyCard from '@/components/ui/CompanyCard';
 import WeightSelector from '@/components/ui/WeightSelector';
+import ProductStructuredData from '@/components/seo/ProductStructuredData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/useCart';
 import { Product, getProductById, getRelatedProducts, getCompanyById, Company } from '@/lib/supabase';
+
 const ProductDetail = () => {
   const {
     id
@@ -192,6 +194,9 @@ const ProductDetail = () => {
       </MainLayout>;
   }
   return <MainLayout>
+      {/* إضافة البيانات المنظمة للمنتج */}
+      <ProductStructuredData product={product} />
+      
       <div className="container mx-auto py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="relative">

@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import CategoryItem from '@/components/ui/CategoryItem';
+import StoreStructuredData from '@/components/seo/StoreStructuredData';
 import { getCategories, getStoreInfo, supabase, MainCategory } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
@@ -138,6 +139,9 @@ const Index = () => {
 
   return (
     <MainLayout>
+      {/* إضافة البيانات المنظمة للمتجر */}
+      <StoreStructuredData />
+      
       <div className="min-h-screen bg-gray-50">
         <div className="mb-16 pb-16">
           {/* Top Navigation Bar */}
