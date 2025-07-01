@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 
 const Map = () => {
   const navigate = useNavigate();
@@ -20,25 +19,42 @@ const Map = () => {
     loadGoogleMaps();
     return () => {
       console.log('Cleaning up map component');
+      // Clean up global callback
+      if ((window as any).initMapForMap) {
+        delete (window as any).initMapForMap;
+      }
     };
   }, []);
 
   const loadGoogleMaps = () => {
+    console.log('Loading Google Maps for Map page...');
+    
     if (window.google && window.google.maps) {
+      console.log('Google Maps already available');
       initializeMap();
       return;
     }
 
+    // Remove existing script if any
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&callback=initMapForMap`;
     script.async = true;
     script.defer = true;
-    script.onload = () => {
+
+    // Create a unique global callback function for this component
+    (window as any).initMapForMap = () => {
+      console.log('Google Maps callback for Map page triggered');
       setTimeout(() => {
         if (window.google && window.google.maps) {
+          console.log('Initializing map for Map page...');
           initializeMap();
         } else {
-          console.error('Google Maps failed to initialize properly');
+          console.error('Google Maps failed to initialize');
           toast({
             variant: "destructive",
             title: "خطأ",
@@ -47,6 +63,7 @@ const Map = () => {
         }
       }, 100);
     };
+
     script.onerror = (error) => {
       console.error('Failed to load Google Maps script:', error);
       toast({
@@ -55,13 +72,18 @@ const Map = () => {
         description: "فشل في تحميل الخريطة"
       });
     };
+    
     document.head.appendChild(script);
   };
 
   const initializeMap = () => {
-    if (!mapRef.current || !window.google || !window.google.maps) return;
+    if (!mapRef.current || !window.google || !window.google.maps) {
+      console.error('Map container or Google Maps not available');
+      return;
+    }
 
     try {
+      console.log('Creating Google Map instance...');
       const defaultLocation = { lat: 30.0444, lng: 31.2357 };
       
       const map = new window.google.maps.Map(mapRef.current, {
@@ -69,10 +91,12 @@ const Map = () => {
         zoom: 13,
         mapTypeControl: false,
         streetViewControl: false,
-        fullscreenControl: false
+        fullscreenControl: false,
+        gestureHandling: 'greedy'
       });
       
       mapInstanceRef.current = map;
+      console.log('Map instance created');
 
       // Create draggable marker
       const marker = new window.google.maps.Marker({
@@ -85,9 +109,11 @@ const Map = () => {
       
       markerRef.current = marker;
       setSelectedLocation(defaultLocation);
+      console.log('Marker created and positioned');
 
       // Handle marker drag
       marker.addListener('dragend', () => {
+        console.log('Marker dragged');
         const position = marker.getPosition();
         if (position) {
           const newLocation = {
@@ -101,6 +127,7 @@ const Map = () => {
 
       // Handle map click to move marker
       map.addListener('click', (event: any) => {
+        console.log('Map clicked');
         if (event.latLng) {
           const newLocation = {
             lat: event.latLng.lat(),
@@ -116,6 +143,7 @@ const Map = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            console.log('Got user location for Map page');
             const userLocation = {
               lat: position.coords.latitude,
               lng: position.coords.longitude
@@ -127,11 +155,13 @@ const Map = () => {
           },
           (error) => {
             console.log('Could not get user location:', error);
-          }
+          },
+          { timeout: 10000, enableHighAccuracy: true }
         );
       }
 
       setIsLoaded(true);
+      console.log('Map initialization completed successfully');
     } catch (error) {
       console.error('Error initializing map:', error);
       toast({
@@ -151,6 +181,7 @@ const Map = () => {
       (results, status) => {
         if (status === 'OK' && results && results[0]) {
           setAddress(results[0].formatted_address);
+          console.log('Address geocoded:', results[0].formatted_address);
         }
       }
     );
@@ -186,7 +217,7 @@ const Map = () => {
         <div className="flex-1 relative">
           <div 
             ref={mapRef} 
-            className="w-full h-full" 
+            className="w-full h-full bg-gray-100" 
             style={{ minHeight: '400px' }}
           />
           

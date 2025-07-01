@@ -19,6 +19,7 @@ const AddressRegistration = () => {
   
   const [useMap, setUseMap] = useState(true);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [address, setAddress] = useState('');
   const [locationValue, setLocationValue] = useState<LocationValue>({
@@ -30,68 +31,102 @@ const AddressRegistration = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (useMap) {
+    if (useMap && !mapError) {
       loadGoogleMaps();
     }
-  }, [useMap]);
+  }, [useMap, mapError]);
 
   const loadGoogleMaps = () => {
+    console.log('Starting to load Google Maps...');
+    
+    // Check if Google Maps is already loaded
     if (window.google && window.google.maps) {
+      console.log('Google Maps already loaded, initializing...');
       initializeMap();
       return;
     }
 
+    // Remove existing script if any
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&callback=initMap`;
     script.async = true;
     script.defer = true;
-    script.onload = () => {
+    
+    // Create a global callback function
+    (window as any).initMap = () => {
+      console.log('Google Maps callback triggered');
       setTimeout(() => {
         if (window.google && window.google.maps) {
+          console.log('Google Maps is ready, initializing map...');
           initializeMap();
+        } else {
+          console.error('Google Maps failed to initialize properly');
+          handleMapError();
         }
       }, 100);
     };
-    script.onerror = () => {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "فشل في تحميل الخريطة. سيتم التبديل للتسجيل اليدوي"
-      });
-      setUseMap(false);
+
+    script.onerror = (error) => {
+      console.error('Failed to load Google Maps script:', error);
+      handleMapError();
     };
+
     document.head.appendChild(script);
   };
 
+  const handleMapError = () => {
+    setMapError(true);
+    toast({
+      variant: "destructive",
+      title: "خطأ في تحميل الخريطة",
+      description: "سيتم التبديل للتسجيل اليدوي"
+    });
+    setUseMap(false);
+  };
+
   const initializeMap = () => {
-    if (!mapRef.current || !window.google || !window.google.maps) return;
+    if (!mapRef.current || !window.google || !window.google.maps) {
+      console.error('Map container or Google Maps not available');
+      return;
+    }
 
     try {
-      const defaultLocation = { lat: 30.0444, lng: 31.2357 };
+      console.log('Initializing Google Map...');
+      const defaultLocation = { lat: 30.0444, lng: 31.2357 }; // Cairo coordinates
       
       const map = new window.google.maps.Map(mapRef.current, {
         center: defaultLocation,
         zoom: 13,
         mapTypeControl: false,
         streetViewControl: false,
-        fullscreenControl: false
+        fullscreenControl: false,
+        gestureHandling: 'greedy'
       });
       
       mapInstanceRef.current = map;
+      console.log('Map created successfully');
 
       // Create draggable marker
       const marker = new window.google.maps.Marker({
         position: defaultLocation,
         map: map,
         draggable: true,
-        title: "اسحب لتحديد موقعك"
+        title: "اسحب لتحديد موقعك",
+        animation: window.google.maps.Animation.DROP
       });
       
       markerRef.current = marker;
       setSelectedLocation(defaultLocation);
+      console.log('Marker created successfully');
 
       // Handle marker drag
       marker.addListener('dragend', () => {
+        console.log('Marker dragged');
         const position = marker.getPosition();
         if (position) {
           const newLocation = {
@@ -105,6 +140,7 @@ const AddressRegistration = () => {
 
       // Handle map click
       map.addListener('click', (event: any) => {
+        console.log('Map clicked');
         if (event.latLng) {
           const newLocation = {
             lat: event.latLng.lat(),
@@ -120,6 +156,7 @@ const AddressRegistration = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            console.log('Got user location:', position.coords);
             const userLocation = {
               lat: position.coords.latitude,
               lng: position.coords.longitude
@@ -131,14 +168,16 @@ const AddressRegistration = () => {
           },
           (error) => {
             console.log('Could not get user location:', error);
-          }
+          },
+          { timeout: 10000, enableHighAccuracy: true }
         );
       }
 
       setIsMapLoaded(true);
+      console.log('Map initialization completed');
     } catch (error) {
       console.error('Error initializing map:', error);
-      setUseMap(false);
+      handleMapError();
     }
   };
 
@@ -151,6 +190,7 @@ const AddressRegistration = () => {
       (results, status) => {
         if (status === 'OK' && results && results[0]) {
           setAddress(results[0].formatted_address);
+          console.log('Address found:', results[0].formatted_address);
         }
       }
     );
@@ -259,8 +299,12 @@ const AddressRegistration = () => {
             <div className="flex gap-4">
               <Button
                 variant={useMap ? "default" : "outline"}
-                onClick={() => setUseMap(true)}
+                onClick={() => {
+                  setUseMap(true);
+                  setMapError(false);
+                }}
                 className="flex-1"
+                disabled={mapError}
               >
                 <MapPin size={18} className="ml-2" />
                 استخدام الخريطة
@@ -274,10 +318,15 @@ const AddressRegistration = () => {
                 تسجيل يدوي
               </Button>
             </div>
+            {mapError && (
+              <p className="text-red-500 text-sm mt-2 text-center">
+                فشل في تحميل الخريطة، يرجى استخدام التسجيل اليدوي
+              </p>
+            )}
           </div>
 
           {/* Map Section */}
-          {useMap && (
+          {useMap && !mapError && (
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 flex items-center">
                 <MapPin size={18} className="ml-2 text-primary" />
@@ -286,7 +335,7 @@ const AddressRegistration = () => {
               <div className="relative">
                 <div 
                   ref={mapRef} 
-                  className="w-full h-80 rounded-lg border"
+                  className="w-full h-80 rounded-lg border bg-gray-100"
                   style={{ minHeight: '320px' }}
                 />
                 
@@ -302,7 +351,8 @@ const AddressRegistration = () => {
               
               {selectedLocation && (
                 <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 mb-1">الموقع المحدد:</p>
+                  <p className="text-xs text-gray-500">
                     الإحداثيات: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
                   </p>
                 </div>
@@ -311,7 +361,7 @@ const AddressRegistration = () => {
           )}
 
           {/* Manual Location Selection */}
-          {!useMap && (
+          {(!useMap || mapError) && (
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 flex items-center">
                 <Navigation size={18} className="ml-2 text-primary" />
@@ -352,6 +402,89 @@ const AddressRegistration = () => {
       </div>
     </MainLayout>
   );
+
+  async function handleSubmit() {
+    if (useMap && !mapError && !selectedLocation) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى تحديد موقعك على الخريطة"
+      });
+      return;
+    }
+
+    if ((!useMap || mapError) && (!locationValue.governorate || !locationValue.city || !locationValue.area)) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى اختيار المحافظة والمدينة والمنطقة"
+      });
+      return;
+    }
+
+    if (!address.trim()) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى كتابة تفاصيل العنوان"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      if (user) {
+        const addressData = {
+          address,
+          user_id: user.id,
+          governorate_id: locationValue.governorate || null,
+          city_id: locationValue.city || null,
+          area_id: locationValue.area || null,
+          neighborhood_id: locationValue.neighborhood || null,
+          latitude: selectedLocation?.lat || null,
+          longitude: selectedLocation?.lng || null,
+          is_default: true
+        };
+
+        const { error } = await supabase
+          .from('customer_addresses')
+          .insert(addressData);
+
+        if (error) throw error;
+
+        await supabase
+          .from('customers')
+          .update({
+            address: address,
+            governorate_id: locationValue.governorate || null,
+            city_id: locationValue.city || null,
+            area_id: locationValue.area || null,
+            neighborhood_id: locationValue.neighborhood || null
+          })
+          .eq('user_id', user.id);
+      }
+
+      localStorage.setItem('userAddress', address);
+      localStorage.setItem('addressRegistered', 'true');
+
+      toast({
+        title: "تم تسجيل العنوان",
+        description: "تم حفظ عنوانك بنجاح"
+      });
+
+      navigate('/');
+    } catch (error) {
+      console.error('Error saving address:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "حدث خطأ أثناء حفظ العنوان"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 };
 
 export default AddressRegistration;
