@@ -19,6 +19,7 @@ declare namespace google {
       mapTypeControl?: boolean;
       streetViewControl?: boolean;
       fullscreenControl?: boolean;
+      gestureHandling?: string;
     }
 
     class Marker {
