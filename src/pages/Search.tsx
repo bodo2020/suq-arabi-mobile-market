@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Barcode, Search as SearchIcon, X, Scan } from 'lucide-react';
@@ -5,7 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import SearchBar from '@/components/ui/SearchBar';
 import ProductCard from '@/components/ui/ProductCard';
-import { searchProducts, getProducts } from '@/lib/supabase';
+import { searchProducts, getProducts, searchProductByBarcode } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
@@ -121,6 +122,54 @@ const Search = () => {
     localStorage.removeItem('recentSearches');
   };
 
+  const handleBarcodeDetected = async (barcode: string) => {
+    try {
+      // Search for product by barcode
+      const product = await searchProductByBarcode(barcode);
+      
+      // Stop scanner first
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        await scannerRef.current.stop();
+      }
+      setShowScanner(false);
+      scannerRef.current = null;
+
+      if (product) {
+        // Product found - navigate to product page
+        toast({
+          title: "تم العثور على المنتج",
+          description: product.name,
+        });
+        navigate(`/product/${product.id}`);
+      } else {
+        // Product not found - show error message
+        toast({
+          title: "المنتج غير موجود",
+          description: "لم نتمكن من العثور على منتج بهذا الباركود",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error processing barcode:", error);
+      // Stop scanner on error
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        try {
+          await scannerRef.current.stop();
+        } catch (stopError) {
+          console.error("Error stopping scanner:", stopError);
+        }
+      }
+      setShowScanner(false);
+      scannerRef.current = null;
+      
+      toast({
+        title: "خطأ في البحث",
+        description: "حدث خطأ أثناء البحث عن المنتج",
+        variant: "destructive",
+      });
+    }
+  };
+
   const startBarcodeScanner = () => {
     setShowScanner(true);
     
@@ -136,28 +185,10 @@ const Search = () => {
             fps: 10,
             qrbox: { width: 250, height: 150 },
           },
-          (decodedText) => {
+          async (decodedText) => {
             // Success callback
             console.log("Barcode detected:", decodedText);
-            
-            // Check if scanner is still active
-            if (scannerRef.current && scannerRef.current.isScanning) {
-              scannerRef.current.stop().then(() => {
-                setShowScanner(false);
-                scannerRef.current = null;
-                navigate(`/search?q=${encodeURIComponent(decodedText)}`);
-              }).catch(err => {
-                console.error("Error stopping scanner:", err);
-                // Still navigate even if there was an error stopping
-                setShowScanner(false);
-                scannerRef.current = null;
-                navigate(`/search?q=${encodeURIComponent(decodedText)}`);
-              });
-            } else {
-              // Scanner might have been stopped by another process
-              setShowScanner(false);
-              navigate(`/search?q=${encodeURIComponent(decodedText)}`);
-            }
+            await handleBarcodeDetected(decodedText);
           },
           (errorMessage) => {
             // Error callback - we'll just log it and continue scanning

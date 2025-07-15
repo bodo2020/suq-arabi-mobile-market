@@ -226,6 +226,16 @@ export async function searchProducts(query: string) {
   return data || [];
 }
 
+export async function searchProductByBarcode(barcode: string) {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .or(`barcode.eq.${barcode},bulk_barcode.eq.${barcode}`);
+  
+  if (error) console.error(`Error searching product by barcode:`, error);
+  return data?.[0] || null;
+}
+
 export async function submitOrder(order: Omit<Order, 'id' | 'created_at'>) {
   const { data, error } = await supabase
     .from('online_orders')

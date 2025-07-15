@@ -7,6 +7,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { searchProductByBarcode } from '@/lib/supabase';
 
 const BarcodeScanner = () => {
   const navigate = useNavigate();
@@ -27,10 +28,10 @@ const BarcodeScanner = () => {
             fps: 10,
             qrbox: { width: 250, height: 150 },
           },
-          (decodedText) => {
+          async (decodedText) => {
             // Success callback
             console.log("Barcode detected:", decodedText);
-            stopScannerAndNavigate(qrScanner, decodedText);
+            await handleBarcodeDetected(qrScanner, decodedText);
           },
           (errorMessage) => {
             // Error callback - we'll just log it and continue scanning
@@ -79,39 +80,74 @@ const BarcodeScanner = () => {
     };
   }, [navigate, toast]);
 
-  const stopScannerAndNavigate = (scannerInstance: Html5Qrcode, decodedText?: string) => {
-    // Only attempt to stop if it's running
-    if (scannerInstance.isScanning) {
-      scannerInstance.stop().then(() => {
-        setScanner(null);
-        setScanning(false);
-        navigateToDestination(decodedText);
-      }).catch(err => {
-        console.error("Error stopping scanner:", err);
-        // Still navigate even if there was an error stopping
-        setScanner(null);
-        setScanning(false);
-        navigateToDestination(decodedText);
-      });
-    } else {
-      // If not scanning, just navigate
+  const handleBarcodeDetected = async (scannerInstance: Html5Qrcode, barcode: string) => {
+    try {
+      // Search for product by barcode
+      const product = await searchProductByBarcode(barcode);
+      
+      // Stop scanner first
+      if (scannerInstance.isScanning) {
+        await scannerInstance.stop();
+      }
       setScanner(null);
       setScanning(false);
-      navigateToDestination(decodedText);
-    }
-  };
 
-  const navigateToDestination = (decodedText?: string) => {
-    if (decodedText) {
-      navigate(`/search?q=${encodeURIComponent(decodedText)}`);
-    } else {
+      if (product) {
+        // Product found - navigate to product page
+        toast({
+          title: "تم العثور على المنتج",
+          description: product.name,
+        });
+        navigate(`/product/${product.id}`);
+      } else {
+        // Product not found - show error and go back
+        toast({
+          title: "المنتج غير موجود",
+          description: "لم نتمكن من العثور على منتج بهذا الباركود",
+          variant: "destructive",
+        });
+        navigate(-1);
+      }
+    } catch (error) {
+      console.error("Error processing barcode:", error);
+      // Stop scanner on error
+      if (scannerInstance.isScanning) {
+        try {
+          await scannerInstance.stop();
+        } catch (stopError) {
+          console.error("Error stopping scanner:", stopError);
+        }
+      }
+      setScanner(null);
+      setScanning(false);
+      
+      toast({
+        title: "خطأ في البحث",
+        description: "حدث خطأ أثناء البحث عن المنتج",
+        variant: "destructive",
+      });
       navigate(-1);
     }
   };
 
   const handleBack = () => {
     if (scanner) {
-      stopScannerAndNavigate(scanner);
+      if (scanner.isScanning) {
+        scanner.stop().then(() => {
+          setScanner(null);
+          setScanning(false);
+          navigate(-1);
+        }).catch(err => {
+          console.error("Error stopping scanner:", err);
+          setScanner(null);
+          setScanning(false);
+          navigate(-1);
+        });
+      } else {
+        setScanner(null);
+        setScanning(false);
+        navigate(-1);
+      }
     } else {
       navigate(-1);
     }
