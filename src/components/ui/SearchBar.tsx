@@ -41,7 +41,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     if (onBarcodeClick) {
       onBarcodeClick();
     } else {
-      navigate('/barcode-scan');
+      navigate('/barcode-scanner');
     }
   };
 

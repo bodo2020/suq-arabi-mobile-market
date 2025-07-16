@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -121,7 +122,12 @@ function App() {
                 <Address />
               </AddressGuard>
             } />
-            <Route path="/address/:id" element={
+            <Route path="/add-address" element={
+              <AddressGuard>
+                <Address />
+              </AddressGuard>
+            } />
+            <Route path="/edit-address/:id" element={
               <AddressGuard>
                 <Address />
               </AddressGuard>
@@ -137,6 +143,11 @@ function App() {
               </AddressGuard>
             } />
             <Route path="/barcode-scanner" element={
+              <AddressGuard>
+                <BarcodeScanner />
+              </AddressGuard>
+            } />
+            <Route path="/barcode-scan" element={
               <AddressGuard>
                 <BarcodeScanner />
               </AddressGuard>
