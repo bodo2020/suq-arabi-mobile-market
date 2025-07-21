@@ -1,23 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import LocationPicker, { LocationValue } from '@/components/ui/LocationPicker';
-import MapboxMap from '@/components/ui/MapboxMap';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
+
+declare global {
+  interface Window {
+    google: any;
+    initMap: () => void;
+  }
+}
 
 const AddressRegistration = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useUser();
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   
   const [useMap, setUseMap] = useState(true);
-  const [mapboxToken, setMapboxToken] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number, address?: string} | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isLoadingMap, setIsLoadingMap] = useState(false);
+  const [mapError, setMapError] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [address, setAddress] = useState('');
   const [locationValue, setLocationValue] = useState<LocationValue>({
     governorate: "",
@@ -27,11 +37,244 @@ const AddressRegistration = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLocationSelect = (location: { lat: number; lng: number; address?: string }) => {
-    setSelectedLocation(location);
-    if (location.address) {
-      setAddress(location.address);
+  useEffect(() => {
+    if (useMap && !mapError) {
+      loadGoogleMaps();
     }
+    return () => {
+      // تنظيف الخريطة عند الخروج
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current = null;
+      }
+      if (markerRef.current) {
+        markerRef.current = null;
+      }
+    };
+  }, [useMap, mapError]);
+
+  const loadGoogleMaps = async () => {
+    if (isLoadingMap) return;
+    
+    console.log('بدء تحميل Google Maps...');
+    setIsLoadingMap(true);
+    setMapError(false);
+    
+    try {
+      // التحقق من وجود Google Maps مسبقاً
+      if (window.google && window.google.maps) {
+        console.log('Google Maps متاح بالفعل');
+        initializeMap();
+        return;
+      }
+
+      // إزالة أي سكريبت سابق
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        existingScript.remove();
+        console.log('تم إزالة سكريبت Google Maps السابق');
+      }
+
+      // تحميل Google Maps مع معالجة أفضل للأخطاء
+      await new Promise<void>((resolve, reject) => {
+        window.initMap = () => {
+          console.log('تم استدعاء initMap callback');
+          resolve();
+        };
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&callback=initMap&loading=async`;
+        script.async = true;
+        script.defer = true;
+        
+        script.onload = () => {
+          console.log('تم تحميل سكريبت Google Maps');
+        };
+        
+        script.onerror = (error) => {
+          console.error('فشل في تحميل سكريبت Google Maps:', error);
+          reject(new Error('فشل في تحميل Google Maps'));
+        };
+        
+        document.head.appendChild(script);
+        
+        // timeout للتأكد من عدم التعليق
+        setTimeout(() => {
+          reject(new Error('انتهت مهلة تحميل Google Maps'));
+        }, 15000);
+      });
+
+      // انتظار قليل للتأكد من تحميل كل شيء
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (window.google && window.google.maps) {
+        initializeMap();
+      } else {
+        throw new Error('Google Maps API غير متاح بعد التحميل');
+      }
+      
+    } catch (error) {
+      console.error('خطأ في تحميل Google Maps:', error);
+      handleMapError();
+    }
+  };
+
+  const initializeMap = () => {
+    if (!mapRef.current) {
+      console.error('حاوي الخريطة غير متاح');
+      handleMapError();
+      return;
+    }
+
+    if (!window.google || !window.google.maps) {
+      console.error('Google Maps API غير متاح');
+      handleMapError();
+      return;
+    }
+
+    try {
+      console.log('إنشاء خريطة Google Maps...');
+      const defaultLocation = { lat: 30.0444, lng: 31.2357 }; // القاهرة
+      
+      const mapOptions = {
+        center: defaultLocation,
+        zoom: 13,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        gestureHandling: 'greedy',
+        zoomControl: true,
+        disableDefaultUI: false,
+        styles: [] // استخدام الستايل الافتراضي
+      };
+      
+      const map = new window.google.maps.Map(mapRef.current, mapOptions);
+      mapInstanceRef.current = map;
+      console.log('تم إنشاء الخريطة بنجاح');
+
+      // إنشاء علامة قابلة للسحب
+      const marker = new window.google.maps.Marker({
+        position: defaultLocation,
+        map: map,
+        draggable: true,
+        title: "اسحب لتحديد موقعك",
+        animation: window.google.maps.Animation.DROP
+      });
+      
+      markerRef.current = marker;
+      setSelectedLocation(defaultLocation);
+      console.log('تم إنشاء العلامة');
+
+      // معالجة سحب العلامة
+      marker.addListener('dragend', () => {
+        const position = marker.getPosition();
+        if (position) {
+          const newLocation = {
+            lat: position.lat(),
+            lng: position.lng()
+          };
+          setSelectedLocation(newLocation);
+          reverseGeocode(newLocation);
+        }
+      });
+
+      // معالجة النقر على الخريطة
+      map.addListener('click', (event: any) => {
+        if (event.latLng) {
+          const newLocation = {
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng()
+          };
+          marker.setPosition(newLocation);
+          setSelectedLocation(newLocation);
+          reverseGeocode(newLocation);
+        }
+      });
+
+      // معالجة تحميل الخريطة
+      map.addListener('tilesloaded', () => {
+        console.log('تم تحميل بلاطات الخريطة');
+        setIsMapLoaded(true);
+        setIsLoadingMap(false);
+      });
+
+      map.addListener('idle', () => {
+        console.log('الخريطة في حالة استقرار');
+        if (!isMapLoaded) {
+          setIsMapLoaded(true);
+          setIsLoadingMap(false);
+        }
+      });
+
+      // محاولة الحصول على موقع المستخدم
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            console.log('تم الحصول على موقع المستخدم');
+            const userLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            map.setCenter(userLocation);
+            marker.setPosition(userLocation);
+            setSelectedLocation(userLocation);
+            reverseGeocode(userLocation);
+          },
+          (error) => {
+            console.log('لا يمكن الحصول على موقع المستخدم:', error);
+            // استخدام الموقع الافتراضي
+            reverseGeocode(defaultLocation);
+          },
+          { 
+            timeout: 10000, 
+            enableHighAccuracy: true,
+            maximumAge: 300000
+          }
+        );
+      } else {
+        reverseGeocode(defaultLocation);
+      }
+
+      // إجبار إعادة ضبط الحجم بعد التحميل
+      setTimeout(() => {
+        if (map && window.google) {
+          window.google.maps.event.trigger(map, 'resize');
+          map.setCenter(map.getCenter());
+        }
+      }, 1000);
+
+    } catch (error) {
+      console.error('خطأ في إنشاء الخريطة:', error);
+      handleMapError();
+    }
+  };
+
+  const reverseGeocode = (location: {lat: number, lng: number}) => {
+    if (!window.google || !window.google.maps) return;
+
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode(
+      { location: location },
+      (results: any, status: string) => {
+        if (status === 'OK' && results && results[0]) {
+          setAddress(results[0].formatted_address);
+          console.log('تم الحصول على العنوان:', results[0].formatted_address);
+        } else {
+          console.warn('فشل في الحصول على العنوان:', status);
+        }
+      }
+    );
+  };
+
+  const handleMapError = () => {
+    console.log('معالجة خطأ الخريطة');
+    setMapError(true);
+    setIsLoadingMap(false);
+    setUseMap(false);
+    toast({
+      variant: "destructive",
+      title: "خطأ في تحميل الخريطة",
+      description: "سيتم استخدام التسجيل اليدوي بدلاً من ذلك"
+    });
   };
 
   const handleSubmit = async () => {
@@ -135,8 +378,12 @@ const AddressRegistration = () => {
             <div className="flex gap-4">
               <Button
                 variant={useMap ? "default" : "outline"}
-                onClick={() => setUseMap(true)}
+                onClick={() => {
+                  setUseMap(true);
+                  setMapError(false);
+                }}
                 className="flex-1"
+                disabled={isLoadingMap}
               >
                 <MapPin size={18} className="ml-2" />
                 استخدام الخريطة
@@ -150,34 +397,45 @@ const AddressRegistration = () => {
                 تسجيل يدوي
               </Button>
             </div>
+            
+            {mapError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">
+                  فشل في تحميل الخريطة. يرجى استخدام التسجيل اليدوي أو المحاولة مرة أخرى.
+                </p>
+              </div>
+            )}
           </div>
 
-          {useMap && (
+          {useMap && !mapError && (
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 flex items-center">
                 <MapPin size={18} className="ml-2 text-primary" />
                 حدد موقعك على الخريطة
               </h3>
               
-              {!mapboxToken ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-gray-600">
-                    لاستخدام الخريطة، يرجى إدخال Mapbox Access Token الخاص بك.
-                    يمكنك الحصول عليه من <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">mapbox.com</a>
-                  </p>
-                  <Input
-                    value={mapboxToken}
-                    onChange={(e) => setMapboxToken(e.target.value)}
-                    placeholder="أدخل Mapbox Access Token"
-                    className="text-right"
-                  />
-                </div>
-              ) : (
-                <MapboxMap
-                  accessToken={mapboxToken}
-                  onLocationSelect={handleLocationSelect}
+              <div className="relative">
+                <div 
+                  ref={mapRef} 
+                  className="w-full rounded-lg border overflow-hidden"
+                  style={{ 
+                    height: '400px',
+                    minHeight: '400px',
+                    backgroundColor: '#f9f9f9'
+                  }}
                 />
-              )}
+                
+                {(isLoadingMap || !isMapLoaded) && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-90 rounded-lg">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-gray-600 text-sm">
+                        جاري تحميل الخريطة...
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               {selectedLocation && (
                 <div className="mt-3 p-3 bg-gray-50 rounded-lg">
@@ -185,12 +443,15 @@ const AddressRegistration = () => {
                   <p className="text-sm text-gray-800 font-medium">
                     {address || "جاري تحديد العنوان..."}
                   </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    الإحداثيات: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                  </p>
                 </div>
               )}
             </div>
           )}
 
-          {!useMap && (
+          {(!useMap || mapError) && (
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 flex items-center">
                 <Navigation size={18} className="ml-2 text-primary" />
@@ -213,7 +474,7 @@ const AddressRegistration = () => {
 
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingMap}
             className="w-full bg-primary text-white py-3 text-lg"
           >
             {isSubmitting ? (
