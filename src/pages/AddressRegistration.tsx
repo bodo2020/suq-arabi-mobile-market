@@ -11,6 +11,17 @@ import { useUser } from '@/contexts/UserContext';
 declare global {
   interface Window {
     initMap: () => void;
+    google: {
+      maps: {
+        Map: any;
+        Marker: any;
+        Geocoder: any;
+        Animation: any;
+        event: {
+          trigger: (instance: any, eventName: string) => void;
+        };
+      };
+    };
   }
 }
 
@@ -194,11 +205,14 @@ const AddressRegistration = () => {
         );
       }
 
-      map.addListener('tilesloaded', () => {
-        console.log('اكتمل تحميل بلاطات الخريطة');
-        setIsMapLoaded(true);
-        setIsLoadingMap(false);
-      });
+      // إجبار إعادة ضبط حجم الخريطة
+      setTimeout(() => {
+        if (map && mapRef.current && window.google) {
+          console.log('إعادة ضبط حجم الخريطة');
+          window.google.maps.event.trigger(map, 'resize');
+          map.setCenter(defaultLocation);
+        }
+      }, 1000);
 
     } catch (error) {
       console.error('خطأ في إنشاء الخريطة:', error);
@@ -350,12 +364,18 @@ const AddressRegistration = () => {
                 <MapPin size={18} className="ml-2 text-primary" />
                 حدد موقعك على الخريطة
               </h3>
-              <div className="relative">
-                <div 
-                  ref={mapRef} 
-                  className="w-full h-80 rounded-lg border bg-gray-100"
-                  style={{ minHeight: '320px' }}
-                />
+               <div className="relative">
+                 <div 
+                   ref={mapRef} 
+                   className="w-full rounded-lg border"
+                   style={{ 
+                     height: '320px',
+                     minHeight: '320px',
+                     backgroundColor: '#f3f4f6',
+                     position: 'relative',
+                     overflow: 'hidden'
+                   }}
+                 />
                 
                 {isLoadingMap && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75 rounded-lg">
