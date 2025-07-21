@@ -116,7 +116,27 @@ const AddressRegistration = () => {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
-        gestureHandling: 'greedy',
+        gestureHandling: 'greedy'
+      });
+
+      // التحقق من وجود مشكلة في تحميل البلاطات
+      map.addListener('tilesloaded', () => {
+        console.log('اكتمل تحميل بلاطات الخريطة بنجاح');
+        setIsMapLoaded(true);
+        setIsLoadingMap(false);
+      });
+
+      // معالجة أخطاء الخريطة
+      map.addListener('projection_changed', () => {
+        console.log('تم تغيير إسقاط الخريطة');
+      });
+
+      map.addListener('idle', () => {
+        console.log('الخريطة في حالة خمول (تم تحميل كل شيء)');
+        if (!isMapLoaded) {
+          setIsMapLoaded(true);
+          setIsLoadingMap(false);
+        }
       });
       
       mapInstanceRef.current = map;
