@@ -43,7 +43,7 @@ const Map = () => {
       const loadScript = () => {
         return new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places`;
+          script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&loading=async`;
           script.async = true;
           script.defer = true;
 
@@ -95,14 +95,7 @@ const Map = () => {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
-        gestureHandling: 'greedy',
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'off' }]
-          }
-        ]
+        gestureHandling: 'greedy'
       });
       
       mapInstanceRef.current = map;
