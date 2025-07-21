@@ -1,30 +1,6 @@
-بالتأكيد، هذا هو الكود الكامل للمكون `AddressRegistration` بعد تطبيق التعديلات المقترحة لزيادة الموثوقية والأمان.
-
-### **التعديلات الرئيسية:**
-
-1.  **استخدام متغيرات البيئة:** تم استبدال مفتاح الـ API المكتوب مباشرة في الكود (`hardcoded`) بمتغير بيئة (`import.meta.env.VITE_Maps_API_KEY`). هذا أكثر أمانًا ومرونة.
-2.  **تحميل السكريبت عبر `callback`:** تم تعديل طريقة تحميل سكريبت خرائط جوجل لاستخدام `&callback=initMap`. هذه الطريقة أثبتت فعاليتها وتمنع حدوث مشاكل في توقيت تحميل وتشغيل الدوال.
-
------
-
-### **قبل استخدام الكود:**
-
-لا تنسَ إنشاء ملف `.env.local` في المجلد الرئيسي لمشروعك ووضع مفتاحك الخاص فيه:
-
-```
-VITE_Maps_API_KEY=ضع-مفتاحك-هنا
-```
-
-**ملاحظة:** إذا كنت تستخدم `Create React App` بدلاً من `Vite`، غيّر اسم المتغير إلى `REACT_APP_Maps_API_KEY` واستخدمه في الكود عبر `process.env.REACT_APP_Maps_API_KEY`.
-
------
-
-### **الكود الكامل المعدّل (`AddressRegistration.tsx`)**
-
-```tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Check, ArrowRight } from 'lucide-react';
+import { MapPin, Navigation, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
@@ -32,7 +8,6 @@ import LocationPicker, { LocationValue } from '@/components/ui/LocationPicker';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 
-// لجعل typescript يتعرف على الدالة المضافة للـ window
 declare global {
   interface Window {
     initMap: () => void;
@@ -62,7 +37,6 @@ const AddressRegistration = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // التأكد من عدم تحميل الخريطة إلا عند الحاجة
     if (useMap && !mapError && !mapInstanceRef.current) {
       loadGoogleMaps();
     }
@@ -72,46 +46,40 @@ const AddressRegistration = () => {
     console.log('بدء تحميل خرائط جوجل...');
     setIsLoadingMap(true);
     
-    // تحقق إذا كان السكريبت قد تم تحميله مسبقاً
     if (window.google && window.google.maps) {
-      console.log('خرائط جوجل متاحة بالفعل');
+      console.log('تم تحميل سكريبت Google Maps بنجاح');
       initializeMap();
       return;
     }
 
     try {
-      // **تعديل:** جعل الدالة متاحة على مستوى الـ window ليتمكن سكريبت جوجل من استدعائها
       window.initMap = initializeMap;
 
-      // إزالة أي سكريبت موجود مسبقاً لتجنب التكرار
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
       if (existingScript) {
         existingScript.remove();
       }
 
       const script = document.createElement('script');
-      
-      // **تعديل:** استخدام متغيرات البيئة بدلاً من المفتاح المباشر
-      // استخدم process.env.REACT_APP_Maps_API_KEY إذا كنت تستخدم Create React App
-      const apiKey = import.meta.env.VITE_Maps_API_KEY; 
-
-      if (!apiKey) {
-        console.error("مفتاح Google Maps API غير موجود في ملف .env");
-        handleMapError();
-        return;
-      }
-      
-      // **تعديل:** استخدام &callback=initMap لضمان تحميل آمن وموثوق
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAKETgRI3Gn1OgLxly46SE2RhLA_BeNrdk&libraries=places&callback=initMap`;
       script.async = true;
       script.defer = true;
       
       script.onerror = () => {
-        // سيتم معالجة الخطأ في حال فشل تحميل السكريبت نفسه
-        throw new Error('فشل في تحميل سكريبت Google Maps');
+        console.error('فشل في تحميل سكريبت Google Maps');
+        handleMapError();
       };
       
       document.head.appendChild(script);
+      console.log('تم تحميل سكريپت Google Maps بنجاح');
+
+      setTimeout(() => {
+        if (!isMapLoaded && !mapError) {
+          console.log('انتهت مهلة انتظار تحميل الخريطة، تعيين كـ محملة');
+          setIsMapLoaded(true);
+          setIsLoadingMap(false);
+        }
+      }, 5000);
 
     } catch (error) {
       console.error('خطأ في تحميل Google Maps:', error);
@@ -140,7 +108,7 @@ const AddressRegistration = () => {
 
     try {
       console.log('إنشاء خريطة Google...');
-      const defaultLocation = { lat: 30.0444, lng: 31.2357 }; // القاهرة
+      const defaultLocation = { lat: 30.0444, lng: 31.2357 };
       
       const map = new window.google.maps.Map(mapRef.current, {
         center: defaultLocation,
@@ -163,6 +131,7 @@ const AddressRegistration = () => {
       });
       
       markerRef.current = marker;
+      console.log('تم إنشاء العلامة بنجاح');
       setSelectedLocation(defaultLocation);
       reverseGeocode(defaultLocation);
 
@@ -176,6 +145,7 @@ const AddressRegistration = () => {
       });
 
       map.addListener('click', (event: any) => {
+        console.log('تم النقر على الخريطة');
         if (event.latLng) {
           const newLocation = { lat: event.latLng.lat(), lng: event.latLng.lng() };
           marker.setPosition(newLocation);
@@ -207,7 +177,7 @@ const AddressRegistration = () => {
       map.addListener('tilesloaded', () => {
         console.log('اكتمل تحميل بلاطات الخريطة');
         setIsMapLoaded(true);
-        setIsLoadingMap(false); // إيقاف مؤشر التحميل هنا
+        setIsLoadingMap(false);
       });
 
     } catch (error) {
@@ -231,87 +201,86 @@ const AddressRegistration = () => {
   };
 
   const handleSubmit = async () => {
-    // ... (منطق الحفظ يبقى كما هو، لا حاجة لتغييره)
     if (useMap && !selectedLocation) {
-        toast({
-          variant: "destructive",
-          title: "خطأ",
-          description: "يرجى تحديد موقعك على الخريطة"
-        });
-        return;
-      }
-  
-      if (!useMap && (!locationValue.governorate || !locationValue.city || !locationValue.area)) {
-        toast({
-          variant: "destructive",
-          title: "خطأ",
-          description: "يرجى اختيار المحافظة والمدينة والمنطقة"
-        });
-        return;
-      }
-  
-      if (!address.trim()) {
-        toast({
-          variant: "destructive",
-          title: "خطأ",
-          description: "يرجى كتابة تفاصيل العنوان"
-        });
-        return;
-      }
-  
-      setIsSubmitting(true);
-  
-      try {
-        if (user) {
-          const addressData = {
-            address,
-            user_id: user.id,
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى تحديد موقعك على الخريطة"
+      });
+      return;
+    }
+
+    if (!useMap && (!locationValue.governorate || !locationValue.city || !locationValue.area)) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى اختيار المحافظة والمدينة والمنطقة"
+      });
+      return;
+    }
+
+    if (!address.trim()) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى كتابة تفاصيل العنوان"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      if (user) {
+        const addressData = {
+          address,
+          user_id: user.id,
+          governorate_id: locationValue.governorate || null,
+          city_id: locationValue.city || null,
+          area_id: locationValue.area || null,
+          neighborhood_id: locationValue.neighborhood || null,
+          latitude: selectedLocation?.lat || null,
+          longitude: selectedLocation?.lng || null,
+          is_default: true
+        };
+
+        const { error } = await supabase
+          .from('customer_addresses')
+          .insert(addressData);
+
+        if (error) throw error;
+
+        await supabase
+          .from('customers')
+          .update({
+            address: address,
             governorate_id: locationValue.governorate || null,
             city_id: locationValue.city || null,
             area_id: locationValue.area || null,
-            neighborhood_id: locationValue.neighborhood || null,
-            latitude: selectedLocation?.lat || null,
-            longitude: selectedLocation?.lng || null,
-            is_default: true
-          };
-  
-          const { error } = await supabase
-            .from('customer_addresses')
-            .insert(addressData);
-  
-          if (error) throw error;
-  
-          await supabase
-            .from('customers')
-            .update({
-              address: address,
-              governorate_id: locationValue.governorate || null,
-              city_id: locationValue.city || null,
-              area_id: locationValue.area || null,
-              neighborhood_id: locationValue.neighborhood || null
-            })
-            .eq('user_id', user.id);
-        }
-  
-        localStorage.setItem('userAddress', address);
-        localStorage.setItem('addressRegistered', 'true');
-  
-        toast({
-          title: "تم تسجيل العنوان",
-          description: "تم حفظ عنوانك بنجاح"
-        });
-  
-        navigate('/');
-      } catch (error) {
-        console.error('خطأ في حفظ العنوان:', error);
-        toast({
-          variant: "destructive",
-          title: "خطأ",
-          description: "حدث خطأ أثناء حفظ العنوان"
-        });
-      } finally {
-        setIsSubmitting(false);
+            neighborhood_id: locationValue.neighborhood || null
+          })
+          .eq('user_id', user.id);
       }
+
+      localStorage.setItem('userAddress', address);
+      localStorage.setItem('addressRegistered', 'true');
+
+      toast({
+        title: "تم تسجيل العنوان",
+        description: "تم حفظ عنوانك بنجاح"
+      });
+
+      navigate('/');
+    } catch (error) {
+      console.error('خطأ في حفظ العنوان:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "حدث خطأ أثناء حفظ العنوان"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -433,4 +402,3 @@ const AddressRegistration = () => {
 };
 
 export default AddressRegistration;
-```
