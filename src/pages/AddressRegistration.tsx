@@ -59,7 +59,7 @@ const AddressRegistration = () => {
       const loadScript = () => {
         return new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBwx24l0UncHBcYwOkMEhHhaH5njd5crKw&libraries=places&loading=async`;
+          script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAKETgRI3Gn1OgLxly46SE2RhLA_BeNrdk=places&loading=async`;
           script.async = true;
           script.defer = true;
           
