@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Package, Scale, Plus, Minus } from 'lucide-react';
-import MainLayout from '@/components/layout/MainLayout';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Package, Scale, Plus, Minus, Share2 } from 'lucide-react';
+import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import CompanyCard from '@/components/ui/CompanyCard';
 import WeightSelector from '@/components/ui/WeightSelector';
 import ProductStructuredData from '@/components/seo/ProductStructuredData';
+import FavoriteButton from '@/components/ui/FavoriteButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -14,11 +15,13 @@ import { Product, getProductById, getRelatedProducts, getCompanyById, Company } 
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWeightSelectorOpen, setIsWeightSelectorOpen] = useState(false);
   const { addToCart, items, updateQuantity } = useCart();
   const { toast } = useToast();
@@ -121,6 +124,27 @@ const ProductDetail = () => {
     }
   };
 
+  // مشاركة المنتج
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product?.name || 'منتج',
+          text: product?.description || '',
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+      }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "تم النسخ",
+        description: "تم نسخ رابط المنتج"
+      });
+    }
+  };
+
   // التحقق مما إذا كان البيع بالجملة متاحًا
   const isBulkAvailable = product && product.bulk_enabled && product.bulk_quantity && product.bulk_price;
   const canPurchaseBulk = isBulkAvailable && product.quantity >= product.bulk_quantity;
@@ -179,78 +203,148 @@ const ProductDetail = () => {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-screen">
+      <div className="min-h-screen bg-gray-50">
+        <TopNavBar 
+          pageTitle="تفاصيل المنتج"
+          showBackButton={true}
+          onBack={() => navigate(-1)}
+        />
+        <div className="pt-20 flex justify-center items-center h-screen">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   if (!product) {
     return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-screen">
-          Product not found.
+      <div className="min-h-screen bg-gray-50">
+        <TopNavBar 
+          pageTitle="تفاصيل المنتج"
+          showBackButton={true}
+          onBack={() => navigate(-1)}
+        />
+        <div className="pt-20 flex justify-center items-center h-screen">
+          <p className="text-gray-600">المنتج غير موجود</p>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
+    <div className="min-h-screen bg-gray-50">
       <ProductStructuredData product={product} />
       
-      <div className="container mx-auto py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="relative">
-            {product.image_urls && product.image_urls.length > 0 ? (
-              <img src={product.image_urls[0]} alt={product.name} className="w-full rounded-lg" />
-            ) : (
-              <img src="/placeholder.svg" alt="Placeholder" className="w-full rounded-lg" />
-            )}
+      {/* Top Navigation */}
+      <TopNavBar 
+        pageTitle="تفاصيل المنتج"
+        showBackButton={true}
+        onBack={() => navigate(-1)}
+      />
+      
+      {/* Content with top padding for fixed navbar */}
+      <div className="pt-20">
+        {/* Product Image */}
+        <div className="relative bg-white p-4">
+          <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-100">
+            <img
+              src={product.image_urls?.[selectedImageIndex] || '/placeholder.svg'}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+            
+            {/* Share and Favorite buttons on image */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2">
+              <button 
+                onClick={handleShare}
+                className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors"
+              >
+                <Share2 className="w-5 h-5 text-gray-700" />
+              </button>
+              <div className="bg-white/90 backdrop-blur-sm rounded-full shadow-md">
+                <FavoriteButton productId={product.id} size="sm" />
+              </div>
+            </div>
+          </div>
+          
+          {/* Image thumbnails if multiple images */}
+          {product.image_urls && product.image_urls.length > 1 && (
+            <div className="flex gap-2 mt-4 overflow-x-auto">
+              {product.image_urls.map((url, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 ${
+                    selectedImageIndex === index ? 'border-primary' : 'border-gray-200'
+                  }`}
+                >
+                  <img
+                    src={url}
+                    alt={`${product.name} ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Product Info */}
+        <div className="bg-white p-4">
+          <h1 className="text-xl font-bold text-gray-900 mb-2">{product.name}</h1>
+          <p className="text-gray-600 mb-4">{product.description}</p>
+          
+          {/* Stock quantity - only show if 2 or less */}
+          {product.quantity <= 2 && product.quantity > 0 && (
+            <div className="mb-3">
+              <Badge variant="secondary" className="text-orange-600 bg-orange-50">
+                متبقي {product.quantity} قطع فقط
+              </Badge>
+            </div>
+          )}
+          
+          {/* Price and Company Info */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="space-y-2">
+              {product.barcode_type === 'scale' ? (
+                <span className="text-primary font-bold text-lg block">{product.price} ج.م/كجم</span>
+              ) : product.offer_price ? (
+                <>
+                  <span className="text-gray-400 line-through block">{product.price} ج.م</span>
+                  <span className="text-primary font-bold text-lg block">{product.offer_price} ج.م</span>
+                </>
+              ) : (
+                <span className="text-primary font-bold text-lg block">{product.price} ج.م</span>
+              )}
+
+              {product.bulk_enabled && product.bulk_price && product.bulk_quantity && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Package className="w-3 h-3" />
+                    سعر الجملة: {product.bulk_price} ج.م (للوحدة عند شراء {product.bulk_quantity} قطعة أو أكثر)
+                  </Badge>
+                </div>
+              )}
+            </div>
+            {company && <CompanyCard company={company} />}
           </div>
 
-          <div>
-            <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
-            <p className="text-gray-600 mb-4">{product.description}</p>
-            
-            <div className="flex items-center justify-between mb-4">
-              <div className="space-y-2">
-                {product.barcode_type === 'scale' ? (
-                  <span className="text-primary font-bold text-lg block">{product.price} ج.م/كجم</span>
-                ) : product.offer_price ? (
-                  <>
-                    <span className="text-gray-400 line-through block">{product.price} ج.م</span>
-                    <span className="text-primary font-bold text-lg block">{product.offer_price} ج.م</span>
-                  </>
-                ) : (
-                  <span className="text-primary font-bold text-lg block">{product.price} ج.م</span>
-                )}
-
-                {product.bulk_enabled && product.bulk_price && product.bulk_quantity && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Package className="w-3 h-3" />
-                      سعر الجملة: {product.bulk_price} ج.م (للوحدة عند شراء {product.bulk_quantity} قطعة أو أكثر)
-                    </Badge>
-                  </div>
-                )}
-              </div>
-              {company && <CompanyCard company={company} />}
+          {/* Stock Status */}
+          {product.quantity <= 0 ? (
+            <div className="bg-red-100 text-red-600 p-3 rounded-md mb-4">
+              هذا المنتج غير متوفر حاليًا
             </div>
+          ) : product.quantity > 2 ? (
+            <div className="text-green-600 mb-4">
+              متوفر
+            </div>
+          ) : (
+            <div className="text-orange-600 mb-4">
+              متبقي {product.quantity} قطع فقط
+            </div>
+          )}
 
-            {product.quantity <= 0 ? (
-              <div className="bg-red-100 text-red-600 p-3 rounded-md mb-4">
-                هذا المنتج غير متوفر حاليًا
-              </div>
-            ) : (
-              <div className="text-green-600 mb-4">
-                متوفر: {product.quantity} قطعة
-              </div>
-            )}
-
-            <div className="space-y-4 mt-6">
+          <div className="space-y-4 mt-6">
               {product.barcode_type === 'scale' ? (
                 <Button 
                   onClick={() => setIsWeightSelectorOpen(true)} 
@@ -328,7 +422,6 @@ const ProductDetail = () => {
                   )}
                 </div>
               )}
-            </div>
           </div>
         </div>
 
@@ -340,10 +433,11 @@ const ProductDetail = () => {
           />
         )}
 
+        {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-8">
+          <div className="bg-white mt-4 p-4">
             <h2 className="text-xl font-bold mb-4">منتجات ذات صلة</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {relatedProducts.map(relatedProduct => (
                 <ProductCard key={relatedProduct.id} product={relatedProduct} />
               ))}
@@ -351,7 +445,7 @@ const ProductDetail = () => {
           </div>
         )}
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

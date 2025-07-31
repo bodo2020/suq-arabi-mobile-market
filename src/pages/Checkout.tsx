@@ -135,8 +135,8 @@ const Checkout = () => {
   const handleOrder = async () => {
     if (!selectedAddress) {
       toast({
-        title: "لم يتم اختيار عنوان",
-        description: "يرجى اختيار عنوان للتوصيل",
+        title: "عنوان التوصيل مطلوب",
+        description: "يرجى اختيار عنوان التوصيل للمتابعة. إذا لم يكن لديك عنوان، قم بإضافة عنوان جديد",
         variant: "destructive"
       });
       return;

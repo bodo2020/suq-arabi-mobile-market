@@ -1,83 +1,78 @@
-
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useUser } from '@/contexts/UserContext';
-import { supabase } from '@/lib/supabase';
+import AddressSelector from '@/components/ui/AddressSelector';
+import { Button } from '@/components/ui/button';
+import { MapPin } from 'lucide-react';
 
 interface AddressGuardProps {
   children: React.ReactNode;
 }
 
 const AddressGuard: React.FC<AddressGuardProps> = ({ children }) => {
-  const navigate = useNavigate();
-  const { user } = useUser();
-  const [hasAddress, setHasAddress] = useState<boolean | null>(null);
+  const [hasAddress, setHasAddress] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAddressRegistration();
-  }, [user]);
+    checkAddress();
+  }, []);
 
-  const checkAddressRegistration = async () => {
-    try {
-      // Check localStorage first for quick access
-      const localAddress = localStorage.getItem('userAddress');
-      const addressRegistered = localStorage.getItem('addressRegistered');
-      
-      if (localAddress && addressRegistered === 'true') {
-        setHasAddress(true);
-        return;
-      }
-
-      // If user is logged in, check database
-      if (user) {
-        const { data, error } = await supabase
-          .from('customer_addresses')
-          .select('id')
-          .eq('user_id', user.id)
-          .limit(1);
-
-        if (error) {
-          console.error('Error checking addresses:', error);
-          setHasAddress(false);
-          return;
-        }
-
-        if (data && data.length > 0) {
+  const checkAddress = () => {
+    // Check if address is saved in localStorage
+    const savedAddress = localStorage.getItem('selectedAddress');
+    if (savedAddress) {
+      try {
+        const parsedAddress = JSON.parse(savedAddress);
+        if (parsedAddress.neighborhood_id) {
           setHasAddress(true);
-          localStorage.setItem('addressRegistered', 'true');
-        } else {
-          setHasAddress(false);
         }
-      } else {
-        // For non-logged users, check localStorage only
-        setHasAddress(!!localAddress);
+      } catch (error) {
+        console.error('Error parsing saved address:', error);
       }
-    } catch (error) {
-      console.error('Error in address check:', error);
-      setHasAddress(false);
     }
+    setLoading(false);
   };
 
-  useEffect(() => {
-    if (hasAddress === false) {
-      navigate('/address-registration');
-    }
-  }, [hasAddress, navigate]);
+  const handleAddressSelect = (addressData: any) => {
+    setHasAddress(true);
+  };
 
-  // Show loading while checking
-  if (hasAddress === null) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-gray-600">جاري التحقق من العنوان...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!hasAddress) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg p-8 max-w-md w-full text-center shadow-lg">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MapPin className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              اختر عنوان التوصيل
+            </h2>
+            <p className="text-gray-600">
+              لتتمكن من استخدام التطبيق، يرجى اختيار عنوان التوصيل أولاً
+            </p>
+          </div>
+          
+          <AddressSelector
+            onAddressSelect={handleAddressSelect}
+          >
+            <Button className="w-full">
+              <MapPin className="w-4 h-4 ml-2" />
+              اختر العنوان
+            </Button>
+          </AddressSelector>
         </div>
       </div>
     );
   }
 
-  // Only render children if address is registered
-  return hasAddress ? <>{children}</> : null;
+  return <>{children}</>;
 };
 
 export default AddressGuard;

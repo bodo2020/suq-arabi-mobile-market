@@ -23,7 +23,7 @@ import Orders from './pages/Orders';
 import Favorites from './pages/Favorites';
 import Address from './pages/Address';
 import AddressManager from './pages/AddressManager';
-import Map from './pages/Map';
+
 import BarcodeScanner from './pages/BarcodeScanner';
 import BulkProducts from './pages/BulkProducts';
 import CompanyProducts from './pages/CompanyProducts';
@@ -135,11 +135,6 @@ function App() {
             <Route path="/address-manager" element={
               <AddressGuard>
                 <AddressManager />
-              </AddressGuard>
-            } />
-            <Route path="/map" element={
-              <AddressGuard>
-                <Map />
               </AddressGuard>
             } />
             <Route path="/barcode-scanner" element={

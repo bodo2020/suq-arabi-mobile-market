@@ -101,7 +101,7 @@ const Favorites = () => {
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-        ) : !user ? (
+        ) : !user || !customerId ? (
           <div className="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
               <Heart size={32} className="text-gray-300" />
@@ -109,7 +109,7 @@ const Favorites = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">تسجيل الدخول مطلوب</h3>
             <p className="text-sm text-gray-500 mb-6">لعرض منتجاتك المفضلة، يرجى تسجيل الدخول أو إنشاء حساب جديد</p>
             <Button 
-              onClick={() => navigate('/account')}
+              onClick={() => navigate('/phone-login')}
               className="min-w-32"
             >
               تسجيل الدخول
