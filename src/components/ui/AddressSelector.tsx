@@ -68,7 +68,11 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
         address: addressText,
         delivery_price: neighborhoodData?.price || 0,
         estimated_time: neighborhoodData?.estimated_time || 'غير محدد',
-        full_address: `${neighborhoodData.areas.cities.governorates.name}, ${neighborhoodData.areas.cities.name}, ${neighborhoodData.areas.name}, ${neighborhoodData.name} - ${addressText}`
+        full_address: `${neighborhoodData.areas.cities.governorates.name}, ${neighborhoodData.areas.cities.name}, ${neighborhoodData.areas.name}, ${neighborhoodData.name} - ${addressText}`,
+        neighborhood_name: neighborhoodData.name,
+        area_name: neighborhoodData.areas.name,
+        city_name: neighborhoodData.areas.cities.name,
+        governorate_name: neighborhoodData.areas.cities.governorates.name
       };
 
       // حفظ في localStorage للمستخدمين غير المسجلين

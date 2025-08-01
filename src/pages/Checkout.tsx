@@ -12,6 +12,7 @@ import OrderNotes from '@/components/ui/OrderNotes';
 import CouponInput from '@/components/ui/CouponInput';
 import { calculateDeliveryFee } from '@/utils/deliveryUtils';
 import AddressDisplay from '@/components/ui/AddressDisplay';
+import AddressSelector from '@/components/ui/AddressSelector';
 import { ArrowRight, ShoppingCart } from 'lucide-react';
 
 const Checkout = () => {
@@ -48,18 +49,23 @@ const Checkout = () => {
   ];
   
   useEffect(() => {
-    if (!session) {
-      toast({
-        title: "تسجيل الدخول مطلوب",
-        description: "يرجى تسجيل الدخول أو إنشاء حساب للمتابعة",
-        variant: "destructive"
-      });
-      navigate('/phone-login');
-      return;
+    // Allow non-users to access checkout (using localStorage address)
+    if (user) {
+      fetchAddresses();
+    } else {
+      // Check if there's a saved address in localStorage for non-users
+      try {
+        const savedAddress = localStorage.getItem('selectedAddress');
+        if (savedAddress) {
+          const parsedAddress = JSON.parse(savedAddress);
+          setDeliveryFee(parsedAddress.delivery_price || 0);
+        }
+      } catch (error) {
+        console.error('Error parsing saved address:', error);
+      }
+      setLoading(false);
     }
-    
-    fetchAddresses();
-  }, [session, navigate]);
+  }, [user]);
   
   useEffect(() => {
     if (selectedAddress) {
@@ -105,33 +111,47 @@ const Checkout = () => {
   };
   
   const updateDeliveryFee = async () => {
-    if (!selectedAddress) return;
+    // Check both user address and localStorage address
+    let neighborhoodId = selectedAddress?.neighborhood_id;
+    
+    // If no user, try to get address from localStorage
+    if (!user) {
+      try {
+        const savedAddress = localStorage.getItem('selectedAddress');
+        if (savedAddress) {
+          const parsedAddress = JSON.parse(savedAddress);
+          neighborhoodId = parsedAddress.neighborhood_id;
+          // Use the price from saved address directly
+          if (parsedAddress.delivery_price !== undefined) {
+            setDeliveryFee(parsedAddress.delivery_price);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing saved address:', error);
+      }
+    }
+    
+    if (!neighborhoodId) return;
     
     try {
       // Get delivery price from neighborhood
       const { data: neighborhood, error } = await supabase
         .from('neighborhoods')
         .select('price')
-        .eq('id', selectedAddress.neighborhood_id)
+        .eq('id', neighborhoodId)
         .single();
         
       if (error || !neighborhood) {
         console.error('Error fetching neighborhood delivery price:', error);
-        // Fallback to base delivery fee only
-        const baseDeliveryFee = deliveryTypes.find(t => t.id === deliveryType)?.price || 0;
-        setDeliveryFee(baseDeliveryFee);
+        setDeliveryFee(0);
         return;
       }
       
-      const baseDeliveryFee = deliveryTypes.find(t => t.id === deliveryType)?.price || 0;
-      const neighborhoodPrice = neighborhood.price || 0;
-      
-      setDeliveryFee(baseDeliveryFee + neighborhoodPrice);
+      setDeliveryFee(neighborhood.price || 0);
     } catch (error) {
       console.error('Error calculating delivery fee:', error);
-      // Fallback to base delivery fee only
-      const baseDeliveryFee = deliveryTypes.find(t => t.id === deliveryType)?.price || 0;
-      setDeliveryFee(baseDeliveryFee);
+      setDeliveryFee(0);
     }
   };
   
@@ -155,10 +175,30 @@ const Checkout = () => {
   };
   
   const handleOrder = async () => {
-    if (!selectedAddress) {
+    // Check for address (either selected or localStorage)
+    let addressToUse = selectedAddress;
+    
+    if (!user) {
+      try {
+        const savedAddress = localStorage.getItem('selectedAddress');
+        if (savedAddress) {
+          const parsedAddress = JSON.parse(savedAddress);
+          addressToUse = {
+            id: 'temp-address',
+            neighborhood_id: parsedAddress.neighborhood_id,
+            address: parsedAddress.address,
+            full_address: parsedAddress.full_address
+          };
+        }
+      } catch (error) {
+        console.error('Error parsing saved address:', error);
+      }
+    }
+    
+    if (!addressToUse) {
       toast({
         title: "عنوان التوصيل مطلوب",
-        description: "يرجى اختيار عنوان التوصيل للمتابعة. إذا لم يكن لديك عنوان، قم بإضافة عنوان جديد",
+        description: "يرجى اختيار عنوان التوصيل للمتابعة",
         variant: "destructive"
       });
       return;
@@ -178,17 +218,22 @@ const Checkout = () => {
       const { data, error } = await supabase
         .from('online_orders')
         .insert({
-          customer_id: user.id, // Use customer_id instead of user_id
-          items: items,
-          address_id: selectedAddress.id,
-          delivery_type: deliveryType,
-          notes: notes,
-          coupon_code: couponCode || null,
-          discount_amount: discountAmount,
-          delivery_fee: deliveryFee,
-          subtotal: getCartTotal(),
+          customer_id: user?.id || null,
+          items: items.map(item => ({
+            product_id: item.product.id,
+            name: item.product.name,
+            quantity: item.quantity,
+            price: item.product.offer_price || item.product.price,
+            total: (item.product.offer_price || item.product.price) * item.quantity,
+            is_bulk: item.is_bulk || false,
+            unit_of_measure: item.unit_of_measure
+          })),
           total: getCartTotal() - discountAmount + deliveryFee,
-          status: 'waiting' // Use 'waiting' instead of 'pending' to match the enum
+          shipping_cost: deliveryFee,
+          delivery_location_id: addressToUse.neighborhood_id,
+          shipping_address: addressToUse.address || addressToUse.full_address,
+          payment_method: 'cash',
+          notes: notes || null
         })
         .select()
         .single();
@@ -235,7 +280,7 @@ const Checkout = () => {
                 <div className="flex justify-center items-center py-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ) : addresses.length > 0 ? (
+              ) : user && addresses.length > 0 ? (
                 <div className="space-y-4">
                   {addresses.map((address) => (
                     <div 
@@ -262,7 +307,7 @@ const Checkout = () => {
                     إدارة العناوين
                   </Button>
                 </div>
-              ) : (
+              ) : user ? (
                 <div className="text-center py-6">
                   <p className="text-gray-500 mb-4">لا توجد عناوين مسجلة</p>
                   <Button
@@ -271,6 +316,21 @@ const Checkout = () => {
                   >
                     إضافة عنوان جديد
                   </Button>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <AddressSelector onAddressSelect={(addressData) => {
+                    setDeliveryFee(addressData.delivery_price || 0);
+                    
+                    toast({
+                      title: "تم تحديد العنوان",
+                      description: "تم تحديد عنوان التوصيل بنجاح"
+                    });
+                  }}>
+                    <Button variant="default" className="w-full">
+                      اختر عنوان التوصيل
+                    </Button>
+                  </AddressSelector>
                 </div>
               )}
             </div>
@@ -336,7 +396,7 @@ const Checkout = () => {
                 <Button 
                   onClick={handleOrder}
                   className="w-full"
-                  disabled={!selectedAddress || items.length === 0}
+                  disabled={items.length === 0 || (!selectedAddress && (!localStorage.getItem('selectedAddress')))}
                 >
                   متابعة الدفع
                 </Button>

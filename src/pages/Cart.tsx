@@ -18,6 +18,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import LocationDisplay from '@/components/ui/LocationDisplay';
 import AddressDisplay from '@/components/ui/AddressDisplay';
+import AddressSelector from '@/components/ui/AddressSelector';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Cart = () => {
@@ -150,6 +151,27 @@ const Cart = () => {
       setDeliveryPrice(deliveryPricing.price);
     }
   }, [deliveryPricing]);
+
+  // Load address from localStorage on page load for non-users
+  React.useEffect(() => {
+    if (!user) {
+      try {
+        const savedAddress = localStorage.getItem('selectedAddress');
+        if (savedAddress) {
+          const parsedAddress = JSON.parse(savedAddress);
+          setSelectedLocation({
+            governorate: parsedAddress.governorate_id,
+            city: parsedAddress.city_id,
+            area: parsedAddress.area_id,
+            neighborhood: parsedAddress.neighborhood_id
+          });
+          setDeliveryPrice(parsedAddress.delivery_price || 0);
+        }
+      } catch (error) {
+        console.error('Error parsing saved address:', error);
+      }
+    }
+  }, [user]);
   React.useEffect(() => {
     const checkFreeDelivery = async () => {
       const subtotal = getTotalPrice();
@@ -253,13 +275,15 @@ const Cart = () => {
     }
   };
   const handleProceedToCheckout = () => {
-    if (!user) {
+    // Check if there's an address (either from user or localStorage)
+    const hasAddress = user ? customerData?.default_address : localStorage.getItem('selectedAddress');
+    
+    if (!hasAddress) {
       toast({
-        title: "تسجيل الدخول مطلوب",
-        description: "يرجى تسجيل الدخول أو إنشاء حساب للمتابعة",
+        title: "عنوان التوصيل مطلوب",
+        description: "يرجى اختيار عنوان التوصيل أولاً",
         variant: "destructive"
       });
-      navigate('/phone-login');
       return;
     }
     
@@ -270,8 +294,6 @@ const Cart = () => {
       <div className="container px-0 py-0">
         {/* Top Navigation Bar without cart icon */}
         <TopNavBar 
-          searchPlaceholder="البحث في السلة..."
-          onSearchFocus={handleSearchFocus}
           hideLogo={true}
           hideSearch={true}
           hideCart={true}
@@ -380,12 +402,36 @@ const Cart = () => {
               <div className="bg-white rounded-lg p-4">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-lg font-bold">عنوان التوصيل</h3>
-                  <Button variant="ghost" onClick={() => navigate('/addresses')} className="text-primary">
-                    {customerData?.default_address ? 'تغيير العنوان' : 'إضافة عنوان'}
-                  </Button>
+                  {user ? (
+                    <Button variant="ghost" onClick={() => navigate('/addresses')} className="text-primary">
+                      {customerData?.default_address ? 'تغيير العنوان' : 'إضافة عنوان'}
+                    </Button>
+                  ) : (
+                    <AddressSelector onAddressSelect={(addressData) => {
+                      // Update delivery price from selected neighborhood
+                      setDeliveryPrice(addressData.delivery_price || 0);
+                      
+                      // Update selected location for display
+                      setSelectedLocation({
+                        governorate: addressData.governorate_id,
+                        city: addressData.city_id,
+                        area: addressData.area_id,
+                        neighborhood: addressData.neighborhood_id
+                      });
+                      
+                      toast({
+                        title: "تم تحديد العنوان",
+                        description: "تم تحديد عنوان التوصيل بنجاح"
+                      });
+                    }}>
+                      <Button variant="ghost" className="text-primary">
+                        اختر العنوان
+                      </Button>
+                    </AddressSelector>
+                  )}
                 </div>
                 
-                {customerData?.default_address ? (
+                {user && customerData?.default_address ? (
                   <div className="text-sm space-y-1">
                     <p className="font-medium">
                       {customerData.default_address.neighborhoods?.name && `${customerData.default_address.neighborhoods.name}، `}
@@ -400,12 +446,40 @@ const Cart = () => {
                       </p>
                     )}
                   </div>
+                ) : !user && Object.keys(selectedLocation).length > 0 ? (
+                  <div className="text-sm space-y-1">
+                    <p className="text-green-600">تم اختيار العنوان من localStorage</p>
+                    <p className="text-sm text-primary mt-2">
+                      رسوم التوصيل: {deliveryPrice} ج.م
+                    </p>
+                  </div>
                 ) : (
                   <div className="text-center py-4">
                     <p className="text-gray-500 mb-2">لا يوجد عنوان للتوصيل</p>
-                    <Button variant="outline" onClick={() => navigate('/addresses')} className="text-primary border-primary hover:bg-primary/10">
-                      إضافة عنوان جديد
-                    </Button>
+                    {user ? (
+                      <Button variant="outline" onClick={() => navigate('/addresses')} className="text-primary border-primary hover:bg-primary/10">
+                        إضافة عنوان جديد
+                      </Button>
+                    ) : (
+                      <AddressSelector onAddressSelect={(addressData) => {
+                        setDeliveryPrice(addressData.delivery_price || 0);
+                        setSelectedLocation({
+                          governorate: addressData.governorate_id,
+                          city: addressData.city_id,
+                          area: addressData.area_id,
+                          neighborhood: addressData.neighborhood_id
+                        });
+                        
+                        toast({
+                          title: "تم تحديد العنوان",
+                          description: "تم تحديد عنوان التوصيل بنجاح"
+                        });
+                      }}>
+                        <Button variant="outline" className="text-primary border-primary hover:bg-primary/10">
+                          اختر عنوان التوصيل
+                        </Button>
+                      </AddressSelector>
+                    )}
                   </div>
                 )}
               </div>
