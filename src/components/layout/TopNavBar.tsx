@@ -45,7 +45,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden"
+    <div className="bg-primary text-white relative overflow-hidden"
          style={{ paddingTop: '1rem', paddingBottom: '2rem' }}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
@@ -118,12 +118,12 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         </div>
       </div>
       
-      {/* Curved bottom border - reversed for RTL */}
+      {/* Curved bottom border - in the original direction */}
       <div 
         className="absolute bottom-0 left-0 w-full h-6 bg-background"
         style={{
-          borderBottomLeftRadius: '50% 100%',
-          borderBottomRightRadius: '50% 100%',
+          borderTopLeftRadius: '50% 100%',
+          borderTopRightRadius: '50% 100%',
           transform: 'translateY(50%)'
         }}
       />

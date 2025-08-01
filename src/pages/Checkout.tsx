@@ -104,13 +104,35 @@ const Checkout = () => {
     }
   };
   
-  const updateDeliveryFee = () => {
+  const updateDeliveryFee = async () => {
     if (!selectedAddress) return;
     
-    const baseDeliveryFee = deliveryTypes.find(t => t.id === deliveryType)?.price || 0;
-    const locationFee = calculateDeliveryFee(selectedAddress.location);
-    
-    setDeliveryFee(baseDeliveryFee + locationFee);
+    try {
+      // Get delivery price from neighborhood
+      const { data: neighborhood, error } = await supabase
+        .from('neighborhoods')
+        .select('price')
+        .eq('id', selectedAddress.neighborhood_id)
+        .single();
+        
+      if (error || !neighborhood) {
+        console.error('Error fetching neighborhood delivery price:', error);
+        // Fallback to base delivery fee only
+        const baseDeliveryFee = deliveryTypes.find(t => t.id === deliveryType)?.price || 0;
+        setDeliveryFee(baseDeliveryFee);
+        return;
+      }
+      
+      const baseDeliveryFee = deliveryTypes.find(t => t.id === deliveryType)?.price || 0;
+      const neighborhoodPrice = neighborhood.price || 0;
+      
+      setDeliveryFee(baseDeliveryFee + neighborhoodPrice);
+    } catch (error) {
+      console.error('Error calculating delivery fee:', error);
+      // Fallback to base delivery fee only
+      const baseDeliveryFee = deliveryTypes.find(t => t.id === deliveryType)?.price || 0;
+      setDeliveryFee(baseDeliveryFee);
+    }
   };
   
   const handleAddressSelect = (addressId) => {

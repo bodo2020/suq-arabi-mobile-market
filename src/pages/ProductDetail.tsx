@@ -126,7 +126,7 @@ const ProductDetail = () => {
 
   // مشاركة المنتج
   const handleShare = async () => {
-    if (navigator.share) {
+    if (navigator.share && navigator.canShare) {
       try {
         await navigator.share({
           title: product?.name || 'منتج',
@@ -134,15 +134,29 @@ const ProductDetail = () => {
           url: window.location.href,
         });
       } catch (error) {
-        console.log('Error sharing:', error);
+        if (error.name !== 'AbortError') {
+          console.log('Error sharing:', error);
+          copyToClipboard();
+        }
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      copyToClipboard();
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
       toast({
         title: "تم النسخ",
         description: "تم نسخ رابط المنتج"
       });
-    }
+    }).catch(() => {
+      toast({
+        title: "خطأ",
+        description: "لم يتم نسخ الرابط، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    });
   };
 
   // التحقق مما إذا كان البيع بالجملة متاحًا

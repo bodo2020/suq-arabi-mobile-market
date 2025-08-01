@@ -5,7 +5,7 @@ import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import { Button } from "@/components/ui/button"
-import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft, Map } from 'lucide-react';
+import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 import { supabase } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -150,17 +150,6 @@ const Account = () => {
                     <ChevronLeft className="h-5 w-5 text-gray-400" />
                   </Button>
 
-                  <Button 
-                    onClick={() => navigate('/map')} 
-                    variant="ghost" 
-                    className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
-                  >
-                    <div className="flex items-center">
-                      <Map className="h-6 w-6 text-primary ml-3" />
-                      <span className="text-sm font-medium">الخريطة</span>
-                    </div>
-                    <ChevronLeft className="h-5 w-5 text-gray-400" />
-                  </Button>
                 </div>
 
                 <Separator className="my-4" />
