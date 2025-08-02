@@ -41,8 +41,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
   
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden shadow-lg" style={{ marginTop: 0, paddingTop: 0 }}>
-      <div className="container mx-auto px-4 py-2" style={{ margin: 0, padding: '8px 16px' }}>
+    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden shadow-lg" style={{ margin: 0, padding: 0 }}>
+      <div className="px-4 py-2">
         <div className="flex items-center justify-between mb-4">
           {/* Logo and Back Button */}
           <div className="flex items-center">
