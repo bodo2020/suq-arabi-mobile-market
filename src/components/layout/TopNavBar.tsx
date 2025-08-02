@@ -47,7 +47,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
                 <img src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" alt="الشعار" className="h-10 w-auto" />
                 {pageTitle}
               </div>}
-            {hideLogo && pageTitle && <h1 className="text-xl font-bold">{pageTitle}</h1>}
+            {hideLogo && pageTitle}
           </div>
 
           {/* Search Bar */}
