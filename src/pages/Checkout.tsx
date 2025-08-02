@@ -158,6 +158,58 @@ const Checkout = () => {
     setSelectedAddress(address);
     console.log('Address selected:', address);
   };
+
+  // Helper function to get or create customer ID
+  const getCustomerId = async () => {
+    if (!user) return null;
+    
+    try {
+      // First check if customer exists
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (customerError && customerError.code !== 'PGRST116') {
+        console.error('Error checking customer:', customerError);
+        throw customerError;
+      }
+      
+      if (customer) {
+        console.log('Found existing customer:', customer.id);
+        return customer.id;
+      }
+      
+      // If no customer found, create one
+      console.log('Creating new customer for user:', user.id);
+      const { data: newCustomer, error: createError } = await supabase
+        .from('customers')
+        .insert({
+          user_id: user.id,
+          first_name: user.user_metadata?.first_name || '',
+          last_name: user.user_metadata?.last_name || '',
+          name: user.user_metadata?.name || `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() || 'عميل',
+          email: user.email || '',
+          phone: user.user_metadata?.phone || '',
+          address: user.user_metadata?.address || ''
+        })
+        .select('id')
+        .single();
+      
+      if (createError) {
+        console.error('Error creating customer:', createError);
+        throw createError;
+      }
+      
+      console.log('Created new customer:', newCustomer.id);
+      return newCustomer.id;
+      
+    } catch (error) {
+      console.error('Error in getCustomerId:', error);
+      return null;
+    }
+  };
   
   const handleOrder = async () => {
     // Check for address (either selected or localStorage)
@@ -199,8 +251,11 @@ const Checkout = () => {
     }
     
     try {
+      // Get or create customer ID for authenticated users
+      const customerId = user ? await getCustomerId() : null;
+      
       console.log('Creating order with data:', {
-        customer_id: user?.id || null,
+        customer_id: customerId,
         items: items,
         total: getCartTotal() + deliveryFee,
         shipping_cost: deliveryFee,
@@ -214,7 +269,7 @@ const Checkout = () => {
       const { data, error } = await supabase
         .from('online_orders')
         .insert({
-          customer_id: user?.id || null,
+          customer_id: customerId,
           items: items.map(item => ({
             product_id: item.product.id,
             name: item.product.name,
