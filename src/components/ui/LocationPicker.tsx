@@ -26,21 +26,30 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange }) => {
     supabase.from("governorates").select("*").then(({ data }) => setGovernments(data || []));
   }, []);
   
-  // Load cities
+  // Load cities - also load when governorate value is initially set
   useEffect(() => {
-    if (!value.governorate) return setCities([]);
+    if (!value.governorate) {
+      setCities([]);
+      return;
+    }
     supabase.from("cities").select("*").eq("governorate_id", value.governorate).then(({data}) => setCities(data || []));
   }, [value.governorate]);
   
-  // Load areas
+  // Load areas - also load when city value is initially set
   useEffect(() => {
-    if (!value.city) return setAreas([]);
+    if (!value.city) {
+      setAreas([]);
+      return;
+    }
     supabase.from("areas").select("*").eq("city_id", value.city).then(({data}) => setAreas(data || []));
   }, [value.city]);
   
-  // Load neighborhoods
+  // Load neighborhoods - also load when area value is initially set
   useEffect(() => {
-    if (!value.area) return setNeighborhoods([]);
+    if (!value.area) {
+      setNeighborhoods([]);
+      return;
+    }
     supabase.from("neighborhoods").select("*").eq("area_id", value.area).then(({data}) => setNeighborhoods(data || []));
   }, [value.area]);
 
