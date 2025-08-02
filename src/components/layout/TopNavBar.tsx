@@ -39,16 +39,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       <div className="px-4 py-4">
         <div className="flex items-center gap-4">
           {/* Logo and Back Button */}
-          <div className="flex items-center gap-3">
-            {showBackButton && onBack && <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                <ArrowRight className="w-6 h-6" />
-              </button>}
-            {!hideLogo && <div className="flex items-center gap-3">
-                <img src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" alt="الشعار" className="h-10 w-auto" />
-                {pageTitle}
-              </div>}
-            {hideLogo && pageTitle}
-          </div>
+          <img src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" alt="الشعار" className="h-10 w-auto" />
 
           {/* Search Bar */}
           {!hideSearch && <div className="flex-1 max-w-2xl">
