@@ -153,7 +153,7 @@ const Index = () => {
           {/* Main Content with proper spacing */}
           <div className={`${!isMobile ? 'mt-24' : ''}`}>
             {/* Address Section */}
-            <div className="w-full px-4 mb-4">
+            <div className="w-full px-4 mb-4 mt-6">
               <div className="max-w-md mx-auto md:max-w-4xl">
                 <div className="flex items-center">
                   <MapPin size={16} className="text-primary ml-2" />
