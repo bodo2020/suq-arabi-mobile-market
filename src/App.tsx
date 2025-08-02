@@ -167,6 +167,11 @@ function App() {
                 <Orders />
               </AddressGuard>
             } />
+            <Route path="/create-return/:orderId" element={
+              <AddressGuard>
+                <CreateReturnRequest />
+              </AddressGuard>
+            } />
             <Route path="/return-requests" element={
               <AddressGuard>
                 <ReturnRequests />
