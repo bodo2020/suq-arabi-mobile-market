@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Package, Scale, Plus, Minus, Share2 } from 'lucide-react';
 import TopNavBar from '@/components/layout/TopNavBar';
+import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import CompanyCard from '@/components/ui/CompanyCard';
 import WeightSelector from '@/components/ui/WeightSelector';
@@ -217,36 +218,36 @@ const ProductDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <MainLayout>
         <TopNavBar 
           pageTitle="تفاصيل المنتج"
           showBackButton={true}
           onBack={() => navigate(-1)}
         />
-        <div className="pt-20 flex justify-center items-center h-screen">
+        <div className="flex justify-center items-center h-screen">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <MainLayout>
         <TopNavBar 
           pageTitle="تفاصيل المنتج"
           showBackButton={true}
           onBack={() => navigate(-1)}
         />
-        <div className="pt-20 flex justify-center items-center h-screen">
+        <div className="flex justify-center items-center h-screen">
           <p className="text-gray-600">المنتج غير موجود</p>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <MainLayout>
       <ProductStructuredData product={product} />
       
       {/* Top Navigation */}
@@ -256,8 +257,8 @@ const ProductDetail = () => {
         onBack={() => navigate(-1)}
       />
       
-      {/* Content with top padding for fixed navbar */}
-      <div className="pt-20">
+      {/* Content */}
+      <div>
         {/* Product Image */}
         <div className="relative bg-white p-4">
           <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-100">
@@ -459,7 +460,7 @@ const ProductDetail = () => {
           </div>
         )}
       </div>
-    </div>
+    </MainLayout>
   );
 };
 
