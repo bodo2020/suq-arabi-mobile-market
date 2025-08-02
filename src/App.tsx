@@ -157,6 +157,16 @@ function App() {
                 <BannerProducts />
               </AddressGuard>
             } />
+            <Route path="/addresses" element={
+              <AddressGuard>
+                <AddressManager />
+              </AddressGuard>
+            } />
+            <Route path="/create-return" element={
+              <AddressGuard>
+                <Orders />
+              </AddressGuard>
+            } />
             <Route path="/return-requests" element={
               <AddressGuard>
                 <ReturnRequests />
