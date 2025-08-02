@@ -82,7 +82,7 @@ const Account = () => {
 
   return (
     <MainLayout>
-      <div>
+      <div className="pt-0">
         {/* Top Navigation Bar without cart icon */}
         <TopNavBar 
           hideLogo={true}
@@ -92,7 +92,7 @@ const Account = () => {
         />
 
         {/* Main Content with proper spacing */}
-        <div className="px-4">
+        <div className={`${!isMobile ? 'mt-24' : ''} px-4`}>
           <div className="max-w-2xl mx-auto">
             {user ? (
               <div className="space-y-4">
