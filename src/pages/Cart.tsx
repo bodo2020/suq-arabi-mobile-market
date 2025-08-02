@@ -128,6 +128,12 @@ const Cart = () => {
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
   const handleProceedToPayment = () => {
+    // Check if user is logged in first
+    if (!user) {
+      navigate('/phone-login');
+      return;
+    }
+    
     // Check if there's an address (either from user or localStorage)
     const hasAddress = user ? customerData?.default_address : localStorage.getItem('selectedAddress');
     if (!hasAddress) {
