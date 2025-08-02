@@ -35,41 +35,50 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       navigate('/search');
     }
   };
-  return <div className="bg-primary text-white shadow-lg" style={{
-    margin: 0,
-    padding: 0
-  }}>
-      <div className="px-4 py-2">
-        <div className="flex items-center justify-between mb-4">
+  return (
+    <div className="bg-primary text-white shadow-lg">
+      <div className="px-4 py-4">
+        <div className="flex items-center gap-4">
           {/* Logo and Back Button */}
-          <div className="flex items-center">
-            {showBackButton && onBack && <button onClick={onBack} className="mr-3 p-2 hover:bg-white/10 rounded-full transition-colors">
+          <div className="flex items-center gap-3">
+            {showBackButton && onBack && (
+              <button 
+                onClick={onBack} 
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
                 <ArrowRight className="w-6 h-6" />
-              </button>}
-            {!hideLogo && <div className="flex items-center">
-                <img src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" alt="الشعار" className="h-8 w-auto" />
-                {pageTitle && <h1 className="mr-3 text-lg font-semibold">{pageTitle}</h1>}
-              </div>}
-            {hideLogo && pageTitle && <h1 className="text-lg font-semibold">{pageTitle}</h1>}
+              </button>
+            )}
+            {!hideLogo && (
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
+                  alt="الشعار" 
+                  className="h-10 w-auto" 
+                />
+                {pageTitle && (
+                  <h1 className="text-xl font-bold">{pageTitle}</h1>
+                )}
+              </div>
+            )}
+            {hideLogo && pageTitle && (
+              <h1 className="text-xl font-bold">{pageTitle}</h1>
+            )}
           </div>
 
           {/* Search Bar */}
-          {!hideSearch && <div className="flex-1 max-w-md mx-4">
-              <SearchBar placeholder={searchPlaceholder} onFocus={handleSearchFocus} className="bg-white/20 text-white placeholder-white/70 border-white/30" {...searchProps} />
-            </div>}
-
-          {/* Empty space for layout balance */}
-          <div className="flex items-center">
-            <div className="w-8"></div>
-          </div>
-        </div>
-
-        {/* Location/Title Section */}
-        <div className="text-center pb-2">
-          
+          {!hideSearch && (
+            <div className="flex-1 max-w-2xl">
+              <SearchBar 
+                placeholder={searchPlaceholder} 
+                onFocus={handleSearchFocus} 
+                {...searchProps} 
+              />
+            </div>
+          )}
         </div>
       </div>
-      
-    </div>;
+    </div>
+  );
 };
 export default TopNavBar;
