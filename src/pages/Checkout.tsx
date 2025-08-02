@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -211,7 +210,7 @@ const Checkout = () => {
         notes: notes || null
       });
 
-      // Create the order in the database
+      // Create the order in the database with proper typing
       const { data, error } = await supabase
         .from('online_orders')
         .insert({
@@ -232,7 +231,8 @@ const Checkout = () => {
           payment_method: 'cash',
           notes: notes || null
         })
-        .select();
+        .select()
+        .single();
       
       if (error) {
         console.error('Database error:', error);
@@ -241,16 +241,9 @@ const Checkout = () => {
       
       console.log('Order created successfully:', data);
       
-      // Navigate to payment with order ID - handle both array and single object responses
-      let orderId;
-      if (data && Array.isArray(data) && data.length > 0) {
-        orderId = data[0].id;
-      } else if (data && !Array.isArray(data) && data.id) {
-        orderId = data.id;
-      }
-      
-      if (orderId) {
-        navigate(`/payment?order_id=${orderId}`);
+      // Navigate to payment with order ID
+      if (data?.id) {
+        navigate(`/payment?order_id=${data.id}`);
       } else {
         throw new Error('No order ID returned from database');
       }
