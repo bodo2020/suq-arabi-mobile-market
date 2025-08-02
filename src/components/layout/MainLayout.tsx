@@ -70,7 +70,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             <span>الأقسام</span>
           </Link>
 
-          <Link to="/cart" className={`bottom-nav-item relative justify-center p-1 ${isActive('/cart') ? 'active' : ''}`}>
+          <Link to="/cart" className={`bottom-nav-item relative justify-center ${isActive('/cart') ? 'active' : ''}`}>
             <ShoppingCart size={24} />
             <span>السلة</span>
             {cartCount > 0 && (
