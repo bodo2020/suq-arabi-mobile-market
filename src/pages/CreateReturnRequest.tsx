@@ -32,14 +32,25 @@ const CreateReturnRequest = () => {
           throw new Error('رقم الطلب غير موجود');
         }
         
-        // Check if the order belongs to the current user
+        // First get the customer record for the current user
+        const { data: customer, error: customerError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (customerError || !customer) {
+          throw new Error('لم يتم العثور على بيانات العميل');
+        }
+
+        // Check if the order belongs to the current customer
         const { data: order, error: orderError } = await supabase
           .from('online_orders')
           .select('*')
           .eq('id', orderId)
           .single();
         
-        if (orderError || !order || (user && order.customer_id !== user.id)) {
+        if (orderError || !order || order.customer_id !== customer.id) {
           throw new Error('الطلب غير موجود أو ليس لديك صلاحية للوصول إليه');
         }
         
