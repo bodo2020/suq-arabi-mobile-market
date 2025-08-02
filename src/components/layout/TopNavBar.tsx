@@ -41,7 +41,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
   
   return (
-    <div className="bg-primary text-white relative overflow-hidden shadow-lg" style={{ margin: 0, padding: 0 }}>
+    <div className="bg-primary text-white shadow-lg" style={{ margin: 0, padding: 0 }}>
       <div className="px-4 py-2">
         <div className="flex items-center justify-between mb-4">
           {/* Logo and Back Button */}
@@ -89,17 +89,6 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         </div>
       </div>
       
-      {/* Enhanced curved bottom border with smooth curves */}
-      <div 
-        className="absolute -bottom-8 left-0 w-full bg-background" 
-        style={{
-          height: '50px',
-          borderTopLeftRadius: '50% 80%',
-          borderTopRightRadius: '50% 80%',
-          zIndex: 10,
-          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)'
-        }} 
-      />
     </div>
   );
 };
