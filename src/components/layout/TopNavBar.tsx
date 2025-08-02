@@ -41,9 +41,9 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
   
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden shadow-lg">
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           {/* Logo and Back Button */}
           <div className="flex items-center">
             {showBackButton && onBack && (
@@ -77,16 +77,27 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
             <div className="w-8"></div>
           </div>
         </div>
+
+        {/* Location/Title Section */}
+        <div className="text-center pb-2">
+          <div className="flex items-center justify-center text-white/90">
+            <span className="text-sm">التوصيل إلى الزعفران، قرن الجدي</span>
+            <div className="mr-2 w-4 h-4 rounded-full border border-white/50 flex items-center justify-center">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+            </div>
+          </div>
+        </div>
       </div>
       
-      {/* Enhanced curved bottom border */}
+      {/* Enhanced curved bottom border with smooth curves */}
       <div 
-        className="absolute -bottom-6 left-0 w-full bg-background shadow-lg" 
+        className="absolute -bottom-8 left-0 w-full bg-background" 
         style={{
-          height: '40px',
-          borderTopLeftRadius: '50% 100%',
-          borderTopRightRadius: '50% 100%',
-          zIndex: 10
+          height: '50px',
+          borderTopLeftRadius: '50% 80%',
+          borderTopRightRadius: '50% 80%',
+          zIndex: 10,
+          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)'
         }} 
       />
     </div>
