@@ -70,17 +70,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             <span>الأقسام</span>
           </Link>
 
-          <Link to="/cart" className={`bottom-nav-item relative ${isActive('/cart') ? 'active' : ''}`}>
+          <Link to="/cart" className={`bottom-nav-item relative justify-center ${isActive('/cart') ? 'active' : ''}`}>
             <ShoppingCart size={24} />
             <span>السلة</span>
             {cartCount > 0 && (
-              <span className="absolute -top-1 right-6 md:right-10 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-2 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {cartCount}
               </span>
             )}
           </Link>
 
-          <Link to="/account" className={`bottom-nav-item ${isActive('/account') ? 'active' : ''}`}>
+          <Link to="/account" className={`bottom-nav-item justify-center ${isActive('/account') ? 'active' : ''}`}>
             <User size={24} />
             <span>الحساب</span>
           </Link>

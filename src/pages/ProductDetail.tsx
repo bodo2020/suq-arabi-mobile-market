@@ -251,7 +251,7 @@ const ProductDetail = () => {
       
       {/* Top Navigation */}
       <TopNavBar 
-        pageTitle="تفاصيل المنتج"
+        pageTitle={product?.name || "تفاصيل المنتج"}
         showBackButton={true}
         onBack={() => navigate(-1)}
       />
