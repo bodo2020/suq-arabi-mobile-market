@@ -181,29 +181,25 @@ const Index = () => {
 
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-3">
-                  <h2 className="text-xl font-bold text-gray-900">الأقسام</h2>
-                  <Link to="/categories" className="flex items-center text-primary text-sm font-medium">
+                  <h2 className="text-lg font-bold">الأقسام</h2>
+                  <Link to="/categories" className="flex items-center text-primary text-sm">
                     عرض الكل
-                    <ChevronLeft size={16} className="mr-1" />
+                    <ChevronLeft size={16} />
                   </Link>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-3">
-                  {visibleCategories.slice(0, 6).map(category => (
-                    <div key={category.id} className="bg-green-100 rounded-xl p-4 aspect-square flex flex-col items-center justify-center relative overflow-hidden">
-                      <div className="w-12 h-12 mb-2">
-                        {category.image_url ? (
-                          <img src={category.image_url} alt={category.name} className="w-full h-full object-cover rounded-lg" />
-                        ) : (
-                          <div className="w-full h-full bg-green-200 rounded-lg flex items-center justify-center">
-                            <span className="text-green-700 text-lg font-bold">{category.name.charAt(0)}</span>
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-sm font-semibold text-gray-800 text-center leading-tight">{category.name}</span>
-                      <Link to={`/category/${category.id}`} className="absolute inset-0" onClick={() => handleMainCategoryClick(category)} />
-                    </div>
+                <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-1">
+                  {visibleCategories.map(category => (
+                    <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
                   ))}
+                  {categories.length > 12 && (
+                    <Link to="/categories" className="category-item flex flex-col items-center">
+                      <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{ aspectRatio: '1' }}>
+                        <ChevronLeft size={24} />
+                      </div>
+                      <span className="text-sm text-center mt-1">عرض الكل</span>
+                    </Link>
+                  )}
                 </div>
               </div>
               

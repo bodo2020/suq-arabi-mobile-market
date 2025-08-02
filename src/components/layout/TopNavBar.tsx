@@ -41,11 +41,10 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
   
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden shadow-lg">
-      <div className="px-4 py-4">
-        {/* Top Row with Logo and Search Bar */}
-        <div className="flex items-center justify-between mb-3">
-          {/* Logo */}
+    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden shadow-lg" style={{ margin: 0, padding: 0 }}>
+      <div className="px-4 py-2">
+        <div className="flex items-center justify-between mb-4">
+          {/* Logo and Back Button */}
           <div className="flex items-center">
             {showBackButton && onBack && (
               <button onClick={onBack} className="mr-3 p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -54,38 +53,38 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
             )}
             {!hideLogo && (
               <div className="flex items-center">
-                <img src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" alt="الشعار" className="h-10 w-auto" />
+                <img src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" alt="الشعار" className="h-8 w-auto" />
                 {pageTitle && <h1 className="mr-3 text-lg font-semibold">{pageTitle}</h1>}
               </div>
             )}
             {hideLogo && pageTitle && <h1 className="text-lg font-semibold">{pageTitle}</h1>}
           </div>
 
-          {/* Search Bar - Centered and prominent */}
+          {/* Search Bar */}
           {!hideSearch && (
-            <div className="flex-1 max-w-sm mx-4">
+            <div className="flex-1 max-w-md mx-4">
               <SearchBar 
                 placeholder={searchPlaceholder} 
                 onFocus={handleSearchFocus} 
-                className="bg-white/90 text-gray-900 placeholder-gray-500 border-0 shadow-sm" 
+                className="bg-white/20 text-white placeholder-white/70 border-white/30" 
                 {...searchProps} 
               />
             </div>
           )}
 
-          {/* Cart/Shopping Icon placeholder */}
+          {/* Empty space for layout balance */}
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-white rounded"></div>
-            </div>
+            <div className="w-8"></div>
           </div>
         </div>
 
-        {/* Location Section */}
-        <div className="text-center">
+        {/* Location/Title Section */}
+        <div className="text-center pb-2">
           <div className="flex items-center justify-center text-white/90">
-            <div className="mr-2 w-2 h-2 bg-white rounded-full"></div>
-            <span className="text-sm">التوصيل إلى الزعفران، منطقة</span>
+            <span className="text-sm">التوصيل إلى الزعفران، قرن الجدي</span>
+            <div className="mr-2 w-4 h-4 rounded-full border border-white/50 flex items-center justify-center">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+            </div>
           </div>
         </div>
       </div>

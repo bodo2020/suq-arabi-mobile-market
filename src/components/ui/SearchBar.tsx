@@ -59,9 +59,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className="relative flex items-center bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="relative flex items-center bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 overflow-hidden">
         <div className="flex items-center flex-1 relative">
-          <Search size={18} className="absolute left-3 text-gray-500" />
+          <Search size={20} className="absolute left-4 text-white/70" />
           <input
             type="text"
             value={query}
@@ -69,7 +69,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onFocus={handleFocus}
             placeholder={placeholder}
             readOnly={readOnly}
-            className={`w-full pl-10 pr-12 py-3 bg-transparent border-none outline-none text-gray-900 placeholder-gray-500 text-sm ${
+            className={`w-full pl-12 pr-16 py-4 bg-transparent border-none outline-none text-white placeholder-white/70 ${
               readOnly ? 'cursor-pointer' : ''
             }`}
           />
@@ -77,9 +77,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <button
           type="button"
           onClick={handleBarcodeClick}
-          className="p-3 hover:bg-gray-50 transition-colors"
+          className="p-4 hover:bg-white/10 transition-colors rounded-r-2xl"
         >
-          <QrCode size={18} className="text-gray-600" />
+          <QrCode size={20} className="text-white" />
         </button>
       </div>
     </form>
