@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Grid, User, ArrowRight } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
 import { useCart } from '@/contexts/useCart';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 interface TopNavBarProps {
   searchPlaceholder?: string;
   onSearchFocus?: () => void;
@@ -15,6 +17,7 @@ interface TopNavBarProps {
   showBackButton?: boolean;
   onBack?: () => void;
 }
+
 const TopNavBar: React.FC<TopNavBarProps> = ({
   searchPlaceholder = "البحث عن منتجات، أقسام...",
   onSearchFocus,
@@ -38,11 +41,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   };
   
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden" style={{
-      paddingTop: '1rem',
-      paddingBottom: '1.5rem'
-    }}>
-      <div className="container mx-auto px-4">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden">
+      <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo and Back Button */}
           <div className="flex items-center">
@@ -79,11 +79,11 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         </div>
       </div>
       
-      {/* Enhanced curved bottom border with better styling */}
+      {/* Enhanced curved bottom border */}
       <div 
-        className="absolute -bottom-4 left-0 w-full bg-background shadow-lg" 
+        className="absolute -bottom-6 left-0 w-full bg-background shadow-lg" 
         style={{
-          height: '32px',
+          height: '40px',
           borderTopLeftRadius: '50% 100%',
           borderTopRightRadius: '50% 100%',
           zIndex: 10
@@ -92,4 +92,5 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
     </div>
   );
 };
+
 export default TopNavBar;

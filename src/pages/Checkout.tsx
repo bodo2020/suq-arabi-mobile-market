@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/useCart';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import OrderNotes from '@/components/ui/OrderNotes';
@@ -25,7 +25,6 @@ const Checkout = () => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Allow non-users to access checkout (using localStorage address)
     if (user) {
       fetchAddresses();
     } else {
@@ -35,6 +34,7 @@ const Checkout = () => {
         if (savedAddress) {
           const parsedAddress = JSON.parse(savedAddress);
           setDeliveryFee(parsedAddress.delivery_price || 0);
+          console.log('Non-user delivery fee set to:', parsedAddress.delivery_price || 0);
         }
       } catch (error) {
         console.error('Error parsing saved address:', error);
@@ -73,12 +73,14 @@ const Checkout = () => {
         throw error;
       }
       
+      console.log('Fetched addresses:', data);
       setAddresses(data || []);
       
       if (data && data.length > 0) {
         const defaultAddress = data.find(addr => addr.is_default) || data[0];
         setSelectedAddressId(defaultAddress.id);
         setSelectedAddress(defaultAddress);
+        console.log('Selected default address:', defaultAddress);
       }
       
     } catch (error) {
@@ -94,7 +96,6 @@ const Checkout = () => {
   };
   
   const updateDeliveryFee = async () => {
-    // Check both user address and localStorage address
     let neighborhoodId = selectedAddress?.neighborhood_id;
     
     // If no user, try to get address from localStorage
@@ -106,6 +107,7 @@ const Checkout = () => {
           neighborhoodId = parsedAddress.neighborhood_id;
           // Use the price from saved address directly
           if (parsedAddress.delivery_price !== undefined) {
+            console.log('Setting delivery fee from localStorage:', parsedAddress.delivery_price);
             setDeliveryFee(parsedAddress.delivery_price);
             return;
           }
@@ -115,9 +117,14 @@ const Checkout = () => {
       }
     }
     
-    if (!neighborhoodId) return;
+    if (!neighborhoodId) {
+      console.log('No neighborhood ID found');
+      return;
+    }
     
     try {
+      console.log('Fetching delivery price for neighborhood ID:', neighborhoodId);
+      
       // Get delivery price from neighborhood
       const { data: neighborhood, error } = await supabase
         .from('neighborhoods')
@@ -132,11 +139,12 @@ const Checkout = () => {
       }
       
       if (!neighborhood) {
-        console.error('Neighborhood not found');
+        console.error('Neighborhood not found for ID:', neighborhoodId);
         setDeliveryFee(0);
         return;
       }
       
+      console.log('Fetched neighborhood price:', neighborhood.price);
       setDeliveryFee(neighborhood.price || 0);
     } catch (error) {
       console.error('Error calculating delivery fee:', error);
@@ -148,6 +156,7 @@ const Checkout = () => {
     setSelectedAddressId(addressId);
     const address = addresses.find(addr => addr.id === addressId);
     setSelectedAddress(address);
+    console.log('Address selected:', address);
   };
   
   const handleOrder = async () => {
@@ -190,7 +199,18 @@ const Checkout = () => {
     }
     
     try {
-      // Create the order in the database
+      console.log('Creating order with data:', {
+        customer_id: user?.id || null,
+        items: items,
+        total: getCartTotal() + deliveryFee,
+        shipping_cost: deliveryFee,
+        delivery_location_id: addressToUse.neighborhood_id,
+        shipping_address: addressToUse.address || addressToUse.full_address,
+        payment_method: 'cash',
+        notes: notes || null
+      });
+
+      // Create the order in the database - remove .maybeSingle() to avoid the error
       const { data, error } = await supabase
         .from('online_orders')
         .insert({
@@ -211,21 +231,28 @@ const Checkout = () => {
           payment_method: 'cash',
           notes: notes || null
         })
-        .select()
-        .maybeSingle();
+        .select();
       
       if (error) {
+        console.error('Database error:', error);
         throw error;
       }
       
-      // Navigate to payment with order ID
-      navigate(`/payment?order_id=${data.id}`);
+      console.log('Order created successfully:', data);
+      
+      // Navigate to payment with order ID - use first item if array
+      const orderId = Array.isArray(data) ? data[0]?.id : data?.id;
+      if (orderId) {
+        navigate(`/payment?order_id=${orderId}`);
+      } else {
+        throw new Error('No order ID returned');
+      }
       
     } catch (error) {
       console.error('Error creating order:', error);
       toast({
         title: "خطأ في إنشاء الطلب",
-        description: "حدث خطأ أثناء إنشاء الطلب، يرجى المحاولة مرة أخرى",
+        description: error.message || "حدث خطأ أثناء إنشاء الطلب، يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
     }
@@ -318,6 +345,7 @@ const Checkout = () => {
                 ) : (
                   <div className="text-center py-6">
                     <AddressSelector onAddressSelect={(addressData) => {
+                      console.log('Address selected via selector:', addressData);
                       setDeliveryFee(addressData.delivery_price || 0);
                       
                       toast({
@@ -374,18 +402,18 @@ const Checkout = () => {
                   <div className="border-b pb-3">
                     <div className="flex justify-between text-sm text-gray-600 mb-2">
                       <span>المنتجات ({items.length})</span>
-                      <span>{getCartTotal()} ج.م</span>
+                      <span>{getCartTotal().toFixed(2)} ج.م</span>
                     </div>
                     
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>التوصيل</span>
-                      <span>{deliveryFee} ج.م</span>
+                      <span>{deliveryFee.toFixed(2)} ج.م</span>
                     </div>
                   </div>
                   
                   <div className="flex justify-between font-bold">
                     <span>الإجمالي</span>
-                    <span>{getCartTotal() + deliveryFee} ج.م</span>
+                    <span>{(getCartTotal() + deliveryFee).toFixed(2)} ج.م</span>
                   </div>
                   
                   <Button 
