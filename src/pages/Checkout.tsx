@@ -123,10 +123,16 @@ const Checkout = () => {
         .from('neighborhoods')
         .select('price')
         .eq('id', neighborhoodId)
-        .single();
+        .maybeSingle();
         
-      if (error || !neighborhood) {
+      if (error) {
         console.error('Error fetching neighborhood delivery price:', error);
+        setDeliveryFee(0);
+        return;
+      }
+      
+      if (!neighborhood) {
+        console.error('Neighborhood not found');
         setDeliveryFee(0);
         return;
       }
@@ -206,7 +212,7 @@ const Checkout = () => {
           notes: notes || null
         })
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) {
         throw error;

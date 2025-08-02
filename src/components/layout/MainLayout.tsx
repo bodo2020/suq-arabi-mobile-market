@@ -53,7 +53,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   return (
     <div className="pb-16 md:pb-0 min-h-screen bg-gray-50 hide-scrollbar" dir="rtl">
       {/* Main content */}
-      <main className="hide-scrollbar pt-20">
+      <main className="hide-scrollbar pt-20" style={{ paddingTop: '90px' }}>
         {children}
       </main>
       

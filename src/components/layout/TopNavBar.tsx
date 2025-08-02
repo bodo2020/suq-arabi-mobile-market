@@ -40,7 +40,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-white relative overflow-hidden" style={{
       paddingTop: '1rem',
-      paddingBottom: '2rem'
+      paddingBottom: '1.5rem'
     }}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
@@ -79,14 +79,14 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         </div>
       </div>
       
-      {/* Enhanced curved bottom border */}
+      {/* Enhanced curved bottom border with better styling */}
       <div 
-        className="absolute bottom-0 left-0 w-full bg-background" 
+        className="absolute -bottom-4 left-0 w-full bg-background shadow-lg" 
         style={{
-          height: '24px',
+          height: '32px',
           borderTopLeftRadius: '50% 100%',
           borderTopRightRadius: '50% 100%',
-          transform: 'translateY(60%)'
+          zIndex: 10
         }} 
       />
     </div>
