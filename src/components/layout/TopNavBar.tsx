@@ -36,7 +36,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
     }
   };
   return (
-    <div className="bg-primary text-white shadow-lg">
+    <div className="bg-primary text-white shadow-lg rounded-b-3xl">
       <div className="px-4 py-4">
         <div className="flex items-center gap-4">
           {/* Logo and Back Button */}
