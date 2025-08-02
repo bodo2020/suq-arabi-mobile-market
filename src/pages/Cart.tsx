@@ -146,7 +146,7 @@ const Cart = () => {
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
 
-  const handleProceedToCheckout = () => {
+  const handleProceedToPayment = () => {
     // Check if there's an address (either from user or localStorage)
     const hasAddress = user ? customerData?.default_address : localStorage.getItem('selectedAddress');
     
@@ -159,7 +159,7 @@ const Cart = () => {
       return;
     }
     
-    navigate('/checkout');
+    navigate('/payment');
   };
 
   return (
@@ -393,7 +393,7 @@ const Cart = () => {
                     </div>
                     
                     <Button 
-                      onClick={handleProceedToCheckout}
+                      onClick={handleProceedToPayment}
                       className="w-full mt-4 bg-primary text-white py-3 rounded-lg"
                       disabled={items.length === 0}
                     >

@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
-import { Copy, CheckCheck } from 'lucide-react';
+import { Copy, CheckCheck, MapPin, CreditCard, ShoppingCart, Wallet, DollarSign, ArrowRight } from 'lucide-react';
 import SwipeButton from '@/components/ui/SwipeButton';
 import AddressDisplay from '@/components/ui/AddressDisplay';
+import AddressSelector from '@/components/ui/AddressSelector';
+import OrderNotes from '@/components/ui/OrderNotes';
 import { useQuery } from '@tanstack/react-query';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { 
   Dialog, 
   DialogContent,
@@ -26,6 +31,8 @@ const WALLET_PHONE_NUMBER = "01005245096";
 
 const Payment = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('order_id');
   const { items, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
   const { user } = useUser();
@@ -39,6 +46,7 @@ const Payment = () => {
   const [isFreeDelivery, setIsFreeDelivery] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
+  const [notes, setNotes] = useState('');
 
   const formatProductName = (item: CartItem) => {
     if (item.is_bulk && item.product.bulk_quantity) {
@@ -82,7 +90,20 @@ const Payment = () => {
   const { data: deliveryPricing } = useQuery({
     queryKey: ['deliveryPricing', customerData?.default_address],
     queryFn: async () => {
-      if (!customerData?.default_address) return null;
+      if (!customerData?.default_address) {
+        // Check localStorage for non-user address
+        try {
+          const savedAddress = localStorage.getItem('selectedAddress');
+          if (savedAddress) {
+            const parsedAddress = JSON.parse(savedAddress);
+            return { price: parsedAddress.delivery_price || 0 };
+          }
+        } catch (error) {
+          console.error('Error parsing saved address:', error);
+        }
+        return null;
+      }
+      
       const locationId = customerData.default_address.neighborhood_id || 
                         customerData.default_address.area_id || 
                         customerData.default_address.city_id || 
@@ -97,7 +118,7 @@ const Payment = () => {
       
       return data;
     },
-    enabled: !!customerData?.default_address
+    enabled: !!customerData?.default_address || !user
   });
 
   useEffect(() => {
@@ -143,7 +164,8 @@ const Payment = () => {
       return;
     }
 
-    if (!customerData?.default_address) {
+    // Check address
+    if (!customerData?.default_address && !getSelectedAddress()) {
       toast({
         title: "العنوان مطلوب",
         description: "يرجى إضافة عنوان للتوصيل",
@@ -156,6 +178,7 @@ const Payment = () => {
 
     try {
       const customerId = user ? await getCustomerId() : null;
+      const selectedAddress = getSelectedAddress();
       
       const orderData = {
         items: items.map(item => {
@@ -180,12 +203,13 @@ const Payment = () => {
         shipping_cost: isFreeDelivery ? 0 : deliveryPrice,
         payment_method: paymentMethod,
         customer_id: customerId,
-        shipping_address: customerData?.default_address.address,
-        notes: '',
+        shipping_address: customerData?.default_address?.address || selectedAddress?.address,
+        notes: notes,
         delivery_location_id: customerData?.default_address?.neighborhood_id || 
                            customerData?.default_address?.area_id || 
                            customerData?.default_address?.city_id || 
-                           customerData?.default_address?.governorate_id
+                           customerData?.default_address?.governorate_id ||
+                           selectedAddress?.neighborhood_id
       };
 
       console.log("Submitting order data:", orderData);
@@ -222,6 +246,7 @@ const Payment = () => {
     setIsLoading(true);
     try {
       const customerId = user ? await getCustomerId() : null;
+      const selectedAddress = getSelectedAddress();
       
       const orderData = {
         items: items.map(item => {
@@ -246,12 +271,13 @@ const Payment = () => {
         shipping_cost: isFreeDelivery ? 0 : deliveryPrice,
         payment_method: 'wallet',
         customer_id: customerId,
-        shipping_address: customerData?.default_address.address,
-        notes: '',
+        shipping_address: customerData?.default_address?.address || selectedAddress?.address,
+        notes: notes,
         delivery_location_id: customerData?.default_address?.neighborhood_id || 
                                customerData?.default_address?.area_id || 
                                customerData?.default_address?.city_id || 
-                               customerData?.default_address?.governorate_id
+                               customerData?.default_address?.governorate_id ||
+                               selectedAddress?.neighborhood_id
       };
       
       console.log("Submitting wallet order data:", orderData);
@@ -313,6 +339,20 @@ const Payment = () => {
     }
   };
 
+  const getSelectedAddress = () => {
+    if (customerData?.default_address) return customerData.default_address;
+    
+    try {
+      const savedAddress = localStorage.getItem('selectedAddress');
+      if (savedAddress) {
+        return JSON.parse(savedAddress);
+      }
+    } catch (error) {
+      console.error('Error parsing saved address:', error);
+    }
+    return null;
+  };
+
   const getItemTotal = (item: CartItem) => {
     if (item.is_bulk) {
       return (item.product.bulk_price || 0) * item.quantity;
@@ -358,137 +398,231 @@ const Payment = () => {
       });
     });
   };
+
+  if (items.length === 0) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="text-center py-8">
+              <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+              <h2 className="text-xl font-bold mb-2">السلة فارغة</h2>
+              <p className="text-muted-foreground mb-4">لا توجد منتجات في سلة التسوق</p>
+              <Button onClick={() => navigate('/')}>
+                تصفح المنتجات
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
   
   return (
     <MainLayout>
-      <div className="py-4 pb-24" dir="rtl">
-        <h1 className="text-xl font-bold text-center mb-4">الدفع وتأكيد الطلب</h1>
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* Header */}
+        <div className="flex items-center mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="p-2"
+          >
+            <ArrowRight className="w-5 h-5" />
+          </Button>
+          <h1 className="text-2xl font-bold flex-1 text-center">الدفع وتأكيد الطلب</h1>
+          <div className="w-9"></div>
+        </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-4 order-2 md:order-1">
-            <div className="bg-white rounded-lg p-4">
-              <h3 className="text-lg font-bold mb-3">عنوان التوصيل</h3>
-              
-              {customerData?.default_address ? (
-                <AddressDisplay
-                  address={customerData.default_address.address || ''}
-                  areaName={customerData.default_address.areas?.name || undefined}
-                  neighborhoodName={customerData.default_address.neighborhoods?.name || undefined}
-                  onEdit={() => navigate('/addresses')}
-                />
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500 mb-2">لا يوجد عنوان للتوصيل</p>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/addresses')} 
-                    className="text-primary border-primary hover:bg-primary/10"
-                  >
-                    إضافة عنوان جديد
-                  </Button>
-                </div>
-              )}
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Forms */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Shipping Address */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  عنوان التوصيل
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {customerData?.default_address ? (
+                  <AddressDisplay
+                    address={customerData.default_address.address || ''}
+                    areaName={customerData.default_address.areas?.name || undefined}
+                    neighborhoodName={customerData.default_address.neighborhoods?.name || undefined}
+                    onEdit={() => navigate('/addresses')}
+                  />
+                ) : (
+                  <div className="text-center py-6">
+                    {user ? (
+                      <>
+                        <p className="text-muted-foreground mb-4">لا يوجد عنوان للتوصيل</p>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => navigate('/addresses')}
+                        >
+                          إضافة عنوان جديد
+                        </Button>
+                      </>
+                    ) : (
+                      <AddressSelector onAddressSelect={(addressData) => {
+                        setDeliveryPrice(addressData.delivery_price || 0);
+                        toast({
+                          title: "تم تحديد العنوان",
+                          description: "تم تحديد عنوان التوصيل بنجاح"
+                        });
+                      }}>
+                        <Button className="w-full">
+                          اختر عنوان التوصيل
+                        </Button>
+                      </AddressSelector>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
             
-            <div className="bg-white rounded-lg p-4">
-              <h3 className="text-lg font-bold mb-3">طريقة الدفع</h3>
-              
-              <RadioGroup
-                value={paymentMethod}
-                onValueChange={setPaymentMethod}
-                className="space-y-3"
-              >
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="cash" id="cash" />
-                  <Label htmlFor="cash" className="font-medium cursor-pointer">الدفع عند الاستلام</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="wallet" id="wallet" />
-                  <Label htmlFor="wallet" className="font-medium cursor-pointer">المحفظة الإلكترونية</Label>
-                </div>
-              </RadioGroup>
-              
-              <p className="text-sm text-muted-foreground mt-2">
-                {paymentMethod === 'cash' 
-                  ? 'سيتم الدفع نقداً عند استلام الطلب'
-                  : 'الدفع المسبق عبر فودافون كاش أو انستا باي'
-                }
-              </p>
-            </div>
+            {/* Payment Method */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  طريقة الدفع
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={setPaymentMethod}
+                  className="space-y-4"
+                >
+                  <div className="flex items-start space-x-3 space-x-reverse p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <RadioGroupItem value="cash" id="cash" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="cash" className="font-medium cursor-pointer flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        الدفع عند الاستلام
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        ادفع نقداً عند وصول طلبك
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3 space-x-reverse p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <RadioGroupItem value="wallet" id="wallet" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="wallet" className="font-medium cursor-pointer flex items-center gap-2">
+                        <Wallet className="w-4 h-4" />
+                        المحفظة الإلكترونية
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        فودافون كاش أو انستا باي
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
 
-            <SwipeButton 
-              onComplete={paymentMethod === 'wallet' ? () => setWalletDialogOpen(true) : handleSubmitOrder}
-              isLoading={isLoading}
-              className="mt-8"
-            />
+            {/* Order Notes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>ملاحظات الطلب</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OrderNotes value={notes} onChange={setNotes} />
+              </CardContent>
+            </Card>
           </div>
           
-          <div className="bg-white rounded-lg p-4 mb-4 order-1 md:order-2">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold">تفاصيل الطلب</h3>
-              <span className="text-sm text-muted-foreground">رقم الطلب: {orderNumber}</span>
-            </div>
-            
-            {items.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                السلة فارغة
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
+          {/* Right Column - Order Summary */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" />
+                  ملخص الطلب
+                </CardTitle>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>رقم الطلب:</span>
+                  <Badge variant="secondary">{orderNumber}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Order Items */}
+                <div className="space-y-3">
                   {items.map(item => (
-                    <div key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex justify-between py-2 border-b last:border-b-0">
-                      <div className="flex items-center">
-                        <span className="text-gray-500 ml-1">{formatQuantity(item)} ×</span>
-                        <span className="font-medium">
-                          {formatProductName(item)}
-                        </span>
+                    <div key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex justify-between items-center py-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm text-muted-foreground">{formatQuantity(item)} ×</span>
+                          <span className="font-medium text-sm">
+                            {formatProductName(item)}
+                          </span>
+                        </div>
                       </div>
-                      <span>{getItemTotal(item).toFixed(2)} ج.م</span>
+                      <span className="font-medium">{getItemTotal(item).toFixed(2)} ج.م</span>
                     </div>
                   ))}
                 </div>
                 
+                <Separator />
+                
+                {/* Price Breakdown */}
                 <div className="space-y-2">
-                  <div className="flex justify-between py-2 border-b">
+                  <div className="flex justify-between">
                     <span>المجموع</span>
                     <span className="font-bold">{getTotalPrice().toFixed(2)} ج.م</span>
                   </div>
                   
                   {discount > 0 && (
-                    <div className="flex justify-between py-2 border-b text-primary">
+                    <div className="flex justify-between text-green-600">
                       <span>الخصم</span>
                       <span>- {discount.toFixed(2)} ج.م</span>
                     </div>
                   )}
                   
-                  <div className="flex justify-between py-2 border-b">
+                  <div className="flex justify-between">
                     <span>التوصيل</span>
                     <span className="font-bold">
                       {isFreeDelivery ? (
-                        <span className="text-primary">مجاناً</span>
+                        <span className="text-green-600">مجاناً</span>
                       ) : (
                         `${deliveryPrice.toFixed(2)} ج.م`
                       )}
                     </span>
                   </div>
                   
-                  <div className="flex justify-between py-2 font-bold">
+                  <Separator />
+                  
+                  <div className="flex justify-between text-lg font-bold">
                     <span>الإجمالي</span>
-                    <span className="text-lg">
+                    <span className="text-primary">
                       {(getTotalPrice() - discount + (isFreeDelivery ? 0 : deliveryPrice)).toFixed(2)} ج.م
                     </span>
                   </div>
                 </div>
-              </div>
-            )}
+
+                {/* Submit Button */}
+                <div className="pt-4">
+                  <SwipeButton 
+                    onComplete={paymentMethod === 'wallet' ? () => setWalletDialogOpen(true) : handleSubmitOrder}
+                    isLoading={isLoading}
+                    className="w-full"
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
 
+      {/* Wallet Payment Dialog */}
       <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md mx-auto">
           <DialogHeader>
             <DialogTitle className="text-center">تحويل المبلغ عبر المحفظة الإلكترونية</DialogTitle>
             <DialogDescription className="text-center">
@@ -497,18 +631,20 @@ const Payment = () => {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="bg-muted p-4 rounded-lg">
-              <p className="mb-2 text-center">قم بتحويل المبلغ التالي:</p>
-              <p className="text-xl font-bold text-center text-primary">
-                {(getTotalPrice() - discount + (isFreeDelivery ? 0 : deliveryPrice)).toFixed(2)} ج.م
-              </p>
-            </div>
+            <Card>
+              <CardContent className="text-center p-4">
+                <p className="mb-2">المبلغ المطلوب:</p>
+                <p className="text-2xl font-bold text-primary">
+                  {(getTotalPrice() - discount + (isFreeDelivery ? 0 : deliveryPrice)).toFixed(2)} ج.م
+                </p>
+              </CardContent>
+            </Card>
             
-            <div className="space-y-2">
-              <p className="text-sm">قم بتحويل المبلغ عبر فودافون كاش أو انستا باي إلى الرقم التالي:</p>
+            <div className="space-y-3">
+              <p className="text-sm">قم بتحويل المبلغ عبر فودافون كاش أو انستا باي إلى:</p>
               
-              <div className="flex items-center justify-between bg-muted p-2 px-4 rounded-md">
-                <span className="font-mono font-medium">{WALLET_PHONE_NUMBER}</span>
+              <div className="flex items-center justify-between bg-muted p-3 rounded-lg">
+                <span className="font-mono font-bold text-lg">{WALLET_PHONE_NUMBER}</span>
                 <Button 
                   variant="ghost" 
                   size="sm"
@@ -520,14 +656,14 @@ const Payment = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <p className="text-sm">قم بإرسال رسالة على نفس الرقم تحتوي على:</p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
+            <div className="space-y-3">
+              <p className="text-sm">أرسل رسالة على نفس الرقم تحتوي على:</p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                 <li>رقم الطلب</li>
                 <li>لقطة شاشة تؤكد الدفع</li>
               </ul>
               
-              <div className="flex items-center justify-between bg-muted p-2 px-4 rounded-md">
+              <div className="flex items-center justify-between bg-muted p-3 rounded-lg">
                 <span className="font-mono font-medium">رقم الطلب: {orderNumber}</span>
                 <Button 
                   variant="ghost" 
@@ -540,15 +676,13 @@ const Payment = () => {
               </div>
             </div>
             
-            <div className="pt-4">
-              <Button 
-                onClick={confirmWalletOrder} 
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "جاري تأكيد الطلب..." : "تأكيد الطلب"}
-              </Button>
-            </div>
+            <Button 
+              onClick={confirmWalletOrder} 
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? "جاري تأكيد الطلب..." : "تأكيد الطلب"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -14,7 +14,7 @@ import CategoryDetail from './pages/CategoryDetail';
 import ProductDetail from './pages/ProductDetail';
 import Search from './pages/Search';
 import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
+
 import Payment from './pages/Payment';
 import OrderSuccess from './pages/OrderSuccess';
 import Account from './pages/Account';
@@ -80,11 +80,6 @@ function App() {
             <Route path="/cart" element={
               <AddressGuard>
                 <Cart />
-              </AddressGuard>
-            } />
-            <Route path="/checkout" element={
-              <AddressGuard>
-                <Checkout />
               </AddressGuard>
             } />
             <Route path="/payment" element={
