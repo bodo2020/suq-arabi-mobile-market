@@ -18,7 +18,7 @@ const Address = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [mapLocation, setMapLocation] = useState<{
-    government?: string; 
+    governorate?: string; 
     city?: string; 
     area?: string; 
     neighborhood?: string;
@@ -48,7 +48,7 @@ const Address = () => {
           if (data) {
             setAddress(data.address || '');
             setMapLocation({
-              government: data.governorate_id || undefined,
+              governorate: data.governorate_id || undefined,
               city: data.city_id || undefined,
               area: data.area_id || undefined,
               neighborhood: data.neighborhood_id || undefined
@@ -100,7 +100,7 @@ const Address = () => {
         const addressData = {
           address,
           user_id: user.id,
-          governorate_id: mapLocation.government || null,
+          governorate_id: mapLocation.governorate || null,
           city_id: mapLocation.city || null,
           area_id: mapLocation.area || null,
           neighborhood_id: mapLocation.neighborhood || null,
@@ -200,8 +200,8 @@ const Address = () => {
         address: address
       };
       
-      if (mapLocation.government) {
-        updateData.governorate_id = mapLocation.government;
+      if (mapLocation.governorate) {
+        updateData.governorate_id = mapLocation.governorate;
       }
       
       if (mapLocation.city) {
