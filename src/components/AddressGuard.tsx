@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import AddressSelector from '@/components/ui/AddressSelector';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AddressGuardProps {
   children: React.ReactNode;
@@ -15,19 +16,42 @@ const AddressGuard: React.FC<AddressGuardProps> = ({ children }) => {
     checkAddress();
   }, []);
 
-  const checkAddress = () => {
-    // Check if address is saved in localStorage
-    const savedAddress = localStorage.getItem('selectedAddress');
-    if (savedAddress) {
-      try {
-        const parsedAddress = JSON.parse(savedAddress);
-        if (parsedAddress.neighborhood_id) {
+  const checkAddress = async () => {
+    try {
+      // First check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Check if user has address in database
+        const { data: addresses } = await supabase
+          .from('customer_addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .limit(1);
+        
+        if (addresses && addresses.length > 0) {
           setHasAddress(true);
+          setLoading(false);
+          return;
         }
-      } catch (error) {
-        console.error('Error parsing saved address:', error);
       }
+      
+      // Fallback to localStorage check for non-authenticated users
+      const savedAddress = localStorage.getItem('selectedAddress');
+      if (savedAddress) {
+        try {
+          const parsedAddress = JSON.parse(savedAddress);
+          if (parsedAddress.neighborhood_id) {
+            setHasAddress(true);
+          }
+        } catch (error) {
+          console.error('Error parsing saved address:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking address:', error);
     }
+    
     setLoading(false);
   };
 
