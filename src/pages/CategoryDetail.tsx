@@ -45,10 +45,6 @@ const CategoryDetail = () => {
     navigate(`/category/${id}/subcategory/${subcategoryId}`);
   };
 
-  const handleViewAllProducts = () => {
-    navigate(`/category/${id}/products`);
-  };
-
   if (loading) {
     return (
       <MainLayout>
@@ -80,42 +76,19 @@ const CategoryDetail = () => {
         <div className={`${!isMobile ? 'mt-24' : ''}`}>
           <div className="w-full px-4">
             <div className="max-w-md mx-auto md:max-w-4xl">
-              
-              {/* View All Products Button */}
-              <div className="mb-6">
-                <button 
-                  onClick={handleViewAllProducts}
-                  className="w-full flex flex-col items-center justify-center rounded-lg p-4 transition-all duration-200 bg-primary/10 hover:bg-primary/20 border-2 border-dashed border-primary/30"
-                >
-                  <div className="w-full aspect-square max-w-20 flex items-center justify-center overflow-hidden rounded-lg bg-primary/20 mb-3">
-                    <span className="text-3xl text-primary font-semibold">
-                      الكل
-                    </span>
-                  </div>
-                  <span className="text-lg font-medium text-primary text-center">
-                    جميع المنتجات في {categoryInfo?.name}
-                  </span>
-                </button>
-              </div>
-
               {/* Subcategories Grid */}
-              {subcategories.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-bold mb-4">الأقسام الفرعية</h2>
-                  <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                    {subcategories.map(subcat => (
-                      <SubcategoryItem
-                        key={subcat.id}
-                        subcategory={subcat}
-                        isSelected={false}
-                        onClick={handleSubcategoryClick}
-                      />
-                    ))}
-                  </div>
+              {subcategories.length > 0 ? (
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-1">
+                  {subcategories.map(subcat => (
+                    <SubcategoryItem
+                      key={subcat.id}
+                      subcategory={subcat}
+                      isSelected={false}
+                      onClick={handleSubcategoryClick}
+                    />
+                  ))}
                 </div>
-              )}
-
-              {subcategories.length === 0 && (
+              ) : (
                 <div className="text-center py-8 text-gray-500">
                   لا توجد أقسام فرعية في هذا القسم
                 </div>
