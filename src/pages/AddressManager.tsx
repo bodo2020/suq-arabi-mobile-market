@@ -2,14 +2,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import { MapPin, Plus, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase, Address } from '@/lib/supabase';
 import LocationPicker from "@/components/ui/LocationPicker";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const AddressManager = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -172,8 +175,13 @@ const AddressManager = () => {
 
   return (
     <MainLayout>
-      <div className="p-4">
-        <h1 className="text-xl font-bold mb-6 text-center">عناوين التوصيل</h1>
+      <TopNavBar 
+        hideLogo={true}
+        hideSearch={true}
+        hideCart={true}
+        pageTitle="عناوين التوصيل"
+      />
+      <div className={`p-4 ${!isMobile ? 'mt-24' : 'mt-6'}`}>
         
         {loading ? (
           <div className="flex justify-center items-center h-40">

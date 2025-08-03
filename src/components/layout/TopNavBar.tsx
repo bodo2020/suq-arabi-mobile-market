@@ -38,13 +38,35 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   return <div className="fixed top-0 left-0 right-0 bg-primary text-white shadow-lg rounded-b-3xl z-50">
       <div className="px-4 py-4">
         <div className="flex items-center gap-4">
-          {/* Logo and Back Button */}
-          <img src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" alt="الشعار" className="h-10 w-auto" />
+          {/* Back Button */}
+          {showBackButton && (
+            <button onClick={onBack || (() => navigate(-1))} className="p-2">
+              <ArrowRight className="h-5 w-5" />
+            </button>
+          )}
+
+          {/* Logo */}
+          {!hideLogo && (
+            <img 
+              src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" 
+              alt="الشعار" 
+              className="h-10 w-auto" 
+            />
+          )}
+
+          {/* Page Title in center when logo and search are hidden */}
+          {pageTitle && hideLogo && hideSearch && (
+            <div className="flex-1 text-center">
+              <h1 className="text-xl font-bold">{pageTitle}</h1>
+            </div>
+          )}
 
           {/* Search Bar */}
-          {!hideSearch && <div className="flex-1 max-w-2xl">
+          {!hideSearch && (
+            <div className="flex-1 max-w-2xl">
               <SearchBar placeholder={searchPlaceholder} onFocus={handleSearchFocus} {...searchProps} />
-            </div>}
+            </div>
+          )}
         </div>
       </div>
     </div>;

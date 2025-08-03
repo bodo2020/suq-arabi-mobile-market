@@ -6,7 +6,10 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import { supabase } from '@/lib/supabase';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 type TabType = 'current' | 'previous';
 
 // Helper function to format date
@@ -51,6 +54,7 @@ const getStatusText = (status: string) => {
 };
 const Orders = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<TabType>('current');
   const {
     data: orders,
@@ -78,15 +82,13 @@ const Orders = () => {
   };
   
   return <MainLayout>
-      <div className="py-4 px-4 max-w-lg mx-auto">
-        <div className="flex items-center mb-6">
-          <button onClick={() => navigate(-1)} className="p-2" aria-label="الرجوع">
-            <ArrowRight className="h-6 w-6" />
-          </button>
-          <h1 className="text-2xl font-bold flex-1 text-center">طلباتي</h1>
-          <div className="w-10"></div>
-        </div>
-
+      <TopNavBar 
+        hideLogo={true}
+        hideSearch={true}
+        hideCart={true}
+        pageTitle="طلباتي"
+      />
+      <div className={`py-4 px-4 max-w-lg mx-auto ${!isMobile ? 'mt-24' : 'mt-6'}`}>
         <div className="flex mb-6 bg-gray-100 p-1 rounded-lg">
           <button onClick={() => setActiveTab('current')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === 'current' ? 'bg-white shadow text-primary' : 'text-gray-600'}`}>
             الطلبات الجارية

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
 import { Copy, CheckCheck, MapPin, CreditCard, ShoppingCart, Wallet, DollarSign, ArrowRight } from 'lucide-react';
 import SwipeButton from '@/components/ui/SwipeButton';
@@ -31,6 +33,7 @@ const WALLET_PHONE_NUMBER = "01005245096";
 
 const Payment = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('order_id');
   const { items, getTotalPrice, clearCart } = useCart();
@@ -420,20 +423,13 @@ const Payment = () => {
   
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Header */}
-        <div className="flex items-center mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-            className="p-2"
-          >
-            <ArrowRight className="w-5 h-5" />
-          </Button>
-          <h1 className="text-2xl font-bold flex-1 text-center">الدفع وتأكيد الطلب</h1>
-          <div className="w-9"></div>
-        </div>
+      <TopNavBar 
+        hideLogo={true}
+        hideSearch={true}
+        hideCart={true}
+        pageTitle="الدفع وتأكيد الطلب"
+      />
+      <div className={`container mx-auto px-4 py-6 max-w-6xl ${!isMobile ? 'mt-24' : 'mt-6'}`}>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Forms */}

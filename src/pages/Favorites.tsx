@@ -3,15 +3,18 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Heart, ShoppingBag } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import FavoriteProductCard from '@/components/ui/FavoriteProductCard';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Favorites = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [favorites, setFavorites] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, customerId } = useFavorites();
@@ -84,18 +87,13 @@ const Favorites = () => {
 
   return (
     <MainLayout>
-      <div className="py-4 px-4 md:px-6">
-        <div className="flex items-center mb-6">
-          <button
-            onClick={handleBack}
-            className="p-2 focus:outline-none"
-            aria-label="الرجوع"
-          >
-            <ArrowRight size={24} />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center">المفضلة</h1>
-          <div className="w-10"></div>
-        </div>
+      <TopNavBar 
+        hideLogo={true}
+        hideSearch={true}
+        hideCart={true}
+        pageTitle="المفضلة"
+      />
+      <div className={`py-4 px-4 md:px-6 ${!isMobile ? 'mt-24' : 'mt-6'}`}>
 
         {loading ? (
           <div className="flex justify-center items-center h-40">
