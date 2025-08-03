@@ -11,6 +11,8 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetail';
+import CategoryProducts from './pages/CategoryProducts';
+import SubcategoryDetail from './pages/SubcategoryDetail';
 import ProductDetail from './pages/ProductDetail';
 import Search from './pages/Search';
 import Cart from './pages/Cart';
@@ -65,6 +67,16 @@ function App() {
             <Route path="/category/:id" element={
               <AddressGuard>
                 <CategoryDetail />
+              </AddressGuard>
+            } />
+            <Route path="/category/:id/products" element={
+              <AddressGuard>
+                <CategoryProducts />
+              </AddressGuard>
+            } />
+            <Route path="/category/:categoryId/subcategory/:subcategoryId" element={
+              <AddressGuard>
+                <SubcategoryDetail />
               </AddressGuard>
             } />
             <Route path="/product/:id" element={
