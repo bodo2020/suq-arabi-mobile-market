@@ -78,7 +78,7 @@ const CategoryDetail = () => {
             <div className="max-w-md mx-auto md:max-w-4xl">
               {/* Subcategories Grid */}
               {subcategories.length > 0 ? (
-                <div className="grid grid-cols-4 md:grid-cols-6 gap-1">
+                <div className="grid grid-cols-3 gap-3">
                   {subcategories.map(subcat => (
                     <SubcategoryItem
                       key={subcat.id}
