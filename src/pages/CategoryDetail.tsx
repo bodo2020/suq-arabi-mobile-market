@@ -5,6 +5,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductFilters from '@/components/ui/ProductFilters';
+import SubcategoryItem from '@/components/ui/SubcategoryItem';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
@@ -149,38 +150,46 @@ const CategoryDetail = () => {
           <div className="w-full px-4">
             <div className="max-w-md mx-auto md:max-w-4xl">
               <div className="sticky top-0 z-10 mb-4 bg-white">
-                {/* Only show subcategories filter if there are subcategories with products */}
+                {/* Subcategories grid */}
                 {subcategoriesWithProducts.length > 0 && (
-                  <div className="overflow-x-auto scrollbar-hide">
-                    <div className="flex gap-2 p-2 whitespace-nowrap min-w-max" onClick={handleFiltersClick}>
-                      <button
+                  <div className="mb-6">
+                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2" onClick={handleFiltersClick}>
+                      {/* All Products option */}
+                      <button 
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSubcategorySelect(null);
                         }}
-                        className={`px-4 py-2 rounded-full text-sm ${
+                        className={`flex flex-col items-center justify-center rounded-lg p-1 transition-all duration-200 w-full ${
                           selectedSubcategory === null 
-                            ? 'bg-[#d3ffb3] text-[#005931]' 
-                            : 'bg-transparent border border-[#005931] text-[#005931]'
+                            ? 'bg-primary/20 ring-2 ring-primary' 
+                            : 'hover:bg-gray-100'
                         }`}
                       >
-                        جميع المنتجات
+                        <div className={`w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg ${
+                          selectedSubcategory === null ? 'bg-primary/20' : 'bg-primary/10'
+                        }`}>
+                          <span className="text-2xl text-primary font-semibold">
+                            الكل
+                          </span>
+                        </div>
+                        <span className={`text-sm text-center mt-1 transition-colors ${
+                          selectedSubcategory === null ? 'text-primary font-medium' : 'text-foreground'
+                        }`}>
+                          جميع المنتجات
+                        </span>
                       </button>
+                      
+                      {/* Subcategory items */}
                       {subcategoriesWithProducts.map(subcat => (
-                        <button
+                        <SubcategoryItem
                           key={subcat.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSubcategorySelect(subcat.id);
+                          subcategory={subcat}
+                          isSelected={selectedSubcategory === subcat.id}
+                          onClick={(subcatId) => {
+                            handleSubcategorySelect(subcatId);
                           }}
-                          className={`px-4 py-2 rounded-full text-sm ${
-                            selectedSubcategory === subcat.id 
-                              ? 'bg-[#d3ffb3] text-[#005931]' 
-                              : 'bg-transparent border border-[#005931] text-[#005931]'
-                          }`}
-                        >
-                          {subcat.name}
-                        </button>
+                        />
                       ))}
                     </div>
                   </div>
