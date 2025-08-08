@@ -19,21 +19,23 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (product.bulk_quantity) {
-      setQuantity(product.bulk_quantity);
-    } else {
-      setQuantity(1);
-    }
-  }, [product.bulk_quantity]);
+    setQuantity(1); // default to 1 pack
+  }, [product.id]);
 
   const handleAddToCart = () => {
-    const existingQuantity = items.reduce((total, item) => 
-      item.product.id === product.id ? total + item.quantity : total, 0
-    );
-    
-    const totalQuantity = existingQuantity + quantity;
+    // Existing units (consider bulk packs in cart)
+    const existingUnits = items.reduce((total, item) => {
+      if (item.product.id !== product.id) return total;
+      if (item.is_bulk) {
+        return total + item.quantity * (item.product.bulk_quantity || 1);
+      }
+      return total + item.quantity;
+    }, 0);
 
-    if (totalQuantity > product.quantity) {
+    const unitsPerPack = product.bulk_quantity || 1;
+    const unitsToAdd = quantity * unitsPerPack; // quantity = packs
+
+    if (existingUnits + unitsToAdd > (product.quantity || 0)) {
       toast({
         title: "تنبيه",
         description: "الكمية المطلوبة غير متوفرة",
@@ -42,22 +44,12 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
       return;
     }
 
-    if (!product.bulk_quantity || quantity < product.bulk_quantity) {
-      toast({
-        title: "تنبيه",
-        description: `الحد الأدنى للبيع بالجملة هو ${product.bulk_quantity} قطعة`,
-        variant: "destructive"
-      });
-      return;
-    }
-
     addToCart({
       ...product,
       price: product.bulk_price || 0,
-      quantity,
+      quantity, // packs
       is_bulk: true
     });
-    
     onClose();
   };
 
@@ -72,14 +64,14 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
             <label className="text-sm font-medium">الكمية</label>
             <Input
               type="number"
-              min={product.bulk_quantity || 1}
+              min={1}
               value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || product.bulk_quantity || 1)}
+              onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
               className="w-full"
             />
             {product.bulk_quantity && (
               <p className="text-xs text-gray-500">
-                (الحد الأدنى للجملة: {product.bulk_quantity})
+                (حجم العبوة: {product.bulk_quantity} قطعة)
               </p>
             )}
           </div>

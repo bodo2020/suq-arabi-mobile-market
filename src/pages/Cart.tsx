@@ -127,15 +127,38 @@ const Cart = () => {
     }
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
+  // Helpers to validate stock per product
+  const getTotalUnitsInCart = (productId: string) => {
+    return items
+      .filter(i => i.product.id === productId)
+      .reduce((total, i) => total + (i.is_bulk ? i.quantity * (i.product.bulk_quantity || 1) : i.quantity), 0);
+  };
+  const hasBlockingItems = items.some(i => {
+    const totalUnits = getTotalUnitsInCart(i.product.id);
+    const available = i.product.quantity || 0;
+    return available <= 0 || totalUnits > available;
+  });
+
   const handleProceedToPayment = () => {
     // Check if user is logged in first
     if (!user) {
       navigate('/phone-login');
       return;
     }
+
+    // Block checkout if out-of-stock items exist
+    if (hasBlockingItems) {
+      toast({
+        title: "لا يمكن متابعة الطلب",
+        description: "يرجى إزالة المنتجات غير المتوفرة أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // Check if there's an address (either from user or localStorage)
-    const hasAddress = user ? customerData?.default_address : localStorage.getItem('selectedAddress');
+    // Check if there's an address (from DB default OR homepage localStorage)
+    const selectedAddressLS = localStorage.getItem('selectedAddress');
+    const hasAddress = customerData?.default_address || selectedAddressLS;
     if (!hasAddress) {
       toast({
         title: "عنوان التوصيل مطلوب",
@@ -190,21 +213,32 @@ const Cart = () => {
                       </div>
                       
                       <div className="flex items-center mt-1">
-                        {item.is_bulk ? <span className="text-sm font-bold text-primary">
+                        {item.is_bulk ? (
+                          <span className="text-sm font-bold text-primary">
                             {item.product.bulk_price} ج.م (سعر الوحدة)
-                          </span> : item.unit_of_measure === 'weight' ? <span className="text-sm font-bold">
+                          </span>
+                        ) : item.unit_of_measure === 'weight' ? (
+                          <span className="text-sm font-bold">
                             {item.product.price} ج.م/كجم
-                          </span> : item.product.offer_price ? <>
+                          </span>
+                        ) : item.product.offer_price ? (
+                          <>
                             <span className="text-sm font-bold text-primary ml-2">
                               {item.product.offer_price} ج.م
                             </span>
                             <span className="text-xs line-through text-gray-500">
                               {item.product.price} ج.م
                             </span>
-                          </> : <span className="text-sm font-bold">
+                          </>
+                        ) : (
+                          <span className="text-sm font-bold">
                             {item.product.price} ج.م
-                          </span>}
+                          </span>
+                        )}
                       </div>
+                      {(item.product.quantity <= 0 || getTotalUnitsInCart(item.product.id) > (item.product.quantity || 0)) && (
+                        <span className="text-red-600 text-xs mt-1">نفذت الكمية، يرجى إزالة المنتج</span>
+                      )}
                     </div>
 
                     <div className="flex flex-col items-center mr-3">

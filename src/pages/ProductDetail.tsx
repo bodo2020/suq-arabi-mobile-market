@@ -105,7 +105,7 @@ const ProductDetail = () => {
     addToCart({
       ...product,
       price: isBulk ? product.bulk_price || 0 : product.price || 0,
-      quantity: quantityToAdd,
+      quantity: isBulk ? 1 : quantity, // packs for bulk, pieces for regular
       is_bulk: isBulk
     });
     toast({

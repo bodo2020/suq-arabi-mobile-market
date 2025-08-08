@@ -56,6 +56,30 @@ export function useCartSync(
         
         // Load cart items from database
         await fetchCartItems(customerId, setItems);
+        // Merge guest cart (from localStorage) into DB cart
+        try {
+          const raw = localStorage.getItem('guest_cart');
+          const guest: CartItem[] = raw ? JSON.parse(raw) : [];
+          if (guest.length) {
+            let merged: CartItem[] = [];
+            setItems(prev => {
+              const map = new Map<string, CartItem>();
+              const keyOf = (it: CartItem) => `${it.product.id}-${it.is_bulk ? 'bulk' : 'regular'}-${it.unit_of_measure || ''}`;
+              const upsert = (it: CartItem) => {
+                const k = keyOf(it);
+                const ex = map.get(k);
+                if (!ex) map.set(k, { ...it });
+                else map.set(k, { ...ex, quantity: ex.quantity + it.quantity });
+              };
+              prev.forEach(upsert);
+              guest.forEach(upsert);
+              merged = Array.from(map.values());
+              return merged;
+            });
+            await syncCartPersistence(sessionUser, merged, customerIdRef.current);
+            localStorage.removeItem('guest_cart');
+          }
+        } catch {}
         setIsInitialized(true);
       } else {
         customerIdRef.current = null;
