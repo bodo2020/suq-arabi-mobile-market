@@ -88,14 +88,10 @@ const Cart = () => {
     if (unit_of_measure !== 'weight') {
       const item = items.find(item => item.product.id === productId && item.is_bulk === is_bulk);
       if (item) {
-        const currentCartQuantity = items.filter(i => i.product.id === productId).reduce((total, i) => {
-          if (i.is_bulk) {
-            return total + i.quantity * (i.product.bulk_quantity || 1);
-          }
-          return total + i.quantity;
-        }, 0);
+        const currentCartQuantity = getTotalUnitsInCart(productId);
         const quantityToAdd = is_bulk ? item.product.bulk_quantity || 1 : 1;
-        if (currentCartQuantity + quantityToAdd <= item.product.quantity) {
+        const available = getAvailableQuantity(item.product);
+        if (currentCartQuantity + quantityToAdd <= available) {
           updateQuantity(productId, item.quantity + 1, is_bulk);
         } else {
           toast({
@@ -128,14 +124,19 @@ const Cart = () => {
     return (item.product.offer_price || item.product.price) * item.quantity;
   };
   // Helpers to validate stock per product
+  const getAvailableQuantity = (product: any) => {
+    const q = Number(product?.quantity);
+    return Number.isFinite(q) ? q : Number.POSITIVE_INFINITY;
+  };
   const getTotalUnitsInCart = (productId: string) => {
     return items
-      .filter(i => i.product.id === productId)
+      .filter(i => i.product.id === productId && i.unit_of_measure !== 'weight')
       .reduce((total, i) => total + (i.is_bulk ? i.quantity * (i.product.bulk_quantity || 1) : i.quantity), 0);
   };
   const hasBlockingItems = items.some(i => {
+    if (i.unit_of_measure === 'weight') return false;
     const totalUnits = getTotalUnitsInCart(i.product.id);
-    const available = i.product.quantity || 0;
+    const available = getAvailableQuantity(i.product);
     return available <= 0 || totalUnits > available;
   });
 
@@ -236,7 +237,7 @@ const Cart = () => {
                           </span>
                         )}
                       </div>
-                      {(item.product.quantity <= 0 || getTotalUnitsInCart(item.product.id) > (item.product.quantity || 0)) && (
+                      {(item.unit_of_measure !== 'weight') && (getAvailableQuantity(item.product) <= 0 || getTotalUnitsInCart(item.product.id) > getAvailableQuantity(item.product)) && (
                         <span className="text-red-600 text-xs mt-1">نفذت الكمية، يرجى إزالة المنتج</span>
                       )}
                     </div>
@@ -252,7 +253,7 @@ const Cart = () => {
                             <span className="mx-2 font-medium">
                               {item.quantity}
                             </span>
-                            <button onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)} className="p-1" aria-label="زيادة الكمية">
+                            <button onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)} className="p-1" aria-label="زيادة الكمية" disabled={item.unit_of_measure !== 'weight' && getTotalUnitsInCart(item.product.id) >= getAvailableQuantity(item.product)}>
                               <Plus size={16} />
                             </button>
                           </>}
