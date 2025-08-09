@@ -247,9 +247,6 @@ const Cart = () => {
                         if (totalUnits > available) {
                           return <span className="text-amber-600 text-xs mt-1">يوجد {available} قطعة فقط</span>;
                         }
-                        if (remaining > 0 && remaining <= 5) {
-                          return <span className="text-amber-600 text-xs mt-1">متبقي {remaining} قطعة</span>;
-                        }
                         return null;
                       })()}
 
