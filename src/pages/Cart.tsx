@@ -237,9 +237,19 @@ const Cart = () => {
                           </span>
                         )}
                       </div>
-                      {(item.unit_of_measure !== 'weight') && (getAvailableQuantity(item.product) <= 0 || getTotalUnitsInCart(item.product.id) > getAvailableQuantity(item.product)) && (
-                        <span className="text-red-600 text-xs mt-1">نفذت الكمية، يرجى إزالة المنتج</span>
-                      )}
+                      {item.unit_of_measure !== 'weight' && (() => {
+                        const available = getAvailableQuantity(item.product);
+                        const totalUnits = getTotalUnitsInCart(item.product.id);
+                        const remaining = available - totalUnits;
+                        if (available <= 0 || totalUnits > available) {
+                          return <span className="text-red-600 text-xs mt-1">نفذت الكمية، يرجى إزالة المنتج</span>;
+                        }
+                        if (remaining > 0 && remaining <= 5) {
+                          return <span className="text-amber-600 text-xs mt-1">متبقي {remaining} قطعة</span>;
+                        }
+                        return null;
+                      })()}
+
                     </div>
 
                     <div className="flex flex-col items-center mr-3">
