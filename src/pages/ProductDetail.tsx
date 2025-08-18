@@ -7,6 +7,8 @@ import ProductCard from '@/components/ui/ProductCard';
 import CompanyCard from '@/components/ui/CompanyCard';
 import WeightSelector from '@/components/ui/WeightSelector';
 import ProductStructuredData from '@/components/seo/ProductStructuredData';
+import BreadcrumbStructuredData from '@/components/seo/BreadcrumbStructuredData';
+import SEOHead from '@/components/seo/SEOHead';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -248,7 +250,22 @@ const ProductDetail = () => {
 
   return (
     <MainLayout>
+      <SEOHead 
+        title={`${product.name} - متجرك الإلكتروني`}
+        description={product.description || `اشتري ${product.name} بأفضل سعر مع توصيل مجاني`}
+        image={product.image_urls?.[0]}
+        type="product"
+      />
+      
       <ProductStructuredData product={product} />
+      
+      <BreadcrumbStructuredData 
+        items={[
+          { name: "الرئيسية", url: "/" },
+          { name: "المنتجات", url: "/categories" },
+          { name: product.name, url: `/product/${product.id}` }
+        ]}
+      />
       
       {/* Top Navigation */}
       <TopNavBar 

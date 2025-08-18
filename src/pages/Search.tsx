@@ -6,6 +6,8 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import SearchBar from '@/components/ui/SearchBar';
 import ProductCard from '@/components/ui/ProductCard';
+import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
+import SEOHead from '@/components/seo/SEOHead';
 import { searchProducts, getProducts, searchProductByBarcode } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -244,6 +246,21 @@ const Search = () => {
 
   return (
     <MainLayout>
+      {query && (
+        <SEOHead 
+          title={`البحث عن "${query}" - متجرك الإلكتروني`}
+          description={`نتائج البحث عن ${query} في متجرك الإلكتروني`}
+          type="search"
+        />
+      )}
+      
+      {products.length > 0 && query && (
+        <ProductListStructuredData 
+          products={products} 
+          listName={`نتائج البحث عن "${query}"`} 
+        />
+      )}
+      
       <div className="py-0">
         {/* Top Navigation Bar */}
         <TopNavBar 

@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
+import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
+import SEOHead from '@/components/seo/SEOHead';
 import { supabase } from '@/lib/supabase';
 import { ArrowRight } from 'lucide-react';
 
@@ -31,6 +33,19 @@ const BannerProducts = () => {
 
   return (
     <MainLayout>
+      <SEOHead 
+        title="منتجات مختارة - متجرك الإلكتروني"
+        description="تسوق من مجموعة منتقاة من أفضل المنتجات بأسعار مميزة"
+        type="product.group"
+      />
+      
+      {products.length > 0 && (
+        <ProductListStructuredData 
+          products={products} 
+          listName="منتجات مختارة" 
+        />
+      )}
+      
       <div className="py-4">
         <div className="flex items-center mb-4">
           <button className="p-2" onClick={() => navigate(-1)}>

@@ -4,6 +4,9 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductFilters from '@/components/ui/ProductFilters';
+import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
+import BreadcrumbStructuredData from '@/components/seo/BreadcrumbStructuredData';
+import SEOHead from '@/components/seo/SEOHead';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
@@ -101,6 +104,27 @@ const CategoryProducts = () => {
 
   return (
     <MainLayout>
+      <SEOHead 
+        title={`منتجات ${categoryInfo?.name || "القسم"} - متجرك الإلكتروني`}
+        description={`تسوق من مجموعة ${categoryInfo?.name || "منتجات القسم"} بأفضل الأسعار مع توصيل مجاني`}
+        type="product.group"
+      />
+      
+      {products.length > 0 && (
+        <ProductListStructuredData 
+          products={products} 
+          listName={`منتجات ${categoryInfo?.name || "القسم"}`} 
+        />
+      )}
+      
+      <BreadcrumbStructuredData 
+        items={[
+          { name: "الرئيسية", url: "/" },
+          { name: "الأقسام", url: "/categories" },
+          { name: categoryInfo?.name || "القسم", url: `/category/${id}` }
+        ]}
+      />
+      
       <div className="container px-0 py-0">
         <TopNavBar 
           hideLogo={true}
