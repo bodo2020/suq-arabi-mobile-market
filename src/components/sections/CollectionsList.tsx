@@ -3,7 +3,6 @@ import React, { memo } from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { getProductListWithVariants } from '@/utils/productUtils';
 
 interface CollectionData {
   id: string;
@@ -55,8 +54,8 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
             
             <ScrollArea className="w-full whitespace-nowrap rounded-md">
               <div className="flex flex-row-reverse space-x-4 space-x-reverse p-2">
-                {getProductListWithVariants(collectionProducts).map(product => (
-                  <div key={product.variantKey} className="w-[120px] flex-shrink-0">
+                {collectionProducts.map(product => (
+                  <div key={product.id} className="w-[120px] flex-shrink-0">
                     <ProductCard 
                       product={product}
                       hideIfUnavailable={false}

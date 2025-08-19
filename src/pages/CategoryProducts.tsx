@@ -10,7 +10,6 @@ import SEOHead from '@/components/seo/SEOHead';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
-import { getProductListWithVariants } from '@/utils/productUtils';
 
 const sortOptions = [
   { label: "الأحدث", value: "newest" },
@@ -149,9 +148,9 @@ const CategoryProducts = () => {
               </div>
 
               <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {getProductListWithVariants(products).map((product) => (
-                  <div key={product.variantKey} className="flex-shrink-0">
-                    <ProductCard key={product.variantKey} product={product} />
+                {products.map((product) => (
+                  <div key={product.id} className="flex-shrink-0">
+                    <ProductCard key={product.id} product={product} />
                   </div>
                 ))}
               </div>

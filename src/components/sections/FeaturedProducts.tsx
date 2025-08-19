@@ -3,7 +3,6 @@ import React from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { getProductListWithVariants } from '@/utils/productUtils';
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -11,18 +10,17 @@ interface FeaturedProductsProps {
 
 const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   const availableProducts = products.filter(product => product.quantity > 0);
-  const productVariants = getProductListWithVariants(availableProducts);
 
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
-      {productVariants.length > 0 ? (
+      {availableProducts.length > 0 ? (
         <ScrollArea className="w-full whitespace-nowrap rounded-md">
           <div className="flex flex-row-reverse space-x-4 space-x-reverse p-2">
-            {productVariants.map(product => (
-              <div key={product.variantKey} className="w-[120px] flex-shrink-0">
+            {availableProducts.map(product => (
+              <div key={product.id} className="w-[120px] flex-shrink-0">
                 <ProductCard 
                   product={product}
                   hideIfUnavailable={false}

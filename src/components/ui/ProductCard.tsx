@@ -11,10 +11,7 @@ import AddToCartModal from './AddToCartModal';
 import WeightSelector from './WeightSelector';
 
 interface ProductCardProps {
-  product: Product & { 
-    displayType?: 'regular' | 'bulk';
-    variantKey?: string;
-  };
+  product: Product;
   hideIfUnavailable?: boolean;
   showBulkQuantity?: boolean;
 }
@@ -29,11 +26,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showWeightSelector, setShowWeightSelector] = useState(false);
 
-  const isBulkDisplay = product.displayType === 'bulk' || showBulkQuantity;
   const regularCartItem = items.find(item => item.product.id === product.id && !item.is_bulk);
   const bulkCartItem = items.find(item => item.product.id === product.id && item.is_bulk);
   
-  const quantity = isBulkDisplay && bulkCartItem ? bulkCartItem.quantity : (regularCartItem?.quantity || 0);
+  const quantity = showBulkQuantity && bulkCartItem ? bulkCartItem.quantity : (regularCartItem?.quantity || 0);
   const isOutOfStock = product.quantity <= 0;
 
   if (hideIfUnavailable && isOutOfStock) {
@@ -162,7 +158,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               {discount}%
             </div>
           )}
-          {isBulkDisplay && product.bulk_quantity && (
+          {displayBulkView && (
             <Badge 
               variant="secondary"
               className="absolute bottom-1 right-1 flex items-center gap-1 bg-[#d3ffb3] text-[#005931] border-0 text-xs py-0.5"
@@ -186,8 +182,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <h3 className="font-bold text-xs mb-0.5 line-clamp-3 min-h-[3.75rem] break-words whitespace-normal">{product.name}</h3>
           <div className="mt-auto">
             <div className="flex justify-between mb-1 items-center">
-              {isBulkDisplay ? (
-                <span className="font-bold text-xs">{product.price} ج.م/وحدة</span>
+              {displayBulkView ? (
+                <span className="font-bold text-xs">{product.bulk_price} ج.م/وحدة</span>
               ) : product.barcode_type === 'scale' ? (
                 <span className="font-bold text-xs">{product.price} ج.م/كجم</span>
               ) : product.offer_price ? (
@@ -212,8 +208,35 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </button>
               ) : (
                 <>
-                  {isBulkDisplay ? (
-                    // Bulk card display
+                  {regularCartItem || (!showBulkQuantity && !product.barcode_type) ? (
+                    <div className="flex items-center justify-between bg-primary text-white rounded-lg p-0.5">
+                      <button 
+                        onClick={(e) => handleDecreaseQuantity(e, false)} 
+                        className="p-0.5 hover:bg-primary-foreground/10 rounded"
+                        aria-label="تقليل الكمية"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="mx-1 text-xs">{regularCartItem?.quantity || 0}</span>
+                      <button 
+                        onClick={(e) => handleIncreaseQuantity(e, false)}
+                        className="p-0.5 hover:bg-primary-foreground/10 rounded"
+                        aria-label="زيادة الكمية"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => handleAddToCart(e, false)}
+                      className="w-full py-1 px-1 bg-primary text-white rounded-lg flex items-center justify-center text-xs hover:bg-primary/90 transition-colors"
+                      aria-label="إضافة إلى السلة"
+                    >
+                      إضافة للسلة
+                    </button>
+                  )}
+
+                  {product.bulk_enabled && product.bulk_quantity && !showBulkQuantity && canPurchaseBulk && (
                     bulkCartItem ? (
                       <div className="flex items-center justify-between bg-[#d3ffb3] text-[#005931] rounded-lg p-0.5">
                         <button 
@@ -242,36 +265,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                         aria-label="إضافة للجملة"
                       >
                         <Package className="w-2.5 h-2.5" />
-                        جملة ({product.bulk_quantity})
-                      </button>
-                    )
-                  ) : (
-                    // Regular card display
-                    regularCartItem ? (
-                      <div className="flex items-center justify-between bg-primary text-white rounded-lg p-0.5">
-                        <button 
-                          onClick={(e) => handleDecreaseQuantity(e, false)} 
-                          className="p-0.5 hover:bg-primary-foreground/10 rounded"
-                          aria-label="تقليل الكمية"
-                        >
-                          <Minus size={12} />
-                        </button>
-                        <span className="mx-1 text-xs">{regularCartItem?.quantity || 0}</span>
-                        <button 
-                          onClick={(e) => handleIncreaseQuantity(e, false)}
-                          className="p-0.5 hover:bg-primary-foreground/10 rounded"
-                          aria-label="زيادة الكمية"
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={(e) => handleAddToCart(e, false)}
-                        className="w-full py-1 px-1 bg-primary text-white rounded-lg flex items-center justify-center text-xs hover:bg-primary/90 transition-colors"
-                        aria-label="إضافة إلى السلة"
-                      >
-                        إضافة للسلة
+                        {product.bulk_price} ({product.bulk_quantity})
                       </button>
                     )
                   )}
