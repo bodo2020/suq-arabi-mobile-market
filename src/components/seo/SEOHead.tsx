@@ -14,10 +14,11 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   title = "متجرك الإلكتروني - أفضل المنتجات بأفضل الأسعار",
   description = "اكتشف مجموعة واسعة من المنتجات عالية الجودة مع خدمة توصيل سريعة وآمنة",
   image = "/favicon.ico",
-  url = window.location.href,
+  url,
   type = "website"
 }) => {
-  const baseUrl = window.location.origin;
+  const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const fullImageUrl = image.startsWith('http') ? image : `${baseUrl}${image}`;
 
   return (
@@ -27,21 +28,21 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
-      <meta property="og:url" content={url} />
+      <meta property="og:url" content={currentUrl} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={fullImageUrl} />
       
       {/* Twitter */}
       <meta property="twitter:card" content="summary_large_image" />
-      <meta property="twitter:url" content={url} />
+      <meta property="twitter:url" content={currentUrl} />
       <meta property="twitter:title" content={title} />
       <meta property="twitter:description" content={description} />
       <meta property="twitter:image" content={fullImageUrl} />
       
       {/* Additional SEO */}
       <meta name="robots" content="index, follow" />
-      <link rel="canonical" href={url} />
+      <link rel="canonical" href={currentUrl} />
     </Helmet>
   );
 };

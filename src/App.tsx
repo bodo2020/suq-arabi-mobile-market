@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import { UserProvider } from './contexts/UserContext';
 import { CartProvider } from './contexts/CartProvider';
 import Index from './pages/Index';
@@ -40,9 +41,10 @@ import AddressGuard from "./components/AddressGuard";
 
 function App() {
   return (
-    <UserProvider>
-      <CartProvider>
-        <BrowserRouter>
+    <HelmetProvider>
+      <UserProvider>
+        <CartProvider>
+          <BrowserRouter>
           <Routes>
             {/* Authentication routes - no address guard needed */}
             <Route path="/phone-login" element={<PhoneLogin />} />
@@ -197,9 +199,10 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
-        </BrowserRouter>
-      </CartProvider>
-    </UserProvider>
+          </BrowserRouter>
+        </CartProvider>
+      </UserProvider>
+    </HelmetProvider>
   );
 }
 
