@@ -14,6 +14,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getProductListWithVariants } from '@/utils/productUtils';
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -365,11 +366,16 @@ const Search = () => {
               {!query && popularProducts.length > 0 && (
                 <div className="mb-6">
                   <h2 className="text-lg font-bold mb-3 text-primary">منتجات مميزة</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {popularProducts.map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
+                  {(() => {
+                    const productVariants = getProductListWithVariants(popularProducts);
+                    return (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {productVariants.map((product) => (
+                          <ProductCard key={product.variantKey} product={product} />
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -383,11 +389,16 @@ const Search = () => {
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
                   ) : products.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {products.map((product) => (
-                        <ProductCard key={product.id} product={product} />
-                      ))}
-                    </div>
+                    (() => {
+                      const productVariants = getProductListWithVariants(products);
+                      return (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          {productVariants.map((product) => (
+                            <ProductCard key={product.variantKey} product={product} />
+                          ))}
+                        </div>
+                      );
+                    })()
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                       <SearchIcon size={48} className="text-primary/30 mb-4" />
