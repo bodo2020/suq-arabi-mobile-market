@@ -15,8 +15,12 @@ const queryClient = new QueryClient({
 })
 
 // Add hide-scrollbar class to main elements to hide scrollbars while allowing scrolling
-document.documentElement.classList.add('hide-scrollbar');
-document.body.classList.add('hide-scrollbar');
+if (document.documentElement && document.documentElement.classList) {
+  document.documentElement.classList.add('hide-scrollbar');
+}
+if (document.body && document.body.classList) {
+  document.body.classList.add('hide-scrollbar');
+}
 
 // Hide Lovable badge - additional runtime hiding
 const hideLovableBadge = () => {
@@ -53,16 +57,20 @@ const observer = new MutationObserver(() => {
 });
 
 // Start observing the document with the configured parameters
-observer.observe(document.body, { 
-  childList: true,
-  subtree: true,
-  attributes: true,
-  attributeFilter: ['class', 'style', 'id']
-});
+if (document.body) {
+  observer.observe(document.body, { 
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'style', 'id']
+  });
+}
 
 const root = document.getElementById("root");
 if (root) {
-  root.classList.add('hide-scrollbar');
+  if (root.classList) {
+    root.classList.add('hide-scrollbar');
+  }
   createRoot(root).render(
     <QueryClientProvider client={queryClient}>
       <App />

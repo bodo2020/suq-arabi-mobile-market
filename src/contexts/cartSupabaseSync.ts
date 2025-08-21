@@ -68,8 +68,11 @@ export function useCartSync(
               const upsert = (it: CartItem) => {
                 const k = keyOf(it);
                 const ex = map.get(k);
-                if (!ex) map.set(k, { ...it });
-                else map.set(k, { ...ex, quantity: ex.quantity + it.quantity });
+                if (!ex) {
+                  map.set(k, { ...it });
+                } else {
+                  map.set(k, { ...ex, quantity: ex.quantity + it.quantity });
+                }
               };
               prev.forEach(upsert);
               guest.forEach(upsert);
@@ -79,7 +82,9 @@ export function useCartSync(
             await syncCartPersistence(sessionUser, merged, customerIdRef.current);
             localStorage.removeItem('guest_cart');
           }
-        } catch {}
+        } catch (error) {
+          console.error('Error merging guest cart:', error);
+        }
         setIsInitialized(true);
       } else {
         customerIdRef.current = null;
