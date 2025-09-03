@@ -34,26 +34,27 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      setLoading(false);
-    };
-
-    getSession();
-
-    supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
-      if (event === 'INITIAL_SESSION') {
-        return;
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, session: Session | null) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+        setLoading(false);
       }
+    );
 
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
       setLoading(false);
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Function to sign in with email or phone and password
@@ -87,26 +88,19 @@ export const UserProvider = ({ children }) => {
           // Look up the user by phone number from customers table
           const { data: customerData } = await supabase
             .from('customers')
-            .select('user_id')
+            .select('user_id, email')
             .eq('phone', username)
             .single();
             
-          if (customerData?.user_id) {
-            // If we found a user with this phone, try to get their email
-            const { data: userData } = await supabase.auth.admin.getUserById(
-              customerData.user_id
-            );
+          if (customerData?.email) {
+            // Try to sign in with the customer's email
+            const signInResult = await supabase.auth.signInWithPassword({
+              email: customerData.email,
+              password,
+            });
             
-            if (userData?.user?.email) {
-              // Try to sign in with the retrieved email
-              const signInResult = await supabase.auth.signInWithPassword({
-                email: userData.user.email,
-                password,
-              });
-              
-              if (!signInResult.error) {
-                return { data: signInResult.data };
-              }
+            if (!signInResult.error) {
+              return { data: signInResult.data };
             }
           }
           
@@ -132,6 +126,7 @@ export const UserProvider = ({ children }) => {
         email: loginEmail,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             ...additionalData,
             email: email,

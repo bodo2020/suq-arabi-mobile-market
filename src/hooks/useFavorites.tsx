@@ -10,25 +10,30 @@ export function useFavorites() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        const customerId = await getCustomerId(session.user.id);
-        setCustomerId(customerId);
-        
-        if (customerId) {
-          loadFavorites(customerId);
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Use setTimeout to avoid deadlock with supabase calls in callback
+      setTimeout(async () => {
+        if (session?.user) {
+          setUser(session.user);
+          const customerId = await getCustomerId(session.user.id);
+          setCustomerId(customerId);
+          
+          if (customerId) {
+            loadFavorites(customerId);
+          } else {
+            setIsLoading(false);
+          }
         } else {
+          setUser(null);
+          setCustomerId(null);
+          setFavorites({});
           setIsLoading(false);
         }
-      } else {
-        setUser(null);
-        setCustomerId(null);
-        setFavorites({});
-        setIsLoading(false);
-      }
+      }, 0);
     });
 
+    // Then check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
@@ -46,7 +51,7 @@ export function useFavorites() {
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
