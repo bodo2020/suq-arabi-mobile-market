@@ -25,14 +25,12 @@ const formatDate = (dateString: string) => {
 // Helper function to get status color
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'waiting':
+    case 'pending':
       return 'bg-amber-100 text-amber-800';
-    case 'ready':
-      return 'bg-blue-100 text-blue-800';
-    case 'shipped':
-      return 'bg-purple-100 text-purple-800';
-    case 'done':
+    case 'delivered':
       return 'bg-green-100 text-green-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -41,14 +39,12 @@ const getStatusColor = (status: string) => {
 // Helper function to get status text in Arabic
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'waiting':
+    case 'pending':
       return 'قيد الانتظار';
-    case 'ready':
-      return 'جاهز للشحن';
-    case 'shipped':
-      return 'تم الشحن';
-    case 'done':
+    case 'delivered':
       return 'تم التسليم';
+    case 'cancelled':
+      return 'ملغى';
     default:
       return 'غير معروف';
   }
@@ -106,13 +102,13 @@ const Orders = () => {
     },
     enabled: !!user
   });
-  const currentOrders = orders?.filter(order => ['waiting', 'ready'].includes(order.status)) || [];
-  const previousOrders = orders?.filter(order => ['shipped', 'done'].includes(order.status)) || [];
+  const currentOrders = orders?.filter(order => ['pending'].includes(order.status)) || [];
+  const previousOrders = orders?.filter(order => ['delivered', 'cancelled'].includes(order.status)) || [];
   const activeOrders = activeTab === 'current' ? currentOrders : previousOrders;
   
   // Check if return is available for an order (only for completed orders)
   const canReturnOrder = (order: any) => {
-    return order.status === 'done';
+    return order.status === 'delivered';
   };
   
   return <MainLayout>
