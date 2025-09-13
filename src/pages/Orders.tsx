@@ -9,6 +9,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import { supabase } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useUser } from '@/contexts/UserContext';
 
 type TabType = 'current' | 'previous';
 
@@ -55,22 +56,55 @@ const getStatusText = (status: string) => {
 const Orders = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user, session } = useUser();
   const [activeTab, setActiveTab] = useState<TabType>('current');
+  
+  // Helper function to get customer ID from user ID
+  const getCustomerId = async (userId: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching customer ID:', error);
+        return null;
+      }
+      return data?.id || null;
+    } catch (error) {
+      console.error('Exception in getCustomerId:', error);
+      return null;
+    }
+  };
+
   const {
     data: orders,
-    isLoading
+    isLoading,
+    error
   } = useQuery({
-    queryKey: ['orders'],
+    queryKey: ['orders', user?.id],
     queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('online_orders').select('*').order('created_at', {
-        ascending: false
-      });
+      if (!user) {
+        return [];
+      }
+      
+      const customerId = await getCustomerId(user.id);
+      if (!customerId) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('online_orders')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false });
+      
       if (error) throw error;
-      return data;
-    }
+      return data || [];
+    },
+    enabled: !!user
   });
   const currentOrders = orders?.filter(order => ['waiting', 'ready'].includes(order.status)) || [];
   const previousOrders = orders?.filter(order => ['shipped', 'done'].includes(order.status)) || [];
@@ -107,8 +141,28 @@ const Orders = () => {
           عرض طلبات الإرجاع
         </Button>
 
-        {isLoading ? <div className="flex justify-center items-center h-40">
+        {!session ? <div className="flex flex-col items-center justify-center py-12 text-center">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              يرجى تسجيل الدخول
+            </h3>
+            <p className="text-gray-500 mb-8">
+              قم بتسجيل الدخول لعرض طلباتك
+            </p>
+            <Button onClick={() => navigate('/phone-login')} className="w-full bg-primary hover:bg-primary/90 text-white py-6 rounded-xl text-lg">
+              تسجيل الدخول
+            </Button>
+          </div> : isLoading ? <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div> : error ? <div className="flex flex-col items-center justify-center py-12 text-center">
+            <h3 className="text-xl font-bold text-red-600 mb-2">
+              خطأ في تحميل الطلبات
+            </h3>
+            <p className="text-gray-500 mb-8">
+              حدث خطأ أثناء تحميل طلباتك، يرجى المحاولة مرة أخرى
+            </p>
+            <Button onClick={() => window.location.reload()} className="w-full bg-primary hover:bg-primary/90 text-white py-6 rounded-xl text-lg">
+              إعادة المحاولة
+            </Button>
           </div> : activeOrders.length === 0 ? <div className="flex flex-col items-center justify-center py-12 text-center">
             <h3 className="text-xl font-bold text-gray-800 mb-2">
               {activeTab === 'current' ? 'لا يوجد طلبات حالية' : 'لا يوجد طلبات سابقة'}
