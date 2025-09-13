@@ -1,5 +1,6 @@
 import React from 'react';
 import StructuredData from './StructuredData';
+import { getBaseUrl } from '@/utils/urlUtils';
 
 interface BreadcrumbItem {
   name: string;
@@ -13,7 +14,7 @@ interface BreadcrumbStructuredDataProps {
 
 const BreadcrumbStructuredData: React.FC<BreadcrumbStructuredDataProps> = ({ 
   items,
-  baseUrl = window.location.origin 
+  baseUrl = getBaseUrl() 
 }) => {
   const structuredData = {
     "@context": "https://schema.org",

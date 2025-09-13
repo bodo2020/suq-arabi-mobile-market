@@ -1,13 +1,14 @@
 
 import React from 'react';
 import StructuredData from './StructuredData';
+import { getBaseUrl } from '@/utils/urlUtils';
 
 interface StoreStructuredDataProps {
   baseUrl?: string;
 }
 
 const StoreStructuredData: React.FC<StoreStructuredDataProps> = ({ 
-  baseUrl = window.location.origin 
+  baseUrl = getBaseUrl() 
 }) => {
   const structuredData = {
     "@context": "https://schema.org",

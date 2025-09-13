@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { getBaseUrl, getCurrentUrl } from '@/utils/urlUtils';
 
 interface SEOHeadProps {
   title?: string;
@@ -17,8 +18,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   url,
   type = "website"
 }) => {
-  const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const currentUrl = url || getCurrentUrl();
+  const baseUrl = getBaseUrl();
   const fullImageUrl = image.startsWith('http') ? image : `${baseUrl}${image}`;
 
   return (

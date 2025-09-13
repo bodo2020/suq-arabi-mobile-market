@@ -129,12 +129,15 @@ const ProductDetail = () => {
 
   // مشاركة المنتج
   const handleShare = async () => {
+    const { getCurrentUrl } = await import('@/utils/urlUtils');
+    const shareUrl = getCurrentUrl();
+    
     if (navigator.share && navigator.canShare) {
       try {
         await navigator.share({
           title: product?.name || 'منتج',
           text: product?.description || '',
-          url: window.location.href,
+          url: shareUrl,
         });
       } catch (error) {
         if (error.name !== 'AbortError') {
@@ -147,8 +150,11 @@ const ProductDetail = () => {
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+  const copyToClipboard = async () => {
+    const { getCurrentUrl } = await import('@/utils/urlUtils');
+    const shareUrl = getCurrentUrl();
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
       toast({
         title: "تم النسخ",
         description: "تم نسخ رابط المنتج"
