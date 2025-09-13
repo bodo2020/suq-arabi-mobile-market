@@ -5,7 +5,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
 import SEOHead from '@/components/seo/SEOHead';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight } from 'lucide-react';
 
 const BannerProducts = () => {

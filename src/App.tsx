@@ -171,6 +171,11 @@ function App() {
                 <BannerProducts />
               </AddressGuard>
             } />
+            <Route path="/banner-products/:id" element={
+              <AddressGuard>
+                <BannerProducts />
+              </AddressGuard>
+            } />
             <Route path="/addresses" element={
               <AddressGuard>
                 <AddressManager />
