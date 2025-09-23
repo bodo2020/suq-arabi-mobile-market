@@ -7,8 +7,15 @@ interface BannerSkeletonProps {
 
 const BannerSkeleton: React.FC<BannerSkeletonProps> = ({ className = "" }) => {
   return (
-    <div className={`w-full ${className}`}>
-      <Skeleton className="w-full h-40 md:h-48 rounded-lg" />
+    <div className={`relative w-full overflow-hidden rounded-lg ${className}`}>
+      <Skeleton className="w-full h-40 md:h-56 lg:h-64 rounded-lg" />
+      
+      {/* نقط وهمية للتنقل */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="w-3 h-3 rounded-full" />
+        ))}
+      </div>
     </div>
   );
 };
