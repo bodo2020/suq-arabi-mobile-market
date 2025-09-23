@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Tag } from 'lucide-react';
+import { Tag, Loader } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { applyCoupon } from '@/utils/offerUtils';
 
@@ -55,7 +55,7 @@ const CouponInput = ({
         onClick={handleApplyCoupon} 
         disabled={loading || !code.trim()}
       >
-        {loading ? "جاري التطبيق..." : "تطبيق"}
+        {loading ? <Loader className="h-4 w-4 animate-spin" /> : "تطبيق"}
       </Button>
     </div>
   );

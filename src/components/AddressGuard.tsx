@@ -3,7 +3,6 @@ import AddressSelector from '@/components/ui/AddressSelector';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface AddressGuardProps {
   children: React.ReactNode;
@@ -62,14 +61,8 @@ const AddressGuard: React.FC<AddressGuardProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full text-center shadow-lg space-y-4">
-          <Skeleton className="w-16 h-16 rounded-full mx-auto" />
-          <Skeleton className="h-6 w-3/4 mx-auto" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3 mx-auto" />
-          <Skeleton className="h-10 w-full rounded-lg" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
