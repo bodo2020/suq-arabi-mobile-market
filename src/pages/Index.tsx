@@ -46,7 +46,7 @@ const Index = () => {
     refetchOnWindowFocus: false
   });
 
-  const visibleCategories = categories.slice(0, 4);
+  const visibleCategories = categories.slice(0, 5);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -193,18 +193,28 @@ const Index = () => {
                   </Link>
                 </div>
                 
-                <div className="grid grid-cols-5 md:grid-cols-5 gap-1">
-                  {visibleCategories.map(category => (
-                    <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
-                  ))}
-                  {categories.length > 4 && (
-                    <Link to="/categories" className="flex flex-col items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100 w-full">
-                      <div className="w-full aspect-square bg-primary/10 flex items-center justify-center overflow-hidden rounded-lg">
-                        <ChevronLeft size={24} className="text-primary" />
-                      </div>
-                      <span className="text-sm text-center mt-1">عرض المزيد</span>
-                    </Link>
-                  )}
+                <div className="space-y-1">
+                  {/* الصف الأول - 3 أقسام */}
+                  <div className="grid grid-cols-3 gap-1">
+                    {visibleCategories.slice(0, 3).map(category => (
+                      <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
+                    ))}
+                  </div>
+                  
+                  {/* الصف الثاني - 2 أقسام + المزيد */}
+                  <div className="grid grid-cols-3 gap-1">
+                    {visibleCategories.slice(3, 5).map(category => (
+                      <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
+                    ))}
+                    {categories.length > 5 && (
+                      <Link to="/categories" className="flex flex-col items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100 w-full">
+                        <div className="w-full aspect-square bg-primary/10 flex items-center justify-center overflow-hidden rounded-lg">
+                          <ChevronLeft size={24} className="text-primary" />
+                        </div>
+                        <span className="text-sm text-center mt-1">عرض المزيد</span>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
               
