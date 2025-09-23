@@ -46,7 +46,7 @@ const Index = () => {
     refetchOnWindowFocus: false
   });
 
-  const visibleCategories = categories.slice(0, 12);
+  const visibleCategories = categories.slice(0, 4);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -193,16 +193,16 @@ const Index = () => {
                   </Link>
                 </div>
                 
-                <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-1">
+                <div className="grid grid-cols-5 md:grid-cols-5 gap-1">
                   {visibleCategories.map(category => (
                     <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
                   ))}
-                  {categories.length > 12 && (
-                    <Link to="/categories" className="category-item flex flex-col items-center">
-                      <div className="h-24 w-full bg-gray-100 rounded-2xl flex items-center justify-center" style={{ aspectRatio: '1' }}>
-                        <ChevronLeft size={24} />
+                  {categories.length > 4 && (
+                    <Link to="/categories" className="flex flex-col items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100 w-full">
+                      <div className="w-full aspect-square bg-primary/10 flex items-center justify-center overflow-hidden rounded-lg">
+                        <ChevronLeft size={24} className="text-primary" />
                       </div>
-                      <span className="text-sm text-center mt-1">عرض الكل</span>
+                      <span className="text-sm text-center mt-1">عرض المزيد</span>
                     </Link>
                   )}
                 </div>
