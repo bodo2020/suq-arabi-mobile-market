@@ -10,6 +10,8 @@ import { getCategories, getStoreInfo, supabase, MainCategory } from '@/lib/supab
 import { useIsMobile } from '@/hooks/use-mobile';
 import { processImageBackground } from '@/utils/imageUtils';
 import { Skeleton } from "@/components/ui/skeleton";
+import BannerSkeleton from "@/components/ui/BannerSkeleton";
+import CategorySkeleton from "@/components/ui/CategorySkeleton";
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 
@@ -125,10 +127,13 @@ const Index = () => {
             <Skeleton className="h-12 w-full rounded-lg mb-3" />
           </div>
           <div className="mb-6">
-            <Skeleton className="h-8 w-36 mb-2" />
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full rounded-lg" />
+            <div className="flex justify-between items-center mb-3">
+              <Skeleton className="h-6 w-24 rounded" />
+              <Skeleton className="h-4 w-20 rounded" />
+            </div>
+            <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-1">
+              {[...Array(8)].map((_, i) => (
+                <CategorySkeleton key={i} />
               ))}
             </div>
           </div>
@@ -171,7 +176,7 @@ const Index = () => {
 
             {/* Content Container */}
             <div className="max-w-md mx-auto px-4 md:max-w-4xl">
-              <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg mb-6" />}>
+              <Suspense fallback={<BannerSkeleton />}>
                 {banners.length > 0 && (
                   <div className="mb-6 relative">
                     <BannersContainer banners={banners} />
