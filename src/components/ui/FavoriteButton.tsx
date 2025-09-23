@@ -3,6 +3,7 @@ import React from 'react';
 import { Heart } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface FavoriteButtonProps {
   productId: string;
@@ -62,7 +63,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         )}
       />
       {isLoading && (
-        <span className="absolute top-0 right-0 left-0 bottom-0 bg-white opacity-60 cursor-wait rounded-full"></span>
+        <Skeleton className="absolute top-0 right-0 left-0 bottom-0 rounded-full" />
       )}
     </button>
   );
