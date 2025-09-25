@@ -18,19 +18,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unit_of_measure?: string;
   }) => {
     setItems(currentItems => {
+      console.log('Adding to cart:', { productId: product.id, is_bulk: product.is_bulk, unit_of_measure: product.unit_of_measure });
+      
       const existingItem = currentItems.find(item => 
         item.product.id === product.id && 
         item.is_bulk === (product.is_bulk || false) && 
         item.unit_of_measure === product.unit_of_measure
       );
       
-      const otherItems = currentItems.filter(item => 
-        !(item.product.id === product.id && 
-          item.is_bulk === (product.is_bulk || false) &&
-          item.unit_of_measure === product.unit_of_measure)
-      );
-      
       if (existingItem) {
+        console.log('Item exists, updating quantity from', existingItem.quantity, 'to', existingItem.quantity + product.quantity);
+        
+        const otherItems = currentItems.filter(item => 
+          !(item.product.id === product.id && 
+            item.is_bulk === (product.is_bulk || false) &&
+            item.unit_of_measure === product.unit_of_measure)
+        );
+        
         return [
           ...otherItems,
           {
@@ -40,6 +44,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ];
       }
       
+      console.log('Adding new item to cart');
       return [...currentItems, {
         product: {
           ...product,

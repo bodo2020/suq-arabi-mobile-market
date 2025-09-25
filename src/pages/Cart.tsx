@@ -313,7 +313,7 @@ const Cart = () => {
                               ) : (
                                 <div className="flex items-center bg-gray-100 rounded-lg">
                                   <button 
-                                    onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)} 
+                                    onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk, item.unit_of_measure)} 
                                     className="p-2 hover:bg-gray-200 rounded-l-lg transition-colors"
                                     aria-label="تقليل الكمية"
                                   >
@@ -323,10 +323,10 @@ const Cart = () => {
                                     {item.quantity}
                                   </span>
                                   <button 
-                                    onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)} 
+                                    onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk, item.unit_of_measure)} 
                                     className="p-2 hover:bg-gray-200 rounded-r-lg transition-colors"
                                     aria-label="زيادة الكمية"
-                                    disabled={getTotalUnitsInCart(item.product.id) >= getAvailableQuantity(item.product)}
+                                    disabled={item.unit_of_measure === 'weight' || getTotalUnitsInCart(item.product.id) >= getAvailableQuantity(item.product)}
                                   >
                                     <Plus size={16} />
                                   </button>

@@ -55,35 +55,60 @@ export function useCartSync(
         }
         
         // Load cart items from database
-        await fetchCartItems(customerId, setItems);
+        const dbCartItems = await fetchCartItems(customerId);
+        
         // Merge guest cart (from localStorage) into DB cart
         try {
           const raw = localStorage.getItem('guest_cart');
           const guest: CartItem[] = raw ? JSON.parse(raw) : [];
-          if (guest.length) {
-            let merged: CartItem[] = [];
-            setItems(prev => {
-              const map = new Map<string, CartItem>();
-              const keyOf = (it: CartItem) => `${it.product.id}-${it.is_bulk ? 'bulk' : 'regular'}-${it.unit_of_measure || ''}`;
-              const upsert = (it: CartItem) => {
-                const k = keyOf(it);
-                const ex = map.get(k);
-                if (!ex) {
-                  map.set(k, { ...it });
-                } else {
-                  map.set(k, { ...ex, quantity: ex.quantity + it.quantity });
-                }
-              };
-              prev.forEach(upsert);
-              guest.forEach(upsert);
-              merged = Array.from(map.values());
-              return merged;
+          
+          if (guest.length > 0) {
+            console.log('Merging guest cart with database cart...');
+            
+            // Create a map to avoid duplicates
+            const mergedMap = new Map<string, CartItem>();
+            
+            // Helper function to create unique key for cart item
+            const getItemKey = (item: CartItem) => 
+              `${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}-${item.unit_of_measure || 'default'}`;
+            
+            // Add database items first
+            dbCartItems.forEach(item => {
+              mergedMap.set(getItemKey(item), item);
             });
-            await syncCartPersistence(sessionUser, merged, customerIdRef.current);
+            
+            // Add or merge guest items
+            guest.forEach(guestItem => {
+              const key = getItemKey(guestItem);
+              const existingItem = mergedMap.get(key);
+              
+              if (existingItem) {
+                // Update quantity for existing item
+                mergedMap.set(key, {
+                  ...existingItem,
+                  quantity: existingItem.quantity + guestItem.quantity
+                });
+              } else {
+                // Add new item
+                mergedMap.set(key, guestItem);
+              }
+            });
+            
+            const finalMergedItems = Array.from(mergedMap.values());
+            setItems(finalMergedItems);
+            
+            // Sync merged cart to database
+            await syncCartPersistence(sessionUser, finalMergedItems, customerIdRef.current);
             localStorage.removeItem('guest_cart');
+            console.log('Guest cart merged and synced successfully');
+          } else {
+            // No guest cart, just set database items
+            setItems(dbCartItems);
           }
         } catch (error) {
           console.error('Error merging guest cart:', error);
+          // Fallback to database items only
+          setItems(dbCartItems);
         }
         setIsInitialized(true);
       } else {
@@ -134,7 +159,7 @@ export function useCartSync(
     return () => clearTimeout(syncTimeout);
   }, [items, isInitialized]);
 
-  async function fetchCartItems(customerId: string, setItems: React.Dispatch<React.SetStateAction<CartItem[]>>) {
+  async function fetchCartItems(customerId: string): Promise<CartItem[]> {
     try {
       const { data: cartData, error: cartError } = await supabase
         .from('cart_items')
@@ -148,8 +173,7 @@ export function useCartSync(
           description: "حدث خطأ أثناء تحميل عناصر السلة",
           variant: "destructive",
         });
-        setItems([]);
-        return;
+        return [];
       }
 
       if (cartData && cartData.length > 0) {
@@ -161,8 +185,7 @@ export function useCartSync(
 
         if (productsError) {
           console.error('Error fetching products:', productsError);
-          setItems([]);
-          return;
+          return [];
         }
 
         if (productsData) {
@@ -189,14 +212,14 @@ export function useCartSync(
             };
           }).filter(Boolean) as CartItem[];
           
-          setItems(cartItems);
+          return cartItems;
         }
-      } else {
-        setItems([]);
       }
+      
+      return [];
     } catch (error) {
       console.error('Error in fetchCartItems:', error);
-      setItems([]);
+      return [];
     }
   }
 
@@ -245,7 +268,7 @@ export function useCartSync(
             variant: "destructive",
           });
         } else {
-          console.log('Cart items successfully synced to Supabase');
+          console.log(`Cart items successfully synced to Supabase (${items.length} items)`);
         }
       }
     } catch (error) {
