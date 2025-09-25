@@ -17,20 +17,17 @@ const Favorites = () => {
   const isMobile = useIsMobile();
   const [favorites, setFavorites] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, customerId } = useFavorites();
+  const { user, customerId, favoritesLoaded } = useFavorites();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (customerId) {
+    if (customerId && favoritesLoaded) {
       fetchFavorites(customerId);
-    } else if (user) {
-      // If we have a user but no customerId, there might be an issue with the customer record
-      setLoading(false);
-    } else {
-      // No user is logged in
+    } else if (favoritesLoaded) {
+      // Favorites have loaded (either user has no customerId or no user)
       setLoading(false);
     }
-  }, [user, customerId]);
+  }, [user, customerId, favoritesLoaded]);
 
   const fetchFavorites = async (customerId: string) => {
     try {
@@ -99,7 +96,7 @@ const Favorites = () => {
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-        ) : !user || !customerId ? (
+        ) : !user ? (
           <div className="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
               <Heart size={32} className="text-gray-300" />

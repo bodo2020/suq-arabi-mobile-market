@@ -8,26 +8,25 @@ export function useFavorites() {
   const [user, setUser] = useState<any>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+    
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      
       // Use setTimeout to avoid deadlock with supabase calls in callback
       setTimeout(async () => {
-        if (session?.user) {
+        if (session?.user && mounted) {
           setUser(session.user);
-          const customerId = await getCustomerId(session.user.id);
-          setCustomerId(customerId);
-          
-          if (customerId) {
-            loadFavorites(customerId);
-          } else {
-            setIsLoading(false);
-          }
-        } else {
+          await handleUserSession(session.user);
+        } else if (mounted) {
           setUser(null);
           setCustomerId(null);
           setFavorites({});
+          setFavoritesLoaded(true);
           setIsLoading(false);
         }
       }, 0);
@@ -35,50 +34,88 @@ export function useFavorites() {
 
     // Then check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
+      if (session?.user && mounted) {
         setUser(session.user);
-        const customerId = await getCustomerId(session.user.id);
-        setCustomerId(customerId);
-        
-        if (customerId) {
-          loadFavorites(customerId);
-        } else {
-          setIsLoading(false);
-        }
-      } else {
+        await handleUserSession(session.user);
+      } else if (mounted) {
         setIsLoading(false);
+        setFavoritesLoaded(true);
       }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  const getCustomerId = async (userId: string): Promise<string | null> => {
+  const handleUserSession = async (user: any) => {
     try {
-      const { data, error } = await supabase
+      const customerId = await getOrCreateCustomerId(user.id, user.user_metadata);
+      setCustomerId(customerId);
+      
+      if (customerId) {
+        await loadFavorites(customerId);
+      } else {
+        setIsLoading(false);
+        setFavoritesLoaded(true);
+      }
+    } catch (error) {
+      console.error('Error handling user session:', error);
+      setIsLoading(false);
+      setFavoritesLoaded(true);
+    }
+  };
+
+  const getOrCreateCustomerId = async (userId: string, userMetadata: any): Promise<string | null> => {
+    try {
+      // First try to get existing customer
+      let { data: customerData, error } = await supabase
         .from('customers')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching customer ID:', error);
         return null;
       }
 
-      return data?.id || null;
+      // If customer exists, return their ID
+      if (customerData) {
+        return customerData.id;
+      }
+
+      // If no customer exists, create one
+      console.log('Creating new customer record for user:', userId);
+      const { data: newCustomer, error: createError } = await supabase
+        .from('customers')
+        .insert({
+          user_id: userId,
+          first_name: userMetadata?.first_name || '',
+          last_name: userMetadata?.last_name || '',
+          name: userMetadata?.name || `${userMetadata?.first_name || ''} ${userMetadata?.last_name || ''}`.trim(),
+          phone: userMetadata?.phone || '',
+          email: userMetadata?.email || '',
+          address: userMetadata?.address || ''
+        })
+        .select('id')
+        .single();
+
+      if (createError) {
+        console.error('Error creating customer record:', createError);
+        return null;
+      }
+
+      return newCustomer?.id || null;
     } catch (error) {
-      console.error('Exception in getCustomerId:', error);
+      console.error('Exception in getOrCreateCustomerId:', error);
       return null;
     }
   };
 
   const loadFavorites = async (customerId: string) => {
     try {
-      setIsLoading(true);
-
       const { data, error } = await supabase
         .from('favorites')
         .select('product_id')
@@ -86,7 +123,6 @@ export function useFavorites() {
 
       if (error) {
         console.error('Error loading favorites:', error);
-        setIsLoading(false);
         return;
       }
 
@@ -102,6 +138,7 @@ export function useFavorites() {
       console.error('Error in loadFavorites:', error);
     } finally {
       setIsLoading(false);
+      setFavoritesLoaded(true);
     }
   };
 
@@ -193,6 +230,7 @@ export function useFavorites() {
     isFavorite,
     toggleFavorite,
     user,
-    customerId
+    customerId,
+    favoritesLoaded
   };
 }

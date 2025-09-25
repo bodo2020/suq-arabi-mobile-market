@@ -22,11 +22,32 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   className,
   size = 'md',
 }) => {
-  const { isFavorite, toggleFavorite, isLoading, user } = useFavorites();
+  const { isFavorite, toggleFavorite, isLoading, user, favoritesLoaded } = useFavorites();
 
   // Don't show favorite button for non-logged users
   if (!user) {
     return null;
+  }
+
+  // Show a placeholder while favorites are loading
+  if (!favoritesLoaded) {
+    return (
+      <div
+        className={cn(
+          'flex items-center justify-center transition-shadow duration-200',
+          size === 'sm' && 'w-8 h-8',
+          size === 'md' && 'w-11 h-11',
+          size === 'lg' && 'w-14 h-14',
+          className
+        )}
+      >
+        <Heart
+          size={sizeMap[size]}
+          strokeWidth={2}
+          className="text-gray-200 animate-pulse"
+        />
+      </div>
+    );
   }
 
   const handleClick = (e: React.MouseEvent) => {
