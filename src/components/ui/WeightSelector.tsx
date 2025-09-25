@@ -5,6 +5,8 @@ import { Input } from './input';
 import { Scale } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
+import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface WeightSelectorProps {
   product: Product;
@@ -14,6 +16,8 @@ interface WeightSelectorProps {
 
 const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
   const { items, addToCart } = useCart();
+  const { user } = useUser();
+  const { toast } = useToast();
   
   // Find if this product is already in cart to get initial weight
   const existingItem = items.find(item => 
@@ -34,6 +38,16 @@ const WeightSelector = ({ product, isOpen, onClose }: WeightSelectorProps) => {
   const total = (pricePerKg * weight) / 1000; // تحويل الجرامات إلى كيلوجرام لحساب السعر
 
   const handleAddToCart = () => {
+    if (!user) {
+      toast({
+        title: "يجب تسجيل الدخول",
+        description: "يرجى تسجيل الدخول أولاً لإضافة المنتجات للسلة",
+        variant: "destructive"
+      });
+      onClose();
+      return;
+    }
+    
     addToCart({
       ...product,
       price: product.price, // نحتفظ بالسعر الأصلي للكيلو

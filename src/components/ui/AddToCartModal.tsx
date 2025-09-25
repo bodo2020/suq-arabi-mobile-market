@@ -6,6 +6,7 @@ import { Input } from './input';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/UserContext';
 
 interface AddToCartModalProps {
   product: Product;
@@ -17,12 +18,23 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
   const [quantity, setQuantity] = useState(1);
   const { addToCart, items } = useCart();
   const { toast } = useToast();
+  const { user } = useUser();
 
   useEffect(() => {
     setQuantity(1); // default to 1 pack
   }, [product.id]);
 
   const handleAddToCart = () => {
+    if (!user) {
+      toast({
+        title: "يجب تسجيل الدخول",
+        description: "يرجى تسجيل الدخول أولاً لإضافة المنتجات للسلة",
+        variant: "destructive"
+      });
+      onClose();
+      return;
+    }
+    
     // Existing units (consider bulk packs in cart)
     const existingUnits = items.reduce((total, item) => {
       if (item.product.id !== product.id) return total;

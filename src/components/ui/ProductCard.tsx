@@ -5,6 +5,7 @@ import { Plus, Minus, AlertTriangle, Scale, Package } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/UserContext';
 import { Badge } from '@/components/ui/badge';
 import FavoriteButton from './FavoriteButton';
 import AddToCartModal from './AddToCartModal';
@@ -26,6 +27,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const { items, updateQuantity, addToCart } = useCart();
   const { toast } = useToast();
+  const { user } = useUser();
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showWeightSelector, setShowWeightSelector] = useState(false);
 
@@ -43,6 +45,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const handleAddToCart = (e: React.MouseEvent, isBulk: boolean = false) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!user) {
+      toast({
+        title: "يجب تسجيل الدخول",
+        description: "يرجى تسجيل الدخول أولاً لإضافة المنتجات للسلة",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (!isOutOfStock) {
       if (product.barcode_type === 'scale') {
         setShowWeightSelector(true);
@@ -66,6 +78,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const handleIncreaseQuantity = (e: React.MouseEvent, isBulk: boolean = false) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!user) {
+      toast({
+        title: "يجب تسجيل الدخول",
+        description: "يرجى تسجيل الدخول أولاً لإضافة المنتجات للسلة",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const cartItem = isBulk ? bulkCartItem : regularCartItem;
     

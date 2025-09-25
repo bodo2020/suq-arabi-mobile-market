@@ -304,15 +304,24 @@ const Cart = () => {
                       <span>الإجمالي</span>
                       <span>{getTotalPrice().toFixed(2)} ج.م</span>
                     </div>
-                    
-                    <Button onClick={handleProceedToPayment} className="w-full mt-4 bg-primary text-white py-3 rounded-lg" disabled={items.length === 0}>
-                      إتمام الطلب
-                    </Button>
                   </div>
                 </div>
               </div>
             </div>}
         </div>
+        
+        {/* Fixed bottom button */}
+        {items.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50">
+            <Button 
+              onClick={handleProceedToPayment} 
+              className="w-full bg-primary text-white py-3 rounded-lg text-lg font-semibold" 
+              disabled={items.length === 0}
+            >
+              إتمام الطلب ({getTotalPrice().toFixed(2)} ج.م)
+            </Button>
+          </div>
+        )}
       </div>
     </MainLayout>;
 };
