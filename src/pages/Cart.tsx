@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Plus, Minus, Package, Scale } from 'lucide-react';
+import { Trash2, Plus, Minus, Package, Scale, ShoppingBag, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
@@ -11,8 +11,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import AddressSelector from '@/components/ui/AddressSelector';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 const Cart = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -170,158 +172,242 @@ const Cart = () => {
     }
     navigate('/payment');
   };
-  return <MainLayout>
-      <div className="container px-0 py-0">
-        {/* Top Navigation Bar without cart icon */}
+
+  return (
+    <MainLayout>
+      <div className="min-h-screen bg-gray-50">
+        {/* Top Navigation Bar */}
         <TopNavBar hideLogo={true} hideSearch={true} hideCart={true} pageTitle="سلة التسوق" />
 
-        {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} py-4 ${items.length > 0 ? 'pb-24' : 'pb-8'}`} dir="rtl">
-          {items.length === 0 ? <div className="flex flex-col items-center justify-center py-12">
-              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
-                <circle cx="8" cy="21" r="1"></circle>
-                <circle cx="19" cy="21" r="1"></circle>
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
-              </svg>
-              <h3 className="text-lg font-medium text-gray-500 mb-1">لم تقم بإضافة أي منتجات بعد</h3>
-              <p className="text-sm text-gray-400 mb-4">لم تقم بإضافة أي منتجات بعد</p>
-              <Link to="/" className="bg-primary text-white px-4 py-2 rounded-md">
-                تسوق الآن
+        {/* Main Content */}
+        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} px-4 ${items.length > 0 ? 'pb-24' : 'pb-8'}`} dir="rtl">
+          {items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="bg-white rounded-full p-6 mb-6 shadow-sm">
+                <ShoppingBag className="w-16 h-16 text-gray-300" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">سلة التسوق فارغة</h3>
+              <p className="text-gray-500 mb-6 text-center">لم تقم بإضافة أي منتجات بعد</p>
+              <Link to="/" className="bg-primary text-white px-8 py-3 rounded-full hover:bg-primary/90 transition-colors flex items-center gap-2">
+                ابدأ التسوق
+                <ArrowRight className="w-4 h-4" />
               </Link>
-            </div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg mb-4 order-1">
-                {items.map(item => <div key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex items-center p-3 border-b last:border-b-0">
-                    <div className="relative">
-                      <img src={getProductImage(item)} alt={item.product.name} className="h-16 w-16 object-contain ml-3" />
-                      {item.is_bulk && <div className="absolute bottom-0 right-0 bg-primary text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-                          {item.product.bulk_quantity}
-                        </div>}
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <Link to={`/product/${item.product.id}`} className="font-semibold text-sm line-clamp-1">
-                          {item.product.name}
-                        </Link>
-                        {item.is_bulk && <Badge variant="secondary" className="flex items-center gap-1">
-                            <Package className="w-3 h-3" />
-                            جملة
-                          </Badge>}
-                        {item.unit_of_measure === 'weight' && <Badge variant="secondary" className="flex items-center gap-1">
-                            <Scale className="w-3 h-3" />
-                            وزن
-                          </Badge>}
-                      </div>
-                      
-                      <div className="flex items-center mt-1">
-                        {item.is_bulk ? (
-                          <span className="text-sm font-bold text-primary">
-                            {item.product.bulk_price} ج.م (سعر الوحدة)
-                          </span>
-                        ) : item.unit_of_measure === 'weight' ? (
-                          <span className="text-sm font-bold">
-                            {item.product.price} ج.م/كجم
-                          </span>
-                        ) : item.product.offer_price ? (
-                          <>
-                            <span className="text-sm font-bold text-primary ml-2">
-                              {item.product.offer_price} ج.م
-                            </span>
-                            <span className="text-xs line-through text-gray-500">
-                              {item.product.price} ج.م
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-sm font-bold">
-                            {item.product.price} ج.م
-                          </span>
-                        )}
-                      </div>
-                      {item.unit_of_measure !== 'weight' && (() => {
-                        const available = getAvailableQuantity(item.product);
-                        const totalUnits = getTotalUnitsInCart(item.product.id);
-                        const remaining = available - totalUnits;
-                        if (available <= 0) {
-                          return <span className="text-red-600 text-xs mt-1">نفذت الكمية، يرجى إزالة المنتج</span>;
-                        }
-                        if (totalUnits > available) {
-                          return <span className="text-amber-600 text-xs mt-1">يوجد {available} قطعة فقط</span>;
-                        }
-                        return null;
-                      })()}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Cart Items */}
+              <div className="space-y-3">
+                {items.map(item => (
+                  <Card key={`${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        {/* Product Image */}
+                        <div className="relative flex-shrink-0">
+                          <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden">
+                            <img 
+                              src={getProductImage(item)} 
+                              alt={item.product.name} 
+                              className="w-full h-full object-contain" 
+                            />
+                          </div>
+                          {item.is_bulk && (
+                            <div className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                              {item.product.bulk_quantity}
+                            </div>
+                          )}
+                        </div>
 
-                    </div>
+                        {/* Product Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <Link to={`/product/${item.product.id}`} className="font-bold text-gray-900 line-clamp-2 hover:text-primary transition-colors">
+                                {item.product.name}
+                              </Link>
+                              
+                              {/* Badges */}
+                              <div className="flex gap-2 mt-1">
+                                {item.is_bulk && (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800 border-0">
+                                    <Package className="w-3 h-3 mr-1" />
+                                    جملة
+                                  </Badge>
+                                )}
+                                {item.unit_of_measure === 'weight' && (
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-0">
+                                    <Scale className="w-3 h-3 mr-1" />
+                                    وزن
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Remove Button */}
+                            <button 
+                              onClick={() => handleRemoveItem(item.product.id, item.is_bulk)} 
+                              className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                              aria-label="حذف المنتج"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
 
-                    <div className="flex flex-col items-center mr-3">
-                      <div className="flex items-center justify-between bg-gray-100 rounded-lg mb-2">
-                        {item.unit_of_measure === 'weight' ? <div onClick={() => handleQuantityClick(item.product.id, item.unit_of_measure)} className="px-4 py-2 cursor-pointer flex items-center gap-2">
-                            <span className="font-medium">{item.quantity}جم</span>
-                          </div> : <>
-                            <button onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)} className="p-1" aria-label="تقليل الكمية">
-                              <Minus size={16} />
-                            </button>
-                            <span className="mx-2 font-medium">
-                              {item.quantity}
-                            </span>
-                            <button onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)} className="p-1" aria-label="زيادة الكمية" disabled={item.unit_of_measure !== 'weight' && getTotalUnitsInCart(item.product.id) >= getAvailableQuantity(item.product)}>
-                              <Plus size={16} />
-                            </button>
-                          </>}
+                          {/* Price */}
+                          <div className="mb-3">
+                            {item.is_bulk ? (
+                              <span className="text-lg font-bold text-primary">
+                                {item.product.bulk_price} ج.م
+                              </span>
+                            ) : item.unit_of_measure === 'weight' ? (
+                              <span className="text-lg font-bold text-gray-900">
+                                {item.product.price} ج.م/كجم
+                              </span>
+                            ) : item.product.offer_price ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold text-primary">
+                                  {item.product.offer_price} ج.م
+                                </span>
+                                <span className="text-sm line-through text-gray-400">
+                                  {item.product.price} ج.م
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-lg font-bold text-gray-900">
+                                {item.product.price} ج.م
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Stock Warning */}
+                          {item.unit_of_measure !== 'weight' && (() => {
+                            const available = getAvailableQuantity(item.product);
+                            const totalUnits = getTotalUnitsInCart(item.product.id);
+                            if (available <= 0) {
+                              return (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-3">
+                                  <span className="text-red-600 text-sm font-medium">نفذت الكمية، يرجى إزالة المنتج</span>
+                                </div>
+                              );
+                            }
+                            if (totalUnits > available) {
+                              return (
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">
+                                  <span className="text-amber-600 text-sm font-medium">يوجد {available} قطعة فقط</span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+
+                          {/* Quantity Controls and Total */}
+                          <div className="flex items-center justify-between">
+                            {/* Quantity Controls */}
+                            <div className="flex items-center">
+                              {item.unit_of_measure === 'weight' ? (
+                                <button
+                                  onClick={() => handleQuantityClick(item.product.id, item.unit_of_measure)}
+                                  className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors"
+                                >
+                                  <span className="font-medium text-gray-900">{item.quantity} جم</span>
+                                </button>
+                              ) : (
+                                <div className="flex items-center bg-gray-100 rounded-lg">
+                                  <button 
+                                    onClick={() => handleDecreaseQuantity(item.product.id, item.is_bulk)} 
+                                    className="p-2 hover:bg-gray-200 rounded-l-lg transition-colors"
+                                    aria-label="تقليل الكمية"
+                                  >
+                                    <Minus size={16} />
+                                  </button>
+                                  <span className="px-4 py-2 font-medium min-w-[3rem] text-center">
+                                    {item.quantity}
+                                  </span>
+                                  <button 
+                                    onClick={() => handleIncreaseQuantity(item.product.id, item.is_bulk)} 
+                                    className="p-2 hover:bg-gray-200 rounded-r-lg transition-colors"
+                                    aria-label="زيادة الكمية"
+                                    disabled={getTotalUnitsInCart(item.product.id) >= getAvailableQuantity(item.product)}
+                                  >
+                                    <Plus size={16} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Item Total */}
+                            <div className="text-right">
+                              <div className="text-xl font-bold text-primary">
+                                {getItemTotal(item).toFixed(2)} ج.م
+                              </div>
+                              {item.is_bulk && item.product.bulk_quantity && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {item.quantity} × {item.product.bulk_quantity} = {item.quantity * item.product.bulk_quantity} قطعة
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center">
-                        <button onClick={() => handleRemoveItem(item.product.id, item.is_bulk)} className="text-red-500" aria-label="حذف المنتج">
-                          <Trash2 size={16} />
-                        </button>
-                        <span className="mr-2 font-semibold text-green-700">
-                          {getItemTotal(item).toFixed(2)} ج.م
-                        </span>
-                      </div>
-                      
-                      {item.is_bulk && item.product.bulk_quantity && <div className="text-xs text-gray-500 mt-1">
-                          {item.quantity} × {item.product.bulk_quantity} = {item.quantity * item.product.bulk_quantity} قطعة
-                        </div>}
-                    </div>
-                    
-                    {openWeightSelector === item.product.id && <WeightSelector product={item.product} isOpen={true} onClose={() => setOpenWeightSelector(null)} />}
-                  </div>)}
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
 
-              <div className="space-y-4 order-2">
-                {/* Order Summary */}
-                <div className="bg-white rounded-lg p-4">
-                  <h3 className="text-lg font-bold mb-4">ملخص الطلب</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>قيمة المنتجات</span>
-                      <span>{getTotalPrice().toFixed(2)} ج.م</span>
-                    </div>
-                    
-                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                      <span>الإجمالي</span>
-                      <span>{getTotalPrice().toFixed(2)} ج.م</span>
+              {/* Order Summary */}
+              <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-gray-900">ملخص الطلب</h3>
+                    <div className="bg-primary/10 rounded-full p-2">
+                      <ShoppingBag className="w-5 h-5 text-primary" />
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>}
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-gray-600">قيمة المنتجات ({items.length} منتج)</span>
+                      <span className="font-bold text-gray-900">{getTotalPrice().toFixed(2)} ج.م</span>
+                    </div>
+                    
+                    <div className="border-t border-gray-200 pt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-900">الإجمالي</span>
+                        <span className="text-2xl font-bold text-primary">{getTotalPrice().toFixed(2)} ج.م</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
-        {/* Fixed bottom button - outside container */}
+
+        {/* Fixed bottom button */}
         {items.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-lg">
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-2xl">
             <div className="container mx-auto max-w-md">
               <Button 
                 onClick={handleProceedToPayment} 
-                className="w-full bg-primary text-white py-4 rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors" 
+                className="w-full bg-gradient-to-r from-primary to-primary/90 text-white py-4 rounded-xl text-lg font-bold hover:from-primary/90 hover:to-primary/80 transition-all duration-300 shadow-lg" 
                 disabled={items.length === 0}
               >
-                إتمام الطلب ({getTotalPrice().toFixed(2)} ج.م)
+                إتمام الطلب • {getTotalPrice().toFixed(2)} ج.م
               </Button>
             </div>
           </div>
         )}
+
+        {/* Weight Selector Modal */}
+        {openWeightSelector && (
+          <WeightSelector 
+            product={items.find(item => item.product.id === openWeightSelector)?.product!} 
+            isOpen={true} 
+            onClose={() => setOpenWeightSelector(null)} 
+          />
+        )}
       </div>
-    </MainLayout>;
+    </MainLayout>
+  );
 };
+
 export default Cart;
