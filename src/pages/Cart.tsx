@@ -180,7 +180,7 @@ const Cart = () => {
         <TopNavBar hideLogo={true} hideSearch={true} hideCart={true} pageTitle="سلة التسوق" />
 
         {/* Main Content */}
-        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} px-4 ${items.length > 0 ? 'pb-24' : 'pb-8'}`} dir="rtl">
+        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} px-4 ${items.length > 0 ? 'pb-48' : 'pb-8'}`} dir="rtl">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="bg-white rounded-full p-6 mb-6 shadow-sm">
@@ -353,39 +353,40 @@ const Cart = () => {
                 ))}
               </div>
 
-              {/* Order Summary */}
-              <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">ملخص الطلب</h3>
-                    <div className="bg-primary/10 rounded-full p-2">
-                      <ShoppingBag className="w-5 h-5 text-primary" />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-gray-600">قيمة المنتجات ({items.length} منتج)</span>
-                      <span className="font-bold text-gray-900">{getTotalPrice().toFixed(2)} ج.م</span>
-                    </div>
-                    
-                    <div className="border-t border-gray-200 pt-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-900">الإجمالي</span>
-                        <span className="text-2xl font-bold text-primary">{getTotalPrice().toFixed(2)} ج.م</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Remove the separate Order Summary section since it will be moved to bottom */}
             </div>
           )}
         </div>
 
-        {/* Fixed bottom button */}
+        {/* Fixed bottom order summary and button - above bottom navigation */}
         {items.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-2xl">
-            <div className="container mx-auto max-w-md">
+          <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 z-40 shadow-2xl">
+            {/* Order Summary */}
+            <div className="px-4 py-4 bg-gradient-to-r from-primary/5 to-primary/10">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-bold text-gray-900">ملخص الطلب</h3>
+                <div className="bg-primary/10 rounded-full p-2">
+                  <ShoppingBag className="w-4 h-4 text-primary" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 text-sm">قيمة المنتجات ({items.length} منتج)</span>
+                  <span className="font-bold text-gray-900">{getTotalPrice().toFixed(2)} ج.م</span>
+                </div>
+                
+                <div className="border-t border-gray-200 pt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">الإجمالي</span>
+                    <span className="text-xl font-bold text-primary">{getTotalPrice().toFixed(2)} ج.م</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Complete Order Button */}
+            <div className="px-4 pb-4 pt-2 bg-white">
               <Button 
                 onClick={handleProceedToPayment} 
                 className="w-full bg-gradient-to-r from-primary to-primary/90 text-white py-4 rounded-xl text-lg font-bold hover:from-primary/90 hover:to-primary/80 transition-all duration-300 shadow-lg" 
