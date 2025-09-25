@@ -62,6 +62,11 @@ const AddressDisplay = ({
             {areaName || address || "اختر عنوانك"}
             {neighborhoodName && <span className="mr-1">، {neighborhoodName}</span>}
           </span>
+          {(areaName || address) && (
+            <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full mr-2">
+              افتراضي
+            </span>
+          )}
         </div>
         
         {showAddressSelector && user && addresses.length > 0 ? (

@@ -444,12 +444,18 @@ const Payment = () => {
               </CardHeader>
               <CardContent>
                 {customerData?.default_address ? (
-                  <AddressDisplay
-                    address={customerData.default_address.address || ''}
-                    areaName={customerData.default_address.areas?.name || undefined}
-                    neighborhoodName={customerData.default_address.neighborhoods?.name || undefined}
-                    onEdit={() => navigate('/addresses')}
-                  />
+                  <div className="space-y-2">
+                    <AddressDisplay
+                      address={customerData.default_address.address || ''}
+                      areaName={customerData.default_address.areas?.name || undefined}
+                      neighborhoodName={customerData.default_address.neighborhoods?.name || undefined}
+                      onEdit={() => navigate('/addresses')}
+                    />
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-primary"></div>
+                      العنوان الافتراضي للتوصيل
+                    </div>
+                  </div>
                 ) : (
                   <div className="text-center py-6">
                     {user ? (

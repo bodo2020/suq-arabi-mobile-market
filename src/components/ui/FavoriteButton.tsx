@@ -22,7 +22,12 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   className,
   size = 'md',
 }) => {
-  const { isFavorite, toggleFavorite, isLoading } = useFavorites();
+  const { isFavorite, toggleFavorite, isLoading, user } = useFavorites();
+
+  // Don't show favorite button for non-logged users
+  if (!user) {
+    return null;
+  }
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();

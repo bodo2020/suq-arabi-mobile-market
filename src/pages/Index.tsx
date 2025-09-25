@@ -170,6 +170,11 @@ const Index = () => {
                     {userLocation?.area || userAddress || "اختر عنوانك"}
                     {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
                   </button>
+                  {(userLocation?.area || userAddress) && (
+                    <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full mr-2">
+                      افتراضي
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
