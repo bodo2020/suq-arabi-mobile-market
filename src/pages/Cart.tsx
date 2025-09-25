@@ -176,7 +176,7 @@ const Cart = () => {
         <TopNavBar hideLogo={true} hideSearch={true} hideCart={true} pageTitle="سلة التسوق" />
 
         {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} py-4 pb-32`} dir="rtl">
+        <div className={`${!isMobile ? 'mt-24' : 'mt-6'} py-4 ${items.length > 0 ? 'pb-24' : 'pb-8'}`} dir="rtl">
           {items.length === 0 ? <div className="flex flex-col items-center justify-center py-12">
               <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
                 <circle cx="8" cy="21" r="1"></circle>
@@ -288,8 +288,6 @@ const Cart = () => {
               </div>
 
               <div className="space-y-4 order-2">
-                
-
                 {/* Order Summary */}
                 <div className="bg-white rounded-lg p-4">
                   <h3 className="text-lg font-bold mb-4">ملخص الطلب</h3>
@@ -309,17 +307,18 @@ const Cart = () => {
               </div>
             </div>}
         </div>
-        
-        {/* Fixed bottom button */}
+        {/* Fixed bottom button - outside container */}
         {items.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50">
-            <Button 
-              onClick={handleProceedToPayment} 
-              className="w-full bg-primary text-white py-3 rounded-lg text-lg font-semibold" 
-              disabled={items.length === 0}
-            >
-              إتمام الطلب ({getTotalPrice().toFixed(2)} ج.م)
-            </Button>
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-lg">
+            <div className="container mx-auto max-w-md">
+              <Button 
+                onClick={handleProceedToPayment} 
+                className="w-full bg-primary text-white py-4 rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors" 
+                disabled={items.length === 0}
+              >
+                إتمام الطلب ({getTotalPrice().toFixed(2)} ج.م)
+              </Button>
+            </div>
           </div>
         )}
       </div>
