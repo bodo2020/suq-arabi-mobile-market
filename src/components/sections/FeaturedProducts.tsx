@@ -19,7 +19,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
         <h2 className="text-lg font-bold">منتجات مميزة</h2>
       </div>
       {productVariants.length > 0 ? (
-        <ScrollArea className="w-full whitespace-nowrap rounded-md">
+        <ScrollArea className="w-full whitespace-nowrap rounded-md" dir="rtl">
           <div className="flex flex-row-reverse space-x-4 space-x-reverse p-2">
             {productVariants.map(product => (
               <div key={product.variantKey} className="w-[120px] flex-shrink-0">
