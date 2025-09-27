@@ -54,7 +54,7 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
             </div>
             
             <ScrollArea className="w-full whitespace-nowrap rounded-md">
-              <div className="flex flex-row-reverse space-x-4 space-x-reverse p-2">
+              <div className="flex flex-row space-x-4 p-2">
                 {getProductListWithVariants(collectionProducts).map(product => (
                   <div key={product.variantKey} className="w-[120px] flex-shrink-0">
                     <ProductCard 
