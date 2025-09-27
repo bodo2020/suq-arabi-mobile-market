@@ -40,8 +40,11 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         <div className="flex items-center gap-4">
           {/* Back Button */}
           {showBackButton && (
-            <button onClick={onBack || (() => navigate(-1))} className="p-2">
-              <ArrowRight className="h-5 w-5" />
+            <button 
+              onClick={onBack || (() => navigate(-1))} 
+              className="p-3 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
+            >
+              <ArrowRight className="h-6 w-6 text-white" />
             </button>
           )}
 
