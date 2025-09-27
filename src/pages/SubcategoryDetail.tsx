@@ -5,7 +5,7 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import ProductFilters from '@/components/ui/ProductFilters';
-import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
+import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories, supabase } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
 
@@ -15,7 +15,13 @@ const sortOptions = [
   { label: "السعر: من الأعلى للأقل", value: "price_desc" },
   { label: "أبجدياً: أ-ي", value: "name_asc" },
   { label: "أبجدياً: ي-أ", value: "name_desc" },
+  { label: "حسب الشركة", value: "company" },
 ];
+
+interface Company {
+  id: string;
+  name: string;
+}
 
 const SubcategoryDetail = () => {
   const { categoryId, subcategoryId } = useParams<{ categoryId: string, subcategoryId: string }>();
@@ -27,8 +33,11 @@ const SubcategoryDetail = () => {
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
   const [subcategoryInfo, setSubcategoryInfo] = useState<Subcategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSort, setCurrentSort] = useState("newest");
+  const [selectedCompany, setSelectedCompany] = useState<string>("all");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,8 +57,31 @@ const SubcategoryDetail = () => {
           setSubcategoryInfo(subcategoryData);
           
           const productsData = await getProducts(categoryId, false);
-          const subcategoryProducts = productsData.filter(product => product.subcategory_id === subcategoryId);
-          setProducts(sortProducts(subcategoryProducts, currentSort));
+          // Filter by subcategory and availability
+          const availableSubcategoryProducts = productsData.filter(product => 
+            product.subcategory_id === subcategoryId && 
+            product.quantity && 
+            product.quantity > 0
+          );
+          
+          setAllProducts(availableSubcategoryProducts);
+          setProducts(filterAndSortProducts(availableSubcategoryProducts, currentSort, selectedCompany));
+          
+          // Fetch companies used in this subcategory
+          const uniqueCompanyIds = [...new Set(availableSubcategoryProducts
+            .map(p => p.company_id)
+            .filter(id => id !== null))] as string[];
+          
+          if (uniqueCompanyIds.length > 0) {
+            const { data: companiesData } = await supabase
+              .from('companies')
+              .select('id, name')
+              .in('id', uniqueCompanyIds);
+            
+            if (companiesData) {
+              setCompanies(companiesData);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -59,7 +91,23 @@ const SubcategoryDetail = () => {
     };
 
     fetchData();
-  }, [categoryId, subcategoryId, currentSort]);
+  }, [categoryId, subcategoryId]);
+
+  // Update products when sort or company filter changes
+  useEffect(() => {
+    setProducts(filterAndSortProducts(allProducts, currentSort, selectedCompany));
+  }, [currentSort, selectedCompany, allProducts]);
+
+  const filterAndSortProducts = (productsToFilter: Product[], sortType: string, companyFilter: string) => {
+    // Filter by company first
+    let filteredProducts = [...productsToFilter];
+    if (companyFilter !== "all") {
+      filteredProducts = filteredProducts.filter(product => product.company_id === companyFilter);
+    }
+
+    // Then sort
+    return sortProducts(filteredProducts, sortType);
+  };
 
   const sortProducts = (productsToSort: Product[], sortType: string) => {
     const sortedProducts = [...productsToSort];
@@ -72,6 +120,12 @@ const SubcategoryDetail = () => {
         return sortedProducts.sort((a, b) => a.name.localeCompare(b.name));
       case "name_desc":
         return sortedProducts.sort((a, b) => b.name.localeCompare(a.name));
+      case "company":
+        return sortedProducts.sort((a, b) => {
+          const companyA = companies.find(c => c.id === a.company_id)?.name || 'غير محدد';
+          const companyB = companies.find(c => c.id === b.company_id)?.name || 'غير محدد';
+          return companyA.localeCompare(companyB);
+        });
       case "newest":
       default:
         return sortedProducts.sort((a, b) => 
@@ -82,7 +136,10 @@ const SubcategoryDetail = () => {
 
   const handleSortChange = (value: string) => {
     setCurrentSort(value);
-    setProducts(sortProducts(products, value));
+  };
+
+  const handleCompanyChange = (value: string) => {
+    setSelectedCompany(value);
   };
 
   const handleFiltersClick = (e: React.MouseEvent) => {
@@ -138,6 +195,9 @@ const SubcategoryDetail = () => {
                     onSortChange={handleSortChange}
                     sortOptions={sortOptions}
                     currentSort={currentSort}
+                    companies={companies}
+                    selectedCompany={selectedCompany}
+                    onCompanyChange={handleCompanyChange}
                   />
                 </div>
               </div>
@@ -150,9 +210,12 @@ const SubcategoryDetail = () => {
                 ))}
               </div>
 
-              {products.length === 0 && (
+              {products.length === 0 && !loading && (
                 <div className="text-center py-8 text-gray-500">
-                  لا توجد منتجات في هذا القسم الفرعي
+                  {selectedCompany !== "all" 
+                    ? "لا توجد منتجات متوفرة لهذه الشركة في هذا القسم الفرعي"
+                    : "لا توجد منتجات متوفرة في هذا القسم الفرعي"
+                  }
                 </div>
               )}
             </div>
