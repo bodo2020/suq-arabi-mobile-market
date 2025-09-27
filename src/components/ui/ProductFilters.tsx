@@ -41,56 +41,70 @@ const ProductFilters = ({
     e.stopPropagation();
   };
 
-  const handleCompanyClick = (e: React.MouseEvent) => {
+  const handleChipClick = (companyId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (onCompanyChange) {
+      onCompanyChange(companyId);
+    }
   };
 
   return (
-    <div className="flex items-center gap-2 mb-4 px-4 flex-wrap">
-      <Select value={currentSort} onValueChange={onSortChange}>
-        <SelectTrigger className="w-[200px]" onClick={handleSortClick}>
-          <SelectValue placeholder="ترتيب حسب" />
-        </SelectTrigger>
-        <SelectContent onClick={handleSortClick}>
-          <SelectGroup>
-            {sortOptions.map((option) => (
-              <SelectItem 
-                key={option.value} 
-                value={option.value} 
-                onClick={(e) => e.stopPropagation()}
-              >
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-
-      {companies.length > 0 && onCompanyChange && (
-        <Select value={selectedCompany} onValueChange={onCompanyChange}>
-          <SelectTrigger className="w-[180px]" onClick={handleCompanyClick}>
-            <SelectValue placeholder="جميع الشركات" />
+    <div className="space-y-3 mb-4 px-4">
+      {/* Sort Dropdown */}
+      <div className="flex items-center gap-2">
+        <Select value={currentSort} onValueChange={onSortChange}>
+          <SelectTrigger className="w-[200px]" onClick={handleSortClick}>
+            <SelectValue placeholder="ترتيب حسب" />
           </SelectTrigger>
-          <SelectContent onClick={handleCompanyClick}>
+          <SelectContent onClick={handleSortClick} className="bg-white z-50">
             <SelectGroup>
-              <SelectItem 
-                value="all" 
-                onClick={(e) => e.stopPropagation()}
-              >
-                جميع الشركات
-              </SelectItem>
-              {companies.map((company) => (
+              {sortOptions.map((option) => (
                 <SelectItem 
-                  key={company.id} 
-                  value={company.id} 
+                  key={option.value} 
+                  value={option.value} 
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {company.name}
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Company Chips */}
+      {companies.length > 0 && onCompanyChange && (
+        <div className="space-y-2">
+          <span className="text-sm font-medium text-gray-700">الشركات:</span>
+          <div className="flex flex-wrap gap-2">
+            {/* All Companies Chip */}
+            <button
+              onClick={(e) => handleChipClick("all", e)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                selectedCompany === "all"
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              جميع الشركات
+            </button>
+            
+            {/* Individual Company Chips */}
+            {companies.map((company) => (
+              <button
+                key={company.id}
+                onClick={(e) => handleChipClick(company.id, e)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCompany === company.id
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {company.name}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
