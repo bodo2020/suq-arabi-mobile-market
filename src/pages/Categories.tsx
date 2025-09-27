@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import CategoryItem from '@/components/ui/CategoryItem';
+import CategorySkeleton from '@/components/ui/CategorySkeleton';
 import { MainCategory, getCategories } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -41,8 +42,30 @@ const Categories = () => {
     return (
       <MainLayout>
         <TopNavBar searchPlaceholder="البحث في الأقسام..." onSearchFocus={handleSearchFocus} />
-        <div className={`flex justify-center items-center h-40 ${!isMobile ? 'mt-32' : ''}`}>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className={`${!isMobile ? 'mt-24' : 'mt-6'}`}>
+          {/* Header Skeleton - only show on desktop */}
+          {!isMobile && (
+            <div className="w-full px-4 mb-6">
+              <div className="max-w-md mx-auto md:max-w-4xl">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded flex-1 mx-4 animate-pulse"></div>
+                  <div className="w-10"></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Categories Grid Skeleton */}
+          <div className="w-full px-4">
+            <div className="max-w-md mx-auto md:max-w-4xl">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                {[...Array(12)].map((_, index) => (
+                  <CategorySkeleton key={index} />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
