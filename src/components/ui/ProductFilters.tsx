@@ -49,23 +49,7 @@ const ProductFilters = ({
         </div>}
 
       {/* Sort Dropdown */}
-      <div className="space-y-2">
-        <span className="text-sm font-medium text-gray-700">ترتيب حسب:</span>
-        <Select value={currentSort} onValueChange={onSortChange}>
-          <SelectTrigger onClick={handleSortClick} className="w-full">
-            <SelectValue placeholder="اختر طريقة الترتيب" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {sortOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+      
     </div>;
 };
 export default ProductFilters;
