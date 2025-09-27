@@ -5,6 +5,7 @@ import { ArrowRight, Heart, ShoppingBag } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import FavoriteProductCard from '@/components/ui/FavoriteProductCard';
+import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -93,8 +94,10 @@ const Favorites = () => {
       <div className={`py-4 px-4 md:px-6 ${!isMobile ? 'mt-24' : 'mt-6'}`}>
 
         {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, index) => (
+              <ProductCardSkeleton key={index} />
+            ))}
           </div>
         ) : !user ? (
           <div className="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">

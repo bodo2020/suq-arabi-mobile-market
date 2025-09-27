@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import SubcategoryItem from '@/components/ui/SubcategoryItem';
+import SubcategorySkeleton from '@/components/ui/SubcategorySkeleton';
 import { MainCategory, Subcategory, getCategories, getSubcategories } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -51,12 +52,20 @@ const CategoryDetail = () => {
         <TopNavBar 
           hideLogo={true}
           hideSearch={true}
-          pageTitle={categoryInfo?.name || 'القسم'}
+          pageTitle="تحميل..."
           showBackButton={true}
           onBack={() => navigate(-1)}
         />
-        <div className={`flex justify-center items-center h-40 ${!isMobile ? 'mt-24' : ''}`}>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className={`${!isMobile ? 'mt-24' : ''}`}>
+          <div className="w-full px-4">
+            <div className="max-w-md mx-auto md:max-w-4xl">
+              <div className="grid grid-cols-3 gap-3">
+                {[...Array(9)].map((_, index) => (
+                  <SubcategorySkeleton key={index} />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );

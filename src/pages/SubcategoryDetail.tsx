@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
+import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import ProductFilters from '@/components/ui/ProductFilters';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -94,12 +95,24 @@ const SubcategoryDetail = () => {
         <TopNavBar 
           hideLogo={true}
           hideSearch={true}
-          pageTitle={subcategoryInfo?.name || 'القسم الفرعي'}
+          pageTitle="تحميل..."
           showBackButton={true}
           onBack={() => navigate(-1)}
         />
-        <div className={`flex justify-center items-center h-40 ${!isMobile ? 'mt-24' : ''}`}>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className={`${!isMobile ? 'mt-24' : ''}`}>
+          <div className="w-full px-4">
+            <div className="max-w-md mx-auto md:max-w-4xl">
+              <div className="sticky top-0 z-10 mb-4 bg-white">
+                <div className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {[...Array(12)].map((_, index) => (
+                  <ProductCardSkeleton key={index} />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
