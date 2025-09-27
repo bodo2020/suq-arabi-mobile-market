@@ -35,9 +35,6 @@ const ProductFilters = ({
     }
   };
   return <div className="space-y-3 mb-4 px-4">
-      {/* Sort Dropdown */}
-      
-
       {/* Company Chips */}
       {companies.length > 0 && onCompanyChange && <div className="space-y-2">
           <span className="text-sm font-medium text-gray-700">الشركات:</span>
@@ -53,6 +50,25 @@ const ProductFilters = ({
               </button>)}
           </div>
         </div>}
+
+      {/* Sort Dropdown */}
+      <div className="space-y-2">
+        <span className="text-sm font-medium text-gray-700">ترتيب حسب:</span>
+        <Select value={currentSort} onValueChange={onSortChange}>
+          <SelectTrigger onClick={handleSortClick} className="w-full">
+            <SelectValue placeholder="اختر طريقة الترتيب" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
     </div>;
 };
 export default ProductFilters;
