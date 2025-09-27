@@ -288,7 +288,7 @@ const ProductDetail = () => {
             <img
               src={product.image_urls?.[selectedImageIndex] || '/placeholder.svg'}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
             
             {/* Share and Favorite buttons on image */}
@@ -364,7 +364,14 @@ const ProductDetail = () => {
                 </div>
               )}
             </div>
-            {company && <CompanyCard company={company} />}
+            {company && (
+              <button
+                onClick={() => navigate(`/company/${company.id}`)}
+                className="text-green-600 font-medium underline hover:text-green-700 transition-colors"
+              >
+                {company.name}
+              </button>
+            )}
           </div>
 
           {/* Stock Status */}
