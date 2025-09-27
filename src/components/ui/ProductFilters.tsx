@@ -36,19 +36,16 @@ const ProductFilters = ({
   };
   return <div className="space-y-3 mb-4 px-4">
       {/* Company Chips */}
-      {companies.length > 0 && onCompanyChange && <div className="space-y-2">
-          <span className="text-sm font-medium text-gray-700">الشركات:</span>
-          <div className="flex flex-wrap gap-2">
-            {/* All Companies Chip */}
-            <button onClick={e => handleChipClick("all", e)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedCompany === "all" ? "bg-primary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-              جميع الشركات
-            </button>
-            
-            {/* Individual Company Chips */}
-            {companies.map(company => <button key={company.id} onClick={e => handleChipClick(company.id, e)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedCompany === company.id ? "bg-primary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-                {company.name}
-              </button>)}
-          </div>
+      {companies.length > 0 && onCompanyChange && <div className="flex gap-2 overflow-x-auto">
+          {/* All Companies Chip */}
+          <button onClick={e => handleChipClick("all", e)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${selectedCompany === "all" ? "bg-primary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+            جميع الشركات
+          </button>
+          
+          {/* Individual Company Chips */}
+          {companies.map(company => <button key={company.id} onClick={e => handleChipClick(company.id, e)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${selectedCompany === company.id ? "bg-primary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+              {company.name}
+            </button>)}
         </div>}
 
       {/* Sort Dropdown */}
