@@ -157,27 +157,27 @@ const Index = () => {
 
           {/* Main Content with proper spacing */}
           <div className={`${!isMobile ? 'mt-24' : ''}`}>
-            {/* Address Section */}
-            <div className="w-full px-4 mb-4 mt-6">
-              <div className="max-w-md mx-auto md:max-w-4xl">
-                <div className="flex items-center">
-                  <MapPin size={16} className="text-primary ml-2" />
-                  <span className="text-gray-600 text-sm">التوصيل إلى</span>
-                  <button 
-                    onClick={handleChangeLocation}
-                    className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
-                  >
-                    {userLocation?.area || userAddress || "اختر عنوانك"}
-                    {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
-                  </button>
-                  {(userLocation?.area || userAddress) && (
+            {/* Address Section - Only show if user has an address */}
+            {(userLocation?.area || userAddress) && (
+              <div className="w-full px-4 mb-4 mt-6">
+                <div className="max-w-md mx-auto md:max-w-4xl">
+                  <div className="flex items-center">
+                    <MapPin size={16} className="text-primary ml-2" />
+                    <span className="text-gray-600 text-sm">التوصيل إلى</span>
+                    <button 
+                      onClick={handleChangeLocation}
+                      className="text-primary font-bold text-sm mr-2 underline decoration-2 underline-offset-2"
+                    >
+                      {userLocation?.area || userAddress}
+                      {userLocation?.neighborhood && <span className="mr-1">، {userLocation?.neighborhood}</span>}
+                    </button>
                     <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full mr-2">
                       افتراضي
                     </span>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Content Container */}
             <div className="max-w-md mx-auto px-4 md:max-w-4xl">
