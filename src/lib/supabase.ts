@@ -97,8 +97,8 @@ export type Address = {
 
 export type Order = {
   id: string;
-  user_id?: string;
-  status: 'waiting' | 'ready' | 'shipped' | 'done';
+  customer_id?: string;
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'shipped' | 'delivered' | 'cancelled';
   total: number;
   shipping_address?: string;
   shipping_cost?: number;
@@ -239,7 +239,7 @@ export async function searchProductByBarcode(barcode: string) {
 export async function submitOrder(order: Omit<Order, 'id' | 'created_at'>) {
   const { data, error } = await supabase
     .from('online_orders')
-    .insert(order);
+    .insert([order]);
   
   if (error) console.error(`Error submitting order:`, error);
   return data;
