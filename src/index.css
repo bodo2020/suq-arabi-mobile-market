@@ -76,18 +76,16 @@ html, body, #root {
   }
 
   /* Hide scrollbars but allow scrolling */
-  html, body, #root, div, main {
+  html, body, #root {
     scrollbar-width: none;
     -ms-overflow-style: none;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   html::-webkit-scrollbar, 
   body::-webkit-scrollbar, 
-  #root::-webkit-scrollbar, 
-  div::-webkit-scrollbar, 
-  main::-webkit-scrollbar {
+  #root::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
@@ -121,20 +119,12 @@ html, body, #root {
 
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar, .scrollbar-hide {
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important;  /* IE and Edge */
-  overflow-y: auto !important;
-  overflow-x: auto !important;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 .hide-scrollbar::-webkit-scrollbar, .scrollbar-hide::-webkit-scrollbar {
-  display: none !important; /* Chrome, Safari, Opera */
-}
-
-body, html, #root, main, .container {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  overscroll-behavior: none !important;
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Mobile navigation bar */
