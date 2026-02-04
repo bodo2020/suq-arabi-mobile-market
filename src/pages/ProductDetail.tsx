@@ -284,7 +284,7 @@ const ProductDetail = () => {
       <div>
         {/* Product Image */}
         <div className="relative bg-white p-4">
-          <div className="aspect-square relative overflow-hidden rounded-lg bg-white max-w-sm mx-auto">
+          <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-100">
             <img
               src={product.image_urls?.[selectedImageIndex] || '/placeholder.svg'}
               alt={product.name}
