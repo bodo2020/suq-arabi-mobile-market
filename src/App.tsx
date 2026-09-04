@@ -11,6 +11,7 @@ const PhoneLogin = lazy(() => import('./pages/PhoneLogin'));
 const PhoneVerify = lazy(() => import('./pages/PhoneVerify'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const UpdatePassword = lazy(() => import('./pages/UpdatePassword'));
 const Categories = lazy(() => import('./pages/Categories'));
 const CategoryDetail = lazy(() => import('./pages/CategoryDetail'));
 const CategoryProducts = lazy(() => import('./pages/CategoryProducts'));
@@ -56,16 +57,14 @@ function App() {
           <BrowserRouter>
             <Suspense fallback={<RouteFallback />}>
               <Routes>
-                {/* Authentication routes - no address guard needed */}
                 <Route path="/phone-login" element={<PhoneLogin />} />
                 <Route path="/phone-verify" element={<PhoneVerify />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/update-password" element={<UpdatePassword />} />
 
-                {/* Address registration - no guard needed */}
                 <Route path="/address-registration" element={<AddressRegistration />} />
 
-                {/* All other routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/category/:id" element={<CategoryDetail />} />
