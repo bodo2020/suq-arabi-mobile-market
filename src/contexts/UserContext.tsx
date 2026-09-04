@@ -12,7 +12,7 @@ type UserContextType = {
   signOut: () => Promise<void>;
   updateUser: (data: any) => Promise<any>;
   resetPassword: (username: string) => Promise<any>;
-  signInWithPhone: (phone: string) => Promise<any>;
+  signInWithPhone: (phone: string, shouldCreateUser?: boolean) => Promise<any>;
   verifyPhone: (phone: string, code: string) => Promise<any>;
 };
 
@@ -91,9 +91,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         phone: normalizedPhone,
       };
 
-      // The phone verification flow signs the user in before the registration
-      // form is completed. In that case, finish configuring the same Auth user
-      // instead of creating a second account.
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUser = sessionData.session?.user;
 
@@ -164,7 +161,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       const identifier = username.trim();
       if (!identifier.includes('@')) {
         return {
-          error: new Error('استعادة كلمة المرور برقم الهاتف تتم من خلال رمز التحقق وليس البريد الإلكتروني'),
+          error: new Error('استعادة كلمة المرور برقم الهاتف تتم من خلال رمز التحقق'),
         };
       }
 
@@ -180,7 +177,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signInWithPhone = async (phone: string) => {
+  const signInWithPhone = async (phone: string, shouldCreateUser = true) => {
     try {
       const normalizedPhone = normalizePhone(phone);
       if (!normalizedPhone || normalizedPhone.length < 8) {
@@ -191,7 +188,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         phone: normalizedPhone,
         options: {
           channel: 'sms',
-          shouldCreateUser: true,
+          shouldCreateUser,
         },
       });
 
