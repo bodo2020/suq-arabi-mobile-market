@@ -35,8 +35,18 @@ ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.verification_codes ENABLE ROW LEVEL SECURITY;
 
 -- OTP codes are no longer application data. They must never be available to
--- anon/authenticated clients. Supabase Auth owns the active phone OTP flow.
-REVOKE ALL ON TABLE public.verification_codes FROM anon, authenticated;
+-- browser clients. Supabase Auth owns the active phone OTP flow.
+REVOKE ALL ON TABLE public.verification_codes FROM PUBLIC, anon, authenticated;
+
+-- The old browser-callable helper could create the legacy verification table.
+-- Keep the migration safe even if that function has already been removed.
+DO $$
+BEGIN
+  IF to_regprocedure('public.create_verification_codes_table()') IS NOT NULL THEN
+    REVOKE ALL ON FUNCTION public.create_verification_codes_table() FROM PUBLIC, anon, authenticated;
+  END IF;
+END
+$$;
 
 -- Customer profile: owner self-service, staff can inspect/manage through the
 -- existing server-backed admin role helpers.
