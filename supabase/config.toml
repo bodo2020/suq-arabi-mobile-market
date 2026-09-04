@@ -10,7 +10,7 @@ port = 54321
 schemas = ["public", "storage", "graphql_public"]
 # Extra schemas to add to the search_path of every request. public is always included.
 extra_search_path = ["public", "extensions"]
-# The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
+# The maximum number of rows returns from a view, table or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
 
@@ -22,7 +22,7 @@ port = 54322
 major_version = 15
 
 [studio]
-# Port to use for Supabase Studio.
+# Port to use for the Supabase Studio interface.
 port = 54323
 
 # Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
@@ -67,8 +67,7 @@ client_id = ""
 secret = ""
 # Overrides the default auth redirectUrl.
 redirect_uri = ""
-# Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,
-# or any other third-party OIDC providers.
+# Overrides the default OAuth provider URL.
 url = ""
 
 [auth.external.azure]
@@ -194,5 +193,5 @@ dataset_id = ""
 key_file = ""
 
 [functions]
-create-verification-table = { verify_jwt = false }
-phone-verify = { verify_jwt = false }
+create-verification-table = { verify_jwt = true }
+phone-verify = { verify_jwt = true }
