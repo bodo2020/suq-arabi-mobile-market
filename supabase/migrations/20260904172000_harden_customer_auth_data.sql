@@ -1,6 +1,6 @@
 -- Harden customer-authenticated data after moving phone verification to Supabase Auth.
--- This migration is intentionally explicit: remove legacy permissive policies,
--- then recreate only self-service and staff-read policies.
+-- Supports both the current customer_id ownership model and legacy rows keyed
+-- directly by auth user_id during the transition.
 
 DO $$
 DECLARE
@@ -34,22 +34,32 @@ ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.verification_codes ENABLE ROW LEVEL SECURITY;
 
--- OTP codes are no longer application data. They must never be available to
--- browser clients. Supabase Auth owns the active phone OTP flow.
+-- Private customer data is never available to anonymous browser sessions.
+REVOKE ALL ON TABLE public.customers FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.customer_addresses FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.cart_items FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.favorites FROM PUBLIC, anon;
+
+-- Authenticated clients keep only the DML privileges required by the app.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.customers TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.customer_addresses TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cart_items TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.favorites TO authenticated;
+
+-- OTP codes are retired application data. Supabase Auth owns phone OTP.
 REVOKE ALL ON TABLE public.verification_codes FROM PUBLIC, anon, authenticated;
 
--- The old browser-callable helper could create the legacy verification table.
--- Keep the migration safe even if that function has already been removed.
+-- The old browser-callable helper must stay unreachable even if it still exists.
 DO $$
 BEGIN
   IF to_regprocedure('public.create_verification_codes_table()') IS NOT NULL THEN
-    REVOKE ALL ON FUNCTION public.create_verification_codes_table() FROM PUBLIC, anon, authenticated;
+    REVOKE ALL ON FUNCTION public.create_verification_codes_table()
+      FROM PUBLIC, anon, authenticated;
   END IF;
 END
 $$;
 
--- Customer profile: owner self-service, staff can inspect/manage through the
--- existing server-backed admin role helpers.
+-- Customer profile: owner self-service; staff access uses existing role helpers.
 CREATE POLICY "Customers view own profile"
 ON public.customers
 FOR SELECT
@@ -87,7 +97,7 @@ FOR DELETE
 TO authenticated
 USING (public.is_admin() OR public.is_super_admin());
 
--- Customer addresses: the customer owns rows directly by auth user id.
+-- Addresses are owned directly by auth user id.
 CREATE POLICY "Customers view own addresses"
 ON public.customer_addresses
 FOR SELECT
@@ -117,14 +127,14 @@ FOR DELETE
 TO authenticated
 USING (user_id = (SELECT auth.uid()));
 
--- Cart items are keyed by customer_id, so authorization resolves through the
--- authenticated user's own customer profile.
+-- Cart ownership supports current customer_id rows and legacy direct user_id rows.
 CREATE POLICY "Customers view own cart items"
 ON public.cart_items
 FOR SELECT
 TO authenticated
 USING (
-  EXISTS (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
     SELECT 1
     FROM public.customers c
     WHERE c.id = cart_items.customer_id
@@ -139,7 +149,8 @@ ON public.cart_items
 FOR INSERT
 TO authenticated
 WITH CHECK (
-  EXISTS (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
     SELECT 1
     FROM public.customers c
     WHERE c.id = cart_items.customer_id
@@ -152,7 +163,8 @@ ON public.cart_items
 FOR UPDATE
 TO authenticated
 USING (
-  EXISTS (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
     SELECT 1
     FROM public.customers c
     WHERE c.id = cart_items.customer_id
@@ -160,7 +172,8 @@ USING (
   )
 )
 WITH CHECK (
-  EXISTS (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
     SELECT 1
     FROM public.customers c
     WHERE c.id = cart_items.customer_id
@@ -173,7 +186,8 @@ ON public.cart_items
 FOR DELETE
 TO authenticated
 USING (
-  EXISTS (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
     SELECT 1
     FROM public.customers c
     WHERE c.id = cart_items.customer_id
@@ -181,13 +195,14 @@ USING (
   )
 );
 
--- Favorites use the same customer ownership model as cart items.
+-- Favorites use the same transitional ownership model as cart items.
 CREATE POLICY "Customers view own favorites"
 ON public.favorites
 FOR SELECT
 TO authenticated
 USING (
-  EXISTS (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
     SELECT 1
     FROM public.customers c
     WHERE c.id = favorites.customer_id
@@ -202,7 +217,31 @@ ON public.favorites
 FOR INSERT
 TO authenticated
 WITH CHECK (
-  EXISTS (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
+    SELECT 1
+    FROM public.customers c
+    WHERE c.id = favorites.customer_id
+      AND c.user_id = (SELECT auth.uid())
+  )
+);
+
+CREATE POLICY "Customers update own favorites"
+ON public.favorites
+FOR UPDATE
+TO authenticated
+USING (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
+    SELECT 1
+    FROM public.customers c
+    WHERE c.id = favorites.customer_id
+      AND c.user_id = (SELECT auth.uid())
+  )
+)
+WITH CHECK (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
     SELECT 1
     FROM public.customers c
     WHERE c.id = favorites.customer_id
@@ -215,7 +254,8 @@ ON public.favorites
 FOR DELETE
 TO authenticated
 USING (
-  EXISTS (
+  user_id = (SELECT auth.uid())
+  OR EXISTS (
     SELECT 1
     FROM public.customers c
     WHERE c.id = favorites.customer_id
@@ -223,7 +263,10 @@ USING (
   )
 );
 
--- Indexes used by ownership checks and common customer queries.
+-- Ownership lookup and app upsert indexes.
+CREATE UNIQUE INDEX IF NOT EXISTS customers_user_id_key
+  ON public.customers(user_id);
+
 CREATE INDEX IF NOT EXISTS idx_customer_addresses_user_id
   ON public.customer_addresses(user_id);
 
