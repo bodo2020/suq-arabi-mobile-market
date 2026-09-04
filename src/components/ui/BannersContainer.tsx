@@ -97,6 +97,8 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
                 src={banner.image_url} 
                 alt={banner.title} 
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </div>

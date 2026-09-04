@@ -160,7 +160,7 @@ const Index = () => {
             {/* Address Section - Only show if user has an address */}
             {(userLocation?.area || userAddress) && (
               <div className="w-full px-4 mb-4 mt-6">
-                <div className="max-w-md mx-auto md:max-w-4xl">
+                <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
                   <div className="flex items-center">
                     <MapPin size={16} className="text-primary ml-2" />
                     <span className="text-gray-600 text-sm">التوصيل إلى</span>
@@ -180,7 +180,7 @@ const Index = () => {
             )}
 
             {/* Content Container */}
-            <div className="max-w-md mx-auto px-4 md:max-w-4xl">
+            <div className="max-w-md mx-auto px-4 md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               <Suspense fallback={<BannerSkeleton />}>
                 {banners.length > 0 && (
                   <div className="mb-6 relative">
@@ -198,7 +198,8 @@ const Index = () => {
                   </Link>
                 </div>
                 
-                <div className="space-y-1">
+                {/* Mobile: صفين (3 + 2 + المزيد) */}
+                <div className="space-y-1 md:hidden">
                   {/* الصف الأول - 3 أقسام */}
                   <div className="grid grid-cols-3 gap-1">
                     {visibleCategories.slice(0, 3).map(category => (
@@ -221,6 +222,22 @@ const Index = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Desktop: شبكة واحدة أوسع */}
+                <div className="hidden md:grid md:grid-cols-6 lg:grid-cols-8 gap-3">
+                  {categories.slice(0, 7).map(category => (
+                    <CategoryItem key={category.id} category={category} onClick={handleMainCategoryClick} />
+                  ))}
+                  {categories.length > 7 && (
+                    <Link to="/categories" className="flex flex-col items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100 w-full">
+                      <div className="w-full aspect-square bg-primary/10 flex items-center justify-center overflow-hidden rounded-lg">
+                        <ChevronLeft size={24} className="text-primary" />
+                      </div>
+                      <span className="text-sm text-center mt-1">عرض المزيد</span>
+                    </Link>
+                  )}
+                </div>
+
               </div>
               
               <Suspense fallback={

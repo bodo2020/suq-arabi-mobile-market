@@ -46,7 +46,7 @@ const Categories = () => {
           {/* Header Skeleton - only show on desktop */}
           {!isMobile && (
             <div className="w-full px-4 mb-6">
-              <div className="max-w-md mx-auto md:max-w-4xl">
+              <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
                   <div className="h-6 bg-gray-200 rounded flex-1 mx-4 animate-pulse"></div>
@@ -58,7 +58,7 @@ const Categories = () => {
 
           {/* Categories Grid Skeleton */}
           <div className="w-full px-4">
-            <div className="max-w-md mx-auto md:max-w-4xl">
+            <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                 {[...Array(12)].map((_, index) => (
                   <CategorySkeleton key={index} />
@@ -87,7 +87,7 @@ const Categories = () => {
           {/* Header with back button - only show on desktop */}
           {!isMobile && (
             <div className="w-full px-4 mb-6">
-              <div className="max-w-md mx-auto md:max-w-4xl">
+              <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
                 <div className="flex items-center">
                   <button
                     onClick={() => navigate(-1)}
@@ -105,7 +105,7 @@ const Categories = () => {
 
           {/* Categories Grid */}
           <div className="w-full px-4">
-            <div className="max-w-md mx-auto md:max-w-4xl">
+            <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                 {categories.map(category => (
                   <CategoryItem 

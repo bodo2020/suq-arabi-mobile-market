@@ -98,11 +98,11 @@ html, body, #root {
 }
 
 .product-card {
-  @apply bg-white rounded-lg p-3 shadow-sm relative transition-all;
+  @apply bg-white rounded-xl p-3 shadow-sm relative border border-transparent transition-all duration-200 ease-out;
 }
 
 .product-card:hover {
-  @apply shadow-md;
+  @apply shadow-lg border-primary/15 -translate-y-0.5;
 }
 
 .product-card .favorite-btn {
@@ -116,6 +116,12 @@ html, body, #root {
 .product-card .add-to-cart-btn.has-items {
   @apply bg-primary py-2 px-3 rounded-lg;
 }
+
+/* Smooth interaction defaults */
+a, button {
+  @apply transition-colors duration-200;
+}
+
 
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar, .scrollbar-hide {

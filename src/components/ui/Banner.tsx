@@ -43,6 +43,8 @@ const Banner: React.FC<BannerProps> = ({ banner, hideTitle = true, autoRotate = 
         src={banner.image_url} 
         alt={banner.title} 
         className="w-full h-full object-cover"
+        loading="lazy"
+        decoding="async"
       />
       {!hideTitle && (
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col justify-end p-4">

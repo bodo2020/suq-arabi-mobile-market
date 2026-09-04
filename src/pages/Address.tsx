@@ -196,9 +196,16 @@ const Address = () => {
     if (!user) return;
     
     try {
-      const updateData: Record<string, any> = {
+      const updateData: {
+        address: string;
+        governorate_id?: string;
+        city_id?: string;
+        area_id?: string;
+        neighborhood_id?: string;
+      } = {
         address: address
       };
+
       
       if (mapLocation.governorate) {
         updateData.governorate_id = mapLocation.governorate;

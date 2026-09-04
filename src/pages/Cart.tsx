@@ -208,6 +208,8 @@ const Cart = () => {
                               src={getProductImage(item)} 
                               alt={item.product.name} 
                               className="w-full h-full object-contain" 
+                              loading="lazy"
+                              decoding="async"
                             />
                           </div>
                           {item.is_bulk && (

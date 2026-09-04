@@ -94,7 +94,7 @@ const Favorites = () => {
       <div className={`py-4 px-4 md:px-6 ${!isMobile ? 'mt-24' : 'mt-6'}`}>
 
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {[...Array(8)].map((_, index) => (
               <ProductCardSkeleton key={index} />
             ))}
@@ -114,7 +114,7 @@ const Favorites = () => {
             </Button>
           </div>
         ) : favorites.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {favorites.map((product) => (
               <FavoriteProductCard key={product.id} product={product} />
             ))}

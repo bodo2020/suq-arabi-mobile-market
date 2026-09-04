@@ -153,7 +153,7 @@ const CategoryProducts = () => {
         />
         <div className={`${!isMobile ? 'mt-24' : ''}`}>
           <div className="w-full px-4">
-            <div className="max-w-md mx-auto md:max-w-4xl">
+            <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               <div className="sticky top-0 z-10 mb-4 bg-white">
                 <div className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
               </div>
@@ -204,7 +204,7 @@ const CategoryProducts = () => {
 
         <div className={`${!isMobile ? 'mt-24' : ''}`}>
           <div className="w-full px-4">
-            <div className="max-w-md mx-auto md:max-w-4xl">
+            <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               <div className="sticky top-0 z-10 mb-4 bg-white">
                 <div onClick={handleFiltersClick}>
                   <ProductFilters
