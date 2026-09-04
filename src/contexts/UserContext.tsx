@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -34,203 +33,162 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session: Session | null) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      (_event: AuthChangeEvent, nextSession: Session | null) => {
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
         setAuthLoading(false);
         setLoading(false);
       }
     );
 
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
       setAuthLoading(false);
       setLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Function to sign in with email or phone and password
+  const normalizePhone = (value: string) => value.trim().replace(/\s+/g, '');
+
+  // Sign in using the correct Supabase Auth identifier type.
   const signIn = async (username: string, password: string) => {
     try {
-      // Check if the username is an email or phone
-      const isEmail = username.includes('@');
-      
-      if (isEmail) {
-        // Sign in with email
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: username,
-          password,
-        });
+      const identifier = username.trim();
+      const isEmail = identifier.includes('@');
 
-        if (error) throw error;
-        return { data };
-      } else {
-        // For phone numbers, no longer convert to email format
-        // Instead, check if we need to directly use the phone number
-        // or look up the user by phone number from the customers table
-        
-        // First try direct signin if the user registered with phone
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: username,
-          password,
-        });
-        
-        // If direct sign in fails, try looking up the user by phone number
-        if (error) {
-          // Look up the user by phone number from customers table
-          const { data: customerData } = await supabase
-            .from('customers')
-            .select('user_id, email')
-            .eq('phone', username)
-            .single();
-            
-          if (customerData?.email) {
-            // Try to sign in with the customer's email
-            const signInResult = await supabase.auth.signInWithPassword({
-              email: customerData.email,
-              password,
-            });
-            
-            if (!signInResult.error) {
-              return { data: signInResult.data };
-            }
-          }
-          
-          // If all attempts failed, throw the original error
-          throw error;
-        }
-        
-        return { data };
-      }
-    } catch (error) {
-      console.error("Error signing in:", error);
-      return { error };
-    }
-  };
-
-  // Function to sign up with both email and phone
-  const signUp = async (email: string, phone: string, password: string, additionalData?: any) => {
-    try {
-      // Store the real phone number without formatting it as an email
-      const loginEmail = email || phone;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email: loginEmail,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            ...additionalData,
-            email: email,
-            phone: phone,
-          },
-        },
-      });
+      const { data, error } = isEmail
+        ? await supabase.auth.signInWithPassword({ email: identifier, password })
+        : await supabase.auth.signInWithPassword({ phone: normalizePhone(identifier), password });
 
       if (error) throw error;
-
-      // Since we're not requiring email verification, we can immediately sign in the user
-      if (data.user && !data.session) {
-        const signInResult = await signIn(loginEmail, password);
-        return signInResult;
-      }
-
       return { data };
     } catch (error) {
-      console.error("Error signing up:", error);
+      console.error('Error signing in:', error);
       return { error };
     }
   };
 
-  // Function to sign out
-  const signOut = async () => {
+  // Create an Auth account with either a real email or a real phone number.
+  const signUp = async (
+    email: string,
+    phone: string,
+    password: string,
+    additionalData?: any
+  ) => {
     try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
+      const normalizedEmail = email.trim();
+      const normalizedPhone = normalizePhone(phone);
 
-  // Function to update user data
-  const updateUser = async (data: any) => {
-    try {
-      const { data: user, error } = await supabase.auth.updateUser({ data });
-
-      if (error) {
-        throw error;
+      if (!normalizedEmail && !normalizedPhone) {
+        throw new Error('Email or phone number is required');
       }
 
-      return { user };
+      const options = {
+        emailRedirectTo: `${window.location.origin}/`,
+        data: {
+          ...additionalData,
+          email: normalizedEmail || undefined,
+          phone: normalizedPhone || undefined,
+        },
+      };
+
+      const { data, error } = normalizedEmail
+        ? await supabase.auth.signUp({
+            email: normalizedEmail,
+            password,
+            options,
+          })
+        : await supabase.auth.signUp({
+            phone: normalizedPhone,
+            password,
+            options,
+          });
+
+      if (error) throw error;
+      return { data };
     } catch (error) {
-      console.error("Error updating user:", error);
+      console.error('Error signing up:', error);
       return { error };
     }
   };
 
-  // Function to reset password
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const updateUser = async (data: any) => {
+    try {
+      const { data: userData, error } = await supabase.auth.updateUser({ data });
+      if (error) throw error;
+      return { user: userData };
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return { error };
+    }
+  };
+
+  // Password recovery is email-based. Phone users should use OTP instead.
   const resetPassword = async (username: string) => {
     try {
-      // Check if username is email or phone
-      const isEmail = username.includes('@');
-      const resetEmail = isEmail ? username : username;
-      
-      const { data, error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      const identifier = username.trim();
+      if (!identifier.includes('@')) {
+        throw new Error('استخدم تسجيل الدخول بكود التحقق لاستعادة حساب الهاتف');
+      }
+
+      const { data, error } = await supabase.auth.resetPasswordForEmail(identifier, {
         redirectTo: `${window.location.origin}/update-password`,
       });
 
       if (error) throw error;
       return { data };
     } catch (error) {
-      console.error("Error resetting password:", error);
+      console.error('Error resetting password:', error);
       return { error };
     }
   };
 
-  // Function to sign in with phone verification
+  // Request a real Supabase phone OTP. Never return or expose the OTP in the client.
   const signInWithPhone = async (phone: string) => {
     try {
-      // This is a placeholder for actual phone verification logic
-      // In a real implementation, this would call a serverless function to send SMS/WhatsApp
-      console.log("Sending verification code to phone:", phone);
-      
-      // For development, we can simulate a code
-      const testCode = "123456";
-      
-      return { 
-        data: { 
-          code: testCode, // In production, you'd never return this to the client
-          message: "Verification code sent successfully" 
-        } 
-      };
+      const normalizedPhone = normalizePhone(phone);
+      const { data, error } = await supabase.auth.signInWithOtp({
+        phone: normalizedPhone,
+        options: { shouldCreateUser: false },
+      });
+
+      if (error) throw error;
+      return { data };
     } catch (error) {
-      console.error("Error sending verification code:", error);
+      console.error('Error sending phone OTP:', error);
       return { error };
     }
   };
 
-  // Function to verify phone code
+  // Verify the OTP with Supabase Auth and create a real authenticated session.
   const verifyPhone = async (phone: string, code: string) => {
     try {
-      // This is a placeholder for actual phone verification logic
-      console.log("Verifying code for phone:", phone, "Code:", code);
-      
-      // In a real implementation, you would verify the code against what was sent
-      // Here we'll just assume code "123456" is valid for testing
-      if (code !== "123456") {
-        throw new Error("Invalid verification code");
-      }
-      
-      return { data: { verified: true } };
+      const normalizedPhone = normalizePhone(phone);
+      const token = code.trim();
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: normalizedPhone,
+        token,
+        type: 'sms',
+      });
+
+      if (error) throw error;
+      return { data };
     } catch (error) {
-      console.error("Error verifying code:", error);
+      console.error('Error verifying phone OTP:', error);
       return { error };
     }
   };
