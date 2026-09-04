@@ -176,7 +176,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <img
             src={productImage}
             alt={product.name}
-            className="absolute top-0 right-0 w-full h-full object-contain"
+            className="absolute top-0 right-0 w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
           />
           {discount > 0 && !displayBulkView && (
             <div className="absolute left-1 top-1 bg-red-500 text-white text-xs font-bold py-1 px-1 rounded-full shadow animate-fade-in">

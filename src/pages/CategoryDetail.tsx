@@ -59,7 +59,7 @@ const CategoryDetail = () => {
         <div className={`${!isMobile ? 'mt-24' : ''}`}>
           <div className="w-full px-4">
             <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
                 {[...Array(9)].map((_, index) => (
                   <SubcategorySkeleton key={index} />
                 ))}
@@ -87,7 +87,7 @@ const CategoryDetail = () => {
             <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               {/* Subcategories Grid */}
               {subcategories.length > 0 ? (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
                   {subcategories.map(subcat => (
                     <SubcategoryItem
                       key={subcat.id}
