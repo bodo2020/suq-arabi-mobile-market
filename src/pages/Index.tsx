@@ -160,7 +160,7 @@ const Index = () => {
             {/* Address Section - Only show if user has an address */}
             {(userLocation?.area || userAddress) && (
               <div className="w-full px-4 mb-4 mt-6">
-                <div className="max-w-md mx-auto md:max-w-4xl">
+                <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
                   <div className="flex items-center">
                     <MapPin size={16} className="text-primary ml-2" />
                     <span className="text-gray-600 text-sm">التوصيل إلى</span>
@@ -180,7 +180,7 @@ const Index = () => {
             )}
 
             {/* Content Container */}
-            <div className="max-w-md mx-auto px-4 md:max-w-4xl">
+            <div className="max-w-md mx-auto px-4 md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               <Suspense fallback={<BannerSkeleton />}>
                 {banners.length > 0 && (
                   <div className="mb-6 relative">

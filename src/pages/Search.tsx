@@ -278,7 +278,7 @@ const Search = () => {
         {/* Main Content with proper spacing */}
         <div className={`${!isMobile ? 'mt-24' : ''}`}>
           <div className="w-full px-4">
-            <div className="max-w-md mx-auto md:max-w-4xl">
+            <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               {/* Header with back button - only show on desktop */}
               {!isMobile && (
                 <div className="flex items-center mb-4">
