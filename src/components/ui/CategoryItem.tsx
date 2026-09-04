@@ -25,7 +25,7 @@ const CategoryItem = ({
     <Link to={`/category/${category.id}`} className="flex flex-col items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100 w-full" onClick={handleClick}>
       <div className="w-full aspect-square bg-primary/10 flex items-center justify-center overflow-hidden rounded-lg">
         {category.image_url ? (
-          <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
+          <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
         ) : (
           <span className="text-2xl">{category.name.charAt(0)}</span>
         )}

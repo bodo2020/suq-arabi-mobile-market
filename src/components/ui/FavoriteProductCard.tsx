@@ -68,6 +68,8 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
           src={productImage}
           alt={product.name}
           className="absolute top-0 right-0 w-full h-full object-contain"
+          loading="lazy"
+          decoding="async"
         />
         {discount > 0 && (
           <div className="absolute left-2 top-2 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full shadow animate-fade-in">

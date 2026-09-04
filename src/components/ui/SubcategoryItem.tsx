@@ -27,6 +27,8 @@ const SubcategoryItem = ({
             src={subcategory.image_url} 
             alt={subcategory.name} 
             className="w-full h-full object-cover" 
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <span className="text-2xl">

@@ -194,7 +194,7 @@ const Orders = () => {
                       {Array.isArray(order.items) ? order.items.map((item: any, index: number) => <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
                           <div className="relative w-16 h-16 shrink-0">
                             {item.image_url ? <>
-                                <img src={item.image_url} alt={item.name || "منتج"} className="w-full h-full object-cover rounded" />
+                                <img src={item.image_url} alt={item.name || "منتج"} className="w-full h-full object-cover rounded" loading="lazy" decoding="async" />
                                 {item.is_bulk && item.bulk_quantity && <div className="absolute top-0 right-0 bg-primary text-white text-xs px-1 rounded-bl">
                                     {item.bulk_quantity}
                                   </div>}
@@ -214,7 +214,7 @@ const Orders = () => {
                         </li>) : typeof order.items === 'object' ? Object.values(order.items).map((item: any, index: number) => <li key={index} className="bg-gray-50 p-2 rounded flex items-center gap-3">
                           <div className="relative w-16 h-16 shrink-0">
                             {item.image_url ? <>
-                                <img src={item.image_url} alt={item.name || "منتج"} className="w-full h-full object-cover rounded" />
+                                <img src={item.image_url} alt={item.name || "منتج"} className="w-full h-full object-cover rounded" loading="lazy" decoding="async" />
                                 {item.is_bulk && item.bulk_quantity && <div className="absolute top-0 right-0 bg-primary text-white text-xs px-1 rounded-bl">
                                     {item.bulk_quantity}
                                   </div>}
