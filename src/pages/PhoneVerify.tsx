@@ -32,14 +32,15 @@ const PhoneVerify = () => {
   const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const phoneFromQuery = queryParams.get('phone') || '';
   const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
+  const isRecovery = queryParams.get('mode') === 'recovery';
 
   const [phone, setPhone] = useState(phoneFromQuery);
-  const [step, setStep] = useState<'phone' | 'verification'>(phoneFromQuery ? 'verification' : 'phone');
+  const [step, setStep] = useState<'phone' | 'verification'>('phone');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [rateLimitError, setRateLimitError] = useState(false);
-  const [resendSeconds, setResendSeconds] = useState(phoneFromQuery ? 60 : 0);
+  const [resendSeconds, setResendSeconds] = useState(0);
   const [countryCode, setCountryCode] = useState<Country>(
     KNOWN_COUNTRIES.find((country) => country.code === countryCodeFromQuery) || DEFAULT_COUNTRY
   );
@@ -87,22 +88,23 @@ const PhoneVerify = () => {
     return true;
   };
 
-  const handleSendCode = async () => {
-    if (!validatePhone() || loading) return;
+  const sendOtp = async (isResend = false) => {
+    if (!validatePhone()) return;
 
-    setLoading(true);
+    const setBusy = isResend ? setResendLoading : setLoading;
+    setBusy(true);
     setRateLimitError(false);
 
     try {
       const fullPhone = formatInternationalPhone(phone, countryCode);
-      const { error } = await signInWithPhone(fullPhone);
+      const { error } = await signInWithPhone(fullPhone, !isRecovery);
       if (error) throw error;
 
       setStep('verification');
       setCode('');
       setResendSeconds(60);
       toast({
-        title: 'تم إرسال رمز التحقق',
+        title: isResend ? 'تم إعادة إرسال رمز التحقق' : 'تم إرسال رمز التحقق',
         description: 'تم إرسال رمز مكون من 6 أرقام إلى هاتفك',
       });
     } catch (error: any) {
@@ -110,47 +112,14 @@ const PhoneVerify = () => {
       if (isRateLimited) setRateLimitError(true);
 
       toast({
-        title: isRateLimited ? 'تم تجاوز الحد المسموح' : 'حدث خطأ',
+        title: isRateLimited ? 'تم تجاوز الحد المسموح' : 'تعذر إرسال الرمز',
         description: isRateLimited
           ? 'يرجى الانتظار قليلاً قبل طلب رمز جديد.'
-          : error?.message || 'لم نتمكن من إرسال رمز التحقق، يرجى المحاولة مرة أخرى',
+          : error?.message || 'تأكد من رقم الهاتف وحاول مرة أخرى',
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (resendLoading || resendSeconds > 0 || !validatePhone()) return;
-
-    setResendLoading(true);
-    setRateLimitError(false);
-
-    try {
-      const fullPhone = formatInternationalPhone(phone, countryCode);
-      const { error } = await signInWithPhone(fullPhone);
-      if (error) throw error;
-
-      setCode('');
-      setResendSeconds(60);
-      toast({
-        title: 'تم إعادة إرسال رمز التحقق',
-        description: 'تم إرسال رمز تحقق جديد إلى هاتفك',
-      });
-    } catch (error: any) {
-      const isRateLimited = error?.status === 429 || error?.code === 'over_sms_send_rate_limit';
-      if (isRateLimited) setRateLimitError(true);
-
-      toast({
-        title: isRateLimited ? 'تم تجاوز الحد المسموح' : 'حدث خطأ',
-        description: isRateLimited
-          ? 'يرجى الانتظار قليلاً قبل طلب رمز جديد.'
-          : error?.message || 'لم نتمكن من إعادة إرسال رمز التحقق',
-        variant: 'destructive',
-      });
-    } finally {
-      setResendLoading(false);
+      setBusy(false);
     }
   };
 
@@ -177,8 +146,11 @@ const PhoneVerify = () => {
         description: 'تم التحقق من رقم هاتفك بنجاح',
       });
 
-      // Existing customers go straight to their account. New Auth users
-      // complete their profile and address on the registration screen.
+      if (isRecovery) {
+        navigate('/update-password?source=phone', { replace: true });
+        return;
+      }
+
       const { data: customer, error: customerError } = await supabase
         .from('customers')
         .select('id')
@@ -215,14 +187,20 @@ const PhoneVerify = () => {
           <button onClick={() => navigate(-1)} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">التحقق من رقم الهاتف</h1>
+          <h1 className="text-xl font-bold flex-1 text-center">
+            {isRecovery ? 'استعادة الحساب' : 'التحقق من رقم الهاتف'}
+          </h1>
           <div className="w-10" />
         </div>
 
         <div className="bg-white rounded-lg p-6 shadow-sm">
           {step === 'phone' ? (
             <>
-              <p className="text-center mb-6">سيتم إرسال رمز تحقق في رسالة SMS إلى هاتفك</p>
+              <p className="text-center mb-6">
+                {isRecovery
+                  ? 'سنرسل رمز تحقق إلى رقم الهاتف المسجل على حسابك'
+                  : 'سيتم إرسال رمز تحقق في رسالة SMS إلى هاتفك'}
+              </p>
 
               <div className="mb-6">
                 <div className="flex items-center mb-2">
@@ -265,7 +243,7 @@ const PhoneVerify = () => {
                 )}
               </div>
 
-              <Button onClick={handleSendCode} disabled={loading} className="w-full">
+              <Button onClick={() => void sendOtp(false)} disabled={loading} className="w-full">
                 {loading && <Loader size={16} className="animate-spin ml-2" />}
                 إرسال رمز التحقق
               </Button>
@@ -313,7 +291,7 @@ const PhoneVerify = () => {
 
               <div className="mt-4 text-center space-y-3">
                 <button
-                  onClick={handleResendCode}
+                  onClick={() => void sendOtp(true)}
                   className="text-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={resendLoading || resendSeconds > 0}
                   type="button"
