@@ -12,6 +12,7 @@ const PhoneVerify = lazy(() => import('./pages/PhoneVerify'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const UpdatePassword = lazy(() => import('./pages/UpdatePassword'));
+const ChangePhone = lazy(() => import('./pages/ChangePhone'));
 const Categories = lazy(() => import('./pages/Categories'));
 const CategoryDetail = lazy(() => import('./pages/CategoryDetail'));
 const CategoryProducts = lazy(() => import('./pages/CategoryProducts'));
@@ -62,6 +63,7 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/update-password" element={<UpdatePassword />} />
+                <Route path="/change-phone" element={<ChangePhone />} />
 
                 <Route path="/address-registration" element={<AddressRegistration />} />
 
