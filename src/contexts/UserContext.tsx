@@ -80,43 +80,6 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Legacy/fallback signup helper. The preferred customer flow is phone OTP first,
-  // followed by completePhoneRegistration so a second Auth user is never created.
-  const signUp = async (
-    email: string,
-    phone: string,
-    password: string,
-    additionalData?: any
-  ) => {
-    try {
-      const normalizedEmail = email.trim();
-      const normalizedPhone = normalizePhone(phone);
-
-      if (!normalizedEmail && !normalizedPhone) {
-        throw new Error('Email or phone number is required');
-      }
-
-      const options = {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: {
-          ...additionalData,
-          email: normalizedEmail || undefined,
-          phone: normalizedPhone || undefined,
-        },
-      };
-
-      const { data, error } = normalizedEmail
-        ? await supabase.auth.signUp({ email: normalizedEmail, password, options })
-        : await supabase.auth.signUp({ phone: normalizedPhone, password, options });
-
-      if (error) throw error;
-      return { data };
-    } catch (error) {
-      console.error('Error signing up:', error);
-      return { error };
-    }
-  };
-
   // Complete an account that was already authenticated by phone OTP.
   // This keeps the verified phone and the profile/password on the same Auth user.
   const completePhoneRegistration = async (
@@ -142,6 +105,58 @@ export const UserProvider = ({ children }) => {
       return { data };
     } catch (error) {
       console.error('Error completing phone registration:', error);
+      return { error };
+    }
+  };
+
+  // Customer registration is phone-first. If a phone is supplied, the caller must
+  // already have a Supabase Auth session created by successfully verifying that phone OTP.
+  const signUp = async (
+    email: string,
+    phone: string,
+    password: string,
+    additionalData?: any
+  ) => {
+    try {
+      const normalizedEmail = email.trim();
+      const normalizedPhone = normalizePhone(phone);
+
+      if (normalizedPhone) {
+        const { data: currentUserData, error: currentUserError } = await supabase.auth.getUser();
+        if (currentUserError) throw currentUserError;
+
+        const verifiedPhone = normalizePhone(currentUserData.user?.phone || '');
+        if (!currentUserData.user || !verifiedPhone || verifiedPhone !== normalizedPhone) {
+          throw new Error('يجب تأكيد رقم الهاتف برمز التحقق قبل إنشاء الحساب');
+        }
+
+        return completePhoneRegistration(normalizedEmail, password, {
+          ...additionalData,
+          phone: normalizedPhone,
+          email: normalizedEmail || undefined,
+        });
+      }
+
+      if (!normalizedEmail) {
+        throw new Error('Email or phone number is required');
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            ...additionalData,
+            email: normalizedEmail,
+          },
+        },
+      });
+
+      if (error) throw error;
+      return { data };
+    } catch (error) {
+      console.error('Error signing up:', error);
       return { error };
     }
   };
