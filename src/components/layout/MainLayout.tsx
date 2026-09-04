@@ -51,11 +51,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   };
 
   return (
-    <div className="pb-16 md:pb-0 pt-20 min-h-screen bg-gray-50 hide-scrollbar" dir="rtl">
+    <div className="pb-16 md:pb-0 pt-20 md:pt-36 min-h-screen bg-gray-50 hide-scrollbar" dir="rtl">
       {/* Main content with proper spacing for fixed header */}
-      <main className="hide-scrollbar">
+      <main className="hide-scrollbar animate-fade-in">
         {children}
       </main>
+
       
       {/* Bottom Navigation - Always show on mobile */}
       {isMobile && (
