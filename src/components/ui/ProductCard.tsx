@@ -167,7 +167,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <>
-      <Link to={`/product/${product.id}`} className="product-card flex flex-col h-full hover-scale">
+      <Link to={`/product/${product.id}`} className="product-card group flex flex-col h-full">
         <div className="absolute top-2 right-2 z-20">
           <FavoriteButton productId={product.id} size="sm" />
         </div>
@@ -319,4 +319,4 @@ const ProductCard: React.FC<ProductCardProps> = ({
   );
 };
 
-export default ProductCard;
+export default React.memo(ProductCard);
