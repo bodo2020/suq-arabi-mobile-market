@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import CountryCodeSelector, { Country } from "@/components/ui/CountryCodeSelector";
 import { supabase } from "@/lib/supabase";
+import BrandLoader from "@/components/ui/BrandLoader";
 
 const countries: Country[] = [
   { name: 'مصر', code: 'EG', dialCode: '+20', flag: '🇪🇬' },
@@ -282,11 +283,7 @@ const Register = () => {
   };
 
   if (authChecking) {
-    return (
-      <MainLayout>
-        <div className="p-8 text-center text-gray-500">جاري التحقق من رقم الهاتف...</div>
-      </MainLayout>
-    );
+    return <BrandLoader fullScreen text="جاري التحقق من رقم الهاتف..." />;
   }
 
   return (

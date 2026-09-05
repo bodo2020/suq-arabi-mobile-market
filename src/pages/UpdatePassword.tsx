@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import BrandLoader from '@/components/ui/BrandLoader';
 
 const UpdatePassword = () => {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ const UpdatePassword = () => {
 
         <div className="bg-white rounded-lg p-6 shadow-sm space-y-5">
           {checkingSession ? (
-            <div className="text-center text-gray-500">جاري التحقق من جلسة الاستعادة...</div>
+            <BrandLoader text="جاري التحقق من جلسة الاستعادة..." className="w-full py-8" />
           ) : !sessionValid ? (
             <div className="space-y-4 text-center">
               <p className="text-red-600">رابط أو جلسة الاستعادة غير صالحة أو انتهت.</p>
