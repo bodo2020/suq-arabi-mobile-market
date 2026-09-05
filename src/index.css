@@ -193,3 +193,24 @@ a, button {
   word-break: break-word;
   height: auto;
 }
+
+@keyframes brand-loader-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.12);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 0.5rem hsl(var(--primary) / 0);
+  }
+}
+
+.brand-loader-mark {
+  animation: brand-loader-pulse 1.35s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader-mark {
+    animation: none;
+  }
+}

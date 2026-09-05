@@ -2734,6 +2734,30 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_login_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          identifier_hash: string
+          ip_hash: string | null
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          identifier_hash: string
+          ip_hash?: string | null
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identifier_hash?: string
+          ip_hash?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       store_settings: {
         Row: {
           address: string | null

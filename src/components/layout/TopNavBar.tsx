@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Home, Grid, User, Heart, ShoppingCart, Package } from 'lucide-react';
+import { ArrowRight, Home, Grid, User, Heart, ShoppingCart, Package } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
+import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 
@@ -56,7 +57,18 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       <div className="mx-auto w-full max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl px-4 py-4">
         <div className="flex items-center gap-4">
           {/* Back Button */}
-          {showBackButton}
+          {showBackButton && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onBack || (() => navigate(-1))}
+              className="shrink-0 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+              aria-label="الرجوع"
+            >
+              <ArrowRight size={22} />
+            </Button>
+          )}
 
           {/* Logo */}
           {!hideLogo && (

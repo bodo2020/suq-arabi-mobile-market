@@ -5,7 +5,7 @@ import { UserProvider } from './contexts/UserContext';
 import { CartProvider } from './contexts/CartProvider';
 import Index from './pages/Index';
 import { Toaster } from '@/components/ui/toaster';
-import { Skeleton } from '@/components/ui/skeleton';
+import BrandLoader from '@/components/ui/BrandLoader';
 
 const PhoneLogin = lazy(() => import('./pages/PhoneLogin'));
 const PhoneVerify = lazy(() => import('./pages/PhoneVerify'));
@@ -37,18 +37,7 @@ const ReturnRequests = lazy(() => import('./pages/ReturnRequests'));
 const CreateReturnRequest = lazy(() => import('./pages/CreateReturnRequest'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-const RouteFallback = () => (
-  <div className="min-h-screen bg-gray-50 pt-24">
-    <div className="mx-auto w-full max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl px-4 space-y-4">
-      <Skeleton className="h-40 w-full rounded-2xl" />
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {[...Array(12)].map((_, i) => (
-          <Skeleton key={i} className="h-44 w-full rounded-xl" />
-        ))}
-      </div>
-    </div>
-  </div>
-);
+const RouteFallback = () => <BrandLoader fullScreen text="جاري التحميل..." />;
 
 function App() {
   return (
