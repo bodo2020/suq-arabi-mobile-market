@@ -34,6 +34,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
   const bulkImageUrl = bulk ? String(product.bulk_image_url || '').trim() : '';
   const showBulkImage = Boolean(bulkImageUrl && failedBulkImage !== bulkImageUrl);
   const packNumber = String(Math.max(1, Math.trunc(pack)));
+  const displayName = bulk ? (String(product.bulk_name || '').trim() || product.name) : product.name;
 
   const add = () => {
     if (!isInitialized || unavailable || reachedStockLimit) return;
@@ -42,7 +43,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
       return;
     }
     if (item) updateQuantity(product.id, Math.min(item.quantity + 1, maxCartQuantity), bulk);
-    else addToCart({ ...product, price: product.price, quantity: 1, is_bulk: bulk });
+    else addToCart({
+      ...product,
+      name: displayName,
+      image_urls: bulk && bulkImageUrl ? [bulkImageUrl] : product.image_urls,
+      price: product.price,
+      quantity: 1,
+      is_bulk: bulk,
+    });
   };
 
   return (
@@ -57,7 +65,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
             showBulkImage ? (
               <img
                 src={bulkImageUrl}
-                alt={`${product.name} - جملة`}
+                alt={displayName}
                 loading="lazy"
                 decoding="async"
                 onError={() => setFailedBulkImage(bulkImageUrl)}
@@ -73,7 +81,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
           ) : (
             <img
               src={product.image_urls?.[0] || '/placeholder.svg'}
-              alt={product.name}
+              alt={displayName}
               loading="lazy"
               decoding="async"
               onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder.svg'; }}
@@ -82,7 +90,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
           )}
           {discount > 0 && <span className="absolute right-1 top-1 rounded-lg bg-red-50 px-2 py-1 text-xs font-bold text-red-700">خصم {money(discount)}٪</span>}
         </div>
-        <h3 className="mb-2 min-h-10 line-clamp-2 text-sm font-semibold leading-5 text-gray-900">{product.name}</h3>
+        <h3 className="mb-2 min-h-10 line-clamp-2 text-sm font-semibold leading-5 text-gray-900">{displayName}</h3>
       </Link>
 
       <p className="mb-2 flex items-center gap-1 text-xs text-gray-500">
@@ -105,7 +113,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
           <button
             disabled={!isInitialized}
             onClick={() => updateQuantity(product.id, item.quantity - 1, bulk)}
-            aria-label={item.quantity === 1 ? `حذف ${product.name} من السلة` : `تقليل كمية ${product.name}`}
+            aria-label={item.quantity === 1 ? `حذف ${displayName} من السلة` : `تقليل كمية ${displayName}`}
             className="flex h-11 w-11 items-center justify-center rounded-xl"
           >
             {item.quantity === 1 ? <Trash2 size={18} /> : <Minus size={18} />}
@@ -114,7 +122,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
           <button
             disabled={!isInitialized || reachedStockLimit}
             onClick={add}
-            aria-label={reachedStockLimit ? `وصلت للكمية المتاحة من ${product.name}` : `زيادة كمية ${product.name}`}
+            aria-label={reachedStockLimit ? `وصلت للكمية المتاحة من ${displayName}` : `زيادة كمية ${displayName}`}
             className="flex h-11 w-11 items-center justify-center rounded-xl disabled:opacity-30"
           >
             <Plus size={18} />
