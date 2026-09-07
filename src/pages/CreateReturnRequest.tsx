@@ -1,137 +1,170 @@
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { CalendarDays, PackageCheck, ReceiptText, RotateCcw, XCircle } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import BrandLoader from '@/components/ui/BrandLoader';
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
+import ReturnRequestForm from '@/components/ui/ReturnRequestForm';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
-import { useToast } from '@/hooks/use-toast';
-import MainLayout from '@/components/layout/MainLayout';
-import ReturnRequestForm from '@/components/ui/ReturnRequestForm';
+
+type OrderRow = {
+  id: string;
+  customer_id: string | null;
+  status: string;
+  total: number | string;
+  tracking_number?: string | null;
+  created_at: string;
+  items: unknown;
+};
+
+const normalizeItems = (items: unknown): any[] => {
+  if (Array.isArray(items)) return items;
+  if (items && typeof items === 'object') return Object.values(items as Record<string, unknown>);
+  return [];
+};
+
+const formatDate = (value: string) => {
+  try {
+    return new Intl.DateTimeFormat('ar-EG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(new Date(value));
+  } catch {
+    return 'تاريخ غير معروف';
+  }
+};
+
+const formatMoney = (value: number | string) => {
+  const amount = Number(value || 0);
+  return `${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'} ج.م`;
+};
 
 const CreateReturnRequest = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { orderId } = useParams();
-  const { user, session } = useUser();
-  const { toast } = useToast();
-  const [order, setOrder] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const { user, session, authLoading } = useUser();
 
-  useEffect(() => {
-    if (!session) {
-      navigate('/phone-login');
-      return;
-    }
+  const {
+    data: order,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ['return-order', orderId, user?.id],
+    enabled: !!orderId && !!user && !!session && !authLoading,
+    queryFn: async (): Promise<OrderRow> => {
+      if (!orderId || !user) throw new Error('order_not_found');
 
-    const fetchOrder = async () => {
-      try {
-        setLoading(true);
-        
-        if (!orderId) {
-          throw new Error('رقم الطلب غير موجود');
-        }
-        
-        // First get the customer record for the current user
-        const { data: customer, error: customerError } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-        if (customerError || !customer) {
-          throw new Error('لم يتم العثور على بيانات العميل');
-        }
+      if (customerError) throw customerError;
+      if (!customer?.id) throw new Error('customer_not_found');
 
-        // Check if the order belongs to the current customer
-        const { data: order, error: orderError } = await supabase
-          .from('online_orders')
-          .select('*')
-          .eq('id', orderId)
-          .single();
-        
-        if (orderError || !order || order.customer_id !== customer.id) {
-          throw new Error('الطلب غير موجود أو ليس لديك صلاحية للوصول إليه');
-        }
-        
-        setOrder(order);
-        
-        // Process order items
-        let items = [];
-        if (order.items) {
-          if (Array.isArray(order.items)) {
-            items = order.items;
-          } else if (typeof order.items === 'object') {
-            items = Object.values(order.items);
-          }
-        }
-        
-        setOrderItems(items);
-        
-      } catch (error) {
-        console.error('Error fetching order:', error);
-        toast({
-          title: "خطأ في تحميل الطلب",
-          description: typeof error === 'object' && error !== null && 'message' in error
-            ? (error as Error).message
-            : "حدث خطأ أثناء تحميل بيانات الطلب",
-          variant: "destructive"
-        });
-        navigate('/orders');
-      } finally {
-        setLoading(false);
-      }
-    };
+      const { data, error } = await supabase
+        .from('online_orders')
+        .select('id, customer_id, status, total, tracking_number, created_at, items')
+        .eq('id', orderId)
+        .eq('customer_id', customer.id)
+        .maybeSingle();
 
-    fetchOrder();
-  }, [orderId, user, session, navigate, toast]);
+      if (error) throw error;
+      if (!data) throw new Error('order_not_found');
+      return data as unknown as OrderRow;
+    },
+    staleTime: 15_000,
+  });
+
+  const orderItems = normalizeItems(order?.items);
+  const orderNumber = order ? (order.tracking_number || order.id.slice(0, 8).toUpperCase()) : '';
+  const canReturn = order?.status === 'delivered';
 
   return (
     <MainLayout>
-      <div className="py-4 px-4 max-w-lg mx-auto">
-        <div className="flex items-center mb-6">
-          <button onClick={() => navigate(-1)} className="p-2" aria-label="الرجوع">
-            <ArrowRight className="h-6 w-6" />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center">إنشاء طلب إرجاع</h1>
-          <div className="w-10"></div>
-        </div>
+      <TopNavBar hideLogo hideSearch hideCart pageTitle="طلب استرجاع" />
 
-        {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <BrandLoader size="md" className="" />
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+        {authLoading || isLoading ? (
+          <div className="flex min-h-64 items-center justify-center">
+            <BrandLoader label="جاري تحميل بيانات الطلب" />
           </div>
-        ) : !order ? (
-          <div className="text-center py-10">
-            <h2 className="text-xl font-bold mb-2">الطلب غير موجود</h2>
-            <p className="text-gray-500">
-              لم نتمكن من العثور على الطلب المطلوب
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-              <h2 className="font-bold text-lg mb-3">معلومات الطلب</h2>
-              <div className="text-sm text-gray-600">
-                <p><strong>رقم الطلب:</strong> {order.id.substring(0, 8)}</p>
-                <p><strong>تاريخ الطلب:</strong> {new Date(order.created_at).toLocaleDateString('ar-EG')}</p>
-                <p><strong>إجمالي الطلب:</strong> {order.total} ج.م</p>
-              </div>
+        ) : !session || !user ? (
+          <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary">
+              <RotateCcw size={30} />
+            </span>
+            <h1 className="text-2xl font-bold">سجّل دخولك أولًا</h1>
+            <p className="mb-6 mt-3 text-sm leading-7 text-gray-500">لازم تكون داخل حسابك عشان نتحقق من الطلب وننشئ الاسترجاع بأمان.</p>
+            <Button className="min-h-12 w-full rounded-xl" onClick={() => navigate('/phone-login')}>تسجيل الدخول</Button>
+          </section>
+        ) : isError || !order ? (
+          <section role="alert" className="mx-auto max-w-lg rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm">
+            <XCircle className="mx-auto text-red-500" size={38} />
+            <h1 className="mt-4 text-xl font-bold">تعذّر فتح الطلب</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">الطلب غير موجود في حسابك أو تعذر تحميل بياناته.</p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button className="rounded-xl" onClick={() => void refetch()}>إعادة المحاولة</Button>
+              <Button variant="outline" className="rounded-xl" onClick={() => navigate('/orders')}>العودة لطلباتي</Button>
             </div>
-            
-            <ReturnRequestForm 
-              orderId={order.id} 
+          </section>
+        ) : !canReturn ? (
+          <section className="mx-auto max-w-lg rounded-3xl border border-amber-100 bg-white p-8 text-center shadow-sm">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+              <PackageCheck size={30} />
+            </span>
+            <h1 className="mt-4 text-xl font-bold">الاسترجاع متاح بعد التسليم</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+              الطلب ده لسه حالته مش «تم التسليم». أول ما يتم تسليمه هتقدر تختار المنتجات وتبعت طلب استرجاع.
+            </p>
+            <Button className="mt-6 min-h-12 rounded-xl px-8" onClick={() => navigate('/orders')}>متابعة حالة الطلب</Button>
+          </section>
+        ) : orderItems.length === 0 ? (
+          <section className="mx-auto max-w-lg rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+            <XCircle className="mx-auto text-gray-400" size={36} />
+            <h1 className="mt-4 text-xl font-bold">مفيش منتجات متاحة</h1>
+            <p className="mt-2 text-sm text-gray-500">تعذر قراءة منتجات الطلب، لذلك مش هنقدر ننشئ استرجاع منه حاليًا.</p>
+            <Button variant="outline" className="mt-6 rounded-xl" onClick={() => navigate('/orders')}>العودة لطلباتي</Button>
+          </section>
+        ) : (
+          <div className="space-y-5">
+            <section className="rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-7">
+              <div className="flex items-center gap-2 text-primary">
+                <RotateCcw size={24} />
+                <h1 className="text-2xl font-bold">استرجاع من الطلب</h1>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-gray-600">اختار المنتجات والكميات، اكتب السبب، وممكن تضيف صور توضح المشكلة.</p>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-gray-500"><ReceiptText size={17} /><span className="text-xs">رقم الطلب</span></div>
+                  <p dir="ltr" className="mt-2 break-all text-right text-sm font-bold">#{orderNumber}</p>
+                </div>
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-gray-500"><CalendarDays size={17} /><span className="text-xs">تاريخ الطلب</span></div>
+                  <p className="mt-2 text-sm font-bold">{formatDate(order.created_at)}</p>
+                </div>
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-gray-500"><PackageCheck size={17} /><span className="text-xs">ملخص الطلب</span></div>
+                  <p className="mt-2 text-sm font-bold">{orderItems.length} منتج · {formatMoney(order.total)}</p>
+                </div>
+              </div>
+            </section>
+
+            <ReturnRequestForm
+              orderId={order.id}
               orderItems={orderItems}
-              onSuccess={() => {
-                toast({
-                  title: "تم إرسال طلب الإرجاع",
-                  description: "سنراجع طلبك والرد عليك في أقرب وقت"
-                });
-                navigate('/return-requests');
-              }}
+              onSuccess={() => navigate('/return-requests', { replace: true })}
             />
-          </>
+          </div>
         )}
       </div>
     </MainLayout>
@@ -139,4 +172,3 @@ const CreateReturnRequest = () => {
 };
 
 export default CreateReturnRequest;
-
