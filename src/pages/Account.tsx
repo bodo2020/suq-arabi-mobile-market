@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { User, MapPin, Package, Heart, ChevronLeft, Pencil, LogOut, RotateCcw, Plus } from 'lucide-react';
+import { User, MapPin, Package, Heart, ChevronLeft, Pencil, LogOut, RotateCcw, Plus, Bell } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
@@ -114,7 +114,11 @@ const Account = () => {
           <section aria-label="التسوق والطلبات" className="grid grid-cols-2 gap-3 sm:gap-4">{shortcuts.map(({ to, label, description, icon: Icon }) => <Link key={to} to={to} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-green-200 sm:p-5"><span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-primary"><Icon size={23} /></span><h2 className="font-bold">{label}</h2><p className="mt-2 text-xs leading-6 text-gray-500">{description}</p></Link>)}</section>
 
           <section aria-label="إدارة الحساب" className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
-            {[{to:'/address-manager',label:'عناوين التوصيل',description:'ضيف عنوان أو اختار عنوانك الافتراضي',icon:MapPin},{to:'/return-requests',label:'طلبات الاسترجاع',description:'راجع طلبات الاسترجاع وتابع حالتها',icon:RotateCcw}].map(({to,label,description,icon:Icon}) => <Link key={to} to={to} className="flex min-h-24 items-center gap-3 border-b border-gray-100 p-5 last:border-0 hover:bg-gray-50"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-primary"><Icon size={21} /></span><span className="min-w-0 flex-1"><strong className="block text-sm">{label}</strong><span className="mt-1 block text-xs leading-5 text-gray-500">{description}</span></span><ChevronLeft size={19} className="shrink-0 text-gray-400" /></Link>)}
+            {[
+              {to:'/notifications',label:'الإشعارات',description:'تابع تحديثات الطلب والدفع أول بأول',icon:Bell},
+              {to:'/address-manager',label:'عناوين التوصيل',description:'ضيف عنوان أو اختار عنوانك الافتراضي',icon:MapPin},
+              {to:'/return-requests',label:'طلبات الاسترجاع',description:'راجع طلبات الاسترجاع وتابع حالتها',icon:RotateCcw}
+            ].map(({to,label,description,icon:Icon}) => <Link key={to} to={to} className="flex min-h-24 items-center gap-3 border-b border-gray-100 p-5 last:border-0 hover:bg-gray-50"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-primary"><Icon size={21} /></span><span className="min-w-0 flex-1"><strong className="block text-sm">{label}</strong><span className="mt-1 block text-xs leading-5 text-gray-500">{description}</span></span><ChevronLeft size={19} className="shrink-0 text-gray-400" /></Link>)}
           </section>
 
           {logoutError && <p role="alert" className="text-sm text-red-700">تعذّر تسجيل الخروج. راجع اتصالك وحاول تاني.</p>}
