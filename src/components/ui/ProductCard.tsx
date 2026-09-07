@@ -18,6 +18,7 @@ const money = (value: number) => Number(value).toLocaleString('ar-EG', { maximum
 const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = false }) => {
   const { items, addToCart, updateQuantity, isInitialized } = useCart();
   const [weightOpen, setWeightOpen] = useState(false);
+  const [failedBulkImage, setFailedBulkImage] = useState<string | null>(null);
 
   const weighted = isWeightedProduct(product);
   const wantsBulk = product.displayType === 'bulk' || showBulkQuantity;
@@ -30,6 +31,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
   const discount = !bulk && Number(product.price || 0) > price ? Math.round((1 - price / Number(product.price)) * 100) : 0;
   const unavailable = stock <= 0 || (wantsBulk && (!bulk || maxCartQuantity <= 0));
   const reachedStockLimit = Boolean(item && item.quantity >= maxCartQuantity);
+  const bulkImageUrl = bulk ? String(product.bulk_image_url || '').trim() : '';
+  const showBulkImage = Boolean(bulkImageUrl && failedBulkImage !== bulkImageUrl);
+  const packNumber = String(Math.max(1, Math.trunc(pack)));
 
   const add = () => {
     if (!isInitialized || unavailable || reachedStockLimit) return;
@@ -48,15 +52,34 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
       </div>
 
       <Link to={`/product/${product.id}`} className="group rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
-        <div className="relative mb-3 aspect-square overflow-hidden rounded-xl bg-gray-50 p-3">
-          <img
-            src={product.image_urls?.[0] || '/placeholder.svg'}
-            alt={product.name}
-            loading="lazy"
-            decoding="async"
-            onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder.svg'; }}
-            className="h-full w-full object-contain transition-transform motion-safe:group-hover:scale-105"
-          />
+        <div className={`relative mb-3 aspect-square overflow-hidden rounded-xl p-3 ${bulk && !showBulkImage ? 'bg-emerald-50/70' : 'bg-gray-50'}`}>
+          {bulk ? (
+            showBulkImage ? (
+              <img
+                src={bulkImageUrl}
+                alt={`${product.name} - جملة`}
+                loading="lazy"
+                decoding="async"
+                onError={() => setFailedBulkImage(bulkImageUrl)}
+                className="h-full w-full object-contain transition-transform motion-safe:group-hover:scale-105"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center" aria-label={`عبوة ${packNumber}`}>
+                <div className="flex aspect-square w-[62%] max-w-28 items-center justify-center rounded-[24%] border border-white/20 bg-[#005931] shadow-[0_10px_28px_rgba(0,89,49,0.20)] transition-transform motion-safe:group-hover:scale-105">
+                  <span className="select-none text-4xl font-black leading-none tracking-tight text-white sm:text-5xl">{packNumber}</span>
+                </div>
+              </div>
+            )
+          ) : (
+            <img
+              src={product.image_urls?.[0] || '/placeholder.svg'}
+              alt={product.name}
+              loading="lazy"
+              decoding="async"
+              onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder.svg'; }}
+              className="h-full w-full object-contain transition-transform motion-safe:group-hover:scale-105"
+            />
+          )}
           {discount > 0 && <span className="absolute right-1 top-1 rounded-lg bg-red-50 px-2 py-1 text-xs font-bold text-red-700">خصم {money(discount)}٪</span>}
         </div>
         <h3 className="mb-2 min-h-10 line-clamp-2 text-sm font-semibold leading-5 text-gray-900">{product.name}</h3>
