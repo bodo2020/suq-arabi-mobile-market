@@ -35,6 +35,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
   const showBulkImage = Boolean(bulkImageUrl && failedBulkImage !== bulkImageUrl);
   const packNumber = String(Math.max(1, Math.trunc(pack)));
   const displayName = bulk ? (String(product.bulk_name || '').trim() || product.name) : product.name;
+  const variantId = bulk ? product.bulk_variant_id || null : null;
+  const detailHref = bulk
+    ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}`
+    : `/product/${product.id}`;
 
   const add = () => {
     if (!isInitialized || unavailable || reachedStockLimit) return;
@@ -56,10 +60,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
   return (
     <article className="relative flex h-full min-w-0 flex-col rounded-2xl border border-gray-100 bg-white p-3 shadow-sm transition-shadow hover:shadow-md" dir="rtl">
       <div className="absolute left-2 top-2 z-10 rounded-full bg-white/95">
-        <FavoriteButton productId={product.id} size="sm" />
+        <FavoriteButton productId={product.id} variantId={variantId} size="sm" />
       </div>
 
-      <Link to={`/product/${product.id}`} className="group rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+      <Link to={detailHref} className="group rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
         <div className={`relative mb-3 aspect-square overflow-hidden rounded-xl p-3 ${bulk && !showBulkImage ? 'bg-emerald-50/70' : 'bg-gray-50'}`}>
           {bulk ? (
             showBulkImage ? (
