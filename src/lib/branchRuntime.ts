@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { readGuestAddress } from '@/lib/deliveryAddress';
+import { readGuestAddress, resolveDeliveryLocation } from '@/lib/deliveryAddress';
 
 export type BranchRuntimeContext = {
   delivery_branch_id: string;
@@ -73,14 +73,7 @@ async function resolveSelectedBranchId(): Promise<string | null> {
   const point = await loadSelectedDeliveryPoint();
   if (!point) return null;
 
-  const { data, error } = await rpc('find_delivery_branch', {
-    p_latitude: point.latitude,
-    p_longitude: point.longitude,
-  });
-  if (error) throw error;
-
-  const rows = Array.isArray(data) ? data : [];
-  const match = rows[0] as { branch_id?: string } | undefined;
+  const match = await resolveDeliveryLocation(point.latitude, point.longitude);
   return match?.branch_id || null;
 }
 
