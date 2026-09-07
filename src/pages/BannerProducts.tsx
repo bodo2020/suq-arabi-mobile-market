@@ -9,7 +9,7 @@ import SEOHead from '@/components/seo/SEOHead';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import type { Product } from '@/lib/supabase';
+import { getProductById, getProducts, getProductsByCompany, type Product } from '@/lib/supabase';
 
 type BannerRow = {
   id: string;
@@ -69,37 +69,33 @@ const BannerProducts = () => {
       setBanner(currentBanner);
       if (!isCurrentBanner(currentBanner)) return;
 
-      let productsData: any[] = [];
+      let productsData: Product[] = [];
       const explicitIds = Array.isArray(currentBanner.products) ? currentBanner.products.filter(Boolean) : [];
 
       if (explicitIds.length > 0) {
-        const { data, error: productsError } = await supabase.from('products').select('*').in('id', explicitIds);
-        if (productsError) throw productsError;
-        const byId = new Map((data || []).map(product => [product.id, product]));
-        productsData = explicitIds.map(productId => byId.get(productId)).filter(Boolean);
+        const resolved = await Promise.all(explicitIds.map(productId => getProductById(productId)));
+        productsData = resolved.filter((product): product is Product => Boolean(product));
         setSourceLabel('اختيارات البانر');
       } else if (currentBanner.company_id) {
-        const [{ data, error: productsError }, { data: companyData }] = await Promise.all([
-          supabase.from('products').select('*').eq('company_id', currentBanner.company_id),
+        const [branchProducts, { data: companyData }] = await Promise.all([
+          getProductsByCompany(currentBanner.company_id),
           supabase.from('companies').select('name').eq('id', currentBanner.company_id).maybeSingle(),
         ]);
-        if (productsError) throw productsError;
-        productsData = data || [];
+        productsData = branchProducts;
         setSourceLabel(companyData?.name ? `منتجات ${companyData.name}` : 'منتجات الشركة');
       } else {
         const categoryId = currentBanner.main_category_id || currentBanner.category_id;
         if (categoryId) {
-          const [{ data, error: productsError }, { data: categoryData }] = await Promise.all([
-            supabase.from('products').select('*').eq('main_category_id', categoryId),
+          const [branchProducts, { data: categoryData }] = await Promise.all([
+            getProducts(categoryId, false),
             supabase.from('main_categories').select('name').eq('id', categoryId).maybeSingle(),
           ]);
-          if (productsError) throw productsError;
-          productsData = data || [];
+          productsData = branchProducts;
           setSourceLabel(categoryData?.name ? `منتجات ${categoryData.name}` : 'منتجات القسم');
         }
       }
 
-      setAllProducts(productsData as Product[]);
+      setAllProducts(productsData);
     } catch (loadError) {
       console.error('Error loading banner page:', loadError);
       setError(true);
@@ -178,7 +174,7 @@ const BannerProducts = () => {
                   <p className="mt-1 font-bold text-gray-900">{sourceLabel}</p>
                 </div>
                 <span className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-sm font-semibold text-primary">
-                  <Package size={17} />{allProducts.length.toLocaleString('ar-EG')} منتج
+                  <Package size={17} />{allProducts.length.toLocaleString('ar-EG')} منتج متاح في فرعك
                 </span>
               </div>
             </section>
@@ -221,8 +217,8 @@ const BannerProducts = () => {
             ) : (
               <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
                 <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 text-gray-400"><Package size={30} /></span>
-                <h2 className="mt-4 text-xl font-bold">{search.trim() ? 'مفيش منتجات بالاسم ده' : 'مفيش منتجات في العرض حاليًا'}</h2>
-                <p className="mt-2 text-sm text-gray-500">{search.trim() ? 'جرّب بحث مختلف.' : 'المنتجات المرتبطة بالبانر هتظهر هنا تلقائيًا.'}</p>
+                <h2 className="mt-4 text-xl font-bold">{search.trim() ? 'مفيش منتجات بالاسم ده' : 'مفيش منتجات متاحة في فرعك ضمن العرض'}</h2>
+                <p className="mt-2 text-sm text-gray-500">{search.trim() ? 'جرّب بحث مختلف.' : 'المنتجات هتظهر هنا لما تكون متوفرة في مخزون فرع التوصيل.'}</p>
                 {search.trim() && <Button variant="outline" className="mt-5 rounded-xl" onClick={() => setSearch('')}>مسح البحث</Button>}
               </section>
             )}
