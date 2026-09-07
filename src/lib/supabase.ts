@@ -1,5 +1,5 @@
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
-import { readGuestAddress } from '@/lib/deliveryAddress';
+import { loadBranchRuntimeContext } from '@/lib/branchRuntime';
 
 export const supabase = configuredSupabase;
 
@@ -25,6 +25,7 @@ export type Product = {
   bulk_barcode?: string;
   delivery_branch_id?: string;
   inventory_branch_id?: string;
+  pricing_branch_id?: string;
 };
 
 export type MainCategory = {
@@ -148,34 +149,16 @@ const catalogRpc = supabase.rpc.bind(supabase) as unknown as (
 ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
 export async function getCurrentDeliveryBranchId(): Promise<string | null> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) throw sessionError;
-
-  if (!sessionData.session?.user?.id) {
-    return readGuestAddress()?.assigned_branch_id || null;
-  }
-
-  const client = supabase as any;
-  const { data, error } = await client
-    .from('customer_addresses')
-    .select('assigned_branch_id,is_deliverable,latitude,longitude,is_default')
-    .eq('user_id', sessionData.session.user.id)
-    .eq('is_deliverable', true)
-    .not('assigned_branch_id', 'is', null)
-    .not('latitude', 'is', null)
-    .not('longitude', 'is', null)
-    .order('is_default', { ascending: false })
-    .limit(1);
-  if (error) throw error;
-  return data?.[0]?.assigned_branch_id || null;
+  const runtime = await loadBranchRuntimeContext();
+  return runtime?.delivery_branch_id || null;
 }
 
 export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Product[]> {
-  const branchId = await getCurrentDeliveryBranchId();
-  if (!branchId) throw new Error('DELIVERY_ADDRESS_REQUIRED');
+  const runtime = await loadBranchRuntimeContext();
+  if (!runtime?.delivery_branch_id) throw new Error('DELIVERY_ADDRESS_REQUIRED');
 
   const { data, error } = await catalogRpc('get_customer_branch_catalog', {
-    p_branch_id: branchId,
+    p_branch_id: runtime.delivery_branch_id,
     p_product_id: filters.productId || null,
     p_main_category_id: filters.mainCategoryId || null,
     p_subcategory_id: filters.subcategoryId || null,
