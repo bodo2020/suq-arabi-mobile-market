@@ -9,14 +9,21 @@ import { Button } from '@/components/ui/button';
 import SEOHead from '@/components/seo/SEOHead';
 import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
 import { Company, Product, getCompanyById, getProductsByCompany } from '@/lib/supabase';
+import {
+  DisplayProduct,
+  displayProductName,
+  displayProductPrice,
+  expandProductSaleUnits,
+  productCardKey,
+} from '@/lib/productPurchase';
 
 type SortType = 'newest' | 'price_asc' | 'price_desc' | 'name_asc';
 
-const sortProducts = (items: Product[], sort: SortType) => {
+const sortProducts = (items: DisplayProduct[], sort: SortType) => {
   const copy = [...items];
-  if (sort === 'price_asc') return copy.sort((a, b) => Number(a.offer_price || a.price || 0) - Number(b.offer_price || b.price || 0));
-  if (sort === 'price_desc') return copy.sort((a, b) => Number(b.offer_price || b.price || 0) - Number(a.offer_price || a.price || 0));
-  if (sort === 'name_asc') return copy.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  if (sort === 'price_asc') return copy.sort((a, b) => displayProductPrice(a) - displayProductPrice(b));
+  if (sort === 'price_desc') return copy.sort((a, b) => displayProductPrice(b) - displayProductPrice(a));
+  if (sort === 'name_asc') return copy.sort((a, b) => displayProductName(a).localeCompare(displayProductName(b), 'ar'));
   return copy.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 };
 
@@ -24,7 +31,7 @@ const CompanyProducts = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [company, setCompany] = useState<Company | null>(null);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState('');
@@ -41,7 +48,7 @@ const CompanyProducts = () => {
       ]);
       if (!companyData) throw new Error('Company not found');
       setCompany(companyData as Company);
-      setAllProducts((productsData || []) as Product[]);
+      setAllProducts(expandProductSaleUnits((productsData || []) as Product[]));
     } catch (loadError) {
       console.error('Error loading company page:', loadError);
       setCompany(null);
@@ -59,7 +66,7 @@ const CompanyProducts = () => {
   const products = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('ar');
     const filtered = query
-      ? allProducts.filter(product => product.name.toLocaleLowerCase('ar').includes(query))
+      ? allProducts.filter(product => displayProductName(product).toLocaleLowerCase('ar').includes(query))
       : allProducts;
     return sortProducts(filtered, sort);
   }, [allProducts, search, sort]);
@@ -104,7 +111,7 @@ const CompanyProducts = () => {
                   <h1 className="mt-1 break-words text-2xl font-bold text-gray-900 sm:text-3xl">{company.name}</h1>
                   {company.description && <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-7 text-gray-600">{company.description}</p>}
                   <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm">
-                    <Package size={17} className="text-primary" />{allProducts.length.toLocaleString('ar-EG')} منتج
+                    <Package size={17} className="text-primary" />{allProducts.length.toLocaleString('ar-EG')} اختيار متاح
                   </div>
                 </div>
               </div>
@@ -156,11 +163,11 @@ const CompanyProducts = () => {
             {products.length > 0 ? (
               <section>
                 <div className="mb-4 flex items-end justify-between gap-3">
-                  <div><p className="text-xs text-gray-500">المنتجات المتاحة</p><h2 className="mt-1 text-xl font-bold">منتجات {company.name}</h2></div>
+                  <div><p className="text-xs text-gray-500">القطعة والجملة المتاحة</p><h2 className="mt-1 text-xl font-bold">منتجات {company.name}</h2></div>
                   <span className="text-sm font-semibold text-gray-500">{products.length.toLocaleString('ar-EG')}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
-                  {products.map(product => <ProductCard key={product.id} product={product} />)}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+                  {products.map(product => <ProductCard key={productCardKey(product)} product={product} />)}
                 </div>
               </section>
             ) : (
