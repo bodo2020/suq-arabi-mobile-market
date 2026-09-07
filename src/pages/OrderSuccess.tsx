@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, Home, ShoppingBag, Copy, CheckCheck } from 'lucide-react';
+import { BellRing, CheckCircle, Home, PackageSearch, Copy, CheckCheck } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -11,79 +10,68 @@ const OrderSuccess = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [copied, setCopied] = React.useState(false);
-  
+
   const { orderId, orderNumber } = location.state || {};
-  
+
   const copyOrderNumber = () => {
-    if (orderNumber) {
-      navigator.clipboard.writeText(orderNumber)
-        .then(() => {
-          setCopied(true);
-          toast({
-            title: "تم النسخ",
-            description: "تم نسخ رقم الطلب بنجاح"
-          });
-          setTimeout(() => setCopied(false), 2000);
-        })
-        .catch(err => {
-          toast({
-            title: "خطأ",
-            description: "تعذر نسخ رقم الطلب",
-            variant: "destructive"
-          });
-        });
-    }
+    if (!orderNumber) return;
+    navigator.clipboard.writeText(orderNumber)
+      .then(() => {
+        setCopied(true);
+        toast({ title: 'تم النسخ', description: 'تم نسخ رقم الطلب بنجاح' });
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        toast({ title: 'خطأ', description: 'تعذر نسخ رقم الطلب', variant: 'destructive' });
+      });
   };
-  
+
+  const openTracking = () => {
+    navigate(orderId ? `/orders?order_id=${encodeURIComponent(orderId)}` : '/orders');
+  };
+
   return (
     <MainLayout>
-      <div className="py-4 h-[80vh] flex flex-col items-center justify-center" dir="rtl">
-        <div className="bg-white rounded-lg p-6 shadow-sm text-center w-full max-w-sm animate-scale-in">
-          <div className="flex justify-center mb-4 animate-[bounce_1s_ease-in-out_infinite]">
-            <CheckCircle size={64} className="text-primary" />
-          </div>
-          
-          <h1 className="text-2xl font-bold mb-2 animate-fade-in">تم تأكيد طلبك</h1>
-          <p className="text-gray-600 mb-3 animate-fade-in">
-            سنقوم بإرسال تفاصيل طلبك ومتابعة الحالة عبر رقم الهاتف
+      <div className="mx-auto flex min-h-[75vh] max-w-lg items-center px-4 py-8" dir="rtl">
+        <section className="w-full rounded-3xl border border-green-100 bg-white p-6 text-center shadow-sm sm:p-8">
+          <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-green-50 text-primary">
+            <CheckCircle size={48} />
+          </span>
+
+          <h1 className="mt-5 text-2xl font-bold">طلبك وصلنا بنجاح</h1>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-gray-600">
+            تقدر تتابع حالة طلبك لحظة بلحظة من «طلباتي»، وكل تحديث جديد هيظهر في مركز الإشعارات.
           </p>
-          
+
           {orderNumber && (
-            <div className="flex items-center justify-center gap-2 mb-4 bg-muted p-2 rounded-md">
-              <span className="font-mono font-medium">رقم الطلب: {orderNumber}</span>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={copyOrderNumber}
-                className="h-8 w-8 p-0"
-              >
-                {copied ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+            <div className="mx-auto mt-5 flex max-w-sm items-center justify-between gap-2 rounded-2xl bg-gray-50 p-3 text-right">
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500">مرجع الطلب</p>
+                <p dir="ltr" className="mt-1 break-all text-right font-mono text-sm font-bold">{orderNumber}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={copyOrderNumber} className="h-10 w-10 shrink-0 p-0" aria-label="نسخ رقم الطلب">
+                {copied ? <CheckCheck className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5" />}
               </Button>
             </div>
           )}
-          
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate('/orders')}
-              className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
-            >
-              <ShoppingBag size={18} className="ml-2" />
-              متابعة طلباتي
-            </button>
-            
-            <button
-              onClick={() => navigate('/')}
-              className="w-full bg-gray-100 text-gray-800 py-3 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
-            >
-              <Home size={18} className="ml-2" />
-              العودة للرئيسية
-            </button>
+
+          <div className="mt-6 flex items-center gap-2 rounded-2xl border border-green-100 bg-green-50/60 p-4 text-right">
+            <BellRing size={21} className="shrink-0 text-primary" />
+            <p className="text-xs leading-6 text-gray-700">لو فعّلت إشعارات الجهاز من مركز الإشعارات، هيوصلك تنبيه أثناء استخدام الموقع لما حالة الطلب تتغير.</p>
           </div>
-        </div>
+
+          <div className="mt-6 space-y-3">
+            <Button onClick={openTracking} className="min-h-12 w-full rounded-xl text-base">
+              <PackageSearch size={19} className="ml-2" />متابعة الطلب الآن
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/')} className="min-h-12 w-full rounded-xl">
+              <Home size={18} className="ml-2" />العودة للرئيسية
+            </Button>
+          </div>
+        </section>
       </div>
     </MainLayout>
   );
 };
 
 export default OrderSuccess;
-
