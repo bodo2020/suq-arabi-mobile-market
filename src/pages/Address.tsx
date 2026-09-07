@@ -125,16 +125,17 @@ export default function Address() {
         neighborhood_id: null,
       };
 
-      let createdId: string | null = null;
+      let savedAddressId: string | null = id || null;
       if (id) {
         const { data, error: updateError } = await supabase.from('customer_addresses').update(values).eq('id', id).eq('user_id', user.id).select('id').single();
         if (updateError || !data) throw updateError || new Error('Missing address');
+        savedAddressId = data.id;
       } else {
         const { count, error: countError } = await supabase.from('customer_addresses').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
         if (countError) throw countError;
         const { data: created, error: insertError } = await supabase.from('customer_addresses').insert({ ...values, is_default: count === 0 }).select('id').single();
         if (insertError || !created) throw insertError || new Error('Missing address');
-        createdId = created.id;
+        savedAddressId = created.id;
         if (onboarding || required) {
           const { error: defaultError } = await customerRpc('set_default_customer_address', { p_address_id: created.id });
           if (defaultError) throw defaultError;
@@ -145,10 +146,13 @@ export default function Address() {
       await client.invalidateQueries({ queryKey: ['onboarding-state', user.id] });
       await client.invalidateQueries({ queryKey: ['addresses', user.id] });
       await client.invalidateQueries({ queryKey: ['home-default-address', user.id] });
+      await client.invalidateQueries({ queryKey: ['delivery-branch-id'] });
+      await client.invalidateQueries({ queryKey: ['active-products'] });
+
+      window.dispatchEvent(new CustomEvent('delivery-address-changed', { detail: { addressId: savedAddressId } }));
 
       if (onboarding || required) {
         window.dispatchEvent(new Event('customer-profile-ready'));
-        window.dispatchEvent(new CustomEvent('delivery-address-changed', { detail: { addressId: createdId } }));
         navigate(returnTo, { replace: true });
         return;
       }
