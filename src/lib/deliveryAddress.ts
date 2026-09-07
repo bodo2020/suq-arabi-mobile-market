@@ -60,4 +60,5 @@ export function saveGuestAddress(address: GuestDeliveryAddress) {
   localStorage.setItem('userAddress', address.address);
   localStorage.setItem('userArea', address.branch_name);
   window.dispatchEvent(new CustomEvent('guest-address-changed', { detail: address }));
+  window.dispatchEvent(new Event('delivery-address-changed'));
 }
