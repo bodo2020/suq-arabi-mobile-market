@@ -24,17 +24,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
   const bulk = wantsBulk && hasBulkPurchase(product);
   const item = items.find(i => i.product.id === product.id && !!i.is_bulk === bulk && (weighted ? i.unit_of_measure === 'weight' : true));
   const pack = bulk ? Number(product.bulk_quantity || 1) : 1;
+  const stock = Math.max(0, Number(product.quantity || 0));
+  const maxCartQuantity = weighted ? Math.floor(stock * 1000) : bulk ? Math.floor(stock / Math.max(pack, 1)) : Math.floor(stock);
   const price = bulk ? Number(product.bulk_price || 0) : productUnitPrice(product);
   const discount = !bulk && Number(product.price || 0) > price ? Math.round((1 - price / Number(product.price)) * 100) : 0;
-  const unavailable = wantsBulk && !bulk;
+  const unavailable = stock <= 0 || (wantsBulk && (!bulk || maxCartQuantity <= 0));
+  const reachedStockLimit = Boolean(item && item.quantity >= maxCartQuantity);
 
   const add = () => {
-    if (!isInitialized || unavailable) return;
+    if (!isInitialized || unavailable || reachedStockLimit) return;
     if (weighted) {
       setWeightOpen(true);
       return;
     }
-    if (item) updateQuantity(product.id, item.quantity + 1, bulk);
+    if (item) updateQuantity(product.id, Math.min(item.quantity + 1, maxCartQuantity), bulk);
     else addToCart({ ...product, price: product.price, quantity: 1, is_bulk: bulk });
   };
 
@@ -69,7 +72,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
       </div>
 
       {unavailable ? (
-        <button disabled className="min-h-11 rounded-xl bg-gray-100 text-sm text-gray-500">خيار الجملة غير متاح</button>
+        <button disabled className="min-h-11 rounded-xl bg-gray-100 text-sm text-gray-500">غير متاح حاليًا</button>
       ) : weighted ? (
         <button disabled={!isInitialized} onClick={add} className="min-h-11 rounded-xl bg-[#005931] px-2 text-sm font-semibold text-white disabled:opacity-50">
           {item ? `${money(item.quantity)} جم · تعديل` : 'اختار الوزن'}
@@ -85,7 +88,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
             {item.quantity === 1 ? <Trash2 size={18} /> : <Minus size={18} />}
           </button>
           <span aria-live="polite" className="text-sm font-bold">{money(item.quantity)}</span>
-          <button disabled={!isInitialized} onClick={add} aria-label={`زيادة كمية ${product.name}`} className="flex h-11 w-11 items-center justify-center rounded-xl disabled:opacity-30">
+          <button
+            disabled={!isInitialized || reachedStockLimit}
+            onClick={add}
+            aria-label={reachedStockLimit ? `وصلت للكمية المتاحة من ${product.name}` : `زيادة كمية ${product.name}`}
+            className="flex h-11 w-11 items-center justify-center rounded-xl disabled:opacity-30"
+          >
             <Plus size={18} />
           </button>
         </div>
@@ -94,8 +102,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
           <Plus size={18} />إضافة للسلة
         </button>
       )}
-
-      <p className="mt-2 text-[11px] leading-5 text-gray-400">التوفر النهائي حسب فرع عنوان التوصيل.</p>
 
       {weightOpen && <WeightSelector product={product} isOpen={weightOpen} onClose={() => setWeightOpen(false)} />}
     </article>
