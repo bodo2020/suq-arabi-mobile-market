@@ -280,7 +280,6 @@ const PhoneVerify = () => {
                     autoComplete="one-time-code"
                     inputMode="numeric"
                     disabled={loading || resendLoading}
-                    pasteTransformer={(value) => normalizeDigits(value).replace(/\D/g, '')}
                     maxLength={6}
                     value={code}
                     onChange={(value) => {
