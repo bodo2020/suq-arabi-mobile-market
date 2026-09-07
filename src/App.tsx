@@ -1,4 +1,5 @@
 import ProfileCompletionGate from './components/ProfileCompletionGate';
+import AddressGuard from './components/AddressGuard';
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -54,48 +55,50 @@ function App() {
           <BrowserRouter>
             <ProfileCompletionGate />
             <Suspense fallback={<RouteFallback />}>
-              <Routes>
-                <Route path="/phone-login" element={<PhoneLogin />} />
-                <Route path="/phone-verify" element={<PhoneVerify />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/update-password" element={<UpdatePassword />} />
-                <Route path="/change-phone" element={<ChangePhone />} />
+              <AddressGuard>
+                <Routes>
+                  <Route path="/phone-login" element={<PhoneLogin />} />
+                  <Route path="/phone-verify" element={<PhoneVerify />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/update-password" element={<UpdatePassword />} />
+                  <Route path="/change-phone" element={<ChangePhone />} />
 
-                <Route path="/address-registration" element={<AddressRegistration />} />
+                  <Route path="/address-registration" element={<AddressRegistration />} />
 
-                <Route path="/" element={<Index />} />
-                <Route path="/categories" element={<Categories />} />
-                <Route path="/category/:id" element={<CategoryDetail />} />
-                <Route path="/category/:id/products" element={<CategoryProducts />} />
-                <Route path="/category/:categoryId/subcategory/:subcategoryId" element={<SubcategoryDetail />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/payment" element={<Payment />} />
-                <Route path="/order-success" element={<OrderSuccess />} />
-                <Route path="/account" element={<Account />} />
-                <Route path="/edit-account" element={<EditAccount />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/favorites" element={<Favorites />} />
-                <Route path="/address" element={<Address />} />
-                <Route path="/add-address" element={<Address />} />
-                <Route path="/edit-address/:id" element={<Address />} />
-                <Route path="/address-manager" element={<AddressManager />} />
-                <Route path="/barcode-scanner" element={<BarcodeScanner />} />
-                <Route path="/barcode-scan" element={<BarcodeScanner />} />
-                <Route path="/bulk-products" element={<BulkProducts />} />
-                <Route path="/company/:id" element={<CompanyProducts />} />
-                <Route path="/banner/:id" element={<BannerProducts />} />
-                <Route path="/banner-products/:id" element={<BannerProducts />} />
-                <Route path="/addresses" element={<AddressManager />} />
-                <Route path="/create-return" element={<Orders />} />
-                <Route path="/create-return/:orderId" element={<CreateReturnRequest />} />
-                <Route path="/return-requests" element={<ReturnRequests />} />
-                <Route path="/create-return-request/:orderId" element={<CreateReturnRequest />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/categories" element={<Categories />} />
+                  <Route path="/category/:id" element={<CategoryDetail />} />
+                  <Route path="/category/:id/products" element={<CategoryProducts />} />
+                  <Route path="/category/:categoryId/subcategory/:subcategoryId" element={<SubcategoryDetail />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/payment" element={<Payment />} />
+                  <Route path="/order-success" element={<OrderSuccess />} />
+                  <Route path="/account" element={<Account />} />
+                  <Route path="/edit-account" element={<EditAccount />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/favorites" element={<Favorites />} />
+                  <Route path="/address" element={<Address />} />
+                  <Route path="/add-address" element={<Address />} />
+                  <Route path="/edit-address/:id" element={<Address />} />
+                  <Route path="/address-manager" element={<AddressManager />} />
+                  <Route path="/barcode-scanner" element={<BarcodeScanner />} />
+                  <Route path="/barcode-scan" element={<BarcodeScanner />} />
+                  <Route path="/bulk-products" element={<BulkProducts />} />
+                  <Route path="/company/:id" element={<CompanyProducts />} />
+                  <Route path="/banner/:id" element={<BannerProducts />} />
+                  <Route path="/banner-products/:id" element={<BannerProducts />} />
+                  <Route path="/addresses" element={<AddressManager />} />
+                  <Route path="/create-return" element={<Orders />} />
+                  <Route path="/create-return/:orderId" element={<CreateReturnRequest />} />
+                  <Route path="/return-requests" element={<ReturnRequests />} />
+                  <Route path="/create-return-request/:orderId" element={<CreateReturnRequest />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AddressGuard>
             </Suspense>
             <Toaster />
           </BrowserRouter>
