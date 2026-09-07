@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ReturnRequestDetails from '@/components/ui/ReturnRequestDetails';
-import { getUserReturnRequests, ReturnRequest, ReturnRequestStatus } from '@/lib/supabase';
+import { ReturnRequest, ReturnRequestStatus, supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 
 type Filter = 'all' | ReturnRequestStatus;
@@ -34,7 +34,14 @@ const ReturnRequests = () => {
     queryKey: ['return-requests', user?.id],
     queryFn: async (): Promise<ReturnRequest[]> => {
       if (!user) return [];
-      return getUserReturnRequests(user.id);
+      const { data, error } = await supabase
+        .from('return_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as unknown as ReturnRequest[];
     },
     enabled: !!user && !!session && !authLoading,
     staleTime: 10_000,
