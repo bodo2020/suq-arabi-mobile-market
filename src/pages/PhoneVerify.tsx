@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
 import { supabase } from '@/lib/supabase';
 import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
+import { loadOnboardingState, nextOnboardingPath, safeReturnTo } from '@/lib/onboarding';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -35,7 +36,7 @@ const PhoneVerify = () => {
   const phoneFromQuery = queryParams.get('phone') || '';
   const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
   const isRecovery = queryParams.get('mode') === 'recovery';
-  const returnTo = ['/cart', '/payment', '/addresses', '/add-address', '/account'].includes(queryParams.get('returnTo') || '') ? queryParams.get('returnTo')! : '/';
+  const returnTo = safeReturnTo(queryParams.get('returnTo'));
 
   const [phone, setPhone] = useState(phoneFromQuery);
   const [step, setStep] = useState<'phone' | 'verification'>('phone');
@@ -119,7 +120,7 @@ const PhoneVerify = () => {
         title: isRateLimited ? 'تم تجاوز الحد المسموح' : 'تعذر إرسال الرمز',
         description: isRateLimited
           ? 'يرجى الانتظار قليلاً قبل طلب رمز جديد.'
-          : authErrorMessage(error, 'خدمة إرسال الرسائل غير متاحة حاليًا. حاول لاحقًا أو استخدم كلمة المرور لو عندك حساب.'),
+          : authErrorMessage(error, 'خدمة إرسال الرسائل غير متاحة حاليًا. حاول مرة أخرى بعد قليل.'),
         variant: 'destructive',
       });
     } finally {
@@ -156,24 +157,8 @@ const PhoneVerify = () => {
         return;
       }
 
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .select('id, name')
-        .eq('user_id', verifiedUser.id)
-        .maybeSingle();
-
-      if (customerError) {
-        throw customerError;
-      }
-
-      if (customer?.name?.trim().length >= 2) {
-        navigate(returnTo, { replace: true });
-      } else {
-        navigate(
-          `/register?returnTo=${encodeURIComponent(returnTo)}`,
-          { replace: true }
-        );
-      }
+      const state = await loadOnboardingState(verifiedUser.id);
+      navigate(nextOnboardingPath(state, returnTo), { replace: true });
     } catch (error: any) {
       toast({
         title: 'تعذر التحقق',
@@ -257,7 +242,6 @@ const PhoneVerify = () => {
                 {loading && <BrandLoader size="sm" className="ml-2" />}
                 {loading ? 'جاري إرسال الرمز...' : resendSeconds > 0 ? `حاول بعد ${resendSeconds} ثانية` : 'إرسال رمز التحقق'}
               </Button>
-              {!isRecovery && <button type="button" onClick={() => navigate(`/phone-login?returnTo=${encodeURIComponent(returnTo)}`)} className="w-full mt-3 text-primary text-sm">الدخول بكلمة المرور</button>}
             </>
           ) : (
             <>
