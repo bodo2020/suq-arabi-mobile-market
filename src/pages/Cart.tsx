@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, MapPin, RefreshCw, Route } from 'lucide-react';
+import { ArrowLeft, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, RefreshCw, Route } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
 import WeightSelector from '@/components/ui/WeightSelector';
@@ -130,7 +130,7 @@ export default function Cart() {
         <div className="cart-summary-total"><span>الإجمالي</span><strong>{quotePending ? '...' : money(total)} <small>ج.م</small></strong></div>
         {quote && quote.min_order_amount > 0 && <p className="cart-help">الحد الأدنى للطلب من الفرع: {money(quote.min_order_amount)} ج.م</p>}
         {cta}
-        <p className="cart-help">مسافة التوصيل هنا هي مسافة القيادة على الطريق من Google، وليست المسافة المباشرة بين النقطتين.</p>
+        <p className="cart-help">مسافة التوصيل هنا هي مسافة القيادة على الطريق، وليست المسافة المباشرة بين النقطتين.</p>
         {!user && <p className="cart-help">هنطلب رقم موبايلك عشان تكمّل طلبك ونحفظ العنوان في حسابك.</p>}
       </aside></div>
 
