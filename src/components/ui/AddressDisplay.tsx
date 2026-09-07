@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/lib/supabase';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +36,7 @@ const AddressDisplay = ({ address, className, showAddressSelector = false, onEdi
   const { user } = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const guest = !user ? readGuestAddress() : null;
 
   const { data: addresses = [], refetch } = useQuery({
@@ -97,8 +98,12 @@ const AddressDisplay = ({ address, className, showAddressSelector = false, onEdi
         localStorage.removeItem('userNeighborhood');
       }
       await refetch();
-      toast({ title: 'تم تحديث العنوان', description: 'العنوان ده بقى الافتراضي للتوصيل.' });
+      await queryClient.invalidateQueries({ queryKey: ['delivery-branch-id'] });
+      await queryClient.invalidateQueries({ queryKey: ['active-products'] });
+      await queryClient.invalidateQueries({ queryKey: ['home-default-address', user.id] });
+      window.dispatchEvent(new CustomEvent('delivery-address-changed', { detail: { addressId } }));
       window.dispatchEvent(new Event('customer-profile-ready'));
+      toast({ title: 'تم تحديث العنوان', description: 'تم تحديث الفرع والمخزون والأسعار حسب العنوان الجديد.' });
     } catch (error) {
       console.error('Error updating default address:', error);
       toast({ variant: 'destructive', title: 'تعذر تغيير العنوان', description: 'حاول مرة تانية.' });
