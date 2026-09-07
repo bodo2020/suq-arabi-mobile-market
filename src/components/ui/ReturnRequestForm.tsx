@@ -1,209 +1,351 @@
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { createReturnRequest, uploadReturnImages } from "@/lib/supabase";
-import { useUser } from "@/contexts/UserContext";
-import { Camera, Upload, X, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Camera, Check, ImagePlus, Minus, Plus, X } from 'lucide-react';
+import BrandLoader from '@/components/ui/BrandLoader';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/contexts/UserContext';
+
 interface ReturnRequestFormProps {
   orderId: string;
   orderItems: any[];
   onSuccess?: () => void;
 }
-const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({
-  orderId,
-  orderItems,
-  onSuccess
-}) => {
-  const {
-    user
-  } = useUser();
-  const {
-    toast
-  } = useToast();
-  const navigate = useNavigate();
-  const [reason, setReason] = useState('');
-  const [selectedItems, setSelectedItems] = useState<{
-    [key: string]: boolean;
-  }>({});
-  const [itemReasons, setItemReasons] = useState<{
-    [key: string]: string;
-  }>({});
-  const [quantities, setQuantities] = useState<{
-    [key: string]: number;
-  }>({});
-  const [images, setImages] = useState<File[]>([]);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [previews, setPreviews] = useState<string[]>([]);
-  const handleItemSelect = (itemId: string) => {
-    setSelectedItems(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId]
-    }));
 
-    // Initialize quantity if the item is being selected for the first time
-    if (!quantities[itemId]) {
-      const item = orderItems.find(item => item.id === itemId || item.product_id === itemId);
-      const initialQuantity = item?.quantity || 1;
-      setQuantities(prev => ({
-        ...prev,
-        [itemId]: initialQuantity
-      }));
+type SelectedMap = Record<string, boolean>;
+type QuantityMap = Record<string, number>;
+type ReasonMap = Record<string, string>;
+
+const MAX_IMAGES = 5;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+const errorMessage = (error: any) => {
+  const message = String(error?.message || error?.details || '');
+
+  if (message.includes('order_not_delivered')) return 'الاسترجاع متاح بعد تسليم الطلب فقط.';
+  if (message.includes('order_not_found')) return 'الطلب غير موجود أو لا يخص حسابك.';
+  if (message.includes('product_not_in_order')) return 'أحد المنتجات المختارة غير موجود في الطلب الأصلي.';
+  if (message.includes('return_quantity_exceeds_order')) return 'الكمية المطلوبة أكبر من الكمية المتاحة للاسترجاع.';
+  if (message.includes('invalid_return_quantity')) return 'راجع كمية المنتجات المطلوب استرجاعها.';
+  if (message.includes('return_items_required')) return 'اختار منتج واحد على الأقل للاسترجاع.';
+  if (message.includes('too_many_return_items')) return 'عدد المنتجات في طلب الاسترجاع أكبر من المسموح.';
+  if (message.includes('too_many_return_images')) return 'يمكن إرفاق 5 صور بحد أقصى.';
+  if (message.includes('invalid_return_reason')) return 'اكتب سببًا واضحًا للاسترجاع من 3 أحرف على الأقل.';
+  if (message.includes('not_authenticated')) return 'سجّل دخولك أولًا لإرسال طلب الاسترجاع.';
+
+  return 'لم نتمكن من إرسال طلب الاسترجاع. حاول مرة أخرى.';
+};
+
+const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderItems, onSuccess }) => {
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [reason, setReason] = useState('');
+  const [selectedItems, setSelectedItems] = useState<SelectedMap>({});
+  const [itemReasons, setItemReasons] = useState<ReasonMap>({});
+  const [quantities, setQuantities] = useState<QuantityMap>({});
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    return () => previews.forEach(url => URL.revokeObjectURL(url));
+  }, [previews]);
+
+  const selectedCount = useMemo(
+    () => Object.values(selectedItems).filter(Boolean).length,
+    [selectedItems],
+  );
+
+  const itemKey = (item: any) => String(item.product_id || item.id || '');
+
+  const handleItemSelect = (item: any) => {
+    const key = itemKey(item);
+    if (!key) return;
+
+    setSelectedItems(prev => ({ ...prev, [key]: !prev[key] }));
+    setQuantities(prev => ({ ...prev, [key]: prev[key] || 1 }));
+  };
+
+  const handleQuantityChange = (item: any, nextValue: number) => {
+    const key = itemKey(item);
+    const maxQuantity = Math.max(1, Number(item.quantity || 1));
+    const safeValue = Math.min(maxQuantity, Math.max(1, nextValue));
+    setQuantities(prev => ({ ...prev, [key]: safeValue }));
+  };
+
+  const addImages = (files: File[]) => {
+    const availableSlots = MAX_IMAGES - images.length;
+    if (availableSlots <= 0) {
+      toast({ title: 'الحد الأقصى 5 صور', variant: 'destructive' });
+      return;
     }
-  };
-  const handleQuantityChange = (itemId: string, value: number) => {
-    const item = orderItems.find(item => item.id === itemId || item.product_id === itemId);
-    const maxQuantity = item?.quantity || 1;
-    if (value < 1) value = 1;
-    if (value > maxQuantity) value = maxQuantity;
-    setQuantities(prev => ({
-      ...prev,
-      [itemId]: value
-    }));
-  };
-  const handleItemReasonChange = (itemId: string, value: string) => {
-    setItemReasons(prev => ({
-      ...prev,
-      [itemId]: value
-    }));
-  };
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-      setImages(prev => [...prev, ...newFiles]);
-      setPreviews(prev => [...prev, ...newPreviews]);
+
+    const validFiles: File[] = [];
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        toast({ title: 'الملف لازم يكون صورة', description: file.name, variant: 'destructive' });
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        toast({ title: 'الصورة أكبر من 5 ميجابايت', description: file.name, variant: 'destructive' });
+        continue;
+      }
+      validFiles.push(file);
     }
+
+    const accepted = validFiles.slice(0, availableSlots);
+    if (validFiles.length > availableSlots) {
+      toast({ title: 'تم اختيار أول 5 صور فقط' });
+    }
+
+    if (!accepted.length) return;
+    setImages(prev => [...prev, ...accepted]);
+    setPreviews(prev => [...prev, ...accepted.map(file => URL.createObjectURL(file))]);
   };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    addImages(files);
+    event.target.value = '';
+  };
+
   const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+    setImages(prev => prev.filter((_, currentIndex) => currentIndex !== index));
     setPreviews(prev => {
-      // Revoke the URL to prevent memory leaks
-      URL.revokeObjectURL(prev[index]);
-      return prev.filter((_, i) => i !== index);
+      if (prev[index]) URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, currentIndex) => currentIndex !== index);
     });
   };
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+
+  const uploadImages = async () => {
+    const uploadedUrls: string[] = [];
+
+    for (const file of images) {
+      const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const randomName = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const filePath = `returns/${randomName}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('returns')
+        .upload(filePath, file, { contentType: file.type, upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('returns').getPublicUrl(filePath);
+      uploadedUrls.push(data.publicUrl);
+    }
+
+    return uploadedUrls;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (loading) return;
+
     if (!user) {
-      toast({
-        title: "يجب تسجيل الدخول",
-        description: "يرجى تسجيل الدخول لإرسال طلب الإرجاع",
-        variant: "destructive"
-      });
+      toast({ title: 'يجب تسجيل الدخول', description: 'سجّل دخولك لإرسال طلب الاسترجاع.', variant: 'destructive' });
       return;
     }
-    const selectedItemIds = Object.entries(selectedItems).filter(([_, isSelected]) => isSelected).map(([id, _]) => id);
-    if (selectedItemIds.length === 0) {
-      toast({
-        title: "لم يتم اختيار منتجات",
-        description: "يرجى اختيار المنتجات التي تريد إرجاعها",
-        variant: "destructive"
-      });
+
+    const selected = orderItems.filter(item => selectedItems[itemKey(item)]);
+    if (!selected.length) {
+      toast({ title: 'اختار منتجًا للاسترجاع', description: 'حدد منتج واحد على الأقل.', variant: 'destructive' });
       return;
     }
-    if (!reason.trim()) {
-      toast({
-        title: "سبب الإرجاع مطلوب",
-        description: "يرجى كتابة سبب طلب الإرجاع",
-        variant: "destructive"
-      });
+
+    const cleanReason = reason.trim();
+    if (cleanReason.length < 3) {
+      toast({ title: 'سبب الاسترجاع مطلوب', description: 'اكتب سببًا واضحًا من 3 أحرف على الأقل.', variant: 'destructive' });
       return;
     }
+
+    setLoading(true);
     try {
-      setLoading(true);
-
-      // Upload images if any
-      let uploadedImageUrls: string[] = [];
-      if (images.length > 0) {
-        uploadedImageUrls = await uploadReturnImages(images);
-      }
-
-      // Prepare items for the return request
-      const returnItems = selectedItemIds.map(id => {
-        const itemId = orderItems.find(item => item.id === id || item.product_id === id)?.product_id || id;
+      const uploadedImageUrls = images.length ? await uploadImages() : [];
+      const itemsPayload = selected.map(item => {
+        const key = itemKey(item);
         return {
-          productId: itemId,
-          quantity: quantities[id] || 1,
-          reason: itemReasons[id] || ''
+          product_id: item.product_id || item.id,
+          quantity: quantities[key] || 1,
+          reason: itemReasons[key]?.trim() || '',
         };
       });
 
-      // Create the return request
-      await createReturnRequest(user.id, orderId, reason, returnItems, uploadedImageUrls);
-      toast({
-        title: "تم إرسال طلب الإرجاع",
-        description: "سنقوم بمراجعة طلبك والرد عليك في أقرب وقت"
+      const { error } = await (supabase as any).rpc('create_customer_return_request', {
+        p_order_id: orderId,
+        p_reason: cleanReason,
+        p_items: itemsPayload,
+        p_images: uploadedImageUrls,
       });
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        navigate('/orders');
-      }
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم إرسال طلب الاسترجاع',
+        description: 'طلبك وصل وهتقدر تتابع حالة المراجعة من صفحة طلبات الاسترجاع.',
+      });
+      onSuccess?.();
     } catch (error) {
       console.error('Error submitting return request:', error);
-      toast({
-        title: "حدث خطأ",
-        description: "لم نتمكن من إرسال طلب الإرجاع، يرجى المحاولة مرة أخرى",
-        variant: "destructive"
-      });
+      toast({ title: 'تعذّر إرسال الطلب', description: errorMessage(error), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
-  return <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="bg-white p-4 rounded-lg shadow-sm">
-        <h3 className="font-bold text-lg mb-3">المنتجات للإرجاع</h3>
-        
-        <div className="space-y-3">
-          {orderItems.map(item => {
-          const itemId = item.id || item.product_id;
-          const name = item.name || item.product && item.product.name || "منتج";
-          const imageUrl = item.image_url || item.image_urls && item.image_urls[0] || "/placeholder.svg";
-          return <div key={itemId} className="flex items-start space-x-3 space-x-reverse p-3 border rounded-lg">
-                <input type="checkbox" id={`item-${itemId}`} className="h-5 w-5 mt-1 text-primary" checked={!!selectedItems[itemId]} onChange={() => handleItemSelect(itemId)} />
-                
-                <div className="w-16 h-16 shrink-0">
-                  <img src={imageUrl} alt={name} className="w-full h-full object-cover rounded" />
-                </div>
-                
-                <div className="flex-1 mr-3 space-y-2">
-                  <label htmlFor={`item-${itemId}`} className="font-medium block">{name}</label>
-                  
-                  {selectedItems[itemId] && <>
-                      <div className="flex items-center mt-2">
-                        <span className="text-sm ml-2">الكمية:</span>
-                        <button type="button" className="w-7 h-7 flex items-center justify-center text-sm border rounded-full" onClick={() => handleQuantityChange(itemId, (quantities[itemId] || 1) - 1)}>
-                          -
-                        </button>
-                        <span className="w-8 text-center">{quantities[itemId] || 1}</span>
-                        <button type="button" className="w-7 h-7 flex items-center justify-center text-sm border rounded-full" onClick={() => handleQuantityChange(itemId, (quantities[itemId] || 1) + 1)}>
-                          +
-                        </button>
-                      </div>
-                      
-                      <div className="mt-2">
-                        <Textarea placeholder="سبب إرجاع هذا المنتج (اختياري)" className="text-sm resize-none" rows={2} value={itemReasons[itemId] || ''} onChange={e => handleItemReasonChange(itemId, e.target.value)} />
-                      </div>
-                    </>}
-                </div>
-              </div>;
-        })}
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold">اختار المنتجات</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-500">حدد المنتج والكمية اللي محتاج ترجعها.</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-primary">
+            {selectedCount} مختار
+          </span>
         </div>
-      </div>
-      
-      <div className="bg-white p-4 rounded-lg shadow-sm">
-        <h3 className="font-bold text-lg mb-3">سبب الإرجاع</h3>
-        <Textarea placeholder="يرجى كتابة سبب طلب الإرجاع..." value={reason} onChange={e => setReason(e.target.value)} className="w-full resize-none" rows={4} />
-      </div>
-      
-      
-      
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "جاري الإرسال..." : 'إرسال طلب الإرجاع'}
+
+        <div className="mt-5 space-y-3">
+          {orderItems.map((item, index) => {
+            const key = itemKey(item);
+            if (!key) return null;
+            const selected = !!selectedItems[key];
+            const maxQuantity = Math.max(1, Number(item.quantity || 1));
+            const quantity = quantities[key] || 1;
+            const name = item.name || item.product?.name || 'منتج';
+            const imageUrl = item.image_url || item.image_urls?.[0] || '/placeholder.svg';
+
+            return (
+              <div
+                key={`${key}-${index}`}
+                className={`rounded-2xl border p-4 transition ${selected ? 'border-green-200 bg-green-50/40' : 'border-gray-100 bg-white'}`}
+              >
+                <div className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleItemSelect(item)}
+                    className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${selected ? 'border-primary bg-primary text-white' : 'border-gray-300 bg-white'}`}
+                    aria-label={selected ? `إلغاء اختيار ${name}` : `اختيار ${name}`}
+                    aria-pressed={selected}
+                  >
+                    {selected && <Check size={15} />}
+                  </button>
+
+                  <img src={imageUrl} alt={name} className="h-16 w-16 shrink-0 rounded-xl bg-gray-50 object-cover" />
+
+                  <div className="min-w-0 flex-1">
+                    <button type="button" onClick={() => handleItemSelect(item)} className="block w-full text-right">
+                      <p className="line-clamp-2 text-sm font-semibold">{name}</p>
+                      <p className="mt-1 text-xs text-gray-500">الكمية في الطلب: {maxQuantity}</p>
+                    </button>
+                  </div>
+                </div>
+
+                {selected && (
+                  <div className="mt-4 space-y-3 border-t border-green-100 pt-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium">كمية الاسترجاع</span>
+                      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1">
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(item, quantity - 1)}
+                          disabled={quantity <= 1}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg disabled:opacity-30"
+                          aria-label="تقليل الكمية"
+                        >
+                          <Minus size={16} />
+                        </button>
+                        <span className="min-w-8 text-center text-sm font-bold">{quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(item, quantity + 1)}
+                          disabled={quantity >= maxQuantity}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg disabled:opacity-30"
+                          aria-label="زيادة الكمية"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <Textarea
+                      value={itemReasons[key] || ''}
+                      onChange={event => setItemReasons(prev => ({ ...prev, [key]: event.target.value }))}
+                      placeholder="ملاحظة عن المنتج (اختياري)"
+                      rows={2}
+                      maxLength={500}
+                      className="resize-none rounded-xl bg-white"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+        <h2 className="text-lg font-bold">سبب الاسترجاع</h2>
+        <p className="mt-1 text-sm leading-6 text-gray-500">اشرح المشكلة باختصار عشان نقدر نراجع طلبك بسرعة.</p>
+        <Textarea
+          value={reason}
+          onChange={event => setReason(event.target.value)}
+          placeholder="مثال: المنتج وصل تالف أو مختلف عن المطلوب..."
+          rows={4}
+          maxLength={1000}
+          className="mt-4 resize-none rounded-xl"
+        />
+        <p className="mt-2 text-left text-xs text-gray-400" dir="ltr">{reason.length}/1000</p>
+      </section>
+
+      <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Camera size={19} className="text-primary" />
+              <h2 className="text-lg font-bold">صور توضيحية</h2>
+            </div>
+            <p className="mt-1 text-sm leading-6 text-gray-500">اختياري — الصور بتساعدنا نراجع الحالة أسرع. حد أقصى 5 صور، 5MB للصورة.</p>
+          </div>
+          <span className="shrink-0 text-xs text-gray-500">{images.length}/{MAX_IMAGES}</span>
+        </div>
+
+        {previews.length > 0 && (
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {previews.map((preview, index) => (
+              <div key={preview} className="relative aspect-square overflow-hidden rounded-xl border border-gray-100">
+                <img src={preview} alt={`معاينة ${index + 1}`} className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute left-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white"
+                  aria-label={`حذف الصورة ${index + 1}`}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {images.length < MAX_IMAGES && (
+          <label className="mt-4 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-green-200 bg-green-50/50 px-4 text-sm font-semibold text-primary hover:bg-green-50">
+            <ImagePlus size={19} />
+            إضافة صور
+            <input type="file" accept="image/*" multiple className="sr-only" onChange={handleImageChange} />
+          </label>
+        )}
+      </section>
+
+      <Button type="submit" className="min-h-14 w-full rounded-xl text-base" disabled={loading || selectedCount === 0}>
+        {loading ? <><BrandLoader size="sm" className="ml-2" />جاري إرسال الطلب…</> : 'إرسال طلب الاسترجاع'}
       </Button>
-    </form>;
+    </form>
+  );
 };
+
 export default ReturnRequestForm;
