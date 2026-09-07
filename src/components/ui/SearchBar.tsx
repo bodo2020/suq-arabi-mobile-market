@@ -59,9 +59,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className="relative flex items-center bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 overflow-hidden">
-        <div className="flex items-center flex-1 relative">
-          <Search size={20} className="absolute left-4 text-white/70" />
+      <div className="relative flex items-center bg-gray-50 rounded-xl border border-gray-200 focus-within:border-green-600 overflow-hidden">
+        <div className="flex min-w-0 items-center flex-1 relative">
+          <Search size={20} className="absolute right-3 text-gray-400" />
           <input
             type="search"
             aria-label="البحث عن المنتجات"
@@ -71,7 +71,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onFocus={handleFocus}
             placeholder={placeholder}
             readOnly={readOnly}
-            className={`w-full pl-12 pr-16 py-4 bg-transparent border-none outline-none text-white placeholder-white/70 ${
+            className={`min-w-0 w-full pl-2 pr-10 py-3 bg-transparent border-none outline-none text-gray-900 placeholder-gray-500 text-sm ${
               readOnly ? 'cursor-pointer' : ''
             }`}
           />
@@ -80,9 +80,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
           type="button"
           onClick={handleBarcodeClick}
           aria-label="البحث بالباركود"
-          className="p-4 hover:bg-white/10 transition-colors rounded-r-2xl"
+          className="flex h-11 w-11 shrink-0 items-center justify-center border-r border-gray-200 hover:bg-green-50 transition-colors"
         >
-          <QrCode size={20} className="text-white" />
+          <QrCode size={20} className="text-[#005931]" />
         </button>
       </div>
     </form>

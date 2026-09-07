@@ -10,27 +10,24 @@ import { getCategories, supabase, MainCategory } from '@/lib/supabase';
 import BannerSkeleton from '@/components/ui/BannerSkeleton';
 import CategorySkeleton from '@/components/ui/CategorySkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 const ProductCollectionsSection=lazy(()=>import('@/components/sections/ProductCollectionsSection'));
 const BannersContainer=lazy(()=>import('@/components/ui/BannersContainer'));
 
 const Index=()=>{
- const navigate=useNavigate(); const [address,setAddress]=useState('');
+ const navigate=useNavigate(); const {user, authLoading}=useUser();
+ const addressQuery=useQuery({queryKey:['home-default-address',user?.id],enabled:!!user&&!authLoading,queryFn:async()=>{const {data,error}=await supabase.from('customer_addresses').select('address').eq('user_id',user!.id).eq('is_default',true).maybeSingle();if(error)throw error;return data;},staleTime:0});
+ const address=addressQuery.data?.address||'';
  const categoriesQuery=useQuery({queryKey:['categories'],queryFn:getCategories,staleTime:300000,refetchOnWindowFocus:false});
  const bannersQuery=useQuery({queryKey:['active-banners'],queryFn:async()=>{const {data,error}=await supabase.from('banners').select('*').eq('active',true).order('position');if(error)throw error;return data||[];},staleTime:300000,refetchOnWindowFocus:false});
- useEffect(()=>{try{const selected=JSON.parse(localStorage.getItem('selectedAddress')||'null');setAddress(selected?.address||localStorage.getItem('userAddress')||localStorage.getItem('userArea')||'');}catch{setAddress(localStorage.getItem('userAddress')||'');}},[]);
+
  const categories=categoriesQuery.data||[];
  const category=(cat:MainCategory)=>navigate(`/category/${cat.id}`);
  return <MainLayout><StoreStructuredData/><TopNavBar onSearchFocus={()=>navigate('/search')}/>
   <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
-   <section className="mb-4 overflow-hidden rounded-3xl bg-gradient-to-l from-[#005931] to-[#087545] px-5 py-5 text-white shadow-sm sm:px-7 sm:py-7">
-    <div className="flex items-center gap-2 text-xs font-semibold text-green-100"><Sparkles size={15}/>مش مجرد ماركت</div>
-    <h1 className="mt-2 text-2xl font-bold leading-relaxed sm:text-3xl">احتياجات بيتك أقرب وأسهل</h1>
-    <p className="mt-1 max-w-xl text-sm leading-6 text-green-50/90">اختار منتجاتك، راجع سلتك، وحدد عنوان التوصيل في خطوات بسيطة.</p>
-    <div className="mt-4 flex flex-wrap gap-2 text-xs"><span className="flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5"><PackageCheck size={14}/>اختيارات واضحة</span><span className="flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5"><Clock3 size={14}/>طلب أسرع</span></div>
-   </section>
    <button onClick={()=>navigate('/address-manager')} className="mb-5 flex min-h-16 w-full items-center gap-3 rounded-2xl border border-green-100 bg-white p-4 text-right shadow-sm hover:border-green-200" aria-label={address?'تغيير عنوان التوصيل':'إضافة عنوان توصيل'}>
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary"><MapPin size={20}/></span><span className="min-w-0 flex-1"><span className="block text-xs text-gray-500">التوصيل إلى</span><strong className="block truncate text-sm text-gray-900">{address||'اختار عنوان التوصيل'}</strong></span><ChevronLeft size={20} className="text-primary"/>
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary"><MapPin size={20}/></span><span className="min-w-0 flex-1"><span className="block text-xs text-gray-500">التوصيل إلى</span><strong className="block truncate text-sm text-gray-900">{authLoading||(user&&addressQuery.isLoading)?'جاري تحميل عنوانك…':addressQuery.isError?'تعذّر تحميل العنوان — اضغط للمراجعة':address||'اختار عنوان التوصيل'}</strong></span><ChevronLeft size={20} className="text-primary"/>
    </button>
    {bannersQuery.isLoading?<BannerSkeleton/>:(bannersQuery.data?.length||0)>0&&<Suspense fallback={<BannerSkeleton/>}><div className="mb-7 overflow-hidden rounded-3xl shadow-sm"><BannersContainer banners={bannersQuery.data!}/></div></Suspense>}
    <section className="mb-8 rounded-3xl bg-white p-4 shadow-sm sm:p-6">

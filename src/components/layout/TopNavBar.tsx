@@ -14,19 +14,18 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ searchPlaceholder='دور على 
   const navigate=useNavigate(); const location=useLocation(); const { getTotalItems }=useCart(); const { user }=useUser(); const cartCount=getTotalItems();
   const searchPage=location.pathname==='/search';
   const focus=()=>{ if(onSearchFocus) onSearchFocus(); else if(!searchPage) navigate('/search'); };
-  return <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#005931]/95 text-white shadow-[0_8px_28px_rgba(0,50,28,.22)] backdrop-blur-xl">
+  return <header className="fixed inset-x-0 top-0 z-50 border-b border-gray-100 bg-white/95 text-[#005931] shadow-sm backdrop-blur-xl">
     <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-4">
       <div className="flex min-h-11 items-center gap-2.5">
-        {showBackButton && <button onClick={onBack||(()=>navigate(-1))} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 active:scale-95"><ArrowRight size={21}/></button>}
+        {showBackButton && <button onClick={onBack||(()=>navigate(-1))} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 active:scale-95"><ArrowRight size={21}/></button>}
         {!hideLogo && <Link to="/" aria-label="الرئيسية" className="shrink-0 rounded-xl active:scale-95"><img src="/elmadawy-logo.png" alt="المعداوي ماركت" className="h-10 w-10 rounded-xl object-contain md:h-11 md:w-11" width="44" height="44" /></Link>}
         {pageTitle && hideSearch ? <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold">{pageTitle}</h1> : !hideSearch && <div className="min-w-0 flex-1 md:max-w-2xl"><SearchBar placeholder={searchPlaceholder} onFocus={focus} readOnly={!searchPage} {...searchProps}/></div>}
-        {!hideCart && <Link to="/cart" aria-label={`السلة، ${cartCount} منتج`} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 md:hidden"><ShoppingCart size={21}/>{cartCount>0&&<span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-primary">{cartCount>99?'99+':cartCount}</span>}</Link>}
         <div className="mr-auto hidden items-center gap-1 md:flex">
-          {!hideCart&&<Link to="/cart" className="relative flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-white/10"><ShoppingCart size={19}/>السلة{cartCount>0&&<span className="rounded-full bg-white px-1.5 text-xs text-primary">{cartCount}</span>}</Link>}
-          <Link to={user?'/account':'/phone-login'} className="flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-white/10"><User size={19}/>{user?'حسابي':'دخول'}</Link>
+          {!hideCart&&<Link to="/cart" className="relative flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-green-50"><ShoppingCart size={19}/>السلة{cartCount>0&&<span className="rounded-full bg-white px-1.5 text-xs text-primary">{cartCount}</span>}</Link>}
+          <Link to={user?'/account':'/phone-login'} className="flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-green-50"><User size={19}/>{user?'حسابي':'دخول'}</Link>
         </div>
       </div>
-      <nav className="mt-2 hidden items-center gap-1 border-t border-white/10 pt-2 md:flex" aria-label="التنقل الرئيسي">{desktopLinks.filter(x=>!x.authOnly||user).map(({to,label,icon:Icon})=><Link key={to} to={to} aria-current={location.pathname===to?'page':undefined} className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ${location.pathname===to?'bg-white/15 font-bold':'text-white/90 hover:bg-white/10'}`}><Icon size={17}/>{label}</Link>)}</nav>
+      <nav className="mt-2 hidden items-center gap-1 border-t border-gray-100 pt-2 md:flex" aria-label="التنقل الرئيسي">{desktopLinks.filter(x=>!x.authOnly||user).map(({to,label,icon:Icon})=><Link key={to} to={to} aria-current={location.pathname===to?'page':undefined} className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ${location.pathname===to?'bg-green-50 font-bold':'text-gray-600 hover:bg-green-50'}`}><Icon size={17}/>{label}</Link>)}</nav>
     </div>
   </header>;
 };
