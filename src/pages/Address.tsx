@@ -93,7 +93,7 @@ export default function Address() {
     try {
       const match = await resolveDeliveryLocation(coordinates.lat, coordinates.lng);
       if (!match) {
-        setError('العنوان خارج نطاق التوصيل الحالي. اختار نقطة داخل دائرة الـ10 كم الظاهرة على الخريطة.');
+        setError('العنوان خارج نطاق التوصيل: مسافة الطريق الفعلية أكبر من 10 كم.');
         return;
       }
 
@@ -105,7 +105,9 @@ export default function Address() {
           longitude: coordinates.lng,
           assigned_branch_id: match.branch_id,
           branch_name: match.branch_name,
-          distance_km: Number(match.distance_km),
+          distance_km: Number(match.road_distance_km),
+          road_distance_km: Number(match.road_distance_km),
+          road_duration_minutes: match.road_duration_minutes,
           delivery_price: Number(match.delivery_fee || 0),
           estimated_time: match.estimated_delivery_minutes,
           is_deliverable: true,
@@ -123,17 +125,21 @@ export default function Address() {
         city_id: null,
         area_id: null,
         neighborhood_id: null,
+        road_distance_km: Number(match.road_distance_km),
+        road_duration_minutes: match.road_duration_minutes,
+        road_distance_checked_at: new Date().toISOString(),
       };
 
+      const addresses = (supabase as any).from('customer_addresses');
       let savedAddressId: string | null = id || null;
       if (id) {
-        const { data, error: updateError } = await supabase.from('customer_addresses').update(values).eq('id', id).eq('user_id', user.id).select('id').single();
+        const { data, error: updateError } = await addresses.update(values).eq('id', id).eq('user_id', user.id).select('id').single();
         if (updateError || !data) throw updateError || new Error('Missing address');
         savedAddressId = data.id;
       } else {
         const { count, error: countError } = await supabase.from('customer_addresses').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
         if (countError) throw countError;
-        const { data: created, error: insertError } = await supabase.from('customer_addresses').insert({ ...values, is_default: count === 0 }).select('id').single();
+        const { data: created, error: insertError } = await addresses.insert({ ...values, is_default: count === 0 }).select('id').single();
         if (insertError || !created) throw insertError || new Error('Missing address');
         savedAddressId = created.id;
         if (onboarding || required) {
@@ -159,7 +165,10 @@ export default function Address() {
       navigate(back);
     } catch (saveError) {
       console.error(saveError);
-      setError('العنوان لم يُحفظ. راجع اتصالك واضغط حفظ مرة تانية.');
+      const code = (saveError as { message?: string })?.message || '';
+      setError(code.includes('ROUTE')
+        ? 'مش قادرين نحسب طريق التوصيل من Google حاليًا. جرّب مرة تانية بعد لحظات.'
+        : 'العنوان لم يُحفظ. راجع اتصالك واضغط حفظ مرة تانية.');
     } finally {
       setSaving(false);
     }
@@ -174,14 +183,14 @@ export default function Address() {
     {loading || authLoading ? <div className="cart-loading"><BrandLoader size="lg" /></div> : loadError ? <div className="cart-alert" role="alert">{loadError}<Button variant="outline" onClick={() => navigate(back)}>رجوع</Button></div> :
       <form onSubmit={save} className="grid gap-6 lg:grid-cols-[1.25fr_.75fr]" aria-busy={saving}>
         <section className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6">
-          <div className="mb-4 flex items-center gap-3"><div className="rounded-xl bg-green-50 p-2.5 text-primary"><MapPin size={20} /></div><div><h2 className="font-bold">حدد موقعك على الخريطة</h2><p className="text-sm text-gray-500">الدائرة الخضراء هي نطاق التوصيل الحالي.</p></div></div>
+          <div className="mb-4 flex items-center gap-3"><div className="rounded-xl bg-green-50 p-2.5 text-primary"><MapPin size={20} /></div><div><h2 className="font-bold">حدد موقعك على الخريطة</h2><p className="text-sm text-gray-500">نطاق التوصيل بيتحسب بالطريق الفعلي من الفرع، مش بخط مستقيم.</p></div></div>
           <DeliveryMap key={id || (user ? 'new-user' : 'guest')} value={coordinates} onChange={value => { setCoordinates(value); setError(''); }} onAddressResolved={resolved => setAddress(current => current.trim() ? current : resolved)} />
         </section>
 
         <section className="rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
           <h2 className="text-lg font-bold mb-2">تفاصيل العنوان</h2>
           <p className="text-sm text-gray-600 mb-5">اكتب التفاصيل يدويًا حتى لو استخدمت الخريطة.</p>
-          <div className="rounded-2xl bg-green-50 p-4 mb-5 text-sm text-gray-700"><div className="flex items-center gap-2 font-bold text-primary mb-1"><ShieldCheck size={17} />التحقق من التوصيل</div><p>عند الحفظ بنتأكد من السيرفر إن النقطة داخل 10 كم ونربطها بفرع التوصيل تلقائيًا.</p></div>
+          <div className="rounded-2xl bg-green-50 p-4 mb-5 text-sm text-gray-700"><div className="flex items-center gap-2 font-bold text-primary mb-1"><ShieldCheck size={17} />التحقق من التوصيل</div><p>عند الحفظ بنحسب مسافة القيادة الفعلية من الفرع. العنوان يتقبل فقط لو الطريق 10 كم أو أقل.</p></div>
           <label htmlFor="delivery-details" className="block font-medium mb-2">الشارع، البيت، الدور والشقة</label>
           <textarea id="delivery-details" value={address} onChange={event => { setAddress(event.target.value); setError(''); }} rows={5} maxLength={1000} required placeholder="مثال: شارع المدرسة، منزل ١٢، الدور ٢ — بجوار الصيدلية" className="w-full rounded-xl border p-3 text-base leading-7" aria-describedby={error ? 'address-error' : undefined} />
           {coordinates && <div className="mt-3 flex items-center gap-2 text-xs text-gray-500"><Navigation size={14} /><span>{coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}</span></div>}
