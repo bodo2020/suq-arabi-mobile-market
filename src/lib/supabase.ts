@@ -182,7 +182,7 @@ export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Pr
     p_company_id: filters.companyId || null,
     p_search: filters.search?.trim() || null,
     p_barcode: filters.barcode?.trim() || null,
-    p_limit: filters.limit || 500,
+    p_limit: filters.limit || 1000,
   });
   if (error) throw error;
   return (Array.isArray(data) ? data : []) as Product[];
