@@ -18,7 +18,8 @@ const AddressGuard: React.FC<AddressGuardProps> = ({ children }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase
+        const client = supabase as any;
+        const { data } = await client
           .from('customer_addresses')
           .select('id, latitude, longitude, is_deliverable')
           .eq('user_id', user.id)
