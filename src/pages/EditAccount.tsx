@@ -1,8 +1,9 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, User, Phone, Mail, Lock, ChevronLeft } from 'lucide-react';
+import { User, Phone, Mail, MapPin, ChevronLeft } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 
@@ -12,8 +13,6 @@ const EditAccount = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -41,9 +40,7 @@ const EditAccount = () => {
         .eq('user_id', authUser.id)
         .maybeSingle();
 
-      if (customerError) {
-        console.error('Error loading customer profile:', customerError);
-      }
+      if (customerError) console.error('Error loading customer profile:', customerError);
 
       if (customerData) {
         setName(customerData.name || '');
@@ -65,28 +62,9 @@ const EditAccount = () => {
     if (isSubmitting || !userId) return;
 
     const cleanName = name.trim();
-    if (!cleanName) {
-      toast({ title: 'الاسم مطلوب', variant: 'destructive' });
+    if (cleanName.length < 2) {
+      toast({ title: 'اكتب اسمك بشكل صحيح', description: 'الاسم لازم يكون حرفين على الأقل.', variant: 'destructive' });
       return;
-    }
-
-    if (password) {
-      if (password.length < 8) {
-        toast({
-          title: 'كلمة المرور قصيرة',
-          description: 'كلمة المرور يجب أن تكون 8 أحرف أو أكثر.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        toast({
-          title: 'كلمتا المرور غير متطابقتين',
-          variant: 'destructive',
-        });
-        return;
-      }
     }
 
     setIsSubmitting(true);
@@ -97,27 +75,14 @@ const EditAccount = () => {
         .eq('user_id', userId);
       if (customerError) throw customerError;
 
-      const { error: authMetadataError } = await supabase.auth.updateUser({
-        data: { name: cleanName },
-      });
+      const { error: authMetadataError } = await supabase.auth.updateUser({ data: { name: cleanName } });
       if (authMetadataError) throw authMetadataError;
-
-      if (password) {
-        const { error: passwordError } = await supabase.auth.updateUser({ password });
-        if (passwordError) throw passwordError;
-      }
 
       localStorage.setItem('userName', cleanName);
       if (phone) localStorage.setItem('userPhone', phone);
       if (email) localStorage.setItem('userEmail', email);
 
-      toast({
-        title: 'تم التحديث بنجاح',
-        description: password ? 'تم تحديث البيانات وكلمة المرور.' : 'تم تحديث بياناتك بنجاح.',
-      });
-
-      setPassword('');
-      setConfirmPassword('');
+      toast({ title: 'تم حفظ بياناتك', description: 'بيانات حسابك اتحدثت بنجاح.' });
       navigate('/account');
     } catch (error: any) {
       console.error('Error updating user data:', error);
@@ -131,136 +96,65 @@ const EditAccount = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="p-8 text-center text-gray-500">جاري تحميل بيانات الحساب...</div>
-      </MainLayout>
-    );
-  }
-
   return (
     <MainLayout>
-      <div className="py-4 px-4 max-w-md mx-auto">
-        <div className="flex items-center mb-6">
-          <button onClick={() => navigate('/account')} className="p-2" aria-label="الرجوع">
-            <ArrowRight size={24} />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center">تعديل البيانات الشخصية</h1>
-          <div className="w-10" />
-        </div>
-
-        <div className="bg-white rounded-lg p-4 mb-4">
-          <div className="flex justify-between items-center">
-            <Link to="/addresses" className="text-primary text-sm flex items-center">
-              إدارة العناوين
-              <ChevronLeft size={16} />
-            </Link>
-            <h2 className="font-bold">بيانات الحساب</h2>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-white rounded-lg p-4 space-y-4">
-            <div>
-              <div className="flex items-center mb-2">
-                <User size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="name" className="font-medium">الاسم</label>
-              </div>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل اسمك"
-              />
+      <TopNavBar hideLogo hideSearch hideCart pageTitle="تعديل بياناتي" />
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
+        {loading ? <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل بيانات الحساب" /></div> : <div className="space-y-5">
+          <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
+            <div className="mb-6">
+              <p className="text-xs font-semibold text-primary">بيانات الحساب</p>
+              <h1 className="mt-1 text-2xl font-bold">خلّي بياناتك محدثة</h1>
+              <p className="mt-2 text-sm leading-6 text-gray-500">اسمك ورقمك هما البيانات الأساسية اللي بنستخدمها في الطلب والتواصل.</p>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Link to="/change-phone" className="text-primary text-sm font-medium">
-                  تغيير الرقم بأمان
-                </Link>
-                <div className="flex items-center">
-                  <Phone size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
+            <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isSubmitting}>
+              <div>
+                <label htmlFor="name" className="mb-2 flex items-center gap-2 text-sm font-semibold"><User size={18} className="text-primary" />الاسم</label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="min-h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-right outline-none transition focus:border-primary"
+                  placeholder="اكتب اسمك"
+                  autoComplete="name"
+                />
+              </div>
+
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold"><Phone size={18} className="text-primary" />رقم الهاتف</div>
+                  <Link to="/change-phone" className="text-sm font-semibold text-primary">تغيير الرقم</Link>
                 </div>
+                <p dir="ltr" className="break-all text-right font-medium text-gray-800">{phone || 'غير متاح'}</p>
+                <p className="mt-2 text-xs leading-5 text-gray-500">تغيير رقم الهاتف يتم بكود تحقق على الرقم الجديد.</p>
               </div>
-              <input
-                type="tel"
-                id="phone"
-                value={phone}
-                readOnly
-                className="w-full p-3 border border-gray-200 rounded-lg text-left bg-gray-50"
-                dir="ltr"
-              />
-              <p className="text-xs text-gray-500 mt-1">تغيير رقم الهاتف يحتاج رمز تحقق على الرقم الجديد.</p>
-            </div>
 
-            <div>
-              <div className="flex items-center mb-2">
-                <Mail size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="email" className="font-medium">البريد الإلكتروني</label>
-              </div>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                readOnly
-                className="w-full p-3 border border-gray-200 rounded-lg text-left bg-gray-50"
-                dir="ltr"
-              />
-              <p className="text-xs text-gray-500 mt-1">تغيير البريد الإلكتروني هنضيف له مسار تأكيد منفصل لاحقًا.</p>
-            </div>
+              {email && <div className="rounded-2xl border border-gray-100 p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><Mail size={18} className="text-primary" />البريد الإلكتروني</div>
+                <p dir="ltr" className="break-all text-right text-sm text-gray-700">{email}</p>
+              </div>}
 
-            <div>
-              <div className="flex items-center mb-2">
-                <Lock size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="password" className="font-medium">تغيير كلمة المرور (اختياري)</label>
-              </div>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="8 أحرف أو أكثر"
-              />
-            </div>
+              <button
+                type="submit"
+                className="flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-base font-semibold text-white disabled:opacity-60"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <BrandLoader size="sm" /> : 'حفظ التعديلات'}
+              </button>
+            </form>
+          </section>
 
-            <div>
-              <div className="flex items-center mb-2">
-                <Lock size={18} className="ml-2 text-gray-500" />
-                <label htmlFor="confirmPassword" className="font-medium">تأكيد كلمة المرور</label>
-              </div>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-right"
-                placeholder="أدخل كلمة المرور مرة أخرى"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center disabled:opacity-60"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <BrandLoader size="sm" className="" />
-            ) : (
-              'حفظ التعديلات'
-            )}
-          </button>
-        </form>
+          <Link to="/address-manager" className="flex min-h-20 items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary"><MapPin size={21} /></span>
+            <span className="min-w-0 flex-1"><strong className="block text-sm">إدارة عناوين التوصيل</strong><span className="mt-1 block text-xs text-gray-500">ضيف أو عدّل وحدد عنوانك الأساسي</span></span>
+            <ChevronLeft size={18} className="text-gray-400" />
+          </Link>
+        </div>}
       </div>
     </MainLayout>
   );
 };
 
 export default EditAccount;
-
