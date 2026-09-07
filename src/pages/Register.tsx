@@ -5,12 +5,13 @@ import AuthLayout from '@/components/layout/AuthLayout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { loadOnboardingState, nextOnboardingPath, safeReturnTo } from '@/lib/onboarding';
 
 export default function Register() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
-  const returnTo = ['/cart', '/payment', '/addresses', '/add-address', '/account'].includes(params.get('returnTo') || '') ? params.get('returnTo')! : '/';
+  const returnTo = safeReturnTo(params.get('returnTo'));
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [checking, setChecking] = useState(true);
@@ -48,13 +49,15 @@ export default function Register() {
       await queryClient.invalidateQueries({ queryKey: ['customer-favorites', data.user.id] });
       queryClient.setQueryData(['profile-completion', data.user.id], { name: fullName });
       window.dispatchEvent(new Event('customer-profile-ready'));
-      navigate(returnTo, { replace: true });
+      const state = await loadOnboardingState(data.user.id);
+      await queryClient.invalidateQueries({ queryKey: ['onboarding-state', data.user.id] });
+      navigate(nextOnboardingPath({ ...state, hasName: true }, returnTo), { replace: true });
     } catch { setError('تعذر حفظ بياناتك. راجع الاتصال وحاول مرة أخرى.'); }
     finally { setBusy(false); }
   }
   return <AuthLayout>
     <h1 className="text-center font-bold mb-2">خلّينا نتعرف عليك</h1>
-    <p className="text-center text-gray-600 mb-6">خطوة بسيطة لأول مرة: أكّد بياناتك عشان طلباتك توصل باسمك. عنوانك تقدر تضيفه دلوقتي أو عند أول طلب.</p>
+    <p className="text-center text-gray-600 mb-6">خطوة بسيطة لأول مرة: اكتب اسمك، وبعدها هنحدد عنوان التوصيل عشان طلباتك توصل لبابك.</p>
     {checking ? <p role="status" className="text-center">جاري التأكد من حسابك...</p> :
       <form onSubmit={completeProfile} className="space-y-5" aria-busy={busy}>
         <p className="text-center rounded-xl bg-green-50 p-3 text-green-800">رقمك اتأكد · <bdi dir="ltr">{phone}</bdi></p>
@@ -64,7 +67,7 @@ export default function Register() {
             onChange={event => { setName(event.target.value); setError(''); }} />
         </div>
         {error && <p id="registration-error" role="alert" className="text-sm text-red-700">{error}</p>}
-        <Button className="w-full" type="submit" disabled={busy || !phone}>{busy ? 'جاري حفظ حسابك...' : 'حفظ البيانات والمتابعة'}</Button>
+        <Button className="w-full" type="submit" disabled={busy || !phone}>{busy ? 'جاري حفظ حسابك...' : 'حفظ ومتابعة'}</Button>
       </form>}
   </AuthLayout>;
 }
