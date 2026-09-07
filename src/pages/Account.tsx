@@ -1,187 +1,62 @@
-import BrandLoader from '@/components/ui/BrandLoader';
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { User, MapPin, Package, Heart, ChevronLeft, Pencil, LogOut, RotateCcw } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
-import { Button } from "@/components/ui/button"
-import { ArrowRight, User, MapPin, ListChecks, Heart, ChevronLeft } from 'lucide-react';
-import { Separator } from "@/components/ui/separator";
+import BrandLoader from '@/components/ui/BrandLoader';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { useIsMobile } from '@/hooks/use-mobile';
 
+const shortcuts = [
+  { to: '/orders', label: 'طلباتي', description: 'تابع حالة طلبك وراجع طلباتك السابقة', icon: Package },
+  { to: '/favorites', label: 'المفضلة', description: 'منتجاتك المفضلة جاهزة للتسوق', icon: Heart },
+];
 const Account = () => {
-  const { user, loading, signOut } = useUser();
+  const { user, authLoading } = useUser();
   const navigate = useNavigate();
-  const [loadingComplete, setLoadingComplete] = useState(false);
-  const [userData, setUserData] = useState<{ name?: string } | null>(null);
-  const isMobile = useIsMobile();
-  
-  useEffect(() => {
-    // Set a timeout to prevent infinite loading state
-    const timer = setTimeout(() => {
-      setLoadingComplete(true);
-    }, 1500);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    // Fetch user profile data when user is available
-    const fetchUserData = async () => {
-      if (user) {
-        const { data, error } = await supabase
-          .from('customers')
-          .select('name')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (data && !error) {
-          setUserData(data);
-        }
-      }
-    };
-    
-    fetchUserData();
-  }, [user]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+  const [signingOut, setSigningOut] = useState(false);
+  const [logoutError, setLogoutError] = useState(false);
+  const profile = useQuery({ queryKey: ['account-profile', user?.id], enabled: !!user && !authLoading, queryFn: async () => {
+    const { data, error } = await supabase.from('customers').select('name').eq('user_id', user!.id).maybeSingle();
+    if (error) throw error;
+    return data;
+  }});
+  const name = profile.data?.name || user?.user_metadata?.name || 'أهلًا بيك';
+  const logout = async () => {
+    if (signingOut) return;
+    setSigningOut(true); setLogoutError(false);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate('/', { replace: true });
+    } catch { setLogoutError(true); } finally { setSigningOut(false); }
   };
-
-  // Get the display name from various sources
-  const getDisplayName = () => {
-    if (userData?.name) {
-      return userData.name;
-    } else if (user?.user_metadata?.name) {
-      return user.user_metadata.name;
-    } else if (user?.user_metadata?.first_name) {
-      return `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim();
-    } else {
-      return 'المستخدم';
-    }
-  };
-
-  // Show loading state only for a limited time
-  if (loading && !loadingComplete) {
-    return (
-      <MainLayout>
-        <TopNavBar 
-          hideLogo={true}
-          hideSearch={true}
-          hideCart={true}
-          pageTitle="حسابي"
-        />
-        <div className={`flex justify-center items-center h-[60vh] ${!isMobile ? 'mt-24' : ''}`}>
-          <BrandLoader size="md" className="" />
-        </div>
-      </MainLayout>
-    );
-  }
-
-  return (
-    <MainLayout>
-      <div>
-        {/* Top Navigation Bar without cart icon */}
-        <TopNavBar 
-          hideLogo={true}
-          hideSearch={true}
-          hideCart={true}
-          pageTitle="حسابي"
-        />
-
-        {/* Main Content with proper spacing */}
-        <div className="px-4">
-          <div className="max-w-2xl mx-auto">
-            {user ? (
-              <div className="space-y-4">
-                {/* User Info Card */}
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <div className="flex items-center mb-3">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="mr-4">
-                      <h2 className="font-semibold">{getDisplayName()}</h2>
-                      <p className="text-sm text-gray-500">مرحباً بك في ماركت المعداوي</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/edit-account')}>
-                    تعديل البيانات الشخصية
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <Button 
-                    onClick={() => navigate('/addresses')} 
-                    variant="ghost" 
-                    className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
-                  >
-                    <div className="flex items-center">
-                      <MapPin className="h-6 w-6 text-primary ml-3" />
-                      <span className="text-sm font-medium">عناوين التوصيل</span>
-                    </div>
-                    <ChevronLeft className="h-5 w-5 text-gray-400" />
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => navigate('/favorites')} 
-                    variant="ghost" 
-                    className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
-                  >
-                    <div className="flex items-center">
-                      <Heart className="h-6 w-6 text-primary ml-3" />
-                      <span className="text-sm font-medium">المفضلة</span>
-                    </div>
-                    <ChevronLeft className="h-5 w-5 text-gray-400" />
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => navigate('/orders')} 
-                    variant="ghost" 
-                    className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow w-full h-auto"
-                  >
-                    <div className="flex items-center">
-                      <ListChecks className="h-6 w-6 text-primary ml-3" />
-                      <span className="text-sm font-medium">الطلبات</span>
-                    </div>
-                    <ChevronLeft className="h-5 w-5 text-gray-400" />
-                  </Button>
-
-                </div>
-
-                <Separator className="my-4" />
-
-                {/* Logout Button */}
-                <Button 
-                  variant="destructive" 
-                  onClick={handleSignOut}
-                  className="w-full"
-                >
-                  تسجيل الخروج
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <User className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                <h2 className="text-xl font-semibold mb-2">مرحباً بك</h2>
-                <p className="text-gray-500 mb-4">قم بتسجيل الدخول للوصول إلى حسابك</p>
-                <Button 
-                  onClick={() => navigate('/phone-verify')}
-                  className="w-full"
-                >
-                  تسجيل الدخول
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </MainLayout>
-  );
+  return <MainLayout>
+    <TopNavBar hideLogo hideSearch hideCart pageTitle="حسابي" />
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      {authLoading ? <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل حسابك" /></div> : !user ?
+        <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
+          <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary"><User size={30} /></span>
+          <h1 className="text-2xl font-bold">أهلًا بيك في المعداوي</h1>
+          <p className="mb-6 mt-3 text-sm leading-7 text-gray-500">سجّل برقم موبايلك عشان تتابع طلباتك وتحفظ عناوينك ومنتجاتك المفضلة.</p>
+          <Button className="min-h-12 w-full rounded-xl text-base" onClick={() => navigate('/phone-login')}>تسجيل الدخول أو إنشاء حساب</Button>
+          <Link to="/" className="mt-3 flex min-h-12 items-center justify-center rounded-xl text-sm font-semibold text-primary">كمّل تصفح المنتجات</Link>
+        </section> : <div className="space-y-6">
+          <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
+            <div className="flex items-center gap-4"><span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-primary"><User size={30} /></span><div className="min-w-0 flex-1"><p className="mb-1 text-xs text-gray-500">حسابك في المعداوي</p><h1 className="break-words text-xl font-bold sm:text-2xl">{profile.isLoading ? 'جاري تحميل بياناتك…' : name}</h1>{user.phone && <p dir="ltr" className="mt-2 text-right text-sm text-gray-500">+{user.phone.replace(/^\+/, '')}</p>}</div></div>
+            {profile.isError && <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">تعذّر تحميل بياناتك.<button onClick={() => profile.refetch()} className="mr-2 min-h-11 underline">إعادة المحاولة</button></div>}
+            <Link to="/edit-account" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold hover:bg-gray-50"><Pencil size={17} />تعديل بياناتي</Link>
+          </section>
+          <section aria-label="التسوق والطلبات" className="grid grid-cols-2 gap-3 sm:gap-4">{shortcuts.map(({ to, label, description, icon: Icon }) => <Link key={to} to={to} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm hover:border-green-200 sm:p-5"><span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-primary"><Icon size={23} /></span><h2 className="font-bold">{label}</h2><p className="mt-2 text-xs leading-6 text-gray-500">{description}</p></Link>)}</section>
+          <section aria-label="إدارة الحساب" className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+            {[{to:'/address-manager',label:'عناوين التوصيل',description:'ضيف عنوان أو اختار عنوانك الافتراضي',icon:MapPin},{to:'/return-requests',label:'طلبات الاسترجاع',description:'راجع طلبات الاسترجاع وتابع حالتها',icon:RotateCcw}].map(({to,label,description,icon:Icon}) => <Link key={to} to={to} className="flex min-h-24 items-center gap-3 border-b border-gray-100 p-5 last:border-0 hover:bg-gray-50"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-primary"><Icon size={21} /></span><span className="min-w-0 flex-1"><strong className="block text-sm">{label}</strong><span className="mt-1 block text-xs leading-5 text-gray-500">{description}</span></span><ChevronLeft size={19} className="shrink-0 text-gray-400" /></Link>)}
+          </section>
+          {logoutError && <p role="alert" className="text-sm text-red-700">تعذّر تسجيل الخروج. راجع اتصالك وحاول تاني.</p>}
+          <button disabled={signingOut} onClick={logout} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-white text-sm font-semibold text-red-700 disabled:opacity-50">{signingOut ? <BrandLoader size="sm" /> : <LogOut size={18} />}{signingOut ? 'جاري تسجيل الخروج…' : 'تسجيل الخروج'}</button>
+        </div>}
+    </div>
+  </MainLayout>;
 };
-
 export default Account;
