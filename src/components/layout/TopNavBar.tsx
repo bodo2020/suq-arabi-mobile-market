@@ -26,7 +26,7 @@ const desktopLinks = [
 ];
 
 const TopNavBar: React.FC<TopNavBarProps> = ({
-  searchPlaceholder = "البحث عن منتجات، أقسام...",
+  searchPlaceholder = 'ابحث عن منتج أو قسم...',
   onSearchFocus,
   searchProps = {},
   hideLogo = false,
@@ -53,30 +53,32 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const isActive = (to: string) => location.pathname === to;
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-primary text-primary-foreground shadow-lg rounded-b-3xl z-50">
-      <div className="mx-auto w-full max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl px-4 py-4">
-        <div className="flex items-center gap-4">
-          {/* Back Button */}
+    <header className="fixed left-0 right-0 top-0 z-50 rounded-b-[24px] border-b border-white/10 bg-primary/95 text-primary-foreground shadow-[0_10px_30px_rgba(0,0,0,0.14)] backdrop-blur-xl md:rounded-b-2xl">
+      <div className="mx-auto w-full max-w-md px-3 py-3 sm:px-4 md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
+        <div className="flex min-h-12 items-center gap-2.5 sm:gap-3 md:gap-4">
           {showBackButton && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={onBack || (() => navigate(-1))}
-              className="shrink-0 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+              className="h-11 w-11 shrink-0 rounded-2xl border border-white/10 bg-white/10 text-primary-foreground shadow-sm transition-all duration-200 hover:bg-white/20 hover:text-primary-foreground active:scale-95"
               aria-label="الرجوع"
             >
-              <ArrowRight size={22} />
+              <ArrowRight size={21} strokeWidth={2.2} />
             </Button>
           )}
 
-          {/* Logo */}
           {!hideLogo && (
-            <Link to="/" className="shrink-0 transition-transform duration-200 hover:scale-105">
+            <Link
+              to="/"
+              className="flex h-11 shrink-0 items-center rounded-xl px-0.5 transition-all duration-200 hover:bg-white/5 active:scale-95"
+              aria-label="العودة للرئيسية"
+            >
               <img
                 src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png"
-                alt="الشعار"
-                className="h-10 w-auto md:h-12"
+                alt="المعداوي ماركت"
+                className="h-9 w-auto object-contain md:h-10"
                 width={120}
                 height={48}
                 decoding="async"
@@ -84,59 +86,61 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
             </Link>
           )}
 
-          {/* Page Title in center when logo and search are hidden */}
           {pageTitle && hideLogo && hideSearch && (
-            <div className="flex-1 text-center">
-              <h1 className="text-xl font-bold">{pageTitle}</h1>
+            <div className="min-w-0 flex-1 px-2 text-center">
+              <h1 className="truncate text-lg font-bold sm:text-xl">{pageTitle}</h1>
             </div>
           )}
 
-          {/* Search Bar */}
           {!hideSearch && (
-            <div className="flex-1 max-w-2xl">
-              <SearchBar placeholder={searchPlaceholder} onFocus={handleSearchFocus} {...searchProps} />
+            <div className="min-w-0 flex-1 md:max-w-2xl">
+              <SearchBar
+                placeholder={searchPlaceholder}
+                onFocus={handleSearchFocus}
+                {...searchProps}
+              />
             </div>
           )}
 
-          {/* Desktop-only actions */}
-          <div className="hidden md:flex items-center gap-1 mr-auto">
+          <div className="mr-auto hidden items-center gap-1.5 md:flex">
             {!hideCart && (
               <Link
                 to="/cart"
-                className="relative flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-white/10"
+                className="relative flex h-11 items-center gap-2 rounded-xl border border-transparent px-3 text-sm font-semibold transition-all duration-200 hover:border-white/10 hover:bg-white/10 active:scale-[0.98]"
               >
-                <ShoppingCart size={20} />
+                <ShoppingCart size={20} strokeWidth={2} />
                 <span>السلة</span>
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -left-1 bg-white text-primary text-[11px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
-                    {cartCount}
+                  <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-primary shadow-sm">
+                    {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
               </Link>
             )}
+
             <Link
               to={user ? '/account' : '/phone-login'}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-white/10"
+              className="flex h-11 items-center gap-2 rounded-xl border border-transparent px-3 text-sm font-semibold transition-all duration-200 hover:border-white/10 hover:bg-white/10 active:scale-[0.98]"
             >
-              <User size={20} />
+              <User size={20} strokeWidth={2} />
               <span>{user ? 'حسابي' : 'دخول'}</span>
             </Link>
           </div>
         </div>
 
-        {/* Desktop navigation row */}
-        <nav className="hidden md:flex items-center gap-1 mt-3 border-t border-white/15 pt-2">
+        <nav className="mt-2.5 hidden items-center gap-1 border-t border-white/10 pt-2 md:flex" aria-label="التنقل الرئيسي">
           {desktopLinks
             .filter(link => !link.authOnly || !!user)
             .map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
-                className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm transition-colors duration-200 hover:bg-white/10 ${
-                  isActive(to) ? 'bg-white/15 font-bold' : 'font-medium'
+                aria-current={isActive(to) ? 'page' : undefined}
+                className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm transition-all duration-200 hover:bg-white/10 active:scale-[0.98] ${
+                  isActive(to) ? 'bg-white/15 font-bold shadow-sm' : 'font-medium text-white/90'
                 }`}
               >
-                <Icon size={18} />
+                <Icon size={18} strokeWidth={isActive(to) ? 2.3 : 2} />
                 {label}
               </Link>
             ))}
