@@ -41,16 +41,24 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const { getTotalItems } = useCart();
   const { user } = useUser();
   const cartCount = getTotalItems();
+  const isSearchPage = location.pathname === '/search';
 
   const handleSearchFocus = () => {
     if (onSearchFocus) {
       onSearchFocus();
-    } else {
+      return;
+    }
+
+    if (!isSearchPage) {
       navigate('/search');
     }
   };
 
   const isActive = (to: string) => location.pathname === to;
+  const resolvedSearchProps = {
+    readOnly: !isSearchPage,
+    ...searchProps,
+  };
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 rounded-b-[24px] border-b border-white/10 bg-primary/95 text-primary-foreground shadow-[0_10px_30px_rgba(0,0,0,0.14)] backdrop-blur-xl md:rounded-b-2xl">
@@ -97,7 +105,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               <SearchBar
                 placeholder={searchPlaceholder}
                 onFocus={handleSearchFocus}
-                {...searchProps}
+                {...resolvedSearchProps}
               />
             </div>
           )}
