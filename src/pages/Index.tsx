@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { ChevronLeft, MapPin, Sparkles, PackageCheck, Clock3 } from 'lucide-react';
+import { ChevronLeft, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
@@ -12,22 +12,26 @@ import CategorySkeleton from '@/components/ui/CategorySkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
+import { readGuestAddress } from '@/lib/deliveryAddress';
 const ProductCollectionsSection=lazy(()=>import('@/components/sections/ProductCollectionsSection'));
 const BannersContainer=lazy(()=>import('@/components/ui/BannersContainer'));
 
 const Index=()=>{
  const navigate=useNavigate(); const {user, authLoading}=useUser();
- const addressQuery=useQuery({queryKey:['home-default-address',user?.id],enabled:!!user&&!authLoading,queryFn:async()=>{const {data,error}=await supabase.from('customer_addresses').select('address').eq('user_id',user!.id).eq('is_default',true).maybeSingle();if(error)throw error;return data;},staleTime:0});
- const address=addressQuery.data?.address||'';
+ const [guestAddress,setGuestAddress]=useState(()=>readGuestAddress());
+ useEffect(()=>{const refresh=()=>setGuestAddress(readGuestAddress());window.addEventListener('guest-address-changed',refresh);window.addEventListener('storage',refresh);return()=>{window.removeEventListener('guest-address-changed',refresh);window.removeEventListener('storage',refresh);};},[]);
+ const addressQuery=useQuery({queryKey:['home-default-address',user?.id],enabled:!!user&&!authLoading,queryFn:async()=>{const {data,error}=await supabase.from('customer_addresses').select('address,latitude,longitude').eq('user_id',user!.id).eq('is_default',true).maybeSingle();if(error)throw error;return data;},staleTime:0});
+ const address=user?addressQuery.data?.address||'':guestAddress?.address||'';
  const categoriesQuery=useQuery({queryKey:['categories'],queryFn:getCategories,staleTime:300000,refetchOnWindowFocus:false});
  const bannersQuery=useQuery({queryKey:['active-banners'],queryFn:async()=>{const {data,error}=await supabase.from('banners').select('*').eq('active',true).order('position');if(error)throw error;return data||[];},staleTime:300000,refetchOnWindowFocus:false});
 
  const categories=categoriesQuery.data||[];
  const category=(cat:MainCategory)=>navigate(`/category/${cat.id}`);
+ const openAddress=()=>{if(!user&&!guestAddress){navigate('/add-address?returnTo=%2F');return;}navigate('/address-manager');};
  return <MainLayout><StoreStructuredData/><TopNavBar onSearchFocus={()=>navigate('/search')}/>
   <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
-   <button onClick={()=>navigate('/address-manager')} className="mb-5 flex min-h-16 w-full items-center gap-3 rounded-2xl border border-green-100 bg-white p-4 text-right shadow-sm hover:border-green-200" aria-label={address?'تغيير عنوان التوصيل':'إضافة عنوان توصيل'}>
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary"><MapPin size={20}/></span><span className="min-w-0 flex-1"><span className="block text-xs text-gray-500">التوصيل إلى</span><strong className="block truncate text-sm text-gray-900">{authLoading||(user&&addressQuery.isLoading)?'جاري تحميل عنوانك…':addressQuery.isError?'تعذّر تحميل العنوان — اضغط للمراجعة':address||'اختار عنوان التوصيل'}</strong></span><ChevronLeft size={20} className="text-primary"/>
+   <button onClick={openAddress} className="mb-5 flex min-h-16 w-full items-center gap-3 rounded-2xl border border-green-100 bg-white p-4 text-right shadow-sm hover:border-green-200" aria-label={address?'تغيير عنوان التوصيل':'إضافة عنوان توصيل'}>
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary"><MapPin size={20}/></span><span className="min-w-0 flex-1"><span className="block text-xs text-gray-500">التوصيل إلى</span><strong className="block truncate text-sm text-gray-900">{authLoading||(user&&addressQuery.isLoading)?'جاري تحميل عنوانك…':user&&addressQuery.isError?'تعذّر تحميل العنوان — اضغط للمراجعة':address||'حدد عنوانك على الخريطة'}</strong>{!user&&guestAddress&&<span className="mt-1 block text-[11px] text-primary">ضيف · {Number(guestAddress.distance_km).toFixed(1)} كم من الفرع</span>}</span><ChevronLeft size={20} className="text-primary"/>
    </button>
    {bannersQuery.isLoading?<BannerSkeleton/>:(bannersQuery.data?.length||0)>0&&<Suspense fallback={<BannerSkeleton/>}><div className="mb-7 overflow-hidden rounded-3xl shadow-sm"><BannersContainer banners={bannersQuery.data!}/></div></Suspense>}
    <section className="mb-8 rounded-3xl bg-white p-4 shadow-sm sm:p-6">
