@@ -4,7 +4,7 @@ import { Button } from './button';
 import { Input } from './input';
 import BrandLoader from './BrandLoader';
 import { loadGoogleMaps } from '@/lib/googleMaps';
-import { DEFAULT_DELIVERY_CENTER, DELIVERY_RADIUS_KM } from '@/lib/deliveryAddress';
+import { DEFAULT_DELIVERY_CENTER } from '@/lib/deliveryAddress';
 
 export type Coordinates = { lat: number; lng: number };
 
@@ -56,18 +56,6 @@ export default function DeliveryMap({ value, onChange, onAddressResolved }: Prop
         gestureHandling: 'cooperative',
       });
       geocoder.current = new sdk.maps.Geocoder();
-
-      new sdk.maps.Circle({
-        map: map.current,
-        center: DEFAULT_DELIVERY_CENTER,
-        radius: DELIVERY_RADIUS_KM * 1000,
-        strokeColor: '#005931',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#005931',
-        fillOpacity: 0.08,
-        clickable: false,
-      });
 
       new sdk.maps.Marker({
         map: map.current,
@@ -160,10 +148,10 @@ export default function DeliveryMap({ value, onChange, onAddressResolved }: Prop
       {!ready && <div className="absolute inset-0 flex items-center justify-center gap-3 p-6 text-center">{!error && <BrandLoader size="md" />}<span>{error || 'بنحمّل الخريطة'}</span></div>}
     </div>
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <p className="text-sm text-gray-600">الدائرة الخضراء هي نطاق التوصيل الحالي حتى {DELIVERY_RADIUS_KM} كم.</p>
+      <p className="text-sm text-gray-600">بعد اختيار النقطة، بنحسب مسافة القيادة الفعلية من الفرع. الحد الحالي 10 كم بالطريق.</p>
       <Button type="button" variant="outline" onClick={locate} disabled={!ready || busy} className="min-h-11 rounded-xl"><LocateFixed size={17} className="ml-2" />{busy ? 'لحظة واحدة…' : 'استخدم موقعي'}</Button>
     </div>
     {error && ready && <p role="alert" className="text-sm text-amber-700">{error}</p>}
-    <p role="status" className="text-sm text-[#005931]">{value ? 'تم تحديد نقطة التوصيل. حرّك الخريطة لو عايز تعدّلها.' : 'الخريطة بدأت من فرع المعداوي الأساسي. مش هنطلب صلاحية موقعك إلا لو ضغطت «استخدم موقعي».'}</p>
+    <p role="status" className="text-sm text-[#005931]">{value ? 'تم تحديد نقطة التوصيل. هنحسب الطريق الفعلي عند التحقق.' : 'الخريطة بدأت من فرع المعداوي الأساسي. مش هنطلب صلاحية موقعك إلا لو ضغطت «استخدم موقعي».'}</p>
   </section>;
 }
