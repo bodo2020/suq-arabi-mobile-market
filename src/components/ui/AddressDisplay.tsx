@@ -1,167 +1,111 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { customerRpc } from '@/lib/customerPersistence';
+import { readGuestAddress } from '@/lib/deliveryAddress';
 
 interface AddressDisplayProps {
   address?: string;
   onEdit?: () => void;
-  areaName?: string;
   className?: string;
   showAddressSelector?: boolean;
-  neighborhoodName?: string;
   latitude?: number;
   longitude?: number;
 }
 
-const AddressDisplay = ({
-  address,
-  areaName,
-  className,
-  showAddressSelector = false,
-  neighborhoodName,
-  onEdit
-}: AddressDisplayProps) => {
+type MapAddress = {
+  id: string;
+  address: string;
+  is_default?: boolean | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  is_deliverable?: boolean | null;
+  distance_km?: number | string | null;
+};
+
+const AddressDisplay = ({ address, className, showAddressSelector = false, onEdit }: AddressDisplayProps) => {
   const { user } = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
-  
+  const guest = !user ? readGuestAddress() : null;
+
   const { data: addresses = [], refetch } = useQuery({
     queryKey: ['addresses', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      const { data } = await supabase
+      if (!user?.id) return [] as MapAddress[];
+      const client = supabase as any;
+      const { data, error } = await client
         .from('customer_addresses')
-        .select(`
-          *,
-          governorates(name),
-          cities(name),
-          areas(name),
-          neighborhoods(name)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('is_default', { ascending: false });
-      return data || [];
+      if (error) throw error;
+      return (data || []) as MapAddress[];
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
   });
 
-  return (
-    <div className={cn("flex items-center gap-2 mb-2", className)}>
-      <div className="flex items-center flex-1">
-        <MapPin size={18} className="text-current mr-2" />
-        <div className="flex items-center text-sm font-medium">
-          <span className="opacity-90">التوصيل إلى</span>
-          <span className="mr-2 font-bold underline decoration-2 underline-offset-2">
-            {areaName || address || "اختر عنوانك"}
-            {neighborhoodName && <span className="mr-1">، {neighborhoodName}</span>}
-          </span>
-          {(areaName || address) && (
-            <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full mr-2">
-              افتراضي
-            </span>
-          )}
-        </div>
-        
-        {showAddressSelector && user && addresses.length > 0 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="ml-2 text-xs opacity-75 hover:opacity-100 transition-opacity">
-                تغيير
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-white">
-              {addresses.map((addr) => (
-                <DropdownMenuItem key={addr.id} onClick={() => handleAddressSelect(addr.id)}>
-                  <div className={cn("flex flex-col w-full", addr.is_default && "font-bold")}>
-                    <span>
-                      {addr.areas?.name} {addr.neighborhoods?.name ? `- ${addr.neighborhoods?.name}` : ''}
-                    </span>
-                    {addr.address && <span className="text-xs text-gray-500">{addr.address}</span>}
-                    {addr.is_default && <span className="text-xs text-primary">العنوان الافتراضي</span>}
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
+  const displayAddress = address || guest?.address || 'اختر عنوانك';
+
+  return <div className={cn('flex items-center gap-2 mb-2', className)}>
+    <div className="flex min-w-0 flex-1 items-center">
+      <MapPin size={18} className="ml-2 shrink-0 text-current" />
+      <div className="min-w-0 flex-1 text-sm font-medium">
+        <span className="opacity-80">التوصيل إلى </span>
+        <span className="font-bold">{displayAddress}</span>
+        {(address || guest) && <span className="mr-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">محدد على الخريطة</span>}
       </div>
-      
-      {!showAddressSelector && (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onEdit || handleChangeAddress} 
-          className="text-xs text-current opacity-75 hover:opacity-100"
-        >
-          {address ? "تغيير" : "إضافة"}
-        </Button>
-      )}
+
+      {showAddressSelector && user && addresses.length > 0 && <DropdownMenu>
+        <DropdownMenuTrigger asChild><button className="mr-2 shrink-0 text-xs font-medium opacity-75 hover:opacity-100">تغيير</button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72 bg-white">
+          {addresses.map(addr => {
+            const mapped = addr.latitude != null && addr.longitude != null;
+            return <DropdownMenuItem key={addr.id} disabled={!mapped} onClick={() => mapped && void handleAddressSelect(addr.id)}>
+              <div className={cn('flex w-full flex-col gap-1', addr.is_default && 'font-bold')}>
+                <span className="line-clamp-2">{addr.address || 'عنوان بدون تفاصيل'}</span>
+                <span className={cn('flex items-center gap-1 text-xs', mapped ? 'text-primary' : 'text-amber-700')}><Navigation size={12} />{mapped ? (addr.distance_km != null ? `يبعد ${Number(addr.distance_km).toFixed(1)} كم` : 'محدد على الخريطة') : 'يحتاج تحديد الموقع على الخريطة'}</span>
+                {addr.is_default && <span className="text-xs text-primary">العنوان الافتراضي</span>}
+              </div>
+            </DropdownMenuItem>;
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>}
     </div>
-  );
+
+    {!showAddressSelector && <Button variant="ghost" size="sm" onClick={onEdit || handleChangeAddress} className="shrink-0 text-xs text-current opacity-75 hover:opacity-100">{address || guest ? 'تغيير' : 'إضافة'}</Button>}
+  </div>;
 
   async function handleAddressSelect(addressId: string) {
     if (!user) return;
     try {
-      await supabase
-        .from('customer_addresses')
-        .update({ is_default: false })
-        .eq('user_id', user.id);
-
-      await supabase
-        .from('customer_addresses')
-        .update({ is_default: true })
-        .eq('id', addressId);
-
-      const selectedAddress = addresses.find(addr => addr.id === addressId);
-      if (selectedAddress) {
-        localStorage.setItem('userAddress', selectedAddress.address || '');
-        localStorage.setItem('userArea', selectedAddress.areas?.name || '');
-        localStorage.setItem('userNeighborhood', selectedAddress.neighborhoods?.name || '');
-
-        await supabase
-          .from('customers')
-          .update({
-            governorate_id: selectedAddress.governorate_id,
-            city_id: selectedAddress.city_id,
-            area_id: selectedAddress.area_id,
-            neighborhood_id: selectedAddress.neighborhood_id,
-            address: selectedAddress.address
-          })
-          .eq('user_id', user.id);
+      const { error } = await customerRpc('set_default_customer_address', { p_address_id: addressId });
+      if (error) throw error;
+      const selected = addresses.find(item => item.id === addressId);
+      if (selected) {
+        localStorage.setItem('userAddress', selected.address || '');
+        localStorage.setItem('userArea', 'عنوان على الخريطة');
+        localStorage.removeItem('userNeighborhood');
       }
-
       await refetch();
-      toast({
-        title: "تم تحديث العنوان",
-        description: "تم تغيير العنوان الافتراضي بنجاح"
-      });
-
-      window.location.reload();
+      toast({ title: 'تم تحديث العنوان', description: 'العنوان ده بقى الافتراضي للتوصيل.' });
+      window.dispatchEvent(new Event('customer-profile-ready'));
     } catch (error) {
       console.error('Error updating default address:', error);
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "حدث خطأ أثناء تحديث العنوان"
-      });
+      toast({ variant: 'destructive', title: 'تعذر تغيير العنوان', description: 'حاول مرة تانية.' });
     }
   }
 
   function handleChangeAddress() {
-    if (user) {
-      navigate('/address-manager');
-    } else {
-      navigate('/add-address');
-    }
+    navigate(user ? '/addresses' : '/add-address');
   }
 };
 
 export default AddressDisplay;
-
