@@ -7,7 +7,7 @@ import CollectionsList from './CollectionsList';
 const ProductCollectionsSection = () => {
   const { data: branchId, isLoading: branchLoading } = useQuery({
     queryKey: ['delivery-branch-id'],
-    queryFn: getCurrentDeliveryBranchId,
+    queryFn: () => getCurrentDeliveryBranchId(),
     staleTime: 30_000,
     refetchOnWindowFocus: true,
   });
@@ -27,9 +27,9 @@ const ProductCollectionsSection = () => {
     refetchOnWindowFocus: false,
   });
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const { data: products = [], isLoading: productsLoading, isError: productsError } = useQuery({
     queryKey: ['active-products', branchId],
-    queryFn: getProducts,
+    queryFn: () => getProducts(),
     enabled: Boolean(branchId),
     staleTime: 30_000,
     refetchOnWindowFocus: true,
@@ -43,7 +43,7 @@ const ProductCollectionsSection = () => {
     );
   }
 
-  if (!productCollections.length || !branchId) return null;
+  if (!productCollections.length || !branchId || productsError) return null;
 
   return (
     <div className="space-y-6">
