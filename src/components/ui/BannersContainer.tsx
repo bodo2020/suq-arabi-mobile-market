@@ -1,72 +1,60 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+interface BannerItem {
+  id: string;
+  title: string;
+  image_url: string;
+  link?: string | null;
+  category_id?: string | null;
+  main_category_id?: string | null;
+  company_id?: string | null;
+  products?: string[] | null;
+}
+
 interface BannersContainerProps {
-  banners: {
-    id: string;
-    title: string;
-    image_url: string;
-    link?: string;
-    category_id?: string;
-    products?: string[];
-  }[];
+  banners: BannerItem[];
 }
 
 const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const navigate = useNavigate();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // التحريك التلقائي
-  useEffect(() => {
-    if (banners.length > 1) {
-      intervalRef.current = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % banners.length);
-      }, 4000); // تغيير كل 4 ثواني
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [banners.length]);
-
-  // إيقاف التحريك التلقائي عند التفاعل مع الماوس
-  const handleMouseEnter = () => {
+  const stopRotation = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
   };
 
-  const handleMouseLeave = () => {
+  const startRotation = () => {
+    stopRotation();
     if (banners.length > 1) {
       intervalRef.current = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % banners.length);
+        setCurrentSlide(prev => (prev + 1) % banners.length);
       }, 4000);
     }
   };
 
-  const handleBannerClick = (banner: any) => {
-    if (banner.products && banner.products.length) {
+  useEffect(() => {
+    if (currentSlide >= banners.length) setCurrentSlide(0);
+    startRotation();
+    return stopRotation;
+  }, [banners.length]);
+
+  const handleBannerClick = (banner: BannerItem) => {
+    const hasTarget = Boolean(
+      banner.products?.length || banner.company_id || banner.main_category_id || banner.category_id,
+    );
+    if (hasTarget) {
       navigate(`/banner-products/${banner.id}`);
-    } else if (banner.link) {
-      navigate(banner.link);
+      return;
     }
-  };
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
-  };
-
-  const goToPrevious = () => {
-    setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
-  };
-
-  const goToNext = () => {
-    setCurrentSlide((prev) => (prev + 1) % banners.length);
+    if (!banner.link) return;
+    if (/^https?:\/\//i.test(banner.link)) window.location.assign(banner.link);
+    else navigate(banner.link);
   };
 
   if (banners.length === 0) return null;
@@ -74,33 +62,37 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   return (
     <div
       className="relative w-full overflow-hidden rounded-3xl"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={stopRotation}
+      onMouseLeave={startRotation}
+      onFocusCapture={stopRotation}
+      onBlurCapture={startRotation}
     >
-      {/* الشرائح */}
       <div
         className="flex transition-transform duration-500 ease-in-out"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
-        {banners.map((banner, index) => (
-          <div
-            key={banner.id}
-            className="w-full flex-shrink-0"
-          >
+        {banners.map(banner => (
+          <div key={banner.id} className="w-full flex-shrink-0">
             <div
               className="relative h-44 w-full cursor-pointer sm:h-60 lg:h-72"
               onClick={() => handleBannerClick(banner)}
               tabIndex={0}
               role="button"
-              aria-label={banner.title}
-              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') handleBannerClick(banner); }}
+              aria-label={banner.title || 'فتح العرض'}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleBannerClick(banner);
+                }
+              }}
             >
               <img
-                src={banner.image_url}
-                alt={banner.title}
-                className="w-full h-full object-cover"
+                src={banner.image_url || '/placeholder.svg'}
+                alt={banner.title || 'عرض من المعداوي'}
+                className="h-full w-full object-cover"
                 loading="lazy"
                 decoding="async"
+                onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </div>
@@ -108,46 +100,39 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
         ))}
       </div>
 
-      {/* أسهم التنقل - تظهر فقط إذا كان هناك أكثر من بانر واحد */}
       {banners.length > 1 && (
         <>
           <button
-            onClick={goToPrevious}
-            className="hidden sm:block absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 z-10"
+            type="button"
+            onClick={() => setCurrentSlide(prev => (prev - 1 + banners.length) % banners.length)}
+            className="absolute left-4 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/85 p-2 text-gray-800 shadow-lg transition hover:bg-white sm:block"
             aria-label="البانر السابق"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
           <button
-            onClick={goToNext}
-            className="hidden sm:block absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 z-10"
+            type="button"
+            onClick={() => setCurrentSlide(prev => (prev + 1) % banners.length)}
+            className="absolute right-4 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/85 p-2 text-gray-800 shadow-lg transition hover:bg-white sm:block"
             aria-label="البانر التالي"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="h-5 w-5" />
           </button>
+          <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+            {banners.map((banner, index) => (
+              <button
+                type="button"
+                key={banner.id}
+                onClick={() => setCurrentSlide(index)}
+                className={`h-2.5 rounded-full transition-all ${currentSlide === index ? 'w-7 bg-white shadow-lg' : 'w-2.5 bg-white/60 hover:bg-white/80'}`}
+                aria-label={`الانتقال إلى البانر ${index + 1}`}
+              />
+            ))}
+          </div>
         </>
-      )}
-
-      {/* النقط للتنقل - تظهر فقط إذا كان هناك أكثر من بانر واحد */}
-      {banners.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`h-2.5 rounded-full transition-all duration-200 ${
-                currentSlide === index
-                  ? 'w-7 bg-white shadow-lg'
-                  : 'w-2.5 bg-white/60 hover:bg-white/80'
-              }`}
-              aria-label={`الانتقال إلى البانر ${index + 1}`}
-            />
-          ))}
-        </div>
       )}
     </div>
   );
 };
 
 export default BannersContainer;
-
