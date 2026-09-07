@@ -19,6 +19,7 @@ export type Product = {
   bulk_enabled: boolean;
   bulk_quantity?: number;
   bulk_price?: number;
+  bulk_name?: string | null;
   bulk_image_url?: string | null;
   bulk_variant_id?: string | null;
   unit_of_measure?: string;
