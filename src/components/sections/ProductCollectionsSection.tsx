@@ -1,75 +1,49 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
-import { Product } from '@/lib/supabase';
+import { getCurrentDeliveryBranchId, getProducts, supabase } from '@/lib/supabase';
 import CollectionSkeleton from '@/components/ui/CollectionSkeleton';
 import CollectionsList from './CollectionsList';
 
 const ProductCollectionsSection = () => {
-  // Optimize collections query with proper caching
-  const {
-    data: productCollections = [],
-    isLoading: collectionsLoading
-  } = useQuery({
-    queryKey: ['productCollections'],
-    queryFn: async () => {
-      try {
-        const {
-          data,
-          error
-        } = await supabase
-          .from('product_collections')
-          .select('*')
-          .eq('active', true)
-          .order('position');
-          
-        if (error) {
-          console.error('Error fetching collections:', error);
-          throw error;
-        }
-        return data || [];
-      } catch (err) {
-        console.error('Error in query function:', err);
-        throw err;
-      }
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
-    refetchOnWindowFocus: false
+  const { data: branchId, isLoading: branchLoading } = useQuery({
+    queryKey: ['delivery-branch-id'],
+    queryFn: getCurrentDeliveryBranchId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 
-  // Use a more efficient product fetch strategy - only get active products
-  const { 
-    data: products = [], 
-    isLoading: productsLoading 
-  } = useQuery({
-    queryKey: ['active-products'],
+  const { data: productCollections = [], isLoading: collectionsLoading } = useQuery({
+    queryKey: ['productCollections'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
+        .from('product_collections')
         .select('*')
-        .gt('quantity', 0);
-      
+        .eq('active', true)
+        .order('position');
       if (error) throw error;
       return data || [];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
-    refetchOnWindowFocus: false
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
 
-  if (collectionsLoading || productsLoading) {
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ['active-products', branchId],
+    queryFn: getProducts,
+    enabled: Boolean(branchId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+
+  if (branchLoading || collectionsLoading || productsLoading) {
     return (
       <div className="space-y-6">
-        {[...Array(2)].map((_, i) => (
-          <CollectionSkeleton key={i} />
-        ))}
+        {[...Array(2)].map((_, i) => <CollectionSkeleton key={i} />)}
       </div>
     );
   }
 
-  if (!productCollections.length) {
-    return null;
-  }
+  if (!productCollections.length || !branchId) return null;
 
   return (
     <div className="space-y-6">
@@ -79,4 +53,3 @@ const ProductCollectionsSection = () => {
 };
 
 export default ProductCollectionsSection;
-
