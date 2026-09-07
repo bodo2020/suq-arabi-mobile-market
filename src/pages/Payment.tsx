@@ -79,6 +79,12 @@ const Payment = () => {
     }
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!authLoading && isInitialized && !user) {
+      navigate('/phone-verify?returnTo=%2Fpayment', { replace: true });
+    }
+  }, [authLoading, isInitialized, user, navigate]);
+
   const { data: customerData, isFetching: customerLoading, error: customerError } = useQuery({
     queryKey: ['customerData', user?.id],
     queryFn: async () => {
@@ -117,7 +123,7 @@ const Payment = () => {
   const quoteQuery = useQuery({
     queryKey: ['checkout-quote', user?.id, effectiveAddressId, serializedLines],
     queryFn: () => quoteOrder(lines, effectiveAddressId as string),
-    enabled: !!user && !!effectiveAddressId && lines.length > 0 && !authLoading && !customerLoading && !customerError,
+    enabled: !!user && !!effectiveAddressId && lines.length > 0 && !pendingCheckout && !authLoading && !customerLoading && !customerError,
     staleTime: 5_000,
     refetchOnWindowFocus: true,
     retry: false,
@@ -152,11 +158,11 @@ const Payment = () => {
       navigate('/addresses?returnTo=%2Fpayment');
       return;
     }
-    if (syncError) {
+    if (syncError && !pendingCheckout) {
       toast({ title: 'سلتك لم تُحفظ بعد', description: 'أعد محاولة حفظ السلة قبل تأكيد الطلب.', variant: 'destructive' });
       return;
     }
-    if (!items.length) {
+    if (!items.length && !pendingCheckout) {
       toast({ title: 'السلة فارغة', description: 'أضف منتجات إلى السلة أولاً.', variant: 'destructive' });
       return;
     }
@@ -238,12 +244,7 @@ const Payment = () => {
     });
   };
 
-  if (authLoading || !isInitialized) {
-    return <CheckoutLayout step={2}><div className="flex justify-center py-20"><BrandLoader size="lg" /></div></CheckoutLayout>;
-  }
-
-  if (!user) {
-    navigate('/phone-verify?returnTo=%2Fpayment');
+  if (authLoading || !isInitialized || !user) {
     return <CheckoutLayout step={2}><div className="flex justify-center py-20"><BrandLoader size="lg" /></div></CheckoutLayout>;
   }
 
@@ -353,7 +354,7 @@ const Payment = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {quote?.items?.length ? quote.items.map(item => (
+                  {!pendingCheckout && quote?.items?.length ? quote.items.map(item => (
                     <div key={`${item.product_id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex justify-between gap-3 py-2">
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm">{item.name}</p>
@@ -362,7 +363,7 @@ const Payment = () => {
                       <span className="font-medium whitespace-nowrap">{money(item.total)} ج.م</span>
                     </div>
                   )) : (
-                    <div className="py-5 text-center text-sm text-muted-foreground">{quoteQuery.isFetching ? 'بنراجع الأسعار والمخزون…' : pendingCheckout ? 'جارٍ استكمال المحاولة المحفوظة.' : 'الملخص النهائي هيظهر بعد مراجعة السيرفر.'}</div>
+                    <div className="py-5 text-center text-sm text-muted-foreground">{pendingCheckout ? 'جارٍ استكمال المحاولة المحفوظة.' : quoteQuery.isFetching ? 'بنراجع الأسعار والمخزون…' : 'الملخص النهائي هيظهر بعد مراجعة السيرفر.'}</div>
                   )}
                 </div>
 
@@ -379,9 +380,9 @@ const Payment = () => {
 
                 <div className="flex justify-between text-lg font-bold"><span>الإجمالي النهائي</span><span className="text-primary">{displayedTotal > 0 ? `${money(displayedTotal)} ج.م` : '—'}</span></div>
 
-                {(customerError || syncError || quoteMessage) && (
+                {(customerError || (!pendingCheckout && syncError) || quoteMessage) && (
                   <div role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                    {syncError || (customerError ? 'تعذر تحميل بيانات الحساب.' : quoteMessage)}
+                    {(!pendingCheckout && syncError) || (customerError ? 'تعذر تحميل بيانات الحساب.' : quoteMessage)}
                     {quoteMessage && !pendingCheckout && <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => void quoteQuery.refetch()}>إعادة المراجعة</Button>}
                   </div>
                 )}
