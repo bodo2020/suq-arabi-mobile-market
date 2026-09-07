@@ -1,6 +1,6 @@
 import BrandLoader from '@/components/ui/BrandLoader';
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   CheckCircle2,
@@ -15,10 +15,11 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import OrderTimeline from '@/components/orders/OrderTimeline';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 
@@ -49,15 +50,6 @@ type OrderRow = {
   created_at: string;
   updated_at: string | null;
 };
-
-const ORDER_FLOW = [
-  { key: 'pending', label: 'تم استلام الطلب', description: 'وصلنا طلبك وبنراجعه.' },
-  { key: 'confirmed', label: 'تم تأكيد الطلب', description: 'تم تأكيد طلبك وبدأنا تنفيذه.' },
-  { key: 'preparing', label: 'جاري التجهيز', description: 'فريقنا بيجهز منتجاتك دلوقتي.' },
-  { key: 'ready', label: 'الطلب جاهز', description: 'طلبك اتجهز وجاهز للخروج.' },
-  { key: 'shipped', label: 'في الطريق إليك', description: 'الطلب خرج للتوصيل.' },
-  { key: 'delivered', label: 'تم التسليم', description: 'طلبك وصل بنجاح.' },
-] as const;
 
 const STATUS_META: Record<string, { label: string; description: string; className: string }> = {
   pending: {
@@ -147,9 +139,13 @@ const orderNumber = (order: OrderRow) => order.tracking_number || order.id.slice
 
 const Orders = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const { user, session } = useUser();
   const [activeTab, setActiveTab] = useState<TabType>('current');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const focusedOrderRef = useRef<string | null>(null);
+  const targetOrderId = searchParams.get('order_id');
 
   const {
     data: orders = [],
@@ -186,9 +182,40 @@ const Orders = () => {
     staleTime: 10_000,
   });
 
+  useEffect(() => {
+    if (!user?.id || !session) return;
+    const channel = supabase
+      .channel(`customer-orders:${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'online_orders' },
+        () => void queryClient.invalidateQueries({ queryKey: ['orders', user.id] }),
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, session, queryClient]);
+
   const currentOrders = orders.filter(order => !['delivered', 'cancelled'].includes(order.status));
   const previousOrders = orders.filter(order => ['delivered', 'cancelled'].includes(order.status));
   const activeOrders = activeTab === 'current' ? currentOrders : previousOrders;
+
+  useEffect(() => {
+    if (!targetOrderId || focusedOrderRef.current === targetOrderId || orders.length === 0) return;
+    const target = orders.find(order => order.id === targetOrderId);
+    if (!target) return;
+
+    setActiveTab(['delivered', 'cancelled'].includes(target.status) ? 'previous' : 'current');
+    setExpandedOrderId(target.id);
+    focusedOrderRef.current = targetOrderId;
+
+    const timer = window.setTimeout(() => {
+      document.getElementById(`order-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [targetOrderId, orders]);
 
   return (
     <MainLayout>
@@ -215,7 +242,7 @@ const Orders = () => {
                     <Package size={24} />
                     <h1 className="text-2xl font-bold">طلباتك</h1>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-gray-600">تابع الطلب الجاري، وافتح أي طلب عشان تشوف المنتجات والدفع والعنوان.</p>
+                  <p className="mt-2 text-sm leading-6 text-gray-600">تابع الطلب الجاري لحظة بلحظة، وافتح أي طلب عشان تشوف المنتجات والدفع والعنوان وتوقيت كل مرحلة.</p>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -297,10 +324,9 @@ const Orders = () => {
                     className: 'bg-gray-50 text-gray-700 border-gray-100',
                   };
                   const paymentStatus = order.payment_status ? PAYMENT_STATUS_META[order.payment_status] : null;
-                  const statusIndex = ORDER_FLOW.findIndex(step => step.key === order.status);
 
                   return (
-                    <article key={order.id} className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+                    <article id={`order-${order.id}`} key={order.id} className="scroll-mt-28 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
                       <div className="p-5 sm:p-6">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
@@ -319,6 +345,7 @@ const Orders = () => {
                         <div className={`mt-4 rounded-2xl border p-4 ${status.className}`}>
                           <p className="font-bold">{status.label}</p>
                           <p className="mt-1 text-xs leading-6 opacity-80">{status.description}</p>
+                          {order.updated_at && <p className="mt-2 text-[11px] opacity-70">آخر تحديث: {formatDate(order.updated_at)}</p>}
                         </div>
 
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
@@ -366,26 +393,7 @@ const Orders = () => {
                               {order.status === 'cancelled' ? (
                                 <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">تم إلغاء الطلب. لو محتاج مساعدة تواصل مع خدمة العملاء.</div>
                               ) : (
-                                <div className="mt-5 space-y-0">
-                                  {ORDER_FLOW.map((step, index) => {
-                                    const reached = statusIndex >= index;
-                                    const current = statusIndex === index && order.status !== 'delivered';
-                                    return (
-                                      <div key={step.key} className="flex gap-3">
-                                        <div className="flex flex-col items-center">
-                                          <span className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${reached ? 'border-primary bg-primary text-white' : 'border-gray-200 bg-white text-gray-300'} ${current ? 'ring-4 ring-green-100' : ''}`}>
-                                            {reached ? <CheckCircle2 size={16} /> : <span className="h-2 w-2 rounded-full bg-current" />}
-                                          </span>
-                                          {index < ORDER_FLOW.length - 1 && <span className={`h-10 w-0.5 ${statusIndex > index ? 'bg-primary' : 'bg-gray-200'}`} />}
-                                        </div>
-                                        <div className="pt-1">
-                                          <p className={`text-sm font-bold ${reached ? 'text-gray-900' : 'text-gray-400'}`}>{step.label}</p>
-                                          {(current || order.status === 'delivered') && reached && <p className="mt-1 text-xs leading-5 text-gray-500">{step.description}</p>}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
+                                <OrderTimeline order={order} />
                               )}
                             </section>
 
