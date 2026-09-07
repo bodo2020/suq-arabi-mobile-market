@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { CartItem } from '@/contexts/cartTypes';
 import { loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
 import { checkoutLines } from '@/lib/checkout';
+import { getRoadDistance } from '@/lib/roadDistance';
 
 export type CartQuoteLine = {
   product_id: string;
@@ -26,6 +27,8 @@ export type CartQuote = {
   pricing_branch_id: string;
   branch_name: string;
   distance_km: number;
+  road_distance_km: number;
+  road_duration_minutes: number | null;
   min_order_amount: number;
   minimum_order_met: boolean;
 };
@@ -45,12 +48,32 @@ export async function quoteCart(items: CartItem[]): Promise<CartQuote> {
     p_longitude: point.longitude,
   });
   if (error) throw error;
-  return data as CartQuote;
+
+  const base = data as Omit<CartQuote, 'road_distance_km' | 'road_duration_minutes'>;
+  if (!base?.delivery_branch_id) throw new Error('DELIVERY_UNAVAILABLE');
+
+  const route = await getRoadDistance(
+    base.delivery_branch_id,
+    point.latitude,
+    point.longitude,
+  );
+
+  if (!route.deliverable) throw new Error('DELIVERY_UNAVAILABLE');
+  if (route.road_distance_km == null) throw new Error('ROUTE_DISTANCE_UNAVAILABLE');
+
+  return {
+    ...base,
+    distance_km: Number(route.road_distance_km),
+    road_distance_km: Number(route.road_distance_km),
+    road_duration_minutes: route.duration_minutes,
+  };
 }
 
 const messages: Record<string, string> = {
   DELIVERY_ADDRESS_REQUIRED: 'حدد عنوان التوصيل عشان نحسب السلة والفرع.',
-  DELIVERY_UNAVAILABLE: 'عنوانك خارج نطاق التوصيل الحالي.',
+  DELIVERY_UNAVAILABLE: 'عنوانك خارج نطاق التوصيل حسب مسافة الطريق الفعلية.',
+  ROUTE_DISTANCE_UNAVAILABLE: 'تعذر حساب مسافة الطريق حاليًا. حاول مرة تانية بعد لحظات.',
+  ROUTE_PROVIDER_UNAVAILABLE: 'تعذر الاتصال بخدمة الطرق حاليًا. حاول مرة تانية بعد لحظات.',
   INSUFFICIENT_STOCK: 'كمية أحد المنتجات أكبر من المتاح حاليًا في فرع التوصيل.',
   PRODUCT_UNAVAILABLE: 'أحد المنتجات لم يعد متاحًا في فرع التوصيل.',
   PRODUCT_UNIT_CHANGED: 'طريقة بيع أحد المنتجات اتغيّرت. احذفه من السلة وأضفه من جديد.',
@@ -62,5 +85,5 @@ const messages: Record<string, string> = {
 
 export function cartQuoteError(error: unknown) {
   const message = (error as { message?: string })?.message || '';
-  return messages[message] || 'تعذر تحديث أسعار ومخزون السلة من الفرع. حاول مرة تانية.';
+  return messages[message] || 'تعذر تحديث أسعار ومخزون السلة ومسافة الطريق من الفرع. حاول مرة تانية.';
 }
