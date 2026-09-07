@@ -1,125 +1,176 @@
-import BrandLoader from '@/components/ui/BrandLoader';
-
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Building2, Mail, MapPin, Package, Phone, Search, SlidersHorizontal } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
-import ProductFilters from '@/components/ui/ProductFilters';
-import { Product, Company, getProductsByCompany, getCompanyById } from '@/lib/supabase';
+import BrandLoader from '@/components/ui/BrandLoader';
+import { Button } from '@/components/ui/button';
+import SEOHead from '@/components/seo/SEOHead';
+import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
+import { Company, Product, getCompanyById, getProductsByCompany } from '@/lib/supabase';
 
-const sortOptions = [
-  { label: "الأحدث", value: "newest" },
-  { label: "السعر: من الأقل للأعلى", value: "price_asc" },
-  { label: "السعر: من الأعلى للأقل", value: "price_desc" },
-  { label: "أبجدياً: أ-ي", value: "name_asc" },
-  { label: "أبجدياً: ي-أ", value: "name_desc" },
-];
+type SortType = 'newest' | 'price_asc' | 'price_desc' | 'name_asc';
+
+const sortProducts = (items: Product[], sort: SortType) => {
+  const copy = [...items];
+  if (sort === 'price_asc') return copy.sort((a, b) => Number(a.offer_price || a.price || 0) - Number(b.offer_price || b.price || 0));
+  if (sort === 'price_desc') return copy.sort((a, b) => Number(b.offer_price || b.price || 0) - Number(a.offer_price || a.price || 0));
+  if (sort === 'name_asc') return copy.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  return copy.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+};
 
 const CompanyProducts = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentSort, setCurrentSort] = useState("newest");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortType>('newest');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!id) return;
-        
-        const [companyData, productsData] = await Promise.all([
-          getCompanyById(id),
-          getProductsByCompany(id)
-        ]);
-        
-        setCompany(companyData as Company);
-        setAllProducts(productsData as Product[]);
-        setProducts(sortProducts(productsData as Product[], currentSort));
-      } catch (error) {
-        console.error('Error fetching company products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [id]);
-
-  const sortProducts = (productsToSort: Product[], sortType: string) => {
-    const sortedProducts = [...productsToSort];
-    switch (sortType) {
-      case "price_asc":
-        return sortedProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
-      case "price_desc":
-        return sortedProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
-      case "name_asc":
-        return sortedProducts.sort((a, b) => a.name.localeCompare(b.name));
-      case "name_desc":
-        return sortedProducts.sort((a, b) => b.name.localeCompare(a.name));
-      case "newest":
-      default:
-        return sortedProducts.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+  const load = async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(false);
+    try {
+      const [companyData, productsData] = await Promise.all([
+        getCompanyById(id),
+        getProductsByCompany(id),
+      ]);
+      if (!companyData) throw new Error('Company not found');
+      setCompany(companyData as Company);
+      setAllProducts((productsData || []) as Product[]);
+    } catch (loadError) {
+      console.error('Error loading company page:', loadError);
+      setCompany(null);
+      setAllProducts([]);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSortChange = (value: string) => {
-    setCurrentSort(value);
-    setProducts(sortProducts(allProducts, value));
-  };
+  useEffect(() => {
+    void load();
+  }, [id]);
 
-  // منع انتشار الحدث عند النقر على أي جزء من ProductFilters
-  const handleFiltersClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
+  const products = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase('ar');
+    const filtered = query
+      ? allProducts.filter(product => product.name.toLocaleLowerCase('ar').includes(query))
+      : allProducts;
+    return sortProducts(filtered, sort);
+  }, [allProducts, search, sort]);
+
+  const companyInitial = company?.name?.trim()?.charAt(0) || 'ش';
 
   return (
     <MainLayout>
-      <div className="py-4">
-        <div className="flex items-center mb-4">
-          <button onClick={() => navigate(-1)} className="p-2">
-            <ArrowRight size={24} />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center">
-            {loading ? 'جاري التحميل...' : company ? company.name : 'الشركة'}
-          </h1>
-          <div className="w-10"></div>
-        </div>
+      <SEOHead
+        title={company ? `${company.name} - المعداوي ماركت` : 'الشركة - المعداوي ماركت'}
+        description={company?.description || (company ? `تسوق منتجات ${company.name} من المعداوي ماركت` : 'تسوق منتجات الشركات من المعداوي ماركت')}
+        image={company?.logo_url || undefined}
+        type="product.group"
+      />
+      {products.length > 0 && company && <ProductListStructuredData products={products} listName={`منتجات ${company.name}`} />}
 
-        {!loading && (
-          <div onClick={handleFiltersClick}>
-            <ProductFilters
-              onSortChange={handleSortChange}
-              sortOptions={sortOptions}
-              currentSort={currentSort}
-            />
-          </div>
-        )}
+      <TopNavBar hideLogo hideSearch hideCart pageTitle={company?.name || 'الشركة'} showBackButton onBack={() => navigate(-1)} />
 
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <BrandLoader size="md" className="" />
-          </div>
-        ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <div className="flex min-h-72 items-center justify-center"><BrandLoader label="جاري تحميل منتجات الشركة" /></div>
+        ) : error || !company ? (
+          <section role="alert" className="mx-auto max-w-lg rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600"><Building2 size={30} /></span>
+            <h1 className="mt-4 text-xl font-bold">تعذر تحميل الشركة</h1>
+            <p className="mt-2 text-sm leading-6 text-gray-500">راجع اتصالك وحاول مرة تانية.</p>
+            <Button className="mt-5 rounded-xl" onClick={() => void load()}>إعادة المحاولة</Button>
+          </section>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12">
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 mb-4">
-              <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-              <path d="m22 7-7.1 3.78c-.57.3-1.23.3-1.8 0L6 7"></path>
-              <path d="M14 14v4"></path>
-              <path d="M10 14v4"></path>
-            </svg>
-            <h3 className="text-lg font-medium text-gray-500 mb-1">لا توجد منتجات</h3>
-            <p className="text-sm text-gray-400">لا توجد منتجات لهذه الشركة حالياً</p>
+          <div className="space-y-5">
+            <section className="overflow-hidden rounded-3xl border border-green-100 bg-gradient-to-b from-green-50/90 to-white p-5 shadow-sm sm:p-7">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-white bg-white shadow-sm">
+                  {company.logo_url ? (
+                    <img src={company.logo_url} alt={`شعار ${company.name}`} className="h-full w-full object-contain p-2" loading="eager" onError={event => { event.currentTarget.style.display = 'none'; }} />
+                  ) : (
+                    <span className="text-3xl font-black text-primary">{companyInitial}</span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-primary">تسوق حسب الشركة</p>
+                  <h1 className="mt-1 break-words text-2xl font-bold text-gray-900 sm:text-3xl">{company.name}</h1>
+                  {company.description && <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-7 text-gray-600">{company.description}</p>}
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm">
+                    <Package size={17} className="text-primary" />{allProducts.length.toLocaleString('ar-EG')} منتج
+                  </div>
+                </div>
+              </div>
+
+              {(company.contact_phone || company.contact_email || company.address) && (
+                <div className="mt-5 grid gap-2 border-t border-green-100 pt-5 sm:grid-cols-3">
+                  {company.contact_phone && (
+                    <a dir="ltr" href={`tel:${company.contact_phone}`} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-semibold text-primary shadow-sm">
+                      <Phone size={17} /><span>{company.contact_phone}</span>
+                    </a>
+                  )}
+                  {company.contact_email && (
+                    <a href={`mailto:${company.contact_email}`} className="flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-semibold text-primary shadow-sm">
+                      <Mail size={17} className="shrink-0" /><span className="truncate">{company.contact_email}</span>
+                    </a>
+                  )}
+                  {company.address && (
+                    <div className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-3 text-center text-sm font-semibold text-gray-700 shadow-sm">
+                      <MapPin size={17} className="shrink-0 text-primary" /><span>{company.address}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label className="relative flex-1">
+                  <Search className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={19} />
+                  <input
+                    value={search}
+                    onChange={event => setSearch(event.target.value)}
+                    placeholder={`دور في منتجات ${company.name}`}
+                    className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pr-10 pl-3 text-sm outline-none transition focus:border-primary focus:bg-white"
+                  />
+                </label>
+                <label className="relative sm:w-56">
+                  <SlidersHorizontal className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
+                  <select value={sort} onChange={event => setSort(event.target.value as SortType)} className="h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white pr-10 pl-3 text-sm font-semibold outline-none focus:border-primary">
+                    <option value="newest">الأحدث</option>
+                    <option value="price_asc">السعر: الأقل أولًا</option>
+                    <option value="price_desc">السعر: الأعلى أولًا</option>
+                    <option value="name_asc">الاسم: أ - ي</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            {products.length > 0 ? (
+              <section>
+                <div className="mb-4 flex items-end justify-between gap-3">
+                  <div><p className="text-xs text-gray-500">المنتجات المتاحة</p><h2 className="mt-1 text-xl font-bold">منتجات {company.name}</h2></div>
+                  <span className="text-sm font-semibold text-gray-500">{products.length.toLocaleString('ar-EG')}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
+                  {products.map(product => <ProductCard key={product.id} product={product} />)}
+                </div>
+              </section>
+            ) : (
+              <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 text-gray-400"><Package size={30} /></span>
+                <h2 className="mt-4 text-xl font-bold">{search.trim() ? 'مفيش نتائج للبحث ده' : 'مفيش منتجات للشركة حاليًا'}</h2>
+                <p className="mt-2 text-sm text-gray-500">{search.trim() ? 'جرّب تكتب اسم منتج مختلف.' : 'لما تتضاف منتجات جديدة هتظهر هنا تلقائيًا.'}</p>
+                {search.trim() && <Button variant="outline" className="mt-5 rounded-xl" onClick={() => setSearch('')}>مسح البحث</Button>}
+              </section>
+            )}
           </div>
         )}
       </div>
@@ -128,4 +179,3 @@ const CompanyProducts = () => {
 };
 
 export default CompanyProducts;
-
