@@ -1,14 +1,16 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, Loader, Phone } from 'lucide-react';
+import { Check, Phone, ShieldCheck } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { normalizeDigits } from '@/utils/authUi';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -62,14 +64,14 @@ const ChangePhone = () => {
   }, [resendSeconds]);
 
   const formatLocalPhone = (value: string, country: Country) => {
-    const digits = value.replace(/\D/g, '');
+    const digits = normalizeDigits(value).replace(/\D/g, '');
     if (country.code === 'EG' && digits.startsWith('0')) return digits.slice(1);
     return digits;
   };
 
   const formatInternationalPhone = (value: string, country: Country) => {
     const local = formatLocalPhone(value, country);
-    const dialCode = country.dialCode.replace(/\D/g, '');
+    const dialCode = normalizeDigits(country.dialCode).replace(/\D/g, '');
     return `+${dialCode}${local}`;
   };
 
@@ -144,8 +146,9 @@ const ChangePhone = () => {
   };
 
   const handleVerify = async () => {
-    if (loading || !/^\d{6}$/.test(code) || !userId) {
-      if (!/^\d{6}$/.test(code)) setError('أدخل رمز التحقق المكون من 6 أرقام');
+    const normalizedCode = normalizeDigits(code).replace(/\D/g, '');
+    if (loading || !/^\d{6}$/.test(normalizedCode) || !userId) {
+      if (!/^\d{6}$/.test(normalizedCode)) setError('أدخل رمز التحقق المكون من 6 أرقام');
       return;
     }
 
@@ -155,7 +158,7 @@ const ChangePhone = () => {
       const fullPhone = formatInternationalPhone(newPhone, countryCode);
       const { error: verifyError } = await supabase.auth.verifyOtp({
         phone: fullPhone,
-        token: code,
+        token: normalizedCode,
         type: 'phone_change',
       });
       if (verifyError) throw verifyError;
@@ -188,129 +191,116 @@ const ChangePhone = () => {
 
   return (
     <MainLayout>
-      <div className="p-4 max-w-md mx-auto">
-        <div className="flex items-center mb-6">
-          <button onClick={() => navigate('/edit-account')} className="p-2" aria-label="الرجوع">
-            <ArrowRight size={24} />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center">تغيير رقم الهاتف</h1>
-          <div className="w-10" />
-        </div>
-
-        <div className="bg-white rounded-lg p-6 shadow-sm space-y-5">
-          {currentPhone && (
-            <div className="rounded-lg bg-gray-50 p-3">
-              <p className="text-xs text-gray-500 mb-1">الرقم الحالي</p>
-              <p className="font-medium" dir="ltr">{currentPhone}</p>
+      <TopNavBar hideLogo hideSearch hideCart pageTitle="تغيير رقم الهاتف" />
+      <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
+        <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
+          <div className="mb-6 flex items-start gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-primary"><ShieldCheck size={25} /></span>
+            <div>
+              <h1 className="text-xl font-bold">غيّر رقمك بأمان</h1>
+              <p className="mt-1 text-sm leading-6 text-gray-500">هنبعت كود تحقق للرقم الجديد قبل ما نعتمده في حسابك.</p>
             </div>
-          )}
+          </div>
 
-          {step === 'phone' ? (
-            <>
-              <div>
-                <div className="flex items-center mb-2">
-                  <Phone size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="newPhone" className="font-medium">رقم الهاتف الجديد</label>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <CountryCodeSelector value={countryCode} onChange={setCountryCode} className="min-w-[80px]" />
-                  <Input
-                    id="newPhone"
-                    type="tel"
-                    value={newPhone}
-                    onChange={(event) => {
-                      setNewPhone(event.target.value);
-                      setError('');
-                    }}
-                    placeholder={countryCode.code === 'EG' ? '1xxxxxxxxx' : 'رقم الهاتف'}
-                    dir="ltr"
-                  />
-                </div>
+          {currentPhone && <div className="mb-5 rounded-2xl bg-gray-50 p-4">
+            <p className="mb-1 text-xs text-gray-500">الرقم الحالي</p>
+            <p className="font-semibold" dir="ltr">{currentPhone}</p>
+          </div>}
+
+          {step === 'phone' ? <div className="space-y-5">
+            <div>
+              <label htmlFor="newPhone" className="mb-2 flex items-center gap-2 text-sm font-semibold"><Phone size={18} className="text-primary" />رقم الهاتف الجديد</label>
+              <div className="flex items-center gap-2">
+                <CountryCodeSelector value={countryCode} onChange={setCountryCode} className="min-w-[88px]" />
+                <Input
+                  id="newPhone"
+                  type="tel"
+                  inputMode="numeric"
+                  value={newPhone}
+                  onChange={(event) => {
+                    setNewPhone(event.target.value);
+                    setError('');
+                  }}
+                  placeholder={countryCode.code === 'EG' ? '01xxxxxxxxx' : 'رقم الهاتف'}
+                  dir="ltr"
+                  className="min-h-12 rounded-xl"
+                />
               </div>
+              <p className="mt-2 text-xs leading-5 text-gray-500">ينفع تكتب الرقم بالأرقام العربية أو الإنجليزية.</p>
+            </div>
 
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-              <Button onClick={handleRequestChange} disabled={loading} className="w-full">
-                {loading && <BrandLoader size="sm" className="ml-2" />}
-                إرسال رمز التحقق
-              </Button>
-            </>
-          ) : (
-            <>
-              <p className="text-gray-600 text-center">
-                أدخل الرمز المرسل إلى
-                <br />
-                <span className="font-bold" dir="ltr">{formatInternationalPhone(newPhone, countryCode)}</span>
-              </p>
+            <Button onClick={handleRequestChange} disabled={loading} className="min-h-12 w-full rounded-xl text-base">
+              {loading && <BrandLoader size="sm" className="ml-2" />}
+              {loading ? 'جاري إرسال الرمز…' : 'إرسال رمز التحقق'}
+            </Button>
+          </div> : <div className="space-y-5">
+            <div className="rounded-2xl bg-green-50 p-4 text-center">
+              <p className="text-sm text-gray-600">أدخل الرمز المرسل إلى</p>
+              <p className="mt-1 font-bold text-primary" dir="ltr">{formatInternationalPhone(newPhone, countryCode)}</p>
+            </div>
 
-              <div>
-                <div className="flex items-center mb-3">
-                  <Check size={18} className="ml-2 text-gray-500" />
-                  <label className="font-medium">رمز التحقق</label>
-                </div>
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={code}
-                    onChange={(value) => {
-                      setCode(value.replace(/\D/g, ''));
-                      setError('');
-                    }}
-                    dir="ltr"
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
+            <div>
+              <div className="mb-3 flex items-center justify-center gap-2 text-sm font-semibold"><Check size={18} className="text-primary" />رمز التحقق</div>
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={code}
+                  onChange={(value) => {
+                    setCode(normalizeDigits(value).replace(/\D/g, ''));
+                    setError('');
+                  }}
+                  dir="ltr"
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
               </div>
+            </div>
 
-              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-700">{error}</p>}
 
-              <Button onClick={handleVerify} disabled={loading || code.length !== 6} className="w-full">
-                {loading && <BrandLoader size="sm" className="ml-2" />}
-                تأكيد الرقم الجديد
-              </Button>
+            <Button onClick={handleVerify} disabled={loading || normalizeDigits(code).replace(/\D/g, '').length !== 6} className="min-h-12 w-full rounded-xl text-base">
+              {loading && <BrandLoader size="sm" className="ml-2" />}
+              {loading ? 'جاري التأكيد…' : 'تأكيد الرقم الجديد'}
+            </Button>
 
-              <div className="text-center space-y-2">
+            <div className="space-y-2 text-center">
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendLoading || resendSeconds > 0}
+                className="min-h-11 text-sm font-semibold text-primary disabled:opacity-50"
+              >
+                {resendLoading ? 'جاري إعادة الإرسال...' : resendSeconds > 0 ? `إعادة الإرسال بعد ${resendSeconds} ثانية` : 'إعادة إرسال الرمز'}
+              </button>
+              <div>
                 <button
                   type="button"
-                  onClick={handleResend}
-                  disabled={resendLoading || resendSeconds > 0}
-                  className="text-primary text-sm disabled:opacity-50"
+                  onClick={() => {
+                    setStep('phone');
+                    setCode('');
+                    setResendSeconds(0);
+                    setError('');
+                  }}
+                  className="min-h-11 text-sm text-gray-600 underline"
                 >
-                  {resendLoading
-                    ? 'جاري إعادة الإرسال...'
-                    : resendSeconds > 0
-                      ? `إعادة الإرسال بعد ${resendSeconds} ثانية`
-                      : 'إعادة إرسال الرمز'}
+                  تعديل الرقم المدخل
                 </button>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep('phone');
-                      setCode('');
-                      setResendSeconds(0);
-                    }}
-                    className="text-primary text-sm"
-                  >
-                    تغيير الرقم المدخل
-                  </button>
-                </div>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+          </div>}
+        </section>
       </div>
     </MainLayout>
   );
 };
 
 export default ChangePhone;
-
