@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, Check, ImagePlus, Minus, Plus, X } from 'lucide-react';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ type ReasonMap = Record<string, string>;
 
 const MAX_IMAGES = 5;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 const errorMessage = (error: any) => {
   const message = String(error?.message || error?.details || '');
@@ -27,6 +28,7 @@ const errorMessage = (error: any) => {
   if (message.includes('order_not_found')) return 'الطلب غير موجود أو لا يخص حسابك.';
   if (message.includes('product_not_in_order')) return 'أحد المنتجات المختارة غير موجود في الطلب الأصلي.';
   if (message.includes('return_quantity_exceeds_order')) return 'الكمية المطلوبة أكبر من الكمية المتاحة للاسترجاع.';
+  if (message.includes('duplicate_return_product')) return 'نفس المنتج موجود أكثر من مرة في طلب الاسترجاع.';
   if (message.includes('invalid_return_quantity')) return 'راجع كمية المنتجات المطلوب استرجاعها.';
   if (message.includes('return_items_required')) return 'اختار منتج واحد على الأقل للاسترجاع.';
   if (message.includes('too_many_return_items')) return 'عدد المنتجات في طلب الاسترجاع أكبر من المسموح.';
@@ -47,10 +49,15 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const previewsRef = useRef<string[]>([]);
 
   useEffect(() => {
-    return () => previews.forEach(url => URL.revokeObjectURL(url));
+    previewsRef.current = previews;
   }, [previews]);
+
+  useEffect(() => () => {
+    previewsRef.current.forEach(url => URL.revokeObjectURL(url));
+  }, []);
 
   const selectedCount = useMemo(
     () => Object.values(selectedItems).filter(Boolean).length,
@@ -83,8 +90,8 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
 
     const validFiles: File[] = [];
     for (const file of files) {
-      if (!file.type.startsWith('image/')) {
-        toast({ title: 'الملف لازم يكون صورة', description: file.name, variant: 'destructive' });
+      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+        toast({ title: 'صيغة الصورة غير مدعومة', description: 'استخدم JPG أو PNG أو WEBP أو GIF.', variant: 'destructive' });
         continue;
       }
       if (file.size > MAX_IMAGE_BYTES) {
@@ -95,18 +102,15 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
     }
 
     const accepted = validFiles.slice(0, availableSlots);
-    if (validFiles.length > availableSlots) {
-      toast({ title: 'تم اختيار أول 5 صور فقط' });
-    }
-
+    if (validFiles.length > availableSlots) toast({ title: 'تم اختيار الصور حتى الحد الأقصى فقط' });
     if (!accepted.length) return;
+
     setImages(prev => [...prev, ...accepted]);
     setPreviews(prev => [...prev, ...accepted.map(file => URL.createObjectURL(file))]);
   };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    addImages(files);
+    addImages(Array.from(event.target.files || []));
     event.target.value = '';
   };
 
@@ -119,26 +123,39 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
   };
 
   const uploadImages = async () => {
+    if (!user) throw new Error('not_authenticated');
+
     const uploadedUrls: string[] = [];
+    const uploadedPaths: string[] = [];
 
     for (const file of images) {
-      const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      const randomName = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      const extension = file.type === 'image/png'
+        ? 'png'
+        : file.type === 'image/webp'
+          ? 'webp'
+          : file.type === 'image/gif'
+            ? 'gif'
+            : 'jpg';
+      const randomName = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const filePath = `returns/${randomName}.${extension}`;
+      const filePath = `${user.id}/${orderId}/${randomName}.${extension}`;
 
       const { error: uploadError } = await supabase.storage
         .from('returns')
         .upload(filePath, file, { contentType: file.type, upsert: false });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        if (uploadedPaths.length) await supabase.storage.from('returns').remove(uploadedPaths);
+        throw uploadError;
+      }
 
       const { data } = supabase.storage.from('returns').getPublicUrl(filePath);
+      uploadedPaths.push(filePath);
       uploadedUrls.push(data.publicUrl);
     }
 
-    return uploadedUrls;
+    return { uploadedUrls, uploadedPaths };
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -163,8 +180,13 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
     }
 
     setLoading(true);
+    let uploadedPaths: string[] = [];
     try {
-      const uploadedImageUrls = images.length ? await uploadImages() : [];
+      const uploadResult = images.length
+        ? await uploadImages()
+        : { uploadedUrls: [] as string[], uploadedPaths: [] as string[] };
+      uploadedPaths = uploadResult.uploadedPaths;
+
       const itemsPayload = selected.map(item => {
         const key = itemKey(item);
         return {
@@ -178,7 +200,7 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
         p_order_id: orderId,
         p_reason: cleanReason,
         p_items: itemsPayload,
-        p_images: uploadedImageUrls,
+        p_images: uploadResult.uploadedUrls,
       });
 
       if (error) throw error;
@@ -190,6 +212,10 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
       onSuccess?.();
     } catch (error) {
       console.error('Error submitting return request:', error);
+      if (uploadedPaths.length) {
+        const { error: cleanupError } = await supabase.storage.from('returns').remove(uploadedPaths);
+        if (cleanupError) console.error('Error cleaning up return images:', cleanupError);
+      }
       toast({ title: 'تعذّر إرسال الطلب', description: errorMessage(error), variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -336,7 +362,13 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
           <label className="mt-4 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-green-200 bg-green-50/50 px-4 text-sm font-semibold text-primary hover:bg-green-50">
             <ImagePlus size={19} />
             إضافة صور
-            <input type="file" accept="image/*" multiple className="sr-only" onChange={handleImageChange} />
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="sr-only"
+              onChange={handleImageChange}
+            />
           </label>
         )}
       </section>
