@@ -26,6 +26,7 @@ const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
 const Account = lazy(() => import('./pages/Account'));
 const EditAccount = lazy(() => import('./pages/EditAccount'));
 const Orders = lazy(() => import('./pages/Orders'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 const Favorites = lazy(() => import('./pages/Favorites'));
 const Address = lazy(() => import('./pages/Address'));
 const AddressManager = lazy(() => import('./pages/AddressManager'));
@@ -76,6 +77,7 @@ function App() {
                 <Route path="/account" element={<Account />} />
                 <Route path="/edit-account" element={<EditAccount />} />
                 <Route path="/orders" element={<Orders />} />
+                <Route path="/notifications" element={<Notifications />} />
                 <Route path="/favorites" element={<Favorites />} />
                 <Route path="/address" element={<Address />} />
                 <Route path="/add-address" element={<Address />} />
@@ -104,4 +106,3 @@ function App() {
 }
 
 export default App;
-
