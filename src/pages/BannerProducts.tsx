@@ -10,6 +10,13 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { getProductById, getProducts, getProductsByCompany, type Product } from '@/lib/supabase';
+import {
+  DisplayProduct,
+  displayProductName,
+  displayProductPrice,
+  expandProductSaleUnits,
+  productCardKey,
+} from '@/lib/productPurchase';
 
 type BannerRow = {
   id: string;
@@ -40,7 +47,7 @@ const BannerProducts = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [banner, setBanner] = useState<BannerRow | null>(null);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<DisplayProduct[]>([]);
   const [sourceLabel, setSourceLabel] = useState('منتجات مختارة');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -95,7 +102,7 @@ const BannerProducts = () => {
         }
       }
 
-      setAllProducts(productsData);
+      setAllProducts(expandProductSaleUnits(productsData));
     } catch (loadError) {
       console.error('Error loading banner page:', loadError);
       setError(true);
@@ -114,12 +121,12 @@ const BannerProducts = () => {
   const products = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('ar');
     let result = query
-      ? allProducts.filter(product => product.name.toLocaleLowerCase('ar').includes(query))
+      ? allProducts.filter(product => displayProductName(product).toLocaleLowerCase('ar').includes(query))
       : [...allProducts];
 
-    if (sort === 'price_asc') result = result.sort((a, b) => Number(a.offer_price || a.price || 0) - Number(b.offer_price || b.price || 0));
-    if (sort === 'price_desc') result = result.sort((a, b) => Number(b.offer_price || b.price || 0) - Number(a.offer_price || a.price || 0));
-    if (sort === 'name_asc') result = result.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+    if (sort === 'price_asc') result = result.sort((a, b) => displayProductPrice(a) - displayProductPrice(b));
+    if (sort === 'price_desc') result = result.sort((a, b) => displayProductPrice(b) - displayProductPrice(a));
+    if (sort === 'name_asc') result = result.sort((a, b) => displayProductName(a).localeCompare(displayProductName(b), 'ar'));
     return result;
   }, [allProducts, search, sort]);
 
@@ -174,7 +181,7 @@ const BannerProducts = () => {
                   <p className="mt-1 font-bold text-gray-900">{sourceLabel}</p>
                 </div>
                 <span className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-sm font-semibold text-primary">
-                  <Package size={17} />{allProducts.length.toLocaleString('ar-EG')} منتج متاح في فرعك
+                  <Package size={17} />{allProducts.length.toLocaleString('ar-EG')} اختيار متاح في فرعك
                 </span>
               </div>
             </section>
@@ -207,11 +214,11 @@ const BannerProducts = () => {
             {products.length > 0 ? (
               <section>
                 <div className="mb-4 flex items-end justify-between gap-3">
-                  <div><p className="text-xs text-gray-500">اكتشف العرض</p><h2 className="mt-1 text-xl font-bold">{sourceLabel}</h2></div>
+                  <div><p className="text-xs text-gray-500">القطعة والجملة داخل العرض</p><h2 className="mt-1 text-xl font-bold">{sourceLabel}</h2></div>
                   <span className="text-sm font-semibold text-gray-500">{products.length.toLocaleString('ar-EG')}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
-                  {products.map(product => <ProductCard key={product.id} product={product} />)}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+                  {products.map(product => <ProductCard key={productCardKey(product)} product={product} />)}
                 </div>
               </section>
             ) : (
