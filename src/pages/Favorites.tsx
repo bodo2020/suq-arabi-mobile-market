@@ -10,10 +10,21 @@ import type { Product } from '@/lib/supabase';
 import { getProductsByIds } from '@/lib/branchProductIds';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Button } from '@/components/ui/button';
+import {
+  DisplayProduct,
+  displayProductName,
+  hasBulkPurchase,
+  productCardKey,
+} from '@/lib/productPurchase';
+
+type FavoriteRow = {
+  product_id: string;
+  variant_id: string | null;
+};
 
 const Favorites = () => {
   const navigate = useNavigate();
-  const [favorites, setFavorites] = useState<Product[]>([]);
+  const [favorites, setFavorites] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, customerId, favoritesLoaded, favoritesVersion } = useFavorites();
   const [error, setError] = useState(false);
@@ -24,7 +35,7 @@ const Favorites = () => {
   currentCustomer.current = customerId;
 
   const visible = favorites.filter(product =>
-    product.name.toLocaleLowerCase('ar').includes(query.trim().toLocaleLowerCase('ar')),
+    displayProductName(product).toLocaleLowerCase('ar').includes(query.trim().toLocaleLowerCase('ar')),
   );
 
   useEffect(() => {
@@ -45,14 +56,34 @@ const Favorites = () => {
       setLoading(true);
       const { data: favoritesData, error: favoritesError } = await supabase
         .from('favorites')
-        .select('product_id')
+        .select('product_id,variant_id')
         .eq('customer_id', id);
       if (favoritesError) throw favoritesError;
 
-      const productIds = (favoritesData || []).map(favorite => favorite.product_id);
+      const rows = (favoritesData || []) as unknown as FavoriteRow[];
+      const productIds = [...new Set(rows.map(favorite => favorite.product_id))];
       const productsData = await getProductsByIds(productIds);
       const byId = new Map(productsData.map(product => [product.id, product]));
-      const ordered = productIds.map(productId => byId.get(productId)).filter((product): product is Product => Boolean(product));
+
+      const ordered = rows.map(row => {
+        const product = byId.get(row.product_id) as Product | undefined;
+        if (!product) return null;
+
+        if (row.variant_id) {
+          if (!hasBulkPurchase(product) || product.bulk_variant_id !== row.variant_id) return null;
+          return {
+            ...product,
+            displayType: 'bulk' as const,
+            variantKey: `bulk:${row.variant_id}`,
+          };
+        }
+
+        return {
+          ...product,
+          displayType: 'regular' as const,
+          variantKey: `regular:${product.id}`,
+        };
+      }).filter((product): product is DisplayProduct => Boolean(product));
 
       if (currentCustomer.current === id && requestVersion.current === version) setFavorites(ordered);
     } catch (loadError) {
@@ -69,13 +100,13 @@ const Favorites = () => {
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
         <div className="mb-6 rounded-3xl bg-green-50 p-5 sm:p-7">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-primary"><Heart size={25} />حاجات بتحبها</h1>
-          <p className="mt-2 text-sm leading-6 text-gray-600">بنظهر لك من المفضلة المنتجات المتاحة حاليًا في فرع عنوان التوصيل.</p>
+          <p className="mt-2 text-sm leading-6 text-gray-600">القطعة والجملة ليهم مفضلة مستقلة، وبنظهر المتاح منهم حاليًا في فرع عنوان التوصيل.</p>
         </div>
 
         {user && !loading && !error && favorites.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <input type="search" aria-label="البحث في المفضلة" placeholder="دور في المفضلة…" value={query} onChange={event => setQuery(event.target.value)} className="min-h-12 min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4" />
-            <p role="status" className="w-full text-sm text-gray-500">{visible.length} من {favorites.length} منتج متاح في الفرع</p>
+            <p role="status" className="w-full text-sm text-gray-500">{visible.length} من {favorites.length} اختيار متاح في الفرع</p>
           </div>
         )}
 
@@ -96,7 +127,7 @@ const Favorites = () => {
           <div className="rounded-3xl bg-white p-8 text-center"><h2 className="text-lg font-bold">مفيش منتجات مطابقة</h2><p className="my-3 text-gray-500">جرّب كلمة بحث مختلفة.</p><Button variant="outline" onClick={() => setQuery('')}>مسح البحث</Button></div>
         ) : favorites.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {visible.map(product => <ProductCard key={product.id} product={product} />)}
+            {visible.map(product => <ProductCard key={productCardKey(product)} product={product} />)}
           </div>
         ) : (
           <div className="mx-auto flex max-w-md flex-col items-center justify-center py-16 text-center">
