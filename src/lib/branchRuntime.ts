@@ -18,6 +18,12 @@ export type BranchRuntimeContext = {
   longitude: number;
 };
 
+export type SelectedDeliveryPoint = {
+  address_id: string | null;
+  latitude: number;
+  longitude: number;
+};
+
 const rpc = supabase.rpc.bind(supabase) as unknown as (
   name: string,
   args: Record<string, unknown>,
@@ -26,27 +32,56 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 let cachedRuntime: BranchRuntimeContext | null | undefined;
 let pendingRuntime: Promise<BranchRuntimeContext | null> | null = null;
 
-async function resolveSelectedBranchId(): Promise<string | null> {
+export async function loadSelectedDeliveryPoint(): Promise<SelectedDeliveryPoint | null> {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) throw sessionError;
 
   const userId = sessionData.session?.user?.id;
-  if (!userId) return readGuestAddress()?.assigned_branch_id || null;
+  if (!userId) {
+    const guest = readGuestAddress();
+    if (!guest) return null;
+    return {
+      address_id: null,
+      latitude: Number(guest.latitude),
+      longitude: Number(guest.longitude),
+    };
+  }
 
   const client = supabase as any;
   const { data, error } = await client
     .from('customer_addresses')
-    .select('assigned_branch_id,is_deliverable,latitude,longitude,is_default,updated_at')
+    .select('id,latitude,longitude,is_deliverable,is_default,updated_at')
     .eq('user_id', userId)
     .eq('is_deliverable', true)
-    .not('assigned_branch_id', 'is', null)
     .not('latitude', 'is', null)
     .not('longitude', 'is', null)
     .order('is_default', { ascending: false })
     .order('updated_at', { ascending: false })
     .limit(1);
   if (error) throw error;
-  return data?.[0]?.assigned_branch_id || null;
+
+  const address = data?.[0];
+  if (!address) return null;
+  return {
+    address_id: address.id,
+    latitude: Number(address.latitude),
+    longitude: Number(address.longitude),
+  };
+}
+
+async function resolveSelectedBranchId(): Promise<string | null> {
+  const point = await loadSelectedDeliveryPoint();
+  if (!point) return null;
+
+  const { data, error } = await rpc('find_delivery_branch', {
+    p_latitude: point.latitude,
+    p_longitude: point.longitude,
+  });
+  if (error) throw error;
+
+  const rows = Array.isArray(data) ? data : [];
+  const match = rows[0] as { branch_id?: string } | undefined;
+  return match?.branch_id || null;
 }
 
 export function resetBranchRuntimeCache() {
