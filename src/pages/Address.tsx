@@ -17,6 +17,7 @@ export default function Address() {
   const [params] = useSearchParams();
   const checkout = params.get('returnTo') === '/payment';
   const onboarding = params.get('onboarding') === '1' && !id;
+  const required = params.get('required') === '1' && !id;
   const returnTo = safeReturnTo(params.get('returnTo'));
   const navigate = useNavigate();
   const client = useQueryClient();
@@ -27,7 +28,7 @@ export default function Address() {
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const back = onboarding ? returnTo : checkout ? '/addresses?returnTo=%2Fpayment' : user ? '/addresses' : returnTo;
+  const back = required || onboarding ? returnTo : checkout ? '/addresses?returnTo=%2Fpayment' : user ? '/addresses' : returnTo;
 
   useEffect(() => {
     if (authLoading) return;
@@ -37,20 +38,23 @@ export default function Address() {
     setAddress('');
     setCoordinates(null);
 
+    const guest = readGuestAddress();
+
     if (!user) {
       if (id) setLoadError('سجّل دخولك لتعديل عنوان محفوظ في الحساب.');
-      else {
-        const guest = readGuestAddress();
-        if (guest) {
-          setAddress(guest.address);
-          setCoordinates({ lat: guest.latitude, lng: guest.longitude });
-        }
+      else if (guest) {
+        setAddress(guest.address);
+        setCoordinates({ lat: guest.latitude, lng: guest.longitude });
       }
       setLoading(false);
       return;
     }
 
     if (!id) {
+      if (required && guest) {
+        setAddress(guest.address);
+        setCoordinates({ lat: guest.latitude, lng: guest.longitude });
+      }
       setLoading(false);
       return;
     }
@@ -70,7 +74,7 @@ export default function Address() {
     });
 
     return () => { active = false; };
-  }, [id, user?.id, authLoading]);
+  }, [id, user?.id, authLoading, required]);
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -121,6 +125,7 @@ export default function Address() {
         neighborhood_id: null,
       };
 
+      let createdId: string | null = null;
       if (id) {
         const { data, error: updateError } = await supabase.from('customer_addresses').update(values).eq('id', id).eq('user_id', user.id).select('id').single();
         if (updateError || !data) throw updateError || new Error('Missing address');
@@ -129,7 +134,8 @@ export default function Address() {
         if (countError) throw countError;
         const { data: created, error: insertError } = await supabase.from('customer_addresses').insert({ ...values, is_default: count === 0 }).select('id').single();
         if (insertError || !created) throw insertError || new Error('Missing address');
-        if (onboarding) {
+        createdId = created.id;
+        if (onboarding || required) {
           const { error: defaultError } = await customerRpc('set_default_customer_address', { p_address_id: created.id });
           if (defaultError) throw defaultError;
         }
@@ -137,8 +143,12 @@ export default function Address() {
 
       await client.invalidateQueries({ queryKey: ['customerData'] });
       await client.invalidateQueries({ queryKey: ['onboarding-state', user.id] });
-      if (onboarding) {
+      await client.invalidateQueries({ queryKey: ['addresses', user.id] });
+      await client.invalidateQueries({ queryKey: ['home-default-address', user.id] });
+
+      if (onboarding || required) {
         window.dispatchEvent(new Event('customer-profile-ready'));
+        window.dispatchEvent(new CustomEvent('delivery-address-changed', { detail: { addressId: createdId } }));
         navigate(returnTo, { replace: true });
         return;
       }
@@ -153,7 +163,7 @@ export default function Address() {
 
   return <CheckoutLayout step={2} showSteps={checkout && Boolean(user)} backTo={back} backLabel="رجوع">
     <div className="mb-6">
-      <h1 className="checkout-title">{onboarding ? 'آخر خطوة: عنوان التوصيل' : id ? 'تعديل عنوان التوصيل' : 'نوصل لك فين؟'}</h1>
+      <h1 className="checkout-title">{required ? 'حدد عنوانك قبل ما تبدأ التسوق' : onboarding ? 'آخر خطوة: عنوان التوصيل' : id ? 'تعديل عنوان التوصيل' : 'نوصل لك فين؟'}</h1>
       <p className="checkout-intro">حدد باب البيت على الخريطة، وبعدها اكتب التفاصيل اللي تساعد المندوب. مش لازم تسمح بالموقع — الخريطة بتبدأ من فرع المعداوي الأساسي.</p>
     </div>
 
@@ -172,7 +182,7 @@ export default function Address() {
           <textarea id="delivery-details" value={address} onChange={event => { setAddress(event.target.value); setError(''); }} rows={5} maxLength={1000} required placeholder="مثال: شارع المدرسة، منزل ١٢، الدور ٢ — بجوار الصيدلية" className="w-full rounded-xl border p-3 text-base leading-7" aria-describedby={error ? 'address-error' : undefined} />
           {coordinates && <div className="mt-3 flex items-center gap-2 text-xs text-gray-500"><Navigation size={14} /><span>{coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}</span></div>}
           {error && <p id="address-error" className="text-sm text-red-700 mt-4" role="alert">{error}</p>}
-          <Button type="submit" disabled={saving} className="cart-primary mt-5">{saving ? <BrandLoader size="sm" /> : user ? (onboarding ? 'حفظ العنوان والمتابعة' : 'حفظ العنوان') : 'استخدام العنوان كضيف'}</Button>
+          <Button type="submit" disabled={saving} className="cart-primary mt-5">{saving ? <BrandLoader size="sm" /> : user ? (required ? 'حفظ العنوان وابدأ التسوق' : onboarding ? 'حفظ العنوان والمتابعة' : 'حفظ العنوان') : required ? 'استخدام العنوان وابدأ التسوق' : 'استخدام العنوان كضيف'}</Button>
           {!user && <p className="mt-3 text-center text-xs text-gray-500">هنحفظ العنوان على الجهاز مؤقتًا. تقدر تسجّل دخولك بعدين لإكمال الطلب وحفظه في حسابك.</p>}
         </section>
       </form>}
