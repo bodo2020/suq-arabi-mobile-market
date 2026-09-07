@@ -1,10 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
+import { readGuestAddress } from '@/lib/deliveryAddress';
 
-// Use the properly configured supabase client from the integrations folder
 export const supabase = configuredSupabase;
 
-// Types based on expected Supabase schema
 export type Product = {
   id: string;
   name: string;
@@ -25,9 +23,10 @@ export type Product = {
   barcode_type?: string;
   barcode?: string;
   bulk_barcode?: string;
+  delivery_branch_id?: string;
+  inventory_branch_id?: string;
 };
 
-// Updated Category type to match the main_categories table
 export type MainCategory = {
   id: string;
   name: string;
@@ -37,7 +36,6 @@ export type MainCategory = {
   updated_at?: string;
 };
 
-// Legacy Category type - keeping for backward compatibility
 export type Category = {
   id: string;
   name: string;
@@ -74,7 +72,6 @@ export type CartItem = {
   quantity: number;
 };
 
-// Updated Address type to include location coordinates
 export type Address = {
   id: string;
   user_id: string;
@@ -88,7 +85,9 @@ export type Address = {
   updated_at?: string;
   latitude?: number | null;
   longitude?: number | null;
-  // Join properties
+  assigned_branch_id?: string | null;
+  distance_km?: number | null;
+  is_deliverable?: boolean | null;
   governorates?: { id: string; name: string } | null;
   cities?: { id: string; name: string } | null;
   areas?: { id: string; name: string } | null;
@@ -109,7 +108,6 @@ export type Order = {
   created_at: string;
 };
 
-// New types for return requests
 export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected';
 
 export type ReturnRequest = {
@@ -131,11 +129,65 @@ export type ReturnRequestItem = {
   quantity: number;
   reason?: string;
   created_at: string;
-  // Join properties
   products?: Product;
 };
 
-// Fetching functions
+type CatalogFilters = {
+  productId?: string | null;
+  mainCategoryId?: string | null;
+  subcategoryId?: string | null;
+  companyId?: string | null;
+  search?: string | null;
+  barcode?: string | null;
+  limit?: number;
+};
+
+const catalogRpc = supabase.rpc.bind(supabase) as unknown as (
+  name: string,
+  args: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+export async function getCurrentDeliveryBranchId(): Promise<string | null> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+
+  if (!sessionData.session?.user?.id) {
+    return readGuestAddress()?.assigned_branch_id || null;
+  }
+
+  const client = supabase as any;
+  const { data, error } = await client
+    .from('customer_addresses')
+    .select('assigned_branch_id,is_deliverable,latitude,longitude,is_default')
+    .eq('user_id', sessionData.session.user.id)
+    .eq('is_deliverable', true)
+    .not('assigned_branch_id', 'is', null)
+    .not('latitude', 'is', null)
+    .not('longitude', 'is', null)
+    .order('is_default', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data?.[0]?.assigned_branch_id || null;
+}
+
+export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Product[]> {
+  const branchId = await getCurrentDeliveryBranchId();
+  if (!branchId) throw new Error('DELIVERY_ADDRESS_REQUIRED');
+
+  const { data, error } = await catalogRpc('get_customer_branch_catalog', {
+    p_branch_id: branchId,
+    p_product_id: filters.productId || null,
+    p_main_category_id: filters.mainCategoryId || null,
+    p_subcategory_id: filters.subcategoryId || null,
+    p_company_id: filters.companyId || null,
+    p_search: filters.search?.trim() || null,
+    p_barcode: filters.barcode?.trim() || null,
+    p_limit: filters.limit || 500,
+  });
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []) as Product[];
+}
+
 export async function getCategories() {
   const { data, error } = await supabase.from('main_categories').select('*');
   if (error) console.error('Error fetching categories:', error);
@@ -144,136 +196,69 @@ export async function getCategories() {
 
 export async function getSubcategories(categoryId?: string) {
   let query = supabase.from('subcategories').select('*');
-  
-  if (categoryId) {
-    query = query.eq('category_id', categoryId);
-  }
-  
+  if (categoryId) query = query.eq('category_id', categoryId);
   const { data, error } = await query;
   if (error) console.error('Error fetching subcategories:', error);
   return data || [];
 }
 
 export async function getProducts(categoryIdOrSubcategoryId?: string, isSubcategory: boolean = false) {
-  let query = supabase.from('products').select('*');
-  
-  if (categoryIdOrSubcategoryId) {
-    if (isSubcategory) {
-      // Filter by subcategory_id
-      query = query.eq('subcategory_id', categoryIdOrSubcategoryId);
-    } else {
-      // Filter by main_category_id
-      query = query.eq('main_category_id', categoryIdOrSubcategoryId);
-    }
-  }
-  
-  const { data, error } = await query;
-  if (error) console.error('Error fetching products:', error);
-  return data || [];
+  return getBranchCatalog(isSubcategory
+    ? { subcategoryId: categoryIdOrSubcategoryId || null }
+    : { mainCategoryId: categoryIdOrSubcategoryId || null });
 }
 
 export async function getProductById(id: string) {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('id', id)
-    .single();
-  
-  if (error) console.error(`Error fetching product with id ${id}:`, error);
-  return data;
+  const rows = await getBranchCatalog({ productId: id, limit: 1 });
+  return rows[0] || null;
 }
 
 export async function getProductsByCompany(companyId: string) {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('company_id', companyId);
-  
-  if (error) console.error(`Error fetching products for company ${companyId}:`, error);
-  return data || [];
+  return getBranchCatalog({ companyId });
 }
 
 export async function getCompanyById(id: string) {
-  const { data, error } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('id', id)
-    .single();
-  
+  const { data, error } = await supabase.from('companies').select('*').eq('id', id).single();
   if (error) console.error(`Error fetching company with id ${id}:`, error);
   return data;
 }
 
 export async function getRelatedProducts(productId: string, categoryId: string) {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('main_category_id', categoryId)
-    .neq('id', productId)
-    .limit(4);
-  
-  if (error) console.error(`Error fetching related products:`, error);
-  return data || [];
+  const rows = await getBranchCatalog({ mainCategoryId: categoryId, limit: 12 });
+  return rows.filter(product => product.id !== productId).slice(0, 4);
 }
 
 export async function searchProducts(query: string) {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .ilike('name', `%${query}%`);
-  
-  if (error) console.error(`Error searching products:`, error);
-  return data || [];
+  return getBranchCatalog({ search: query, limit: 200 });
 }
 
 export async function searchProductByBarcode(barcode: string) {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .or(`barcode.eq.${barcode},bulk_barcode.eq.${barcode}`);
-  
-  if (error) console.error(`Error searching product by barcode:`, error);
-  return data?.[0] || null;
+  const rows = await getBranchCatalog({ barcode, limit: 1 });
+  return rows[0] || null;
 }
 
 export async function submitOrder(order: Omit<Order, 'id' | 'created_at'>) {
-  const { data, error } = await supabase
-    .from('online_orders')
-    .insert([order]);
-  
+  const { data, error } = await supabase.from('online_orders').insert([order]);
   if (error) console.error(`Error submitting order:`, error);
   return data;
 }
 
 export async function getStoreInfo() {
-  const { data, error } = await supabase
-    .from('store_settings')
-    .select('*')
-    .single();
-  
+  const { data, error } = await supabase.from('store_settings').select('*').single();
   if (error) console.error(`Error fetching store info:`, error);
   return data;
 }
 
-// Function to get addresses for a user
 export async function getAddresses(userId: string) {
   const { data, error } = await supabase
     .from('customer_addresses')
-    .select(`
-      *,
-      governorates(name),
-      cities(name),
-      areas(name),
-      neighborhoods(name)
-    `)
+    .select(`*, governorates(name), cities(name), areas(name), neighborhoods(name)`)
     .eq('user_id', userId);
-  
   if (error) console.error(`Error fetching addresses:`, error);
   return data || [];
 }
 
-// Updated function to create or update a customer
-export async function createOrUpdateCustomer(customerData: { 
+export async function createOrUpdateCustomer(customerData: {
   user_id?: string;
   first_name: string;
   last_name: string;
@@ -282,47 +267,27 @@ export async function createOrUpdateCustomer(customerData: {
   email?: string;
   address?: string;
 }) {
-  // Ensure name is always set, using first and last name if not provided
   const dataWithName = {
     ...customerData,
     name: customerData.name || `${customerData.first_name} ${customerData.last_name}`.trim(),
   };
-  
-  const { data, error } = await supabase
-    .from('customers')
-    .upsert(dataWithName, { onConflict: 'user_id' });
-  
+  const { data, error } = await supabase.from('customers').upsert(dataWithName, { onConflict: 'user_id' });
   if (error) console.error(`Error creating/updating customer:`, error);
   return data;
 }
 
-// New function to get return requests for a user
 export async function getUserReturnRequests(userId: string) {
-  const { data, error } = await supabase
-    .from('return_requests')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  
+  const { data, error } = await supabase.from('return_requests').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   if (error) console.error('Error fetching return requests:', error);
   return data as ReturnRequest[] || [];
 }
 
-// Function to get return request items for a specific return request
 export async function getReturnRequestItems(returnRequestId: string) {
-  const { data, error } = await supabase
-    .from('return_request_items')
-    .select(`
-      *,
-      products(*)
-    `)
-    .eq('return_request_id', returnRequestId);
-  
+  const { data, error } = await supabase.from('return_request_items').select(`*, products(*)`).eq('return_request_id', returnRequestId);
   if (error) console.error('Error fetching return request items:', error);
   return data as ReturnRequestItem[] || [];
 }
 
-// Function to create a return request
 export async function createReturnRequest(
   userId: string,
   orderId: string,
@@ -330,68 +295,37 @@ export async function createReturnRequest(
   items: { productId: string; quantity: number; reason?: string }[],
   images: string[]
 ) {
-  // First create the return request
   const { data: returnRequest, error: returnRequestError } = await supabase
     .from('return_requests')
-    .insert({
-      user_id: userId,
-      order_id: orderId,
-      reason,
-      images
-    })
+    .insert({ user_id: userId, order_id: orderId, reason, images })
     .select()
     .single();
-  
-  if (returnRequestError) {
-    console.error('Error creating return request:', returnRequestError);
-    throw returnRequestError;
-  }
-  
-  // Then create the return request items
+  if (returnRequestError) throw returnRequestError;
+
   const returnItems = items.map(item => ({
     return_request_id: returnRequest.id,
     product_id: item.productId,
     quantity: item.quantity,
-    reason: item.reason
+    reason: item.reason,
   }));
-  
-  const { error: itemsError } = await supabase
-    .from('return_request_items')
-    .insert(returnItems);
-  
-  if (itemsError) {
-    console.error('Error creating return request items:', itemsError);
-    throw itemsError;
-  }
-  
+  const { error: itemsError } = await supabase.from('return_request_items').insert(returnItems);
+  if (itemsError) throw itemsError;
   return returnRequest;
 }
 
-// Function to upload images for a return request
 export async function uploadReturnImages(files: File[]) {
   const uploadedUrls: string[] = [];
-  
   for (const file of files) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
     const filePath = `returns/${fileName}`;
-    
-    const { error: uploadError, data } = await supabase.storage
-      .from('returns')
-      .upload(filePath, file);
-    
+    const { error: uploadError } = await supabase.storage.from('returns').upload(filePath, file);
     if (uploadError) {
       console.error('Error uploading file:', uploadError);
       continue;
     }
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from('returns')
-      .getPublicUrl(filePath);
-    
+    const { data: { publicUrl } } = supabase.storage.from('returns').getPublicUrl(filePath);
     uploadedUrls.push(publicUrl);
   }
-  
   return uploadedUrls;
 }
-
