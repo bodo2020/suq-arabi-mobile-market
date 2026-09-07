@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, MapPin, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, MapPin, RefreshCw, Route } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
 import WeightSelector from '@/components/ui/WeightSelector';
@@ -61,7 +61,7 @@ export default function Cart() {
   };
 
   const cta = <Button className="cart-primary" onClick={proceed} disabled={blocked}>
-    {isSaving ? <><BrandLoader size="sm" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" />بنراجع الفرع</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
+    {isSaving ? <><BrandLoader size="sm" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
   </Button>;
 
   const subtotal = Number(quote?.subtotal ?? getTotalPrice());
@@ -76,15 +76,16 @@ export default function Cart() {
       <section className="cart-empty"><div className="cart-empty-mark"><ShoppingBag size={38} /></div><h1>سلتك مستنية اختياراتك</h1><p>ضيف احتياجاتك، وهتلاقيها كلها هنا.<br />تقدر تتسوّق وتختار براحتك قبل تسجيل الدخول.</p><Button asChild className="cart-primary"><Link to="/">ابدأ التسوّق<ArrowLeft size={18} /></Link></Button></section> : <>
       <div className="cart-heading">
         <div><h1>سلتك، على ذوقك.</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
-        <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث السعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />سلتك محفوظة</> : 'سلة الضيف جاهزة'}</div>
+        <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />سلتك محفوظة</> : 'سلة الضيف جاهزة'}</div>
       </div>
 
       {branch && <div className="cart-alert" role="status">
-        <MapPin size={18} />
+        <Route size={18} />
         <span>
           السلة متصلة بفرع <strong>{quote?.branch_name || branch.branch_name}</strong>
-          {quote?.distance_km != null ? ` · يبعد ${money(Number(quote.distance_km))} كم` : ''}.
-          {' '}الأسعار والمخزون والتوصيل محدثة من السيرفر.
+          {quote?.road_distance_km != null ? ` · مسافة الطريق ${money(Number(quote.road_distance_km))} كم` : ''}
+          {quote?.road_duration_minutes ? ` · حوالي ${money(Number(quote.road_duration_minutes))} دقيقة` : ''}.
+          {' '}الأسعار والمخزون والتوصيل محسوبة على نفس الفرع.
         </span>
       </div>}
 
@@ -129,7 +130,7 @@ export default function Cart() {
         <div className="cart-summary-total"><span>الإجمالي</span><strong>{quotePending ? '...' : money(total)} <small>ج.م</small></strong></div>
         {quote && quote.min_order_amount > 0 && <p className="cart-help">الحد الأدنى للطلب من الفرع: {money(quote.min_order_amount)} ج.م</p>}
         {cta}
-        <p className="cart-help">الملخص محسوب مباشرة من فرع التوصيل الحالي، ويُعاد تحديثه مع أي تعديل في السلة أو العنوان.</p>
+        <p className="cart-help">مسافة التوصيل هنا هي مسافة القيادة على الطريق من Google، وليست المسافة المباشرة بين النقطتين.</p>
         {!user && <p className="cart-help">هنطلب رقم موبايلك عشان تكمّل طلبك ونحفظ العنوان في حسابك.</p>}
       </aside></div>
 
