@@ -1655,8 +1655,11 @@ export type Database = {
       online_orders: {
         Row: {
           branch_id: string | null
+          checkout_fingerprint: string | null
+          checkout_version: number | null
           created_at: string | null
           customer_id: string | null
+          customer_snapshot: Json | null
           delivery_location_id: string | null
           delivery_person: string | null
           delivery_zone_id: string | null
@@ -1668,15 +1671,21 @@ export type Database = {
           return_status: string | null
           shipping_address: string | null
           shipping_cost: number | null
+          shipping_snapshot: Json | null
           status: Database["public"]["Enums"]["order_status"]
+          stock_deductions: Json | null
+          stock_released_at: string | null
           total: number
           tracking_number: string | null
           updated_at: string | null
         }
         Insert: {
           branch_id?: string | null
+          checkout_fingerprint?: string | null
+          checkout_version?: number | null
           created_at?: string | null
           customer_id?: string | null
+          customer_snapshot?: Json | null
           delivery_location_id?: string | null
           delivery_person?: string | null
           delivery_zone_id?: string | null
@@ -1688,15 +1697,21 @@ export type Database = {
           return_status?: string | null
           shipping_address?: string | null
           shipping_cost?: number | null
+          shipping_snapshot?: Json | null
           status?: Database["public"]["Enums"]["order_status"]
+          stock_deductions?: Json | null
+          stock_released_at?: string | null
           total: number
           tracking_number?: string | null
           updated_at?: string | null
         }
         Update: {
           branch_id?: string | null
+          checkout_fingerprint?: string | null
+          checkout_version?: number | null
           created_at?: string | null
           customer_id?: string | null
+          customer_snapshot?: Json | null
           delivery_location_id?: string | null
           delivery_person?: string | null
           delivery_zone_id?: string | null
@@ -1708,7 +1723,10 @@ export type Database = {
           return_status?: string | null
           shipping_address?: string | null
           shipping_cost?: number | null
+          shipping_snapshot?: Json | null
           status?: Database["public"]["Enums"]["order_status"]
+          stock_deductions?: Json | null
+          stock_released_at?: string | null
           total?: number
           tracking_number?: string | null
           updated_at?: string | null
@@ -2584,6 +2602,7 @@ export type Database = {
           items: Json
           payment_method: string
           profit: number
+          request_fingerprint: string | null
           subtotal: number
           total: number
           updated_at: string | null
@@ -2604,6 +2623,7 @@ export type Database = {
           items: Json
           payment_method: string
           profit: number
+          request_fingerprint?: string | null
           subtotal: number
           total: number
           updated_at?: string | null
@@ -2624,6 +2644,7 @@ export type Database = {
           items?: Json
           payment_method?: string
           profit?: number
+          request_fingerprint?: string | null
           subtotal?: number
           total?: number
           updated_at?: string | null
@@ -2731,6 +2752,30 @@ export type Database = {
           offer_type?: string
           updated_at?: string | null
           usage_limit?: number | null
+        }
+        Relationships: []
+      }
+      staff_login_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          identifier_hash: string
+          ip_hash: string | null
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          identifier_hash: string
+          ip_hash?: string | null
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identifier_hash?: string
+          ip_hash?: string | null
+          success?: boolean
         }
         Relationships: []
       }
@@ -3281,6 +3326,15 @@ export type Database = {
         }
         Returns: number
       }
+      adjust_branch_inventory: {
+        Args: {
+          p_branch_id: string
+          p_delta: number
+          p_product_id: string
+          p_request_id: string
+        }
+        Returns: number
+      }
       auto_transfer_from_hub: {
         Args: {
           p_product_id: string
@@ -3320,6 +3374,10 @@ export type Database = {
       create_bucket_if_not_exists: {
         Args: { bucket_name: string }
         Returns: undefined
+      }
+      create_pos_sale: {
+        Args: { p_branch_id: string; p_request_id: string; p_sale: Json }
+        Returns: Json
       }
       create_verification_codes_table: { Args: never; Returns: undefined }
       get_admin_role: { Args: never; Returns: string }
@@ -3435,6 +3493,32 @@ export type Database = {
       }
       is_external_branch: { Args: { p_branch_id: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      place_customer_order: {
+        Args: {
+          p_address_id: string
+          p_items: Json
+          p_notes: string
+          p_payment_method: string
+          p_quote_token: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      process_online_order: {
+        Args: {
+          p_action: string
+          p_expected_status?: string
+          p_order_id: string
+          p_payment_method?: string
+          p_payment_reference?: string
+          p_target_status?: string
+        }
+        Returns: Json
+      }
+      quote_customer_order: {
+        Args: { p_address_id: string; p_items: Json }
+        Returns: Json
+      }
       record_merged_cash_transaction:
         | {
             Args: {
@@ -3455,6 +3539,10 @@ export type Database = {
             }
             Returns: number
           }
+      replace_customer_cart: {
+        Args: { p_expected_user_id: string; p_items: Json }
+        Returns: undefined
+      }
       sales_summary_by_branch: {
         Args: { p_end?: string; p_start?: string }
         Returns: {
@@ -3464,6 +3552,14 @@ export type Database = {
           total_profit: number
           total_sales: number
         }[]
+      }
+      set_customer_favorite: {
+        Args: { p_favorite: boolean; p_product_id: string }
+        Returns: undefined
+      }
+      set_default_customer_address: {
+        Args: { p_address_id: string }
+        Returns: undefined
       }
       setup_branch_tables: {
         Args: { p_schema_name: string }
@@ -3655,4 +3751,3 @@ export const Constants = {
     },
   },
 } as const
-
