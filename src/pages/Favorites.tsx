@@ -22,6 +22,10 @@ type FavoriteRow = {
   variant_id: string | null;
 };
 
+const favoriteRowKey = (row: FavoriteRow) => row.variant_id
+  ? `variant:${row.variant_id}`
+  : `product:${row.product_id}`;
+
 const Favorites = () => {
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState<DisplayProduct[]>([]);
@@ -61,11 +65,14 @@ const Favorites = () => {
       if (favoritesError) throw favoritesError;
 
       const rows = (favoritesData || []) as unknown as FavoriteRow[];
-      const productIds = [...new Set(rows.map(favorite => favorite.product_id))];
+      const uniqueRows = Array.from(
+        new Map(rows.map(row => [favoriteRowKey(row), row])).values(),
+      );
+      const productIds = [...new Set(uniqueRows.map(favorite => favorite.product_id))];
       const productsData = await getProductsByIds(productIds);
       const byId = new Map(productsData.map(product => [product.id, product]));
 
-      const ordered = rows.map(row => {
+      const ordered = uniqueRows.map(row => {
         const product = byId.get(row.product_id) as Product | undefined;
         if (!product) return null;
 
