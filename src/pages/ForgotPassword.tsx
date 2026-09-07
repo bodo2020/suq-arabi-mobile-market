@@ -1,9 +1,11 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Loader, User, Send } from 'lucide-react';
-import MainLayout from '@/components/layout/MainLayout';
+import MainLayout from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
@@ -26,13 +28,13 @@ const ForgotPassword = () => {
   const [error, setError] = useState('');
   
   const detectInputType = (value: string) => {
-    const hasDigits = /\d/.test(value);
+    const hasDigits = /^[+\d\s()-]+$/.test(normalizeDigits(value.trim()));
     const hasEmailSymbol = /@/.test(value);
     setIsPhoneInput(hasDigits && !hasEmailSymbol);
   };
 
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
-    const digits = phoneNumber.replace(/\D/g, '');
+    const digits = localPhoneDigits(phoneNumber, country.dialCode, country.code);
     if (country.code === 'EG' && digits.length > 0) {
       return digits.startsWith('0') ? digits.substring(1) : digits;
     }
@@ -81,7 +83,7 @@ const ForgotPassword = () => {
         description: 'تحقق من بريدك الإلكتروني لإكمال تغيير كلمة المرور',
       });
     } catch (resetError: any) {
-      const message = resetError?.message || 'حدث خطأ ما، يرجى المحاولة مرة أخرى';
+      const message = authErrorMessage(resetError, 'تعذر إرسال رابط الاستعادة. حاول مرة أخرى لاحقًا.');
       setError(message);
       toast({
         title: 'فشل إعادة تعيين كلمة المرور',
@@ -119,7 +121,7 @@ const ForgotPassword = () => {
           ) : (
             <>
               <p className="text-gray-600">
-                استخدم بريدك الإلكتروني لاستقبال رابط الاستعادة، أو رقم الهاتف لاستقبال رمز OTP.
+                اكتب بريدك الإلكتروني لنرسل رابط الاستعادة، أو رقم هاتفك لنرسل رمز تحقق.
               </p>
               
               <div>
@@ -155,7 +157,7 @@ const ForgotPassword = () => {
               </div>
               
               <Button onClick={handleResetPassword} disabled={loading} className="w-full">
-                {loading && <Loader size={16} className="animate-spin ml-2" />}
+                {loading && <BrandLoader size="sm" className="ml-2" />}
                 متابعة الاستعادة
               </Button>
               

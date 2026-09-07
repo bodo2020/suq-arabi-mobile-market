@@ -1,5 +1,6 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Barcode, Search as SearchIcon, X, Scan } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -18,11 +19,24 @@ import { getProductListWithVariants } from '@/utils/productUtils';
 
 const Search = () => {
   const [searchParams] = useSearchParams();
-  const query = searchParams.get('q') || '';
+  const query = (searchParams.get('q') || '').trim();
   const [products, setProducts] = useState<any[]>([]);
   const [popularProducts, setPopularProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [onlyOffers, setOnlyOffers] = useState(false);
+  const [sortOrder, setSortOrder] = useState('relevance');
+  const [searchError, setSearchError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const visibleProducts = useMemo(() => {
+    const variants = getProductListWithVariants(products).filter(p =>
+      (!onlyAvailable || p.quantity > 0) && (!onlyOffers || (p.offer_price > 0 && p.offer_price < p.price)));
+    const price = (p: typeof variants[number]) => Number(p.displayType === 'bulk' ? p.bulk_price : p.offer_price || p.price);
+    if (sortOrder === 'low') variants.sort((a, b) => price(a) - price(b));
+    if (sortOrder === 'high') variants.sort((a, b) => price(b) - price(a));
+    return variants;
+  }, [products, onlyAvailable, onlyOffers, sortOrder]);
   const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const navigate = useNavigate();
@@ -31,10 +45,10 @@ const Search = () => {
 
   // Load recent searches from localStorage
   useEffect(() => {
-    const savedSearches = localStorage.getItem('recentSearches');
-    if (savedSearches) {
-      setRecentSearches(JSON.parse(savedSearches));
-    }
+    try {
+      const saved = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+      if (Array.isArray(saved)) setRecentSearches(saved.filter(s => typeof s === 'string').slice(0, 5));
+    } catch { /* Browsing still works when storage is unavailable. */ }
   }, []);
 
   // Fetch popular products when component mounts
@@ -58,7 +72,7 @@ const Search = () => {
     if (query && query.trim() !== '') {
       const updatedSearches = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
       setRecentSearches(updatedSearches);
-      localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
+      try { localStorage.setItem('recentSearches', JSON.stringify(updatedSearches)); } catch { /* Optional history. */ }
     }
   }, [query]);
 
@@ -82,31 +96,21 @@ const Search = () => {
     };
   }, []);
 
-  // Fetch search results
+  // Ignore stale requests when a new search or navigation wins the race.
   useEffect(() => {
-    const fetchResults = async () => {
-      if (query && query.trim() !== '') {
-        setLoading(true);
-        try {
-          const results = await searchProducts(query);
-          setProducts(results);
-        } catch (error) {
-          console.error('Error searching products:', error);
-          toast({
-            title: "حدث خطأ",
-            description: "لم نتمكن من البحث عن المنتجات",
-            variant: "destructive",
-          });
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setProducts([]);
-      }
-    };
-
-    fetchResults();
-  }, [query, toast]);
+    let active = true;
+    setProducts([]);
+    setSearchError(false);
+    setLoading(Boolean(query));
+    if (query) searchProducts(query).then(results => {
+      if (active) setProducts(results);
+    }).catch(() => {
+      if (active) setSearchError(true);
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [query, retry]);
 
   const handleBack = () => {
     if (showScanner && scannerRef.current) {
@@ -122,7 +126,7 @@ const Search = () => {
 
   const handleClearHistory = () => {
     setRecentSearches([]);
-    localStorage.removeItem('recentSearches');
+    try { localStorage.removeItem('recentSearches'); } catch { /* Optional history. */ }
   };
 
   const handleBarcodeDetected = async (barcode: string) => {
@@ -265,7 +269,7 @@ const Search = () => {
       <div className="py-0">
         {/* Top Navigation Bar */}
         <TopNavBar 
-          searchPlaceholder="البحث عن منتجات، أقسام..."
+          searchPlaceholder="دور باسم المنتج أو العلامة التجارية"
           searchProps={{ 
             initialQuery: query,
             onBarcodeClick: startBarcodeScanner,
@@ -276,7 +280,7 @@ const Search = () => {
         />
 
         {/* Main Content with proper spacing */}
-        <div className={`${!isMobile ? 'mt-24' : ''}`}>
+        <div className="py-6">
           <div className="w-full px-4">
             <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               {/* Header with back button - only show on desktop */}
@@ -365,7 +369,7 @@ const Search = () => {
               {/* Popular Products - Show when no search query */}
               {!query && popularProducts.length > 0 && (
                 <div className="mb-6">
-                  <h2 className="text-lg font-bold mb-3 text-primary">منتجات مميزة</h2>
+                  <h2 className="text-lg font-bold mb-3 text-primary">اكتشف منتجاتنا</h2>
                   {(() => {
                     const productVariants = getProductListWithVariants(popularProducts);
                     return (
@@ -384,13 +388,24 @@ const Search = () => {
                 <>
                   <h2 className="text-lg font-bold mb-3 text-primary">نتائج البحث عن "{query}"</h2>
                   
-                  {loading ? (
+                  <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-gray-100 bg-white p-3">
+                    <button onClick={() => setOnlyAvailable(v => !v)} aria-pressed={onlyAvailable} className={`min-h-11 rounded-xl px-4 text-sm ${onlyAvailable ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'}`}>المتوفر فقط</button>
+                    <button onClick={() => setOnlyOffers(v => !v)} aria-pressed={onlyOffers} className={`min-h-11 rounded-xl px-4 text-sm ${onlyOffers ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'}`}>العروض</button>
+                    <label className="flex items-center gap-2 text-sm">ترتيب حسب
+                      <select value={sortOrder} onChange={e => setSortOrder(e.target.value)} className="min-h-11 max-w-full rounded-xl border border-gray-200 bg-white px-3">
+                        <option value="relevance">نتائج البحث</option><option value="low">السعر: الأقل أولًا</option><option value="high">السعر: الأعلى أولًا</option>
+                      </select>
+                    </label>
+                    <p className="w-full text-xs text-gray-500">الترتيب بالسعر المعروض للقطعة أو العبوة أو الكيلو.</p>
+                  </div>
+                  {!loading && !searchError && <p role="status" className="mb-4 text-sm text-gray-500">{visibleProducts.length} نتيجة</p>}
+                  {searchError ? <div role="alert" className="rounded-2xl bg-white p-8 text-center"><h3 className="font-bold">تعذّر تحميل النتائج</h3><p className="my-3 text-sm text-gray-500">راجع اتصالك وحاول تاني.</p><Button onClick={() => setRetry(v => v + 1)}>إعادة المحاولة</Button></div> : loading ? (
                     <div className="flex justify-center items-center h-40">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <BrandLoader size="md" className="" />
                     </div>
-                  ) : products.length > 0 ? (
+                  ) : visibleProducts.length > 0 ? (
                     (() => {
-                      const productVariants = getProductListWithVariants(products);
+                      const productVariants = visibleProducts;
                       return (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                           {productVariants.map((product) => (
@@ -403,7 +418,9 @@ const Search = () => {
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                       <SearchIcon size={48} className="text-primary/30 mb-4" />
                       <h3 className="text-lg font-medium text-primary mb-1">لا توجد نتائج</h3>
-                      <p className="text-sm text-gray-400">لم نتمكن من العثور على منتجات تطابق "{query}"</p>
+                      <p className="text-sm text-gray-500">جرّب اسم أقصر أو غيّر اختيارات التصفية.</p>
+                      {(onlyAvailable || onlyOffers) && <Button variant="outline" className="mt-4 min-h-11" onClick={() => { setOnlyAvailable(false); setOnlyOffers(false); }}>مسح التصفية</Button>}
+                      <Button variant="ghost" className="mt-3 min-h-11" onClick={() => navigate('/categories')}>تصفح الأقسام</Button>
                     </div>
                   )}
                 </>
@@ -417,3 +434,4 @@ const Search = () => {
 };
 
 export default Search;
+

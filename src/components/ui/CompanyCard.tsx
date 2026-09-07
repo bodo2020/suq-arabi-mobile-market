@@ -21,3 +21,4 @@ const CompanyCard: React.FC<CompanyCardProps> = ({ company }) => {
 };
 
 export default CompanyCard;
+

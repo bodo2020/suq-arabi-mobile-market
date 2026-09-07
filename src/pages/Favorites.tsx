@@ -1,10 +1,10 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Heart, ShoppingBag } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
-import FavoriteProductCard from '@/components/ui/FavoriteProductCard';
+import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/lib/supabase';
@@ -18,19 +18,32 @@ const Favorites = () => {
   const isMobile = useIsMobile();
   const [favorites, setFavorites] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, customerId, favoritesLoaded } = useFavorites();
-  const { toast } = useToast();
+  const { user, customerId, favoritesLoaded, favoritesVersion } = useFavorites();
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [query, setQuery] = useState('');
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const requestVersion = useRef(0);
+  const visible = favorites.filter(p => (!availableOnly || p.quantity > 0) && p.name.toLocaleLowerCase('ar').includes(query.trim().toLocaleLowerCase('ar')));
+  const currentCustomer = useRef(customerId);
+  currentCustomer.current = customerId;
 
   useEffect(() => {
+    requestVersion.current += 1;
+    setFavorites([]);
+    setError(false);
     if (customerId && favoritesLoaded) {
       fetchFavorites(customerId);
     } else if (favoritesLoaded) {
       // Favorites have loaded (either user has no customerId or no user)
+      setFavorites([]);
       setLoading(false);
     }
-  }, [user, customerId, favoritesLoaded]);
+    return () => { requestVersion.current += 1; };
+  }, [user, customerId, favoritesLoaded, favoritesVersion, retry]);
 
   const fetchFavorites = async (customerId: string) => {
+    const version = requestVersion.current;
     try {
       setLoading(true);
       console.log('Fetching favorites for customer:', customerId);
@@ -63,19 +76,15 @@ const Favorites = () => {
         }
 
         console.log('Retrieved products for favorites:', productsData?.length || 0);
-        setFavorites(productsData as Product[]);
-      } else {
+        if (currentCustomer.current === customerId && requestVersion.current === version) setFavorites(productsData as Product[]);
+      } else if (currentCustomer.current === customerId && requestVersion.current === version) {
         setFavorites([]);
       }
     } catch (error) {
       console.error('Error in fetchFavorites:', error);
-      toast({
-        title: "حدث خطأ",
-        description: "لم نتمكن من تحميل المفضلة",
-        variant: "destructive",
-      });
+      if (requestVersion.current === version) setError(true);
     } finally {
-      setLoading(false);
+      if (currentCustomer.current === customerId && requestVersion.current === version) setLoading(false);
     }
   };
 
@@ -91,7 +100,16 @@ const Favorites = () => {
         hideCart={true}
         pageTitle="المفضلة"
       />
-      <div className={`py-4 px-4 md:px-6 ${!isMobile ? 'mt-24' : 'mt-6'}`}>
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+        <div className="mb-6 rounded-3xl bg-green-50 p-5 sm:p-7">
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-primary"><Heart size={25} />حاجات بتحبها</h1>
+          <p className="mt-2 text-sm leading-6 text-gray-600">كل منتجاتك المفضلة في مكان واحد، جاهزة تضيفها لسلتك.</p>
+        </div>
+        {user && !loading && !error && favorites.length > 0 && <div className="mb-5 flex flex-wrap items-center gap-3">
+          <input type="search" aria-label="البحث في المفضلة" placeholder="دور في المفضلة…" value={query} onChange={e => setQuery(e.target.value)} className="min-h-12 min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4" />
+          <button aria-pressed={availableOnly} onClick={() => setAvailableOnly(v => !v)} className={`min-h-12 rounded-xl px-4 text-sm ${availableOnly ? 'bg-primary text-white' : 'bg-white border border-gray-200'}`}>المتوفر فقط</button>
+          <p role="status" className="w-full text-sm text-gray-500">{visible.length} من {favorites.length} منتج</p>
+        </div>}
 
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -113,10 +131,14 @@ const Favorites = () => {
               تسجيل الدخول
             </Button>
           </div>
+        ) : error ? (
+          <div role="alert" className="rounded-3xl bg-white p-8 text-center"><h2 className="text-lg font-bold">تعذّر تحميل المفضلة</h2><p className="my-3 text-gray-500">راجع اتصالك وحاول تاني.</p><Button onClick={() => setRetry(v => v + 1)}>إعادة المحاولة</Button></div>
+        ) : favorites.length > 0 && visible.length === 0 ? (
+          <div className="rounded-3xl bg-white p-8 text-center"><h2 className="text-lg font-bold">مفيش منتجات مطابقة</h2><p className="my-3 text-gray-500">جرّب كلمة تانية أو اعرض كل المفضلة.</p><Button variant="outline" onClick={() => { setQuery(''); setAvailableOnly(false); }}>عرض الكل</Button></div>
         ) : favorites.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {favorites.map((product) => (
-              <FavoriteProductCard key={product.id} product={product} />
+            {visible.map((product) => (
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
@@ -141,3 +163,4 @@ const Favorites = () => {
 };
 
 export default Favorites;
+

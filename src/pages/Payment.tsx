@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import BrandLoader from '@/components/ui/BrandLoader';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import MainLayout from '@/components/layout/MainLayout';
+import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import { useCart } from '@/contexts/useCart';
 import { useToast } from '@/hooks/use-toast';
@@ -36,9 +37,11 @@ const Payment = () => {
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('order_id');
-  const { items, getTotalPrice, clearCart } = useCart();
+  const { items, getTotalPrice, clearCart, isInitialized, syncError, isSaving } = useCart();
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user, authLoading } = useUser();
+  const submitting = useRef(false);
+  const requestId = useRef(crypto.randomUUID());
   
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,18 +61,19 @@ const Payment = () => {
     return item.product.name;
   };
 
-  const { data: customerData } = useQuery({
+  const { data: customerData, isFetching: customerLoading, error: customerError } = useQuery({
     queryKey: ['customerData', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       
-      const { data: customer } = await supabase
+      const { data: customer, error: profileError } = await supabase
         .from('customers')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+      if (profileError) throw profileError;
 
-      const { data: address } = await supabase
+      const { data: address, error: addressError } = await supabase
         .from('customer_addresses')
         .select(`
           *,
@@ -81,6 +85,7 @@ const Payment = () => {
         .eq('user_id', user.id)
         .eq('is_default', true)
         .maybeSingle();
+      if (addressError) throw addressError;
 
       return {
         ...customer,
@@ -90,50 +95,40 @@ const Payment = () => {
     enabled: !!user?.id
   });
 
-  const { data: deliveryPricing } = useQuery({
+  const { data: deliveryPricing, isFetching: pricingLoading, error: pricingError } = useQuery({
     queryKey: ['deliveryPricing', customerData?.default_address],
     queryFn: async () => {
-      if (!customerData?.default_address) {
-        // Check localStorage for non-user address
-        try {
-          const savedAddress = localStorage.getItem('selectedAddress');
-          if (savedAddress) {
-            const parsedAddress = JSON.parse(savedAddress);
-            return { price: parsedAddress.delivery_price || 0 };
-          }
-        } catch (error) {
-          console.error('Error parsing saved address:', error);
-        }
-        return null;
-      }
-      
+      if (!customerData?.default_address) return null;
+
       const locationId = customerData.default_address.neighborhood_id || 
                         customerData.default_address.area_id || 
                         customerData.default_address.city_id || 
                         customerData.default_address.governorate_id;
       
       if (!locationId) return null;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('delivery_type_pricing')
         .select('*')
         .eq('delivery_location_id', locationId)
         .maybeSingle();
       
+      if (error) throw error;
       return data;
     },
-    enabled: !!customerData?.default_address || !user
+    enabled: !!customerData?.default_address && !!user
   });
 
   useEffect(() => {
-    if (deliveryPricing?.price !== undefined) {
-      setDeliveryPrice(deliveryPricing.price);
-    }
+    setDeliveryPrice(deliveryPricing?.price ?? 0);
   }, [deliveryPricing]);
 
   useEffect(() => {
+    let active = true;
     const checkFreeDelivery = async () => {
       const subtotal = getTotalPrice();
       const freeDeliveryOffer = await getFreeDeliveryOffer(subtotal);
+      if (!active) return;
+      setIsFreeDelivery(false);
       if (freeDeliveryOffer) {
         const threshold = freeDeliveryOffer.min_order_amount;
         const progress = subtotal / threshold * 100;
@@ -141,6 +136,7 @@ const Payment = () => {
       }
     };
     checkFreeDelivery();
+    return () => { active = false; };
   }, [getTotalPrice]);
   
   useEffect(() => {
@@ -158,6 +154,18 @@ const Payment = () => {
   }, []);
 
   const handleSubmitOrder = async () => {
+    if (submitting.current || authLoading || !isInitialized || isSaving) return;
+    if (!user) { navigate('/phone-verify?returnTo=%2Fpayment'); return; }
+    if (customerLoading || customerError) {
+      toast({ title: 'تعذر تحميل بيانات الحساب', description: 'انتظر التحميل أو أعد المحاولة.' });
+      return;
+    }
+    if (!customerData?.id || !customerData.name?.trim() || customerData.name.trim().length < 2) { navigate('/register?returnTo=%2Fpayment'); return; }
+    if (!customerData.default_address) { navigate('/addresses?returnTo=%2Fpayment'); return; }
+    if (syncError || customerLoading || customerError || pricingLoading || pricingError || !deliveryPricing) {
+      toast({ title: 'تعذر تأكيد الطلب', description: 'انتظر تحميل السلة والعنوان ورسوم التوصيل، ثم أعد المحاولة.', variant: 'destructive' });
+      return;
+    }
     if (items.length === 0) {
       toast({
         title: "السلة فارغة",
@@ -177,13 +185,16 @@ const Payment = () => {
       return;
     }
 
+    submitting.current = true;
     setIsLoading(true);
 
     try {
-      const customerId = user ? await getCustomerId() : null;
+      const customerId = customerData.id;
       const selectedAddress = getSelectedAddress();
       
       const orderData = {
+        id: requestId.current,
+        tracking_number: orderNumber,
         items: items.map(item => {
           const quantity = item.unit_of_measure === 'weight' 
             ? item.quantity / 1000  // Convert grams to kilograms
@@ -195,7 +206,7 @@ const Payment = () => {
             name: item.product.name,
             image_url: item.product.image_urls && item.product.image_urls.length > 0 ? item.product.image_urls[0] : null,
             quantity: quantity,
-            price: item.product.offer_price || item.product.price,
+            price: item.is_bulk ? item.product.bulk_price : (item.product.offer_price || item.product.price),
             bulk_quantity: item.product.bulk_quantity,
             is_bulk: item.is_bulk,
             unit_of_measure: item.unit_of_measure,
@@ -215,22 +226,27 @@ const Payment = () => {
                            selectedAddress?.neighborhood_id
       };
 
-      console.log("Submitting order data:", orderData);
 
-      const { data, error } = await supabase.from('online_orders').insert([orderData]).select();
+
+      let { data, error } = await supabase.from('online_orders').insert([orderData]).select();
+      if (error?.code === '23505') {
+        const existing = await supabase.from('online_orders').select('*').eq('id', requestId.current).eq('customer_id', customerId);
+        if (!existing.error && existing.data?.length === 1) { data = existing.data; error = null; }
+      }
       
       if (error) {
         console.error("Order submission error:", error);
         throw error;
       }
 
-      console.log("Order created successfully:", data);
+      if (!data?.length) throw new Error('Order was not returned');
+      setWalletDialogOpen(false);
       
       clearCart();
       navigate('/order-success', {
         state: {
           orderId: data[0].id,
-          orderNumber: orderNumber
+          orderNumber: data[0].tracking_number || orderNumber
         }
       });
     } catch (error) {
@@ -241,120 +257,14 @@ const Payment = () => {
         variant: "destructive"
       });
     } finally {
+      submitting.current = false;
       setIsLoading(false);
     }
   };
 
-  const confirmWalletOrder = async () => {
-    setIsLoading(true);
-    try {
-      const customerId = user ? await getCustomerId() : null;
-      const selectedAddress = getSelectedAddress();
-      
-      const orderData = {
-        items: items.map(item => {
-          const quantity = item.unit_of_measure === 'weight' 
-            ? item.quantity / 1000  // Convert grams to kilograms
-            : item.quantity;
+  const confirmWalletOrder = handleSubmitOrder;
 
-          return {
-            product_id: item.product.id,
-            barcode: item.is_bulk ? item.product.bulk_barcode : item.product.barcode,
-            name: item.product.name,
-            image_url: item.product.image_urls && item.product.image_urls.length > 0 ? item.product.image_urls[0] : null,
-            quantity: quantity,
-            price: item.product.offer_price || item.product.price,
-            bulk_quantity: item.product.bulk_quantity,
-            is_bulk: item.is_bulk,
-            unit_of_measure: item.unit_of_measure,
-            total: getItemTotal(item)
-          };
-        }),
-        total: getTotalPrice() + (isFreeDelivery ? 0 : deliveryPrice) - discount,
-        shipping_cost: isFreeDelivery ? 0 : deliveryPrice,
-        payment_method: 'wallet',
-        customer_id: customerId,
-        shipping_address: customerData?.default_address?.address || selectedAddress?.address,
-        notes: notes,
-        delivery_location_id: customerData?.default_address?.neighborhood_id || 
-                               customerData?.default_address?.area_id || 
-                               customerData?.default_address?.city_id || 
-                               customerData?.default_address?.governorate_id ||
-                               selectedAddress?.neighborhood_id
-      };
-      
-      console.log("Submitting wallet order data:", orderData);
-
-      const { data, error } = await supabase.from('online_orders').insert([orderData]).select();
-      
-      if (error) {
-        console.error("Wallet order submission error:", error);
-        throw error;
-      }
-
-      console.log("Wallet order created successfully:", data);
-      
-      setWalletDialogOpen(false);
-      clearCart();
-      navigate('/order-success', {
-        state: {
-          orderId: data[0].id,
-          orderNumber: orderNumber
-        }
-      });
-    } catch (error) {
-      console.error('Error submitting wallet order:', error);
-      toast({
-        title: "حدث خطأ",
-        description: "تعذر إكمال الطلب. يرجى المحاولة مرة أخرى",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getCustomerId = async () => {
-    if (!user) return null;
-    try {
-      const { data, error } = await supabase.from('customers').select('id').eq('user_id', user.id).single();
-      if (error) {
-        if (error.code === 'PGRST116') {
-          const { data: newCustomer, error: insertError } = await supabase.from('customers').insert([{
-            user_id: user.id,
-            first_name: customerData?.first_name || '',
-            last_name: customerData?.last_name || '',
-            email: customerData?.email || user.email || '',
-            phone: customerData?.phone || '',
-            address: customerData?.address || '',
-            name: customerData?.name || `${customerData?.first_name || ''} ${customerData?.last_name || ''}`.trim()
-          }]).select('id').single();
-          
-          if (insertError) throw insertError;
-          return newCustomer.id;
-        }
-        throw error;
-      }
-      return data.id;
-    } catch (error) {
-      console.error('Error in getCustomerId:', error);
-      return null;
-    }
-  };
-
-  const getSelectedAddress = () => {
-    if (customerData?.default_address) return customerData.default_address;
-    
-    try {
-      const savedAddress = localStorage.getItem('selectedAddress');
-      if (savedAddress) {
-        return JSON.parse(savedAddress);
-      }
-    } catch (error) {
-      console.error('Error parsing saved address:', error);
-    }
-    return null;
-  };
+  const getSelectedAddress = () => customerData?.default_address || null;
 
   const getItemTotal = (item: CartItem) => {
     if (item.is_bulk) {
@@ -402,9 +312,11 @@ const Payment = () => {
     });
   };
 
+  if (authLoading || !isInitialized) return <CheckoutLayout step={2}><div className="flex justify-center py-20"><BrandLoader size="lg" /></div></CheckoutLayout>;
+
   if (items.length === 0) {
     return (
-      <MainLayout>
+      <CheckoutLayout step={2}>
         <div className="min-h-screen flex items-center justify-center">
           <Card className="w-full max-w-md mx-4">
             <CardContent className="text-center py-8">
@@ -417,20 +329,15 @@ const Payment = () => {
             </CardContent>
           </Card>
         </div>
-      </MainLayout>
+      </CheckoutLayout>
     );
   }
   
   return (
-    <MainLayout>
-      <TopNavBar 
-        hideLogo={true}
-        hideSearch={true}
-        hideCart={true}
-        pageTitle="الدفع وتأكيد الطلب"
-      />
-      <div className={`container mx-auto px-4 py-6 max-w-6xl ${!isMobile ? 'mt-24' : 'mt-6'}`}>
-        
+    <CheckoutLayout step={2}>
+      <h1 className="checkout-title">آخر خطوة، وطلبك عندنا.</h1>
+      <p className="checkout-intro">راجع عنوانك، اختار طريقة الدفع، وأكّد طلبك.</p>
+      <div className="checkout-payment">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Forms */}
           <div className="lg:col-span-2 space-y-6">
@@ -449,7 +356,7 @@ const Payment = () => {
                       address={customerData.default_address.address || ''}
                       areaName={customerData.default_address.areas?.name || undefined}
                       neighborhoodName={customerData.default_address.neighborhoods?.name || undefined}
-                      onEdit={() => navigate('/addresses')}
+                      onEdit={() => navigate('/addresses?returnTo=%2Fpayment')}
                     />
                     <div className="text-xs text-gray-500 flex items-center gap-1">
                       <div className="w-2 h-2 rounded-full bg-primary"></div>
@@ -463,7 +370,7 @@ const Payment = () => {
                         <p className="text-muted-foreground mb-4">لا يوجد عنوان للتوصيل</p>
                         <Button 
                           variant="outline" 
-                          onClick={() => navigate('/addresses')}
+                          onClick={() => navigate('/addresses?returnTo=%2Fpayment')}
                         >
                           إضافة عنوان جديد
                         </Button>
@@ -532,7 +439,7 @@ const Payment = () => {
             {/* Order Notes */}
             <Card>
               <CardHeader>
-                <CardTitle>ملاحظات الطلب</CardTitle>
+                <CardTitle>ملاحظة للطلب <span className="text-sm font-normal text-muted-foreground">(اختياري)</span></CardTitle>
               </CardHeader>
               <CardContent>
                 <OrderNotes value={notes} onChange={setNotes} />
@@ -590,7 +497,7 @@ const Payment = () => {
                   <div className="flex justify-between">
                     <span>التوصيل</span>
                     <span className="font-bold">
-                      {isFreeDelivery ? (
+                      {!deliveryPricing || pricingLoading ? <span className="text-muted-foreground">بعد تحديد العنوان</span> : isFreeDelivery ? (
                         <span className="text-green-600">مجاناً</span>
                       ) : (
                         `${deliveryPrice.toFixed(2)} ج.م`
@@ -603,17 +510,26 @@ const Payment = () => {
                   <div className="flex justify-between text-lg font-bold">
                     <span>الإجمالي</span>
                     <span className="text-primary">
-                      {(getTotalPrice() - discount + (isFreeDelivery ? 0 : deliveryPrice)).toFixed(2)} ج.م
+                      {!deliveryPricing || pricingLoading ? '—' : `${(getTotalPrice() - discount + (isFreeDelivery ? 0 : deliveryPrice)).toFixed(2)} ج.م`}
                     </span>
                   </div>
                 </div>
 
                 {/* Submit Button */}
                 <div className="pt-4">
+                  {(customerError || pricingError || syncError) && <p role="alert" className="mb-3 text-sm text-red-700">تعذر تحميل بيانات الطلب. راجع اتصالك وأعد فتح الصفحة.</p>}
+                  {!pricingLoading && customerData?.default_address && !deliveryPricing && <p role="alert" className="mb-3 text-sm text-red-700">التوصيل غير متاح لهذا العنوان حاليًا. اختر عنوانًا آخر.</p>}
                   <SwipeButton 
-                    onComplete={paymentMethod === 'wallet' ? () => setWalletDialogOpen(true) : handleSubmitOrder}
-                    isLoading={isLoading}
-                    className="w-full"
+                    completeText="تأكيد الطلب"
+                    onComplete={paymentMethod === 'wallet' ? () => {
+                      if (!user) { navigate('/phone-verify?returnTo=%2Fpayment'); return; }
+                      if (!customerData?.name?.trim() || customerData.name.trim().length < 2) { navigate('/register?returnTo=%2Fpayment'); return; }
+                      if (!customerData?.default_address) { navigate('/addresses?returnTo=%2Fpayment'); return; }
+                      if (!deliveryPricing || pricingError || syncError) return;
+                      setWalletDialogOpen(true);
+                    } : handleSubmitOrder}
+                    isLoading={isLoading || customerLoading || pricingLoading || isSaving}
+                    className="w-full checkout-submit"
                   />
                 </div>
               </CardContent>
@@ -688,8 +604,9 @@ const Payment = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </MainLayout>
+    </CheckoutLayout>
   );
 };
 
 export default Payment;
+

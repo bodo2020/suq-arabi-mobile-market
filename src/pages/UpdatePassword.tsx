@@ -1,12 +1,14 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, KeyRound, Loader } from 'lucide-react';
-import MainLayout from '@/components/layout/MainLayout';
+import MainLayout from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PasswordInput from '@/components/auth/PasswordInput';
+import { authErrorMessage } from '@/utils/authUi';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import BrandLoader from '@/components/ui/BrandLoader';
 
 const UpdatePassword = () => {
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ const UpdatePassword = () => {
   }, []);
 
   const handleUpdatePassword = async () => {
+    if (loading || !sessionValid) return;
     setError('');
 
     if (password.length < 8) {
@@ -58,7 +61,7 @@ const UpdatePassword = () => {
       await supabase.auth.signOut();
       navigate('/phone-login', { replace: true });
     } catch (updateError: any) {
-      const message = updateError?.message || 'تعذر تغيير كلمة المرور';
+      const message = authErrorMessage(updateError, 'تعذر تغيير كلمة المرور. حاول مرة أخرى أو اطلب رابط استعادة جديدًا.');
       setError(message);
       toast({
         title: 'تعذر تغيير كلمة المرور',
@@ -83,7 +86,7 @@ const UpdatePassword = () => {
 
         <div className="bg-white rounded-lg p-6 shadow-sm space-y-5">
           {checkingSession ? (
-            <BrandLoader text="جاري التحقق من جلسة الاستعادة..." className="w-full py-8" />
+            <div className="text-center text-gray-500">جاري التحقق من جلسة الاستعادة...</div>
           ) : !sessionValid ? (
             <div className="space-y-4 text-center">
               <p className="text-red-600">رابط أو جلسة الاستعادة غير صالحة أو انتهت.</p>
@@ -100,8 +103,9 @@ const UpdatePassword = () => {
                   <KeyRound size={18} className="ml-2 text-gray-500" />
                   <label htmlFor="password" className="font-medium">كلمة المرور الجديدة</label>
                 </div>
-                <Input
+                <PasswordInput
                   id="password"
+                  autoComplete="new-password"
                   type="password"
                   value={password}
                   onChange={(event) => {
@@ -114,8 +118,9 @@ const UpdatePassword = () => {
 
               <div>
                 <label htmlFor="confirmPassword" className="font-medium block mb-2">تأكيد كلمة المرور</label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
+                  autoComplete="new-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(event) => {
@@ -131,7 +136,7 @@ const UpdatePassword = () => {
               {error && <p className="text-red-500 text-sm">{error}</p>}
 
               <Button onClick={handleUpdatePassword} disabled={loading} className="w-full">
-                {loading && <Loader size={16} className="animate-spin ml-2" />}
+                {loading && <BrandLoader size="sm" className="ml-2" />}
                 حفظ كلمة المرور الجديدة
               </Button>
             </>

@@ -9,7 +9,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [items, setItems] = useState<CartItem[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  useCartSync(items, setItems, isInitialized, setIsInitialized);
+  const sync = useCartSync(items, setItems, isInitialized, setIsInitialized);
 
   const addToCart = useCallback((product: Product & { 
     price: number; 
@@ -17,13 +17,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     is_bulk?: boolean;
     unit_of_measure?: string;
   }) => {
+    if (!isInitialized) return;
     setItems(currentItems => {
       console.log('Adding to cart:', { productId: product.id, is_bulk: product.is_bulk, unit_of_measure: product.unit_of_measure });
       
       const existingItem = currentItems.find(item => 
         item.product.id === product.id && 
         item.is_bulk === (product.is_bulk || false) && 
-        item.unit_of_measure === product.unit_of_measure
+        (item.unit_of_measure || '') === (product.unit_of_measure || '')
       );
       
       if (existingItem) {
@@ -32,7 +33,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const otherItems = currentItems.filter(item => 
           !(item.product.id === product.id && 
             item.is_bulk === (product.is_bulk || false) &&
-            item.unit_of_measure === product.unit_of_measure)
+            (item.unit_of_measure || '') === (product.unit_of_measure || ''))
         );
         
         return [
@@ -56,9 +57,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unit_of_measure: product.unit_of_measure
       }];
     });
-  }, []);
+  }, [isInitialized]);
 
   const removeFromCart = useCallback((productId: string, is_bulk?: boolean) => {
+    if (!isInitialized) return;
     setItems(currentItems => {
       if (is_bulk !== undefined) {
         return currentItems.filter(item => 
@@ -67,11 +69,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return currentItems.filter(item => item.product.id !== productId);
     });
-  }, []);
+  }, [isInitialized]);
 
   const clearCart = useCallback(() => {
+    if (!isInitialized) return;
     setItems([]);
-  }, []);
+  }, [isInitialized]);
 
   const getTotalItems = useCallback(() => {
     return items.length;
@@ -83,6 +86,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    if (!isInitialized) return;
     setItems(currentItems => {
       const targetItem = currentItems.find(item => 
         item.product.id === productId && item.is_bulk === (is_bulk || false)
@@ -102,7 +106,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       ];
     });
-  }, [removeFromCart]);
+  }, [removeFromCart, isInitialized]);
 
   const getTotalPrice = useCallback(() => {
     return items.reduce((total, item) => {
@@ -147,9 +151,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       getTotalPrice,
       getTotalItems,
       getCartTotal, // Adding the getCartTotal function
-      isInitialized
+      isInitialized,
+      ...sync
     }}>
       {children}
     </CartContext.Provider>
   );
 };
+

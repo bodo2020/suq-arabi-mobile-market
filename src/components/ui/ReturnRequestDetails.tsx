@@ -1,3 +1,4 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
@@ -93,7 +94,7 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
 
         {loading ? (
           <div className="py-4 text-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+            <BrandLoader size="sm" className="mx-auto" />
           </div>
         ) : (
           <div className="mt-4">
@@ -180,3 +181,4 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
 };
 
 export default ReturnRequestDetails;
+

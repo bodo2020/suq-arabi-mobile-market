@@ -1,3 +1,4 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -114,7 +115,7 @@ const ReturnRequests = () => {
 
         {loading ? (
           <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <BrandLoader size="md" className="" />
           </div>
         ) : requests.length === 0 ? (
           <div className="text-center py-10">
@@ -139,3 +140,4 @@ const ReturnRequests = () => {
 };
 
 export default ReturnRequests;
+

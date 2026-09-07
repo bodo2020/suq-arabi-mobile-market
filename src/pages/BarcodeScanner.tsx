@@ -1,3 +1,4 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -189,7 +190,7 @@ const BarcodeScanner = () => {
               
               {scanning ? (
                 <div className="mt-4 flex items-center justify-center text-primary">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary ml-2"></div>
+                  <BrandLoader size="sm" className="ml-2" />
                   <span className="text-sm font-medium">جارِ المسح...</span>
                 </div>
               ) : (
@@ -217,3 +218,4 @@ const BarcodeScanner = () => {
 };
 
 export default BarcodeScanner;
+

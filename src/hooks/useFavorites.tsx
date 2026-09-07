@@ -1,236 +1,66 @@
-
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/UserContext';
+import { customerRpc } from '@/lib/customerPersistence';
 
+const pending = new Set<string>();
 export function useFavorites() {
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [user, setUser] = useState<any>(null);
-  const [customerId, setCustomerId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
-
+  const { user, authLoading } = useUser();
+  const client = useQueryClient();
+  const queryKey = ['customer-favorites', user?.id];
+  const query = useQuery({
+    queryKey,
+    enabled: !!user && !authLoading,
+    queryFn: async () => {
+      const { data: customer, error: profileError } = await supabase.from('customers')
+        .select('id').eq('user_id', user!.id).maybeSingle();
+      if (profileError) throw profileError;
+      if (!customer) return { customerId: null, favorites: {} as Record<string, boolean> };
+      const { data, error } = await supabase.from('favorites').select('product_id').eq('customer_id', customer.id);
+      if (error) throw error;
+      return { customerId: customer.id, favorites: Object.fromEntries(data.map(row => [row.product_id, true])) };
+    },
+  });
   useEffect(() => {
-    let mounted = true;
-    
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      
-      // Use setTimeout to avoid deadlock with supabase calls in callback
-      setTimeout(async () => {
-        if (session?.user && mounted) {
-          setUser(session.user);
-          await handleUserSession(session.user);
-        } else if (mounted) {
-          setUser(null);
-          setCustomerId(null);
-          setFavorites({});
-          setFavoritesLoaded(true);
-          setIsLoading(false);
-        }
-      }, 0);
-    });
-
-    // Then check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user && mounted) {
-        setUser(session.user);
-        await handleUserSession(session.user);
-      } else if (mounted) {
-        setIsLoading(false);
-        setFavoritesLoaded(true);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const handleUserSession = async (user: any) => {
-    try {
-      const customerId = await getOrCreateCustomerId(user.id, user.user_metadata);
-      setCustomerId(customerId);
-      
-      if (customerId) {
-        await loadFavorites(customerId);
-      } else {
-        setIsLoading(false);
-        setFavoritesLoaded(true);
-      }
-    } catch (error) {
-      console.error('Error handling user session:', error);
-      setIsLoading(false);
-      setFavoritesLoaded(true);
-    }
-  };
-
-  const getOrCreateCustomerId = async (userId: string, userMetadata: any): Promise<string | null> => {
-    try {
-      // First try to get existing customer
-      let { data: customerData, error } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching customer ID:', error);
-        return null;
-      }
-
-      // If customer exists, return their ID
-      if (customerData) {
-        return customerData.id;
-      }
-
-      // If no customer exists, create one
-      console.log('Creating new customer record for user:', userId);
-      const { data: newCustomer, error: createError } = await supabase
-        .from('customers')
-        .insert({
-          user_id: userId,
-          first_name: userMetadata?.first_name || '',
-          last_name: userMetadata?.last_name || '',
-          name: userMetadata?.name || `${userMetadata?.first_name || ''} ${userMetadata?.last_name || ''}`.trim(),
-          phone: userMetadata?.phone || '',
-          email: userMetadata?.email || '',
-          address: userMetadata?.address || ''
-        })
-        .select('id')
-        .single();
-
-      if (createError) {
-        console.error('Error creating customer record:', createError);
-        return null;
-      }
-
-      return newCustomer?.id || null;
-    } catch (error) {
-      console.error('Exception in getOrCreateCustomerId:', error);
-      return null;
-    }
-  };
-
-  const loadFavorites = async (customerId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('favorites')
-        .select('product_id')
-        .eq('customer_id', customerId);
-
-      if (error) {
-        console.error('Error loading favorites:', error);
-        return;
-      }
-
-      const favMap: Record<string, boolean> = {};
-      if (data) {
-        data.forEach(item => {
-          favMap[item.product_id] = true;
-        });
-      }
-
-      setFavorites(favMap);
-    } catch (error) {
-      console.error('Error in loadFavorites:', error);
-    } finally {
-      setIsLoading(false);
-      setFavoritesLoaded(true);
-    }
-  };
-
-  const isFavorite = (productId: string): boolean => {
-    return !!favorites[productId];
-  };
+    const ready = () => { void client.invalidateQueries({ queryKey: ['customer-favorites', user?.id] }); };
+    window.addEventListener('customer-profile-ready', ready);
+    return () => window.removeEventListener('customer-profile-ready', ready);
+  }, [client, user?.id]);
 
   const toggleFavorite = async (productId: string) => {
-    if (!user) {
-      toast({
-        title: "تسجيل الدخول مطلوب",
-        description: "الرجاء تسجيل الدخول لإضافة منتجات للمفضلة",
-        variant: "destructive",
-      });
+    if (!user || !query.data?.customerId || query.isError) {
+      toast({ title: !user ? 'تسجيل الدخول مطلوب' : 'المفضلة غير جاهزة',
+        description: !user ? 'سجّل دخولك لحفظ المنتجات المفضلة.' : 'كمّل اسمك في الحساب، أو أعد المحاولة إذا تعذر تحميل البيانات.' });
       return;
     }
-
-    if (!customerId) {
-      toast({
-        title: "خطأ في سجل العميل",
-        description: "لم نتمكن من العثور على بيانات العميل الخاصة بك",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const isCurrentlyFavorite = isFavorite(productId);
-
-    // Update UI optimistically
-    setFavorites(prev => ({
-      ...prev,
-      [productId]: !isCurrentlyFavorite
-    }));
-
+    const lock = `${user.id}:${productId}`;
+    if (pending.has(lock)) return;
+    pending.add(lock);
+    const previous = !!query.data.favorites[productId];
+    await client.cancelQueries({ queryKey });
+    const update = (value: boolean) => client.setQueryData(queryKey, (old: typeof query.data) => old ?
+      { ...old, favorites: { ...old.favorites, [productId]: value } } : old);
+    update(!previous);
     try {
-      if (isCurrentlyFavorite) {
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('customer_id', customerId)
-          .eq('product_id', productId);
-
-        if (error) {
-          console.error('Error removing from favorites:', error);
-          throw error;
-        }
-
-        toast({
-          title: "تمت الإزالة",
-          description: "تم إزالة المنتج من المفضلة",
-        });
-      } else {
-        const { error } = await supabase
-          .from('favorites')
-          .insert({
-            customer_id: customerId,
-            product_id: productId
-          });
-
-        if (error) {
-          console.error('Error adding to favorites:', error);
-          throw error;
-        }
-
-        toast({
-          title: "تمت الإضافة",
-          description: "تم إضافة المنتج إلى المفضلة",
-        });
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-
-      // Revert UI state on error
-      setFavorites(prev => ({
-        ...prev,
-        [productId]: isCurrentlyFavorite
-      }));
-
-      toast({
-        title: "حدث خطأ",
-        description: "لم نتمكن من تحديث المفضلة",
-        variant: "destructive",
-      });
+      const { error } = await customerRpc('set_customer_favorite', { p_product_id: productId, p_favorite: !previous });
+      if (error) throw error;
+    } catch {
+      update(previous);
+      toast({ title: 'تعذر تحديث المفضلة', description: 'راجع اتصالك ثم أعد المحاولة.', variant: 'destructive' });
+    } finally {
+      pending.delete(lock);
+      void client.invalidateQueries({ queryKey });
     }
   };
-
   return {
-    isLoading,
-    isFavorite,
-    toggleFavorite,
     user,
-    customerId,
-    favoritesLoaded
+    customerId: user ? query.data?.customerId || null : null,
+    isLoading: authLoading || (!!user && query.isPending),
+    favoritesLoaded: !authLoading && (!user || !query.isPending),
+    favoritesVersion: query.dataUpdatedAt,
+    isFavorite: (productId: string) => !!user && !!query.data?.favorites[productId],
+    toggleFavorite,
   };
 }

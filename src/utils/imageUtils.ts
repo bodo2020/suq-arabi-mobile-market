@@ -131,3 +131,4 @@ export const processImageBackground = async (imageFile: File): Promise<string | 
     return null;
   }
 };
+

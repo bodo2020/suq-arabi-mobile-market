@@ -12,3 +12,4 @@ const User = ({ size = 24, className = '' }: UserProps) => {
 };
 
 export default User;
+

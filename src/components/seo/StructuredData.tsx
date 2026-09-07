@@ -15,3 +15,4 @@ const StructuredData: React.FC<StructuredDataProps> = ({ data }) => {
 };
 
 export default StructuredData;
+

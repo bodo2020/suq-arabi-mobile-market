@@ -42,6 +42,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event: AuthChangeEvent, nextSession: Session | null) => {
+        if (_event === 'SIGNED_OUT') {
+          for (const key of ['userAddress', 'userArea', 'userNeighborhood', 'selectedAddress']) localStorage.removeItem(key);
+        }
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
         setAuthLoading(false);
@@ -243,3 +246,4 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     </UserContext.Provider>
   );
 };
+

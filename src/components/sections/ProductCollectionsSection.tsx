@@ -79,3 +79,4 @@ const ProductCollectionsSection = () => {
 };
 
 export default ProductCollectionsSection;
+

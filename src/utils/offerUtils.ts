@@ -67,3 +67,4 @@ export const applyCoupon = async (code: string, subtotal: number) => {
   const discount = calculateDiscount(subtotal, offer.discount_type, offer.discount_value, offer.max_discount);
   return { offer, discount };
 };
+

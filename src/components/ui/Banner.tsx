@@ -77,3 +77,4 @@ export const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) =
 };
 
 export default Banner;
+

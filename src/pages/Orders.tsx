@@ -1,3 +1,4 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -148,7 +149,7 @@ const Orders = () => {
               تسجيل الدخول
             </Button>
           </div> : isLoading ? <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <BrandLoader size="md" className="" />
           </div> : error ? <div className="flex flex-col items-center justify-center py-12 text-center">
             <h3 className="text-xl font-bold text-red-600 mb-2">
               خطأ في تحميل الطلبات
@@ -256,3 +257,4 @@ const Orders = () => {
     </MainLayout>;
 };
 export default Orders;
+

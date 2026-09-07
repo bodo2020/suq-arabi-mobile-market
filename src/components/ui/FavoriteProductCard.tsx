@@ -139,3 +139,4 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
 };
 
 export default FavoriteProductCard;
+

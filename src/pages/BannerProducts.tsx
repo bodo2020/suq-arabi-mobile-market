@@ -1,3 +1,4 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -56,7 +57,7 @@ const BannerProducts = () => {
         </div>
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <BrandLoader size="md" className="" />
           </div>
         ) : products.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 px-4">
@@ -77,3 +78,4 @@ const BannerProducts = () => {
 };
 
 export default BannerProducts;
+

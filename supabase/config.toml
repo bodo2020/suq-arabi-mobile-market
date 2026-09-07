@@ -195,3 +195,4 @@ key_file = ""
 [functions]
 create-verification-table = { verify_jwt = true }
 phone-verify = { verify_jwt = true }
+

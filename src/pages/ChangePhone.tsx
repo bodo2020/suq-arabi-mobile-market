@@ -1,3 +1,4 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Loader, Phone } from 'lucide-react';
@@ -230,7 +231,7 @@ const ChangePhone = () => {
               {error && <p className="text-red-500 text-sm">{error}</p>}
 
               <Button onClick={handleRequestChange} disabled={loading} className="w-full">
-                {loading && <Loader size={16} className="animate-spin ml-2" />}
+                {loading && <BrandLoader size="sm" className="ml-2" />}
                 إرسال رمز التحقق
               </Button>
             </>
@@ -272,7 +273,7 @@ const ChangePhone = () => {
               {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
               <Button onClick={handleVerify} disabled={loading || code.length !== 6} className="w-full">
-                {loading && <Loader size={16} className="animate-spin ml-2" />}
+                {loading && <BrandLoader size="sm" className="ml-2" />}
                 تأكيد الرقم الجديد
               </Button>
 
@@ -312,3 +313,4 @@ const ChangePhone = () => {
 };
 
 export default ChangePhone;
+

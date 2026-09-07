@@ -125,3 +125,4 @@ const ProductStructuredData: React.FC<ProductStructuredDataProps> = ({
 };
 
 export default ProductStructuredData;
+

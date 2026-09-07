@@ -25,4 +25,8 @@ export type CartContextType = {
   getTotalItems: () => number;
   getCartTotal: () => number;
   isInitialized: boolean;
+  syncError: string | null;
+  isSaving: boolean;
+  retrySync: () => void;
 };
+

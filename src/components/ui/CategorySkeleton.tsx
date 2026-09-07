@@ -11,3 +11,4 @@ const CategorySkeleton = () => {
 };
 
 export default CategorySkeleton;
+

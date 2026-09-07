@@ -1,15 +1,20 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Loader, KeyRound, User } from 'lucide-react';
-import MainLayout from '@/components/layout/MainLayout';
+import MainLayout from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PasswordInput from '@/components/auth/PasswordInput';
+import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
 
 const PhoneLogin = () => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const returnTo = ['/cart', '/payment', '/addresses', '/add-address', '/account'].includes(params.get('returnTo') || '') ? params.get('returnTo')! : '/';
   const { toast } = useToast();
   const { signIn } = useUser();
   
@@ -21,13 +26,13 @@ const PhoneLogin = () => {
   const [errors, setErrors] = useState({ username: '', password: '' });
   
   const detectInputType = (value: string) => {
-    const hasDigits = /\d/.test(value);
+    const hasDigits = /^[+\d\s()-]+$/.test(normalizeDigits(value.trim()));
     const hasEmailSymbol = /@/.test(value);
     setIsPhoneInput(hasDigits && !hasEmailSymbol);
   };
 
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
-    const digits = phoneNumber.replace(/\D/g, '');
+    const digits = localPhoneDigits(phoneNumber, country.dialCode, country.code);
     if (country.code === 'EG' && digits.length > 0) {
       return digits.startsWith('0') ? digits.substring(1) : digits;
     }
@@ -84,11 +89,11 @@ const PhoneLogin = () => {
         title: 'تم تسجيل الدخول بنجاح',
         description: 'مرحباً بك مجدداً!',
       });
-      navigate('/account');
+      navigate(returnTo);
     } catch (error: any) {
       toast({
         title: 'فشل تسجيل الدخول',
-        description: error?.message || 'كلمة المرور أو بيانات الدخول غير صحيحة، يرجى المحاولة مرة أخرى',
+        description: authErrorMessage(error, 'تعذر الدخول. راجع بياناتك واتصال الإنترنت وحاول مرة أخرى.'),
         variant: 'destructive',
       });
     } finally {
@@ -121,6 +126,8 @@ const PhoneLogin = () => {
                 )}
                 <Input
                   id="username"
+                  autoComplete="username"
+                  aria-invalid={Boolean(errors.username)}
                   type="text"
                   value={username}
                   onChange={(event) => {
@@ -150,8 +157,9 @@ const PhoneLogin = () => {
                 <KeyRound size={18} className="ml-2 text-gray-500" />
                 <label htmlFor="password" className="font-medium">كلمة المرور</label>
               </div>
-              <Input
+              <PasswordInput
                 id="password"
+                autoComplete="current-password"
                 type="password"
                 value={password}
                 onChange={(event) => {
@@ -176,8 +184,8 @@ const PhoneLogin = () => {
           </div>
               
           <Button onClick={handleLogin} disabled={loading} className="w-full">
-            {loading && <Loader size={16} className="animate-spin ml-2" />}
-            تسجيل الدخول
+            {loading && <BrandLoader size="sm" className="ml-2" />}
+            {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
           </Button>
               
           <div className="flex justify-center text-sm">

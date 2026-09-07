@@ -97,3 +97,4 @@ export const checkIsFavorite = async (productId: string, customerId: string | un
     return false;
   }
 };
+

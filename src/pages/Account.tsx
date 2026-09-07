@@ -1,3 +1,4 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -74,7 +75,7 @@ const Account = () => {
           pageTitle="حسابي"
         />
         <div className={`flex justify-center items-center h-[60vh] ${!isMobile ? 'mt-24' : ''}`}>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <BrandLoader size="md" className="" />
         </div>
       </MainLayout>
     );
@@ -169,7 +170,7 @@ const Account = () => {
                 <h2 className="text-xl font-semibold mb-2">مرحباً بك</h2>
                 <p className="text-gray-500 mb-4">قم بتسجيل الدخول للوصول إلى حسابك</p>
                 <Button 
-                  onClick={() => navigate('/phone-login')} 
+                  onClick={() => navigate('/phone-verify')}
                   className="w-full"
                 >
                   تسجيل الدخول

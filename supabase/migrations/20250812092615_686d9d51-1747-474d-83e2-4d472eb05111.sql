@@ -122,3 +122,4 @@ ON public.purchase_items
 FOR SELECT
 TO authenticated
 USING (public.is_admin() OR public.is_super_admin());
+

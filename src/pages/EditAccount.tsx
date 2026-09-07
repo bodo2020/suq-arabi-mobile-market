@@ -1,3 +1,4 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, User, Phone, Mail, Lock, ChevronLeft } from 'lucide-react';
@@ -250,7 +251,7 @@ const EditAccount = () => {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+              <BrandLoader size="sm" className="" />
             ) : (
               'حفظ التعديلات'
             )}
@@ -262,3 +263,4 @@ const EditAccount = () => {
 };
 
 export default EditAccount;
+

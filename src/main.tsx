@@ -43,9 +43,8 @@ const hideLovableBadge = () => {
     });
   };
   
-  // Run immediately and periodically
+  // The observer invokes this after DOM changes; never create recurring timers here.
   removeBadges();
-  setInterval(removeBadges, 500);
 };
 
 // Run badge hiding function
@@ -77,3 +76,4 @@ if (root) {
     </QueryClientProvider>
   );
 }
+

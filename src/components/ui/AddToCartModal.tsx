@@ -111,3 +111,4 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
 };
 
 export default AddToCartModal;
+

@@ -77,3 +77,4 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
 CollectionsList.displayName = 'CollectionsList';
 
 export default CollectionsList;
+

@@ -43,3 +43,4 @@ const CategoryScrollArea = forwardRef<CategoryScrollAreaRef, CategoryScrollAreaP
 CategoryScrollArea.displayName = 'CategoryScrollArea';
 
 export default CategoryScrollArea;
+

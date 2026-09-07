@@ -1,3 +1,4 @@
+import ProfileCompletionGate from './components/ProfileCompletionGate';
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -37,7 +38,12 @@ const ReturnRequests = lazy(() => import('./pages/ReturnRequests'));
 const CreateReturnRequest = lazy(() => import('./pages/CreateReturnRequest'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-const RouteFallback = () => <BrandLoader fullScreen text="جاري التحميل..." />;
+const RouteFallback = () => (
+  <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-5" dir="rtl">
+    <BrandLoader size="lg" label="جاري تحميل الصفحة" />
+    <p className="text-primary text-base">جاري التحميل...</p>
+  </div>
+);
 
 function App() {
   return (
@@ -45,6 +51,7 @@ function App() {
       <UserProvider>
         <CartProvider>
           <BrowserRouter>
+            <ProfileCompletionGate />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/phone-login" element={<PhoneLogin />} />
@@ -97,3 +104,4 @@ function App() {
 }
 
 export default App;
+

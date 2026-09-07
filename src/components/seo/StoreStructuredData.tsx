@@ -62,3 +62,4 @@ const StoreStructuredData: React.FC<StoreStructuredDataProps> = ({
 };
 
 export default StoreStructuredData;
+

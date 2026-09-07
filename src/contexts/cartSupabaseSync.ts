@@ -1,285 +1,163 @@
-
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CartItem } from '@/contexts/cartTypes';
-import { useToast } from '@/hooks/use-toast';
+import { CartItem } from './cartTypes';
+import { useUser } from './UserContext';
+import { customerRpc } from '@/lib/customerPersistence';
 
-export function useCartSync(
-  items: CartItem[], 
-  setItems: React.Dispatch<React.SetStateAction<CartItem[]>>, 
-  isInitialized: boolean,
-  setIsInitialized: React.Dispatch<React.SetStateAction<boolean>>
-) {
-  const needsSyncRef = useRef(false);
-  const customerIdRef = useRef<string | null>(null);
-  const { toast } = useToast();
+const key = (item: CartItem) => `${item.product.id}:${!!item.is_bulk}:${item.unit_of_measure || ''}`;
+export function mergeCartItems(saved: CartItem[], guest: CartItem[]) {
+  const merged = new Map(saved.map(item => [key(item), item]));
+  for (const item of guest) {
+    const existing = merged.get(key(item));
+    merged.set(key(item), existing ? { ...existing, quantity: existing.quantity + item.quantity } : item);
+  }
+  return [...merged.values()];
+}
+function readCart(storageKey: string): CartItem[] {
+  const raw = localStorage.getItem(storageKey);
+  if (!raw) return [];
+  const value = JSON.parse(raw);
+  if (!Array.isArray(value) || value.some(item => !item?.product?.id || !Number.isInteger(item.quantity) || item.quantity <= 0)) {
+    throw new Error('Invalid saved cart');
+  }
+  return value;
+}
 
-  // Handle auth state changes and initial cart loading
+export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>,
+  isInitialized: boolean, setIsInitialized: React.Dispatch<React.SetStateAction<boolean>>) {
+  const { user, authLoading } = useUser();
+  const [reload, setReload] = useState(0);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const owner = useRef<string | null | undefined>(undefined);
+  const customer = useRef<string | null>(null);
+  const generation = useRef(0);
+  const saved = useRef('');
+  const queue = useRef(Promise.resolve());
+  const latest = useRef(items);
+  latest.current = items;
+
   useEffect(() => {
-    let authListener: any = null;
+    const retry = () => setReload(value => value + 1);
+    window.addEventListener('customer-profile-ready', retry);
+    window.addEventListener('online', retry);
+    return () => {
+      window.removeEventListener('customer-profile-ready', retry);
+      window.removeEventListener('online', retry);
+    };
+  }, []);
 
-    async function checkCustomerId(userId: string): Promise<string | null> {
+  useEffect(() => {
+    if (authLoading) return;
+    const run = ++generation.current;
+    const userId = user?.id || null;
+    owner.current = undefined;
+    customer.current = null;
+    setIsInitialized(false);
+    setIsSaving(false);
+    setSyncError(null);
+    setItems([]);
+    const current = () => generation.current === run;
+    async function load() {
       try {
-        const { data: customerData, error: customerError } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-        if (customerError) {
-          console.error('Error checking customer record:', customerError);
-          return null;
-        }
-
-        return customerData?.id || null;
-      } catch (error) {
-        console.error('Exception checking customer record:', error);
-        return null;
-      }
-    }
-
-    async function updateCartForUser(sessionUser: any) {
-      if (sessionUser) {
-        const customerId = await checkCustomerId(sessionUser.id);
-        customerIdRef.current = customerId;
-
-        if (!customerId) {
-          console.log('No customer record found.');
-          toast({
-            title: "تنبيه",
-            description: "لم نتمكن من ربط حسابك بملف العميل.",
-            variant: "destructive",
-          });
+        await queue.current;
+        if (!current()) return;
+        const guest = readCart('guest_cart');
+        if (!userId) {
+          owner.current = null;
+          saved.current = JSON.stringify(guest);
+          setItems(guest);
           setIsInitialized(true);
           return;
         }
-        
-        // Load cart items from database
-        const dbCartItems = await fetchCartItems(customerId);
-        
-        // Merge guest cart (from localStorage) into DB cart
-        try {
-          const raw = localStorage.getItem('guest_cart');
-          const guest: CartItem[] = raw ? JSON.parse(raw) : [];
-          
-          if (guest.length > 0) {
-            console.log('Merging guest cart with database cart...');
-            
-            // Create a map to avoid duplicates
-            const mergedMap = new Map<string, CartItem>();
-            
-            // Helper function to create unique key for cart item
-            const getItemKey = (item: CartItem) => 
-              `${item.product.id}-${item.is_bulk ? 'bulk' : 'regular'}-${item.unit_of_measure || 'default'}`;
-            
-            // Add database items first
-            dbCartItems.forEach(item => {
-              mergedMap.set(getItemKey(item), item);
-            });
-            
-            // Add or merge guest items
-            guest.forEach(guestItem => {
-              const key = getItemKey(guestItem);
-              const existingItem = mergedMap.get(key);
-              
-              if (existingItem) {
-                // Update quantity for existing item
-                mergedMap.set(key, {
-                  ...existingItem,
-                  quantity: existingItem.quantity + guestItem.quantity
-                });
-              } else {
-                // Add new item
-                mergedMap.set(key, guestItem);
-              }
-            });
-            
-            const finalMergedItems = Array.from(mergedMap.values());
-            setItems(finalMergedItems);
-            
-            // Sync merged cart to database
-            await syncCartPersistence(sessionUser, finalMergedItems, customerIdRef.current);
-            localStorage.removeItem('guest_cart');
-            console.log('Guest cart merged and synced successfully');
-          } else {
-            // No guest cart, just set database items
-            setItems(dbCartItems);
-          }
-        } catch (error) {
-          console.error('Error merging guest cart:', error);
-          // Fallback to database items only
-          setItems(dbCartItems);
+        const { data: profile, error: profileError } = await supabase.from('customers')
+          .select('id').eq('user_id', userId).maybeSingle();
+        if (profileError) throw profileError;
+        if (!current()) return;
+        if (!profile) {
+          owner.current = userId;
+          setItems(guest);
+          setIsInitialized(true);
+          return; // Onboarding alone creates the customer profile.
         }
-        setIsInitialized(true);
-      } else {
-        customerIdRef.current = null;
-        setItems([]);
-        setIsInitialized(true);
-      }
-    }
-
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        updateCartForUser(session?.user || null);
-      } else if (event === 'SIGNED_OUT') {
-        customerIdRef.current = null;
-        setItems([]);
-        setIsInitialized(true);
-      }
-    });
-    authListener = listener;
-
-    // Check current session on component mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      updateCartForUser(session?.user || null);
-    });
-
-    return () => {
-      authListener?.subscription?.unsubscribe();
-    };
-  }, [setItems, setIsInitialized, toast]);
-
-  // Sync cart changes to database
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    needsSyncRef.current = true;
-    
-    const syncTimeout = setTimeout(() => {
-      if (needsSyncRef.current) {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          const user = session?.user || null;
-          syncCartPersistence(user, items, customerIdRef.current).then(() => {
-            if (needsSyncRef.current) needsSyncRef.current = false;
+        const { data: rows, error } = await supabase.from('cart_items').select('*').eq('customer_id', profile.id);
+        if (error) throw error;
+        let loaded: CartItem[] = [];
+        if (rows.length) {
+          const { data: products, error: productError } = await supabase.from('products').select('*')
+            .in('id', [...new Set(rows.map(row => row.product_id))]);
+          if (productError) throw productError;
+          loaded = rows.map(row => {
+            const product = products.find(product => product.id === row.product_id);
+            if (!product) throw new Error('A saved product could not be loaded');
+            const metadata = row.metadata as { is_bulk?: boolean; unit_of_measure?: string } | null;
+            return { product, quantity: row.quantity, is_bulk: !!metadata?.is_bulk, unit_of_measure: metadata?.unit_of_measure || undefined };
           });
-        });
-      }
-    }, 500); // Debounce updates
-    
-    return () => clearTimeout(syncTimeout);
-  }, [items, isInitialized]);
-
-  async function fetchCartItems(customerId: string): Promise<CartItem[]> {
-    try {
-      const { data: cartData, error: cartError } = await supabase
-        .from('cart_items')
-        .select('*, metadata')
-        .eq('customer_id', customerId);
-
-      if (cartError) {
-        console.error('Error fetching cart items:', cartError);
-        toast({
-          title: "خطأ في تحميل السلة",
-          description: "حدث خطأ أثناء تحميل عناصر السلة",
-          variant: "destructive",
-        });
-        return [];
-      }
-
-      if (cartData && cartData.length > 0) {
-        const productIds = cartData.map(item => item.product_id);
-        const { data: productsData, error: productsError } = await supabase
-          .from('products')
-          .select('*')
-          .in('id', productIds);
-
-        if (productsError) {
-          console.error('Error fetching products:', productsError);
-          return [];
         }
-
-        if (productsData) {
-          const cartItems: CartItem[] = cartData.map(cartItem => {
-            const product = productsData.find(prod => prod.id === cartItem.product_id);
-            if (!product) return null;
-            
-            // Extract additional properties from the saved JSON metadata
-            const metadata = cartItem.metadata || {};
-            // Use type assertion to ensure TypeScript understands the shape
-            const metadataObj = typeof metadata === 'object' ? metadata as {
-              is_bulk?: boolean;
-              unit_of_measure?: string | null;
-            } : { is_bulk: false, unit_of_measure: null };
-            
-            const is_bulk = !!metadataObj.is_bulk;
-            const unit_of_measure = metadataObj.unit_of_measure || null;
-            
-            return {
-              product: product,
-              quantity: cartItem.quantity,
-              is_bulk,
-              unit_of_measure
-            };
-          }).filter(Boolean) as CartItem[];
-          
-          return cartItems;
+        if (!current()) return;
+        const pendingKey = `pending_cart:${userId}`;
+        const hasPending = localStorage.getItem(pendingKey) !== null;
+        // Retry an uncertain replacement without adding the guest quantities twice.
+        const next = hasPending ? readCart(pendingKey) : mergeCartItems(loaded, guest);
+        customer.current = profile.id;
+        owner.current = userId;
+        saved.current = JSON.stringify(loaded);
+        if (guest.length || hasPending) {
+          localStorage.setItem(pendingKey, JSON.stringify(next));
+          saved.current = '';
         }
+        setItems(next);
+        setIsInitialized(true);
+      } catch {
+        if (current()) setSyncError('تعذر تحميل السلة المحفوظة. أعد المحاولة قبل تعديلها.');
+        // A failed read must never become an empty write.
       }
-      
-      return [];
-    } catch (error) {
-      console.error('Error in fetchCartItems:', error);
-      return [];
     }
-  }
+    void load();
+    return () => { generation.current++; };
+  }, [user?.id, authLoading, reload, setItems, setIsInitialized]);
 
-  async function syncCartPersistence(user: any, items: CartItem[], customerId: string | null) {
-    if (!user || !customerId) {
+  useEffect(() => {
+    if (!isInitialized || owner.current === undefined || owner.current !== (user?.id || null)) return;
+    const serialized = JSON.stringify(items);
+    if (owner.current === null || !customer.current) {
+      try { localStorage.setItem('guest_cart', serialized); } catch { setSyncError('تعذر حفظ السلة على الجهاز.'); }
       return;
     }
-
-    try {
-      const { error: deleteError } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('customer_id', customerId);
-
-      if (deleteError) {
-        console.error('Error clearing cart items:', deleteError);
-        toast({
-          title: "خطأ في حفظ السلة",
-          description: "حدث خطأ أثناء حذف العناصر القديمة",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (items.length > 0) {
-        const cartItemsToInsert = items.map(item => ({
-          customer_id: customerId,
-          product_id: item.product.id,
-          quantity: item.quantity,
-          // Store additional properties as metadata
-          metadata: {
-            is_bulk: item.is_bulk || false,
-            unit_of_measure: item.unit_of_measure || null
-          }
-        }));
-
-        const { error: insertError } = await supabase
-          .from('cart_items')
-          .insert(cartItemsToInsert);
-
-        if (insertError) {
-          console.error('Error inserting cart items:', insertError);
-          toast({
-            title: "خطأ في حفظ السلة",
-            description: "تعذر حفظ العناصر في قاعدة البيانات",
-            variant: "destructive",
+    if (!customer.current || serialized === saved.current) return;
+    const userId = owner.current;
+    const run = generation.current;
+    const pendingKey = `pending_cart:${userId}`;
+    try { localStorage.setItem(pendingKey, serialized); } catch { /* Still attempt server persistence. */ }
+    const timeout = setTimeout(() => {
+      queue.current = queue.current.then(async () => {
+        if (generation.current !== run || owner.current !== userId) return;
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || session?.user.id !== userId || generation.current !== run) return;
+        setIsSaving(true);
+        try {
+          const { error } = await customerRpc('replace_customer_cart', {
+            p_expected_user_id: userId,
+            p_items: items.map(item => ({ product_id: item.product.id, quantity: item.quantity,
+              metadata: { is_bulk: !!item.is_bulk, unit_of_measure: item.unit_of_measure || null } }))
           });
-        } else {
-          console.log(`Cart items successfully synced to Supabase (${items.length} items)`);
+          if (error) throw error;
+          if (generation.current !== run) return;
+          saved.current = serialized;
+          localStorage.removeItem('guest_cart');
+          if (JSON.stringify(latest.current) === serialized) localStorage.removeItem(pendingKey);
+          setSyncError(null);
+        } catch {
+          if (generation.current === run) setSyncError('تعذر حفظ آخر تعديل. سلتك ما زالت هنا؛ أعد المحاولة.');
+        } finally {
+          if (generation.current === run) setIsSaving(false);
         }
-      }
-    } catch (error) {
-      console.error('Error in syncCartPersistence:', error);
-      toast({
-        title: "خطأ في حفظ السلة",
-        description: "حدث خطأ غير متوقع أثناء حفظ السلة",
-        variant: "destructive",
+      }).catch(() => {
+        if (generation.current === run) setSyncError('تعذر حفظ السلة. أعد المحاولة.');
       });
-    }
-  }
+    }, 350);
+    return () => clearTimeout(timeout);
+  }, [items, isInitialized, user?.id]);
 
-  return null;
+  return { syncError, isSaving, retrySync: () => setReload(value => value + 1) };
 }

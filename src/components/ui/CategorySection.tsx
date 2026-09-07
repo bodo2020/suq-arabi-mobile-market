@@ -65,3 +65,4 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 };
 
 export default CategorySection;
+

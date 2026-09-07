@@ -43,3 +43,4 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
 };
 
 export default FeaturedProducts;
+

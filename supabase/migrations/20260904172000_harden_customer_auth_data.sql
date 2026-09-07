@@ -275,3 +275,4 @@ CREATE INDEX IF NOT EXISTS idx_cart_items_customer_id
 
 CREATE INDEX IF NOT EXISTS idx_favorites_customer_id
   ON public.favorites(customer_id);
+

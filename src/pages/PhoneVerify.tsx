@@ -1,14 +1,16 @@
+import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { AlertCircle, ArrowRight, Phone, ShieldCheck } from 'lucide-react';
+import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
+import MainLayout from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
-import BrandLoader from '@/components/ui/BrandLoader';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Input } from '@/components/ui/input';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
 import { supabase } from '@/lib/supabase';
+import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -33,6 +35,7 @@ const PhoneVerify = () => {
   const phoneFromQuery = queryParams.get('phone') || '';
   const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
   const isRecovery = queryParams.get('mode') === 'recovery';
+  const returnTo = ['/cart', '/payment', '/addresses', '/add-address', '/account'].includes(queryParams.get('returnTo') || '') ? queryParams.get('returnTo')! : '/';
 
   const [phone, setPhone] = useState(phoneFromQuery);
   const [step, setStep] = useState<'phone' | 'verification'>('phone');
@@ -46,14 +49,6 @@ const PhoneVerify = () => {
   );
   const [errors, setErrors] = useState({ phone: '', code: '' });
 
-  const resetToPhoneStep = () => {
-    setStep('phone');
-    setCode('');
-    setResendSeconds(0);
-    setRateLimitError(false);
-    setErrors({ phone: '', code: '' });
-  };
-
   useEffect(() => {
     if (resendSeconds <= 0) return;
     const timer = window.setInterval(() => {
@@ -63,7 +58,7 @@ const PhoneVerify = () => {
   }, [resendSeconds]);
 
   const formatPhoneNumber = (phoneNumber: string, country: Country) => {
-    const digits = phoneNumber.replace(/\D/g, '');
+    const digits = localPhoneDigits(phoneNumber, country.dialCode, country.code);
     if (country.code === 'EG' && digits.length > 0) {
       return digits.startsWith('0') ? digits.substring(1) : digits;
     }
@@ -97,6 +92,7 @@ const PhoneVerify = () => {
   };
 
   const sendOtp = async (isResend = false) => {
+    if (loading || resendLoading || resendSeconds > 0) return;
     if (!validatePhone()) return;
 
     const setBusy = isResend ? setResendLoading : setLoading;
@@ -123,7 +119,7 @@ const PhoneVerify = () => {
         title: isRateLimited ? 'تم تجاوز الحد المسموح' : 'تعذر إرسال الرمز',
         description: isRateLimited
           ? 'يرجى الانتظار قليلاً قبل طلب رمز جديد.'
-          : error?.message || 'تأكد من رقم الهاتف وحاول مرة أخرى',
+          : authErrorMessage(error, 'خدمة إرسال الرسائل غير متاحة حاليًا. حاول لاحقًا أو استخدم كلمة المرور لو عندك حساب.'),
         variant: 'destructive',
       });
     } finally {
@@ -132,6 +128,7 @@ const PhoneVerify = () => {
   };
 
   const handleVerifyCode = async () => {
+    if (loading || resendLoading) return;
     if (!/^\d{6}$/.test(code)) {
       setErrors((prev) => ({ ...prev, code: 'يرجى إدخال الرمز المكون من 6 أرقام' }));
       return;
@@ -161,26 +158,26 @@ const PhoneVerify = () => {
 
       const { data: customer, error: customerError } = await supabase
         .from('customers')
-        .select('id')
+        .select('id, name')
         .eq('user_id', verifiedUser.id)
         .maybeSingle();
 
       if (customerError) {
-        console.error('Error checking customer profile after OTP:', customerError);
+        throw customerError;
       }
 
-      if (customer) {
-        navigate('/account', { replace: true });
+      if (customer?.name?.trim().length >= 2) {
+        navigate(returnTo, { replace: true });
       } else {
         navigate(
-          `/register?phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode.code)}&verified=true`,
+          `/register?returnTo=${encodeURIComponent(returnTo)}`,
           { replace: true }
         );
       }
     } catch (error: any) {
       toast({
         title: 'تعذر التحقق',
-        description: error?.message || 'الرمز غير صحيح أو منتهي الصلاحية',
+        description: authErrorMessage(error, 'تعذر إكمال الدخول. راجع الرمز والاتصال ثم حاول مرة أخرى.'),
         variant: 'destructive',
       });
     } finally {
@@ -188,173 +185,162 @@ const PhoneVerify = () => {
     }
   };
 
-  const errorMessage = errors.phone || errors.code || (rateLimitError
-    ? 'تم طلب رموز كثيرة. انتظر قليلاً قبل المحاولة مرة أخرى.'
-    : '');
-
   return (
-    <main className="relative min-h-screen overflow-hidden bg-secondary/60 px-4 py-6 sm:px-6 sm:py-10" dir="rtl">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-52 bg-primary" aria-hidden="true" />
+    <MainLayout>
+      <div className="p-4 max-w-md mx-auto">
+        <div className="flex items-center mb-6">
+          <button onClick={() => navigate(-1)} className="p-2" aria-label="الرجوع">
+            <ArrowRight size={24} />
+          </button>
+          <h1 className="text-xl font-bold flex-1 text-center">
+            {isRecovery ? 'استعادة الحساب' : step === 'phone' ? 'أهلًا بيك في المعداوي' : 'تأكيد رقمك'}
+          </h1>
+          <div className="w-10" />
+        </div>
 
-      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center sm:min-h-[calc(100vh-5rem)]">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="absolute right-0 top-0 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-          aria-label="الرجوع"
-        >
-          <ArrowRight size={22} />
-        </Button>
-
-        <section className="animate-scale-in overflow-hidden rounded-lg border border-border bg-card shadow-xl shadow-primary/10">
-          <div className="flex min-h-36 items-center justify-center bg-background px-8 py-5">
-            <img
-              src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png"
-              alt="ماركت المعداوي"
-              className="h-24 w-full max-w-56 object-contain sm:h-28"
-              width={224}
-              height={112}
-              decoding="async"
-            />
-          </div>
-
-          <div className="space-y-6 border-t-4 border-primary px-5 py-7 sm:px-8 sm:py-8">
-            <header className="space-y-2 text-center">
-              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <ShieldCheck size={23} />
-              </div>
-              <h1 className="text-2xl font-bold text-foreground">
-                {isRecovery ? 'تأكيد رقم الموبايل' : 'التحقق من رقم الهاتف'}
-              </h1>
-              <p className="text-sm leading-6 text-muted-foreground">
-                {step === 'phone'
-                  ? isRecovery
-                    ? 'أدخل رقم الهاتف المسجل لنرسل لك كود استعادة آمن.'
-                    : 'أدخل رقم الموبايل لنرسل لك كود التحقق في رسالة SMS.'
-                  : 'أدخل الكود المكوّن من 6 أرقام الذي أرسلناه إلى رقمك.'}
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          {step === 'phone' ? (
+            <>
+              <p className="text-center mb-6">
+                {isRecovery
+                  ? 'سنرسل رمز تحقق إلى رقم الهاتف المسجل على حسابك'
+                  : 'سيتم إرسال رمز تحقق في رسالة SMS إلى هاتفك'}
               </p>
-            </header>
 
-            {step === 'phone' ? (
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label htmlFor="phone" className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <Phone size={17} className="text-primary" />
-                    رقم الموبايل
-                  </label>
-                  <div className="flex items-stretch gap-2">
-                    <CountryCodeSelector
-                      value={countryCode}
-                      onChange={setCountryCode}
-                      className="min-w-[88px]"
-                    />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      value={phone}
-                      onChange={(event) => {
-                        setPhone(event.target.value);
-                        setErrors((prev) => ({ ...prev, phone: '' }));
-                        setRateLimitError(false);
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') void sendOtp(false);
-                      }}
-                      className="h-12 flex-1 text-center text-base focus-visible:ring-primary"
-                      placeholder={countryCode.code === 'EG' ? '1xxxxxxxxx' : 'رقم الموبايل'}
-                      dir="ltr"
-                    />
-                  </div>
-                  <p className="text-xs leading-5 text-muted-foreground">
-                    {countryCode.code === 'EG'
-                      ? 'اكتب الرقم المصري بدون الصفر في البداية.'
-                      : 'اكتب الرقم بدون رمز الدولة.'}
+              <div className="mb-6">
+                <div className="flex items-center mb-2">
+                  <Phone size={18} className="ml-2 text-gray-500" />
+                  <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
+                </div>
+
+                <div className="flex gap-2 items-center">
+                  <CountryCodeSelector
+                    value={countryCode}
+                    onChange={setCountryCode}
+                    className="min-w-[80px]"
+                  />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    autoComplete="tel-national"
+                    inputMode="tel"
+                    disabled={loading}
+                    aria-invalid={Boolean(errors.phone)}
+                    onKeyDown={(event) => { if (event.key === 'Enter') void sendOtp(false); }}
+                    value={phone}
+                    onChange={(event) => {
+                      setPhone(event.target.value);
+                      setErrors((prev) => ({ ...prev, phone: '' }));
+                      setRateLimitError(false);
+                    }}
+                    className="text-right ltr flex-1"
+                    placeholder={countryCode.code === 'EG' ? '1xxxxxxxxx' : 'xxx-xxxx-xxx'}
+                    dir="ltr"
+                  />
+                </div>
+
+                <p className="text-xs text-gray-500 mt-1 text-right">
+                  {countryCode.code === 'EG'
+                    ? 'اكتب رقمك مثل 01012345678، أو الصقه مع كود الدولة +20.'
+                    : 'أدخل رقم الهاتف بدون رمز الدولة'}
+                </p>
+
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+                {rateLimitError && (
+                  <p className="text-amber-600 text-sm mt-1">
+                    تم طلب رموز كثيرة. انتظر قليلاً قبل المحاولة مرة أخرى.
                   </p>
-                </div>
-
-                {errorMessage && (
-                  <div className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
-                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                    <span>{errorMessage}</span>
-                  </div>
                 )}
-
-                <Button onClick={() => void sendOtp(false)} disabled={loading} size="lg" className="h-12 w-full text-base">
-                  {loading ? <BrandLoader text="جاري إرسال الكود..." className="text-primary-foreground [&_span]:text-primary-foreground" /> : 'إرسال كود التحقق'}
-                </Button>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-center justify-center gap-2 rounded-md bg-secondary px-3 py-2.5 text-sm">
-                  <span className="font-semibold text-foreground" dir="ltr">{formatInternationalPhone(phone, countryCode)}</span>
-                  <Button type="button" variant="link" onClick={resetToPhoneStep} className="h-auto p-0 text-sm">
-                    تغيير الرقم
-                  </Button>
-                </div>
 
-                <div className="space-y-3">
-                  <label className="block text-center text-sm font-semibold text-foreground">كود التحقق</label>
+              <Button onClick={() => void sendOtp(false)} disabled={loading || resendSeconds > 0} className="w-full">
+                {loading && <BrandLoader size="sm" className="ml-2" />}
+                {loading ? 'جاري إرسال الرمز...' : resendSeconds > 0 ? `حاول بعد ${resendSeconds} ثانية` : 'إرسال رمز التحقق'}
+              </Button>
+              {!isRecovery && <button type="button" onClick={() => navigate(`/phone-login?returnTo=${encodeURIComponent(returnTo)}`)} className="w-full mt-3 text-primary text-sm">الدخول بكلمة المرور</button>}
+            </>
+          ) : (
+            <>
+              <p className="text-center mb-6">
+                أدخل الرمز المرسل إلى
+                <br />
+                <span className="font-bold" dir="ltr">{formatInternationalPhone(phone, countryCode)}</span>
+              </p>
+
+              <div className="mb-6">
+                <div className="flex items-center mb-2">
+                  <Check size={18} className="ml-2 text-gray-500" />
+                  <label htmlFor="code" className="font-medium">رمز التحقق</label>
+                </div>
+                <div className="flex justify-center mb-4">
                   <InputOTP
+                    id="code"
+                    aria-label="رمز التحقق المكون من 6 أرقام"
+                    aria-invalid={Boolean(errors.code)}
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    disabled={loading || resendLoading}
+                    pasteTransformer={(value) => normalizeDigits(value).replace(/\D/g, '')}
                     maxLength={6}
                     value={code}
                     onChange={(value) => {
-                      setCode(value.replace(/\D/g, ''));
+                      setCode(normalizeDigits(value).replace(/\D/g, ''));
                       setErrors((prev) => ({ ...prev, code: '' }));
                     }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' && code.length === 6) void handleVerifyCode();
-                    }}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    autoFocus
                     dir="ltr"
-                    containerClassName="w-full justify-center"
-                    aria-label="كود التحقق المكون من 6 أرقام"
                   >
-                    <InputOTPGroup className="gap-2 sm:gap-3">
-                      {[0, 1, 2, 3, 4, 5].map((index) => (
-                        <InputOTPSlot
-                          key={index}
-                          index={index}
-                          className="h-12 w-10 rounded-md border bg-background text-lg font-bold first:rounded-md first:border last:rounded-md sm:h-14 sm:w-12 data-[active=true]:border-primary"
-                        />
-                      ))}
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
+                {errors.code && <p className="text-red-500 text-sm text-center">{errors.code}</p>}
+              </div>
 
-                {errorMessage && (
-                  <div className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
-                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                    <span>{errorMessage}</span>
-                  </div>
-                )}
+              <Button onClick={handleVerifyCode} disabled={loading || code.length !== 6} className="w-full">
+                {loading && <BrandLoader size="sm" className="ml-2" />}
+                التحقق من الرمز
+              </Button>
 
-                <Button onClick={handleVerifyCode} disabled={loading || code.length !== 6} size="lg" className="h-12 w-full text-base">
-                  {loading ? <BrandLoader text="جاري التحقق..." className="text-primary-foreground [&_span]:text-primary-foreground" /> : 'تأكيد الكود'}
-                </Button>
+              <div className="mt-4 text-center space-y-3">
+                <button
+                  onClick={() => void sendOtp(true)}
+                  className="text-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading || resendLoading || resendSeconds > 0}
+                  type="button"
+                >
+                  {resendLoading
+                    ? 'جاري إعادة الإرسال...'
+                    : resendSeconds > 0
+                      ? `إعادة الإرسال بعد ${resendSeconds} ثانية`
+                      : 'إعادة إرسال الرمز'}
+                </button>
 
-                <div className="text-center text-sm text-muted-foreground">
-                  {resendLoading ? (
-                    <BrandLoader text="جاري إعادة الإرسال..." />
-                  ) : resendSeconds > 0 ? (
-                    <p>يمكنك إعادة إرسال الكود بعد <span className="font-bold tabular-nums text-foreground">{resendSeconds}</span> ثانية</p>
-                  ) : (
-                    <Button type="button" variant="link" onClick={() => void sendOtp(true)} className="h-auto p-0 text-sm">
-                      إعادة إرسال الكود
-                    </Button>
-                  )}
+                <div>
+                  <button
+                    disabled={loading || resendLoading}
+                    onClick={() => {
+                      setStep('phone');
+                      setCode('');
+                      setErrors({ phone: '', code: '' });
+                    }}
+                    className="text-primary text-sm"
+                    type="button"
+                  >
+                    تغيير رقم الهاتف
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
-        </section>
+            </>
+          )}
+        </div>
       </div>
-    </main>
+    </MainLayout>
   );
 };
 
