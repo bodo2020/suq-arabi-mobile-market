@@ -134,21 +134,11 @@ a, button {
 }
 
 /* Mobile navigation bar */
-.bottom-nav {
-  @apply fixed bottom-0 left-0 right-0 bg-white flex justify-around items-center shadow-md h-16 z-50 border-t;
-}
-
-.bottom-nav-item {
-  @apply flex flex-col items-center justify-center py-1 text-gray-500 text-xs w-full;
-}
-
-.bottom-nav-item.active {
-  @apply text-primary;
-}
-
-.bottom-nav-item svg {
-  @apply mb-1;
-}
+.bottom-nav { @apply fixed bottom-3 left-3 right-3 z-50 flex h-[68px] items-center justify-around rounded-2xl border border-gray-100 bg-white/95 px-1 shadow-[0_10px_35px_rgba(0,50,28,.16)] backdrop-blur-xl; padding-bottom: env(safe-area-inset-bottom); }
+.bottom-nav-item { @apply flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-gray-500 transition-all; }
+.bottom-nav-item.active { @apply text-primary; }
+.bottom-nav-item.active > span:first-child { @apply bg-green-50; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 /* Fix RTL layout issues */
 .embla {

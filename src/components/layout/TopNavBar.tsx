@@ -1,138 +1,33 @@
 import React from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Home, Grid, User, Heart, ShoppingCart, Package } from 'lucide-react';
+import { ArrowRight, Home, Grid, User, Heart, ShoppingCart, Package } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 
-interface TopNavBarProps {
-  searchPlaceholder?: string;
-  onSearchFocus?: () => void;
-  searchProps?: any;
-  hideLogo?: boolean;
-  hideSearch?: boolean;
-  hideCart?: boolean;
-  pageTitle?: string;
-  showBackButton?: boolean;
-  onBack?: () => void;
-}
-
+interface TopNavBarProps { searchPlaceholder?: string; onSearchFocus?: () => void; searchProps?: any; hideLogo?: boolean; hideSearch?: boolean; hideCart?: boolean; pageTitle?: string; showBackButton?: boolean; onBack?: () => void; }
 const desktopLinks = [
-  { to: '/', label: 'الرئيسية', icon: Home },
-  { to: '/categories', label: 'الأقسام', icon: Grid },
-  { to: '/favorites', label: 'المفضلة', icon: Heart, authOnly: true },
-  { to: '/orders', label: 'طلباتي', icon: Package, authOnly: true },
+  { to: '/', label: 'الرئيسية', icon: Home }, { to: '/categories', label: 'الأقسام', icon: Grid },
+  { to: '/favorites', label: 'المفضلة', icon: Heart, authOnly: true }, { to: '/orders', label: 'طلباتي', icon: Package, authOnly: true },
 ];
-
-const TopNavBar: React.FC<TopNavBarProps> = ({
-  searchPlaceholder = "البحث عن منتجات، أقسام...",
-  onSearchFocus,
-  searchProps = {},
-  hideLogo = false,
-  hideSearch = false,
-  hideCart = false,
-  pageTitle,
-  showBackButton = false,
-  onBack
-}) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { getTotalItems } = useCart();
-  const { user } = useUser();
-  const cartCount = getTotalItems();
-
-  const handleSearchFocus = () => {
-    if (onSearchFocus) {
-      onSearchFocus();
-    } else {
-      navigate('/search');
-    }
-  };
-
-  const isActive = (to: string) => location.pathname === to;
-
-  return (
-    <header className="fixed top-0 left-0 right-0 bg-primary text-primary-foreground shadow-lg rounded-b-3xl z-50">
-      <div className="mx-auto w-full max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl px-4 py-4">
-        <div className="flex items-center gap-4">
-          {/* Back Button */}
-          {showBackButton}
-
-          {/* Logo */}
-          {!hideLogo && (
-            <Link to="/" className="shrink-0 transition-transform duration-200 hover:scale-105">
-              <img
-                src="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png"
-                alt="الشعار"
-                className="h-10 w-auto md:h-12"
-                width={120}
-                height={48}
-                decoding="async"
-              />
-            </Link>
-          )}
-
-          {/* Page Title in center when logo and search are hidden */}
-          {pageTitle && hideLogo && hideSearch && (
-            <div className="flex-1 text-center">
-              <h1 className="text-xl font-bold">{pageTitle}</h1>
-            </div>
-          )}
-
-          {/* Search Bar */}
-          {!hideSearch && (
-            <div className="flex-1 max-w-2xl">
-              <SearchBar placeholder={searchPlaceholder} onFocus={handleSearchFocus} {...searchProps} />
-            </div>
-          )}
-
-          {/* Desktop-only actions */}
-          <div className="hidden md:flex items-center gap-1 mr-auto">
-            {!hideCart && (
-              <Link
-                to="/cart"
-                className="relative flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-white/10"
-              >
-                <ShoppingCart size={20} />
-                <span>السلة</span>
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -left-1 bg-white text-primary text-[11px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-            )}
-            <Link
-              to={user ? '/account' : '/phone-login'}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-white/10"
-            >
-              <User size={20} />
-              <span>{user ? 'حسابي' : 'دخول'}</span>
-            </Link>
-          </div>
+const TopNavBar: React.FC<TopNavBarProps> = ({ searchPlaceholder='دور على منتج أو قسم…', onSearchFocus, searchProps={}, hideLogo=false, hideSearch=false, hideCart=false, pageTitle, showBackButton=false, onBack }) => {
+  const navigate=useNavigate(); const location=useLocation(); const { getTotalItems }=useCart(); const { user }=useUser(); const cartCount=getTotalItems();
+  const searchPage=location.pathname==='/search';
+  const focus=()=>{ if(onSearchFocus) onSearchFocus(); else if(!searchPage) navigate('/search'); };
+  return <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#005931]/95 text-white shadow-[0_8px_28px_rgba(0,50,28,.22)] backdrop-blur-xl">
+    <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-4">
+      <div className="flex min-h-11 items-center gap-2.5">
+        {showBackButton && <button onClick={onBack||(()=>navigate(-1))} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 active:scale-95"><ArrowRight size={21}/></button>}
+        {!hideLogo && <Link to="/" aria-label="الرئيسية" className="shrink-0 rounded-xl active:scale-95"><img src="/elmadawy-logo.png" alt="المعداوي ماركت" className="h-10 w-10 rounded-xl object-contain md:h-11 md:w-11" width="44" height="44" /></Link>}
+        {pageTitle && hideSearch ? <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold">{pageTitle}</h1> : !hideSearch && <div className="min-w-0 flex-1 md:max-w-2xl"><SearchBar placeholder={searchPlaceholder} onFocus={focus} readOnly={!searchPage} {...searchProps}/></div>}
+        {!hideCart && <Link to="/cart" aria-label={`السلة، ${cartCount} منتج`} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 md:hidden"><ShoppingCart size={21}/>{cartCount>0&&<span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-primary">{cartCount>99?'99+':cartCount}</span>}</Link>}
+        <div className="mr-auto hidden items-center gap-1 md:flex">
+          {!hideCart&&<Link to="/cart" className="relative flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-white/10"><ShoppingCart size={19}/>السلة{cartCount>0&&<span className="rounded-full bg-white px-1.5 text-xs text-primary">{cartCount}</span>}</Link>}
+          <Link to={user?'/account':'/phone-login'} className="flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-white/10"><User size={19}/>{user?'حسابي':'دخول'}</Link>
         </div>
-
-        {/* Desktop navigation row */}
-        <nav className="hidden md:flex items-center gap-1 mt-3 border-t border-white/15 pt-2">
-          {desktopLinks
-            .filter(link => !link.authOnly || !!user)
-            .map(({ to, label, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm transition-colors duration-200 hover:bg-white/10 ${
-                  isActive(to) ? 'bg-white/15 font-bold' : 'font-medium'
-                }`}
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
-            ))}
-        </nav>
       </div>
-    </header>
-  );
+      <nav className="mt-2 hidden items-center gap-1 border-t border-white/10 pt-2 md:flex" aria-label="التنقل الرئيسي">{desktopLinks.filter(x=>!x.authOnly||user).map(({to,label,icon:Icon})=><Link key={to} to={to} aria-current={location.pathname===to?'page':undefined} className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ${location.pathname===to?'bg-white/15 font-bold':'text-white/90 hover:bg-white/10'}`}><Icon size={17}/>{label}</Link>)}</nav>
+    </div>
+  </header>;
 };
-
 export default React.memo(TopNavBar);
-

@@ -45,18 +45,18 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
         if (collectionProducts.length === 0) return null;
         
         return (
-          <div key={collection.id} className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold">{collection.title}</h2>
+          <div key={collection.id} className="mb-7 rounded-3xl bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex flex-col gap-1">
+              <h2 className="text-xl font-bold">{collection.title}</h2>
               {collection.description && (
-                <p className="text-sm text-muted-foreground">{collection.description}</p>
+                <p className="text-xs leading-5 text-muted-foreground">{collection.description}</p>
               )}
             </div>
             
-            <ScrollArea className="w-full whitespace-nowrap rounded-md" dir="rtl">
-              <div className="flex flex-row-reverse space-x-4 space-x-reverse p-2">
+            <ScrollArea className="w-full whitespace-nowrap rounded-2xl" dir="rtl">
+              <div className="flex gap-3 pb-3">
                 {getProductListWithVariants(collectionProducts).map(product => (
-                  <div key={product.variantKey} className="w-[120px] flex-shrink-0">
+                  <div key={product.variantKey} className="w-[158px] flex-shrink-0 sm:w-[180px]">
                     <ProductCard 
                       product={product}
                       hideIfUnavailable={false}

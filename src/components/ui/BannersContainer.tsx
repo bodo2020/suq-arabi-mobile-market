@@ -72,13 +72,13 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   if (banners.length === 0) return null;
 
   return (
-    <div 
-      className="relative w-full overflow-hidden rounded-lg"
+    <div
+      className="relative w-full overflow-hidden rounded-3xl"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* الشرائح */}
-      <div 
+      <div
         className="flex transition-transform duration-500 ease-in-out"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
@@ -88,14 +88,16 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
             className="w-full flex-shrink-0"
           >
             <div
-              className="relative h-40 md:h-56 lg:h-64 w-full cursor-pointer"
+              className="relative h-44 w-full cursor-pointer sm:h-60 lg:h-72"
               onClick={() => handleBannerClick(banner)}
               tabIndex={0}
               role="button"
+              aria-label={banner.title}
+              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') handleBannerClick(banner); }}
             >
-              <img 
-                src={banner.image_url} 
-                alt={banner.title} 
+              <img
+                src={banner.image_url}
+                alt={banner.title}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 decoding="async"
@@ -111,14 +113,14 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
         <>
           <button
             onClick={goToPrevious}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 z-10"
+            className="hidden sm:block absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 z-10"
             aria-label="البانر السابق"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={goToNext}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 z-10"
+            className="hidden sm:block absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 z-10"
             aria-label="البانر التالي"
           >
             <ChevronRight className="w-5 h-5" />
@@ -133,10 +135,10 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                currentSlide === index 
-                  ? 'bg-white shadow-lg scale-110' 
-                  : 'bg-white/60 hover:bg-white/80'
+              className={`h-2.5 rounded-full transition-all duration-200 ${
+                currentSlide === index
+                  ? 'w-7 bg-white shadow-lg'
+                  : 'w-2.5 bg-white/60 hover:bg-white/80'
               }`}
               aria-label={`الانتقال إلى البانر ${index + 1}`}
             />

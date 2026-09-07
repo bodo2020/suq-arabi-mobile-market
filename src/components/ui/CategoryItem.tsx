@@ -22,17 +22,17 @@ const CategoryItem = ({
   };
 
   return (
-    <Link to={`/category/${category.id}`} className="flex flex-col items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100 w-full" onClick={handleClick}>
-      <div className="w-full aspect-square bg-primary/10 flex items-center justify-center overflow-hidden rounded-lg">
+    <Link to={`/category/${category.id}`} className="group flex w-full flex-col items-center justify-center rounded-2xl p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" onClick={handleClick}>
+      <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-green-50 ring-1 ring-green-100 transition-transform group-hover:-translate-y-0.5">
         {category.image_url ? (
-          <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+          <img src={category.image_url} alt={category.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" decoding="async" />
         ) : (
           <span className="text-2xl">{category.name.charAt(0)}</span>
         )}
       </div>
       
       {!hideTitle && (
-        <span className="text-sm text-center mt-1">{category.name}</span>
+        <span className="mt-2 line-clamp-2 text-center text-xs font-semibold leading-5 text-gray-800 sm:text-sm">{category.name}</span>
       )}
     </Link>
   );
