@@ -1,135 +1,123 @@
-import BrandLoader from '@/components/ui/BrandLoader';
-
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Package, Search } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Package, Search } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
+import BrandLoader from '@/components/ui/BrandLoader';
 import { Product, getProducts, getCategories } from '@/lib/supabase';
+import { hasBulkPurchase } from '@/lib/productPurchase';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const BulkProducts = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [allProducts, allCategories] = await Promise.all([
-          getProducts(),
-          getCategories()
-        ]);
-        
-        let bulkProducts = allProducts.filter(product => 
-          product.bulk_enabled && 
-          product.bulk_quantity && 
-          product.bulk_price &&
-          product.quantity >= (product.bulk_quantity || 1) // Check if we have at least one full bulk unit
-        );
+  const load = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [productsData, categoriesData] = await Promise.all([getProducts(), getCategories()]);
+      setAllProducts((productsData || []).filter(product => hasBulkPurchase(product)) as Product[]);
+      setCategories(categoriesData || []);
+    } catch (loadError) {
+      console.error('Error fetching bulk products:', loadError);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (searchQuery) {
-          bulkProducts = bulkProducts.filter(product => 
-            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.description?.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        }
+  useEffect(() => { void load(); }, []);
 
-        if (selectedCategory) {
-          bulkProducts = bulkProducts.filter(product => 
-            product.main_category_id === selectedCategory
-          );
-        }
-        
-        setProducts(bulkProducts);
-        setCategories(allCategories);
-      } catch (error) {
-        console.error('Error fetching bulk products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [selectedCategory, searchQuery]);
+  const products = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase('ar');
+    return allProducts.filter(product => {
+      const matchesSearch = !query || product.name.toLocaleLowerCase('ar').includes(query) || product.description?.toLocaleLowerCase('ar').includes(query);
+      const matchesCategory = !selectedCategory || product.main_category_id === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [allProducts, searchQuery, selectedCategory]);
 
   return (
     <MainLayout>
-      <div className="container px-0 py-0">
-        <div className="flex items-center mb-4">
-          <button onClick={() => navigate(-1)} className="p-2">
-            <ArrowRight size={24} />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center flex items-center justify-center">
-            <Package className="ml-2" size={20} />
-            منتجات الجملة
-          </h1>
-          <div className="w-10"></div>
-        </div>
-
-        <div className="px-4 mb-4">
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="ابحث عن منتجات الجملة..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4"
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+      <TopNavBar hideLogo hideSearch hideCart pageTitle="منتجات الجملة" showBackButton onBack={() => navigate(-1)} />
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <section className="mb-5 rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-6">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-primary shadow-sm"><Package size={24} /></span>
+            <div>
+              <h1 className="text-2xl font-bold">منتجات الجملة</h1>
+              <p className="mt-1 text-sm text-gray-600">اختار العبوة المناسبة، والتوفر النهائي بيتأكد من فرع عنوانك عند تأكيد الطلب.</p>
+            </div>
           </div>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 px-4">
-          <Badge
-            variant={selectedCategory === null ? "default" : "outline"}
-            className="cursor-pointer"
-            onClick={() => setSelectedCategory(null)}
-          >
-            الكل
-          </Badge>
-          {categories.map((cat) => (
-            <Badge
-              key={cat.id}
-              variant={selectedCategory === cat.id ? "default" : "outline"}
-              className="cursor-pointer whitespace-nowrap"
-              onClick={() => setSelectedCategory(cat.id)}
-            >
-              {cat.name}
-            </Badge>
-          ))}
-        </div>
+        </section>
 
         {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <BrandLoader size="md" className="" />
-          </div>
-        ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 px-4">
-            {products.map((product) => (
-              <div key={product.id} className="flex-shrink-0">
-                <ProductCard 
-                  key={product.id} 
-                  product={{
-                    ...product,
-                    price: product.bulk_price || 0,
-                    offer_price: undefined
-                  }} 
-                  hideIfUnavailable={true}
-                  showBulkQuantity={true}
-                />
-              </div>
-            ))}
-          </div>
+          <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل منتجات الجملة" /></div>
+        ) : error ? (
+          <section role="alert" className="rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm">
+            <h2 className="text-xl font-bold">تعذر تحميل منتجات الجملة</h2>
+            <p className="mt-2 text-sm text-gray-500">راجع اتصالك وحاول مرة تانية.</p>
+            <Button className="mt-5 rounded-xl" onClick={() => void load()}>إعادة المحاولة</Button>
+          </section>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            لا توجد منتجات جملة متاحة حاليًا
-          </div>
+          <>
+            <section className="mb-4 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="relative">
+                <Input
+                  type="search"
+                  placeholder="دور في منتجات الجملة..."
+                  value={searchQuery}
+                  onChange={event => setSearchQuery(event.target.value)}
+                  className="h-12 rounded-xl pr-4 pl-10"
+                />
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              </div>
+
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                <Badge
+                  variant={selectedCategory === null ? 'default' : 'outline'}
+                  className="cursor-pointer whitespace-nowrap px-3 py-2"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  الكل
+                </Badge>
+                {categories.map(category => (
+                  <Badge
+                    key={category.id}
+                    variant={selectedCategory === category.id ? 'default' : 'outline'}
+                    className="cursor-pointer whitespace-nowrap px-3 py-2"
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    {category.name}
+                  </Badge>
+                ))}
+              </div>
+            </section>
+
+            {products.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+                {products.map(product => (
+                  <ProductCard key={product.id} product={{ ...product, displayType: 'bulk' }} />
+                ))}
+              </div>
+            ) : (
+              <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+                <Package className="mx-auto text-gray-300" size={40} />
+                <h2 className="mt-4 text-xl font-bold">مفيش منتجات جملة مطابقة</h2>
+                <p className="mt-2 text-sm text-gray-500">غيّر البحث أو القسم وجرب تاني.</p>
+                {(searchQuery || selectedCategory) && <Button variant="outline" className="mt-5 rounded-xl" onClick={() => { setSearchQuery(''); setSelectedCategory(null); }}>عرض كل الجملة</Button>}
+              </section>
+            )}
+          </>
         )}
       </div>
     </MainLayout>
@@ -137,4 +125,3 @@ const BulkProducts = () => {
 };
 
 export default BulkProducts;
-
