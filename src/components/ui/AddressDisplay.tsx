@@ -14,6 +14,8 @@ import { readGuestAddress } from '@/lib/deliveryAddress';
 interface AddressDisplayProps {
   address?: string;
   onEdit?: () => void;
+  areaName?: string;
+  neighborhoodName?: string;
   className?: string;
   showAddressSelector?: boolean;
   latitude?: number;
