@@ -4,103 +4,55 @@ import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { readGuestAddress } from '@/lib/deliveryAddress';
 
-interface AddressGuardProps {
-  children: React.ReactNode;
-}
+interface AddressGuardProps { children: React.ReactNode; }
 
 const AddressGuard: React.FC<AddressGuardProps> = ({ children }) => {
   const [hasAddress, setHasAddress] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAddress();
-  }, []);
+  useEffect(() => { void checkAddress(); }, []);
 
   const checkAddress = async () => {
     try {
-      // First check if user is authenticated
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
-        // Check if user has address in database
-        const { data: addresses } = await supabase
+        const { data } = await supabase
           .from('customer_addresses')
-          .select('*')
+          .select('id, latitude, longitude, is_deliverable')
           .eq('user_id', user.id)
+          .eq('is_deliverable', true)
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null)
           .limit(1);
-        
-        if (addresses && addresses.length > 0) {
+        if (data && data.length > 0) {
           setHasAddress(true);
           setLoading(false);
           return;
         }
       }
-      
-      // Fallback to localStorage check for non-authenticated users
-      const savedAddress = localStorage.getItem('selectedAddress');
-      if (savedAddress) {
-        try {
-          const parsedAddress = JSON.parse(savedAddress);
-          if (parsedAddress.neighborhood_id) {
-            setHasAddress(true);
-          }
-        } catch (error) {
-          console.error('Error parsing saved address:', error);
-        }
-      }
+      setHasAddress(Boolean(readGuestAddress()));
     } catch (error) {
       console.error('Error checking address:', error);
+      setHasAddress(Boolean(readGuestAddress()));
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
-  };
-
-  const handleAddressSelect = (addressData: any) => {
-    setHasAddress(true);
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full text-center shadow-lg space-y-4">
-          <Skeleton className="w-16 h-16 rounded-full mx-auto" />
-          <Skeleton className="h-6 w-3/4 mx-auto" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3 mx-auto" />
-          <Skeleton className="h-10 w-full rounded-lg" />
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4"><div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-lg space-y-4"><Skeleton className="w-16 h-16 rounded-full mx-auto" /><Skeleton className="h-6 w-3/4 mx-auto" /><Skeleton className="h-4 w-full" /><Skeleton className="h-10 w-full rounded-xl" /></div></div>;
   }
 
   if (!hasAddress) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full text-center shadow-lg">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MapPin className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
-              اختر عنوان التوصيل
-            </h2>
-            <p className="text-gray-600">
-              لتتمكن من استخدام التطبيق، يرجى اختيار عنوان التوصيل أولاً
-            </p>
-          </div>
-          
-          <AddressSelector
-            onAddressSelect={handleAddressSelect}
-          >
-            <Button className="w-full">
-              <MapPin className="w-4 h-4 ml-2" />
-              اختر العنوان
-            </Button>
-          </AddressSelector>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4"><div className="bg-white rounded-3xl p-7 max-w-md w-full text-center shadow-lg border border-gray-100">
+      <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><MapPin className="w-8 h-8 text-primary" /></div>
+      <h2 className="text-xl font-bold text-gray-900 mb-2">نوصل لك فين؟</h2>
+      <p className="text-gray-600 mb-2">حدد مكانك على الخريطة الأول عشان نعرف المنتجات المتاحة والتوصيل.</p>
+      <p className="text-sm text-gray-500 mb-6">مش لازم تسجّل دخول. ولو ما سمحتش بالموقع، الخريطة هتبدأ من فرع المعداوي وتقدر تحركها بنفسك.</p>
+      <AddressSelector onAddressSelect={() => setHasAddress(true)}><Button className="w-full min-h-12 rounded-xl"><MapPin className="w-4 h-4 ml-2" />تحديد عنوان التوصيل</Button></AddressSelector>
+    </div></div>;
   }
 
   return <>{children}</>;
