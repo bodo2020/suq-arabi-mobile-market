@@ -29,7 +29,6 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
 
   const activeWeight = Math.min(hardMax, Math.max(1, Math.round(Number(existing?.quantity || selectedWeight))));
   const canIncrease = activeWeight < hardMax;
-  const canDecrease = activeWeight > step;
 
   useEffect(() => {
     onWeightChange?.(activeWeight);
@@ -53,26 +52,33 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
   };
 
   const decrease = () => {
-    if (!isInitialized) return;
-    if (existing) {
-      if (activeWeight <= step) {
-        removeFromCart(product.id, false);
-        return;
-      }
-      updateQuantity(product.id, Math.max(1, activeWeight - step), false);
+    if (!isInitialized || !existing) return;
+    if (activeWeight <= step) {
+      removeFromCart(product.id, false);
       return;
     }
-    if (canDecrease) setWeight(activeWeight - step);
+    updateQuantity(product.id, Math.max(1, activeWeight - step), false);
   };
 
   const increase = () => {
-    if (!isInitialized || !canIncrease) return;
-    if (!existing) {
-      addSelectedWeight();
-      return;
-    }
+    if (!isInitialized || !existing || !canIncrease) return;
     updateQuantity(product.id, Math.min(hardMax, activeWeight + step), false);
   };
+
+  if (!existing) {
+    return (
+      <button
+        type="button"
+        onClick={addSelectedWeight}
+        disabled={!isInitialized || stockGrams <= 0}
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#005931] px-4 font-semibold text-white disabled:opacity-40"
+        aria-label={`إضافة المنتج للسلة بوزن ${formatWeightAmount(activeWeight)}`}
+      >
+        <Plus size={19} />
+        إضافة للسلة
+      </button>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-green-100 bg-white p-3" dir="rtl">
@@ -80,11 +86,11 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
         <button
           type="button"
           onClick={decrease}
-          disabled={!isInitialized || (!existing && !canDecrease)}
-          aria-label={existing && activeWeight <= step ? 'حذف المنتج من السلة' : `تقليل الوزن بمقدار ${formatWeightAmount(step)}`}
+          disabled={!isInitialized}
+          aria-label={activeWeight <= step ? 'حذف المنتج من السلة' : `تقليل الوزن بمقدار ${formatWeightAmount(step)}`}
           className="flex h-14 w-14 items-center justify-center disabled:opacity-25"
         >
-          {existing && activeWeight <= step ? <Trash2 size={20} /> : <Minus size={20} />}
+          {activeWeight <= step ? <Trash2 size={20} /> : <Minus size={20} />}
         </button>
 
         <button
@@ -99,8 +105,8 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
         <button
           type="button"
           onClick={increase}
-          disabled={!isInitialized || !canIncrease || stockGrams <= 0}
-          aria-label={existing ? `زيادة الوزن بمقدار ${formatWeightAmount(step)}` : `إضافة ${formatWeightAmount(activeWeight)} للسلة`}
+          disabled={!isInitialized || !canIncrease}
+          aria-label={`زيادة الوزن بمقدار ${formatWeightAmount(step)}`}
           className="flex h-14 w-14 items-center justify-center disabled:opacity-25"
         >
           <Plus size={21} />
