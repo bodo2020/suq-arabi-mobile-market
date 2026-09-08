@@ -98,6 +98,13 @@ export default function Cart() {
           const availableStock = Number(line?.available_stock ?? item.product.quantity ?? 0);
           const bulkQty = Number(line?.bulk_quantity ?? item.product.bulk_quantity ?? 1);
           const isWeight = item.unit_of_measure === 'weight' && !item.is_bulk;
+          const bulkUnitType = item.is_bulk
+            ? (String((item.product as typeof item.product & { bulk_variant_type?: string | null }).bulk_variant_type || '').trim() || 'جملة')
+            : '';
+          const bulkVariantId = item.is_bulk ? item.product.bulk_variant_id || null : null;
+          const productHref = item.is_bulk
+            ? `/product/${item.product.id}?unit=bulk${bulkVariantId ? `&variant=${encodeURIComponent(bulkVariantId)}` : ''}`
+            : `/product/${item.product.id}`;
           const weightStep = isWeight ? productWeightStepGrams(item.product) : 0;
           const maxQuantity = isWeight
             ? Math.floor(availableStock * 1000)
@@ -112,13 +119,13 @@ export default function Cart() {
           });
 
           return <article key={itemKey(item)} className="cart-line">
-            <Link className="cart-image" to={`/product/${item.product.id}`} tabIndex={-1} aria-hidden="true"><img src={item.product.image_urls?.[0] || '/placeholder.svg'} alt="" loading="lazy" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }} /></Link>
+            <Link className="cart-image" to={productHref} tabIndex={-1} aria-hidden="true"><img src={item.product.image_urls?.[0] || '/placeholder.svg'} alt="" loading="lazy" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }} /></Link>
             <div>
               <div className="cart-line-heading">
-                <div><Link to={`/product/${item.product.id}`} className="cart-product-name">{item.product.name}</Link><div className="cart-kind">{item.is_bulk ? <><Package size={14} />عبوة جملة · {money(item.product.bulk_quantity || 1)} قطعة</> : isWeight ? <><Scale size={14} />بالوزن · الخطوة {formatWeightAmount(weightStep)}</> : 'بالقطعة'}</div></div>
+                <div><Link to={productHref} className="cart-product-name">{item.product.name}</Link><div className="cart-kind">{item.is_bulk ? <><Package size={14} />{bulkUnitType} · {money(bulkQty)} قطعة</> : isWeight ? <><Scale size={14} />بالوزن · الخطوة {formatWeightAmount(weightStep)}</> : 'بالقطعة'}</div></div>
                 <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>
               </div>
-              <p className="cart-unit-price">{money(unitPrice)} ج.م {item.is_bulk ? '/ عبوة' : isWeight ? '/ كجم' : '/ قطعة'}{line && <span className="mr-2 text-[11px] text-primary">سعر الفرع</span>}</p>
+              <p className="cart-unit-price">{money(unitPrice)} ج.م {item.is_bulk ? `/ ${bulkUnitType}` : isWeight ? '/ كجم' : '/ قطعة'}{line && <span className="mr-2 text-[11px] text-primary">سعر الفرع</span>}</p>
               <div className="cart-line-bottom">
                 {isWeight ? (
                   <div className="cart-counter">
