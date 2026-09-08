@@ -27,7 +27,7 @@ import { getMyLoyaltyCard } from '@/lib/loyalty';
 
 const shortcuts = [
   { to: '/orders', label: 'مشترياتي', description: 'مشتريات الفرع وطلبات الأونلاين في مكان واحد', icon: Package },
-  { to: '/vouchers', label: 'قسائمي', description: 'حوّل نقاطك لفاوچر واستخدمه في الفرع أو التطبيق', icon: Ticket },
+  { to: '/vouchers', label: 'كوبوناتي', description: 'حوّل نقاطك لكوبون خصم واستخدمه في الفرع أو التطبيق', icon: Ticket },
   { to: '/favorites', label: 'المفضلة', description: 'منتجاتك المفضلة جاهزة للتسوق', icon: Heart },
 ];
 
@@ -146,7 +146,7 @@ const Account = () => {
                         <span className="text-xs text-emerald-100">نقطة</span>
                       </div>
                       <div className="rounded-2xl bg-white/10 p-4">
-                        <p className="text-xs text-emerald-100">قابل للتحويل لفاوچر</p>
+                        <p className="text-xs text-emerald-100">قابل للتحويل لكوبون خصم</p>
                         <strong className="mt-1 block text-2xl font-black">{Number(loyalty.data.redeemable_credit_egp || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 })}</strong>
                         <span className="text-xs text-emerald-100">ج.م</span>
                       </div>
@@ -154,7 +154,7 @@ const Account = () => {
 
                     <Link to="/vouchers" className="mt-4 flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-[#005931] shadow-sm transition hover:bg-emerald-50">
                       <Ticket size={19} />
-                      تحويل النقاط إلى فاوچر / عرض قسائمي
+                      تحويل النقاط إلى كوبون خصم / عرض كوبوناتي
                     </Link>
 
                     <div className="mt-4 rounded-2xl bg-white p-3 text-gray-900 shadow-inner">
@@ -167,7 +167,7 @@ const Account = () => {
 
                     <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/5 px-4 py-3 text-xs text-emerald-50">
                       <span>كل 1 جنيه شراء = 1 نقطة</span>
-                      <span className="font-bold">{redemptionPoints.toLocaleString('ar-EG')} نقطة = {redemptionValue.toLocaleString('ar-EG')} ج.م فاوچر</span>
+                      <span className="font-bold">{redemptionPoints.toLocaleString('ar-EG')} نقطة = {redemptionValue.toLocaleString('ar-EG')} ج.م كوبون خصم</span>
                     </div>
                   </>
                 )}
