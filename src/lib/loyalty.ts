@@ -76,11 +76,11 @@ export async function createLoyaltyVoucher(points: number): Promise<LoyaltyVouch
 
 export function loyaltyVoucherError(error: unknown) {
   const message = (error as { message?: string })?.message || '';
-  if (message.includes('INSUFFICIENT_LOYALTY_POINTS')) return 'رصيد النقاط غير كافٍ لإنشاء الفاوچر.';
+  if (message.includes('INSUFFICIENT_LOYALTY_POINTS')) return 'رصيد النقاط غير كافٍ لإنشاء كوبون خصم.';
   if (message.includes('INVALID_VOUCHER_POINTS')) return 'اختار عدد نقاط صحيح بمضاعفات 1000 نقطة.';
   if (message.includes('LOYALTY_ACCOUNT_SUSPENDED')) return 'حساب الولاء موقوف حاليًا.';
   if (message.includes('LOYALTY_DISABLED')) return 'تحويل النقاط متوقف مؤقتًا.';
-  if (message.includes('VOUCHER_UNAVAILABLE')) return 'الفاوچر غير متاح للاستخدام.';
-  if (message.includes('VOUCHER_CUSTOMER_MISMATCH')) return 'الفاوچر لا يخص هذا الحساب.';
+  if (message.includes('VOUCHER_UNAVAILABLE')) return 'كوبون الخصم غير متاح للاستخدام.';
+  if (message.includes('VOUCHER_CUSTOMER_MISMATCH')) return 'كوبون الخصم لا يخص هذا الحساب.';
   return 'تعذر تنفيذ العملية. حاول مرة تانية.';
 }
