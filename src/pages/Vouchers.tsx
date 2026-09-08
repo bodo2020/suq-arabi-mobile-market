@@ -44,6 +44,7 @@ export default function Vouchers() {
     queryFn: getMyLoyaltyCard,
     enabled: !!user,
     staleTime: 5_000,
+    refetchOnWindowFocus: true,
   });
 
   const vouchersQuery = useQuery({
@@ -51,11 +52,12 @@ export default function Vouchers() {
     queryFn: () => getMyLoyaltyVouchers(),
     enabled: !!user,
     staleTime: 5_000,
+    refetchOnWindowFocus: true,
   });
 
   const card = cardQuery.data;
   const redemptionPoints = Number(card?.redemption_points || 1000);
-  const redemptionValue = Number(card?.redemption_value_egp || 5);
+  const redemptionValue = Number(card?.redemption_value_egp || 1);
   const maxConvertiblePoints = Math.floor(Number(card?.points_balance || 0) / redemptionPoints) * redemptionPoints;
   const requestedPoints = Math.trunc(Number(pointsInput || 0));
   const requestedValue = redemptionPoints > 0 ? (requestedPoints / redemptionPoints) * redemptionValue : 0;
@@ -68,6 +70,7 @@ export default function Vouchers() {
     onSuccess: async voucher => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['loyalty-card', user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['customer-loyalty-card', user?.id] }),
         queryClient.invalidateQueries({ queryKey: ['loyalty-vouchers', user?.id] }),
       ]);
       setPointsInput(String(redemptionPoints));
@@ -97,7 +100,7 @@ export default function Vouchers() {
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur">
               <div className="text-xs text-emerald-100">المتاح للتحويل الآن</div>
-              <div className="mt-1 text-2xl font-black">{money((maxConvertiblePoints / redemptionPoints) * redemptionValue)}</div>
+              <div className="mt-1 text-2xl font-black">{money(redemptionPoints > 0 ? (maxConvertiblePoints / redemptionPoints) * redemptionValue : 0)}</div>
             </div>
           </div>
         </section>
