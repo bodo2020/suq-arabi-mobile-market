@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { User, MapPin, Package, Heart, ChevronLeft, Pencil, LogOut, RotateCcw, Plus, Bell } from 'lucide-react';
+import { User, MapPin, Package, Heart, ChevronLeft, Pencil, LogOut, RotateCcw, Plus, Bell, Gift, Sparkles } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
+import LoyaltyBarcode from '@/components/ui/LoyaltyBarcode';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { getMyLoyaltyCard } from '@/lib/loyalty';
 
 const shortcuts = [
   { to: '/orders', label: 'طلباتي', description: 'تابع حالة طلبك وراجع طلباتك السابقة', icon: Package },
@@ -28,6 +30,14 @@ const Account = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  const loyalty = useQuery({
+    queryKey: ['customer-loyalty-card', user?.id],
+    enabled: !!user && !authLoading,
+    queryFn: getMyLoyaltyCard,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
 
   const defaultAddress = useQuery({
@@ -88,6 +98,55 @@ const Account = () => {
             </div>
             {profile.isError && <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">تعذّر تحميل بياناتك.<button onClick={() => profile.refetch()} className="mr-2 min-h-11 underline">إعادة المحاولة</button></div>}
             <Link to="/edit-account" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold transition hover:bg-gray-50"><Pencil size={17} />تعديل بياناتي</Link>
+          </section>
+
+          <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-[#005931] text-white shadow-[0_18px_50px_rgba(0,89,49,0.18)]" aria-label="بطاقة ولاء المعداوي">
+            <div className="p-5 sm:p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-100"><Gift size={18} />بطاقة المعداوي</div>
+                  <h2 className="mt-1 text-xl font-black">نقاطك ومشترياتك في مكان واحد</h2>
+                </div>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10"><Sparkles size={22} /></span>
+              </div>
+
+              {loyalty.isLoading ? (
+                <div className="flex min-h-36 items-center justify-center"><BrandLoader size="sm" /></div>
+              ) : loyalty.isError || !loyalty.data ? (
+                <div className="mt-5 rounded-2xl bg-white/10 p-4 text-sm text-emerald-50">
+                  تعذّر تحميل بطاقة الولاء حاليًا.
+                  <button onClick={() => loyalty.refetch()} className="mr-2 font-bold underline">إعادة المحاولة</button>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl bg-white/10 p-4">
+                      <p className="text-xs text-emerald-100">رصيد النقاط</p>
+                      <strong className="mt-1 block text-2xl font-black">{Number(loyalty.data.points_balance || 0).toLocaleString('ar-EG')}</strong>
+                      <span className="text-xs text-emerald-100">نقطة</span>
+                    </div>
+                    <div className="rounded-2xl bg-white/10 p-4">
+                      <p className="text-xs text-emerald-100">رصيد متاح</p>
+                      <strong className="mt-1 block text-2xl font-black">{Number(loyalty.data.redeemable_credit_egp || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 })}</strong>
+                      <span className="text-xs text-emerald-100">ج.م</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl bg-white p-3 text-gray-900 shadow-inner">
+                    <div className="mb-2 flex items-center justify-between gap-3 px-1 text-xs">
+                      <span className="font-bold text-[#005931]">امسح الباركود عند الكاشير</span>
+                      <span className="font-mono text-gray-500">{loyalty.data.membership_number}</span>
+                    </div>
+                    <LoyaltyBarcode value={loyalty.data.barcode_token} />
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/5 px-4 py-3 text-xs text-emerald-50">
+                    <span>كل 1 جنيه = 1 نقطة</span>
+                    <span className="font-bold">1000 نقطة = 5 ج.م</span>
+                  </div>
+                </>
+              )}
+            </div>
           </section>
 
           <section className="rounded-3xl border border-green-100 bg-gradient-to-b from-green-50/80 to-white p-5 shadow-sm sm:p-6" aria-label="العنوان الأساسي">
