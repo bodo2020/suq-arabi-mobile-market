@@ -47,6 +47,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
     : 0;
   const weightCanIncrease = weighted && selectedWeight < maxCartQuantity;
   const weightCanDecrease = weighted && selectedWeight > weightStep;
+  const selectedWeightPrice = weighted ? price * selectedWeight / 1000 : price;
+  const selectedWeightOriginalPrice = weighted ? Number(product.price || 0) * selectedWeight / 1000 : Number(product.price || 0);
 
   const addRegularOrBulk = () => {
     if (!isInitialized || unavailable || reachedStockLimit || weighted) return;
@@ -62,14 +64,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
   };
 
   const applyWeight = (grams: number) => {
+    if (!weighted || maxCartQuantity <= 0) return;
     const next = Math.min(maxCartQuantity, Math.max(1, Math.round(grams)));
     if (item) updateQuantity(product.id, next, false);
     else setDraftWeight(next);
   };
 
-  const addWeighted = () => {
+  const addSelectedWeight = () => {
     if (!weighted || !isInitialized || unavailable || selectedWeight <= 0) return;
-    if (item) return;
     addToCart({
       ...product,
       quantity: selectedWeight,
@@ -81,17 +83,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
 
   const increaseWeight = () => {
     if (!weighted || !isInitialized || !weightCanIncrease) return;
-    applyWeight(Math.min(maxCartQuantity, selectedWeight + weightStep));
+    if (!item) {
+      addSelectedWeight();
+      return;
+    }
+    updateQuantity(product.id, Math.min(maxCartQuantity, selectedWeight + weightStep), false);
   };
 
   const decreaseWeight = () => {
     if (!weighted || !isInitialized) return;
-    if (item && selectedWeight <= weightStep) {
-      removeFromCart(product.id, false);
+    if (item) {
+      if (selectedWeight <= weightStep) {
+        removeFromCart(product.id, false);
+        return;
+      }
+      updateQuantity(product.id, Math.max(1, selectedWeight - weightStep), false);
       return;
     }
-    if (!weightCanDecrease) return;
-    applyWeight(Math.max(1, selectedWeight - weightStep));
+    if (weightCanDecrease) applyWeight(selectedWeight - weightStep);
   };
 
   return (
@@ -135,57 +144,51 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
       </Link>
 
       <p className="mb-2 flex items-center gap-1 text-xs text-gray-500">
-        {weighted ? <><Scale size={14} /> السعر للكيلو · الخطوة {formatWeightAmount(weightStep)}</> : bulk ? <><Package size={14} /> عبوة {pack} قطعة</> : 'سعر القطعة'}
+        {weighted ? <><Scale size={14} /> بالوزن</> : bulk ? <><Package size={14} /> عبوة {pack} قطعة</> : 'سعر القطعة'}
       </p>
 
-      <div className="mb-3 mt-auto flex flex-wrap items-baseline gap-2">
-        <strong className="text-lg text-[#005931]">{money(price)} <span className="text-xs font-medium">ج.م</span></strong>
-        {discount > 0 && <del className="text-xs text-gray-400">{money(product.price)}</del>}
+      <div className="mb-3 mt-auto flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <strong className="text-lg text-[#005931]">
+          {money(weighted ? selectedWeightPrice : price)} <span className="text-xs font-medium">ج.م</span>
+        </strong>
+        {weighted && <span className="text-xs font-semibold text-[#005931]">/ {formatWeightAmount(selectedWeight)}</span>}
+        {discount > 0 && (
+          <del className="text-xs text-gray-400">
+            {money(weighted ? selectedWeightOriginalPrice : Number(product.price || 0))} ج.م
+          </del>
+        )}
       </div>
 
       {unavailable ? (
         <button disabled className="min-h-11 rounded-xl bg-gray-100 text-sm text-gray-500">غير متاح حاليًا</button>
       ) : weighted ? (
-        <div className="space-y-2">
-          <div className="flex min-h-11 items-center justify-between overflow-hidden rounded-xl border border-green-100 bg-green-50 text-[#005931]">
-            <button
-              type="button"
-              onClick={decreaseWeight}
-              disabled={!isInitialized || (!item && !weightCanDecrease)}
-              aria-label={item && selectedWeight <= weightStep ? `حذف ${displayName} من السلة` : `تقليل الوزن بمقدار ${formatWeightAmount(weightStep)}`}
-              className="flex h-11 w-10 shrink-0 items-center justify-center disabled:opacity-25"
-            >
-              {item && selectedWeight <= weightStep ? <Trash2 size={17} /> : <Minus size={17} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setWeightOpen(true)}
-              className="min-w-0 flex-1 px-1 text-center"
-              aria-label={`تعديل الوزن الحالي ${formatWeightAmount(selectedWeight)}`}
-            >
-              <strong className="block text-xs sm:text-sm">{formatWeightAmount(selectedWeight)}</strong>
-              <span className="block text-[9px] text-[#005931]/70">اضغط للتعديل</span>
-            </button>
-            <button
-              type="button"
-              onClick={increaseWeight}
-              disabled={!isInitialized || !weightCanIncrease}
-              aria-label={`زيادة الوزن بمقدار ${formatWeightAmount(weightStep)}`}
-              className="flex h-11 w-10 shrink-0 items-center justify-center disabled:opacity-25"
-            >
-              <Plus size={17} />
-            </button>
-          </div>
-          {!item && (
-            <button
-              type="button"
-              disabled={!isInitialized}
-              onClick={addWeighted}
-              className="flex min-h-10 w-full items-center justify-center gap-1 rounded-xl bg-[#005931] px-2 text-[11px] font-semibold text-white disabled:opacity-40 sm:text-xs"
-            >
-              <Plus size={16} />إضافة {formatWeightAmount(selectedWeight)}
-            </button>
-          )}
+        <div className="flex min-h-11 items-center justify-between overflow-hidden rounded-xl border border-green-100 bg-green-50 text-[#005931]">
+          <button
+            type="button"
+            onClick={decreaseWeight}
+            disabled={!isInitialized || (!item && !weightCanDecrease)}
+            aria-label={item && selectedWeight <= weightStep ? `حذف ${displayName} من السلة` : `تقليل الوزن بمقدار ${formatWeightAmount(weightStep)}`}
+            className="flex h-11 w-10 shrink-0 items-center justify-center disabled:opacity-25"
+          >
+            {item && selectedWeight <= weightStep ? <Trash2 size={17} /> : <Minus size={17} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setWeightOpen(true)}
+            className="min-w-0 flex-1 px-1 text-center"
+            aria-label={`تعديل الوزن الحالي ${formatWeightAmount(selectedWeight)}`}
+          >
+            <strong className="block text-sm">{formatWeightAmount(selectedWeight)}</strong>
+          </button>
+          <button
+            type="button"
+            onClick={increaseWeight}
+            disabled={!isInitialized || !weightCanIncrease}
+            aria-label={item ? `زيادة الوزن بمقدار ${formatWeightAmount(weightStep)}` : `إضافة ${formatWeightAmount(selectedWeight)} للسلة`}
+            className="flex h-11 w-10 shrink-0 items-center justify-center disabled:opacity-25"
+          >
+            <Plus size={18} />
+          </button>
         </div>
       ) : item ? (
         <div className="flex items-center justify-between rounded-xl bg-green-50 text-[#005931]">
