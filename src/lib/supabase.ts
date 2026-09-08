@@ -24,6 +24,7 @@ export type Product = {
   bulk_variant_id?: string | null;
   unit_of_measure?: string;
   barcode_type?: string;
+  default_weight_grams?: number | null;
   barcode?: string;
   bulk_barcode?: string;
   delivery_branch_id?: string;
