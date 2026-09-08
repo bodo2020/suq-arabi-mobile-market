@@ -11,6 +11,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useBranch } from '@/contexts/BranchContext';
 import { CartItem } from '@/contexts/cartTypes';
 import { cartQuoteError, quoteCart, type CartQuoteLine } from '@/lib/cartQuote';
+import { formatWeightAmount, productWeightStepGrams } from '@/lib/productPurchase';
 
 const money = (value: number) => new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(value);
 const localItemPrice = (item: CartItem) => item.is_bulk ? item.product.bulk_price || 0 : item.product.offer_price || item.product.price || 0;
@@ -96,23 +97,50 @@ export default function Cart() {
           const lineTotal = Number(line?.total ?? localItemTotal(item));
           const availableStock = Number(line?.available_stock ?? item.product.quantity ?? 0);
           const bulkQty = Number(line?.bulk_quantity ?? item.product.bulk_quantity ?? 1);
-          const maxQuantity = item.unit_of_measure === 'weight'
+          const isWeight = item.unit_of_measure === 'weight' && !item.is_bulk;
+          const weightStep = isWeight ? productWeightStepGrams(item.product) : 0;
+          const maxQuantity = isWeight
             ? Math.floor(availableStock * 1000)
             : item.is_bulk
               ? Math.floor(availableStock / Math.max(1, bulkQty))
               : Math.floor(availableStock);
           const atLimit = serverReady && item.quantity >= maxQuantity;
+          const weightCanIncrease = isWeight && serverReady && item.quantity < maxQuantity;
+          const openWeightEditor = () => setWeightItem({
+            ...item,
+            product: { ...item.product, quantity: availableStock },
+          });
 
           return <article key={itemKey(item)} className="cart-line">
             <Link className="cart-image" to={`/product/${item.product.id}`} tabIndex={-1} aria-hidden="true"><img src={item.product.image_urls?.[0] || '/placeholder.svg'} alt="" loading="lazy" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }} /></Link>
             <div>
               <div className="cart-line-heading">
-                <div><Link to={`/product/${item.product.id}`} className="cart-product-name">{item.product.name}</Link><div className="cart-kind">{item.is_bulk ? <><Package size={14} />عبوة جملة · {money(item.product.bulk_quantity || 1)} قطعة</> : item.unit_of_measure === 'weight' ? <><Scale size={14} />بالوزن</> : 'بالقطعة'}</div></div>
+                <div><Link to={`/product/${item.product.id}`} className="cart-product-name">{item.product.name}</Link><div className="cart-kind">{item.is_bulk ? <><Package size={14} />عبوة جملة · {money(item.product.bulk_quantity || 1)} قطعة</> : isWeight ? <><Scale size={14} />بالوزن · الخطوة {formatWeightAmount(weightStep)}</> : 'بالقطعة'}</div></div>
                 <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>
               </div>
-              <p className="cart-unit-price">{money(unitPrice)} ج.م {item.is_bulk ? '/ عبوة' : item.unit_of_measure === 'weight' ? '/ كجم' : '/ قطعة'}{line && <span className="mr-2 text-[11px] text-primary">سعر الفرع</span>}</p>
+              <p className="cart-unit-price">{money(unitPrice)} ج.م {item.is_bulk ? '/ عبوة' : isWeight ? '/ كجم' : '/ قطعة'}{line && <span className="mr-2 text-[11px] text-primary">سعر الفرع</span>}</p>
               <div className="cart-line-bottom">
-                {item.unit_of_measure === 'weight' ? <button className="cart-weight" onClick={() => setWeightItem(item)} aria-label={`تعديل وزن ${item.product.name}`}><Scale size={16} />{money(item.quantity)} جم<span>تعديل</span></button> : <div className="cart-counter">
+                {isWeight ? (
+                  <div className="cart-counter">
+                    <button
+                      disabled={!weightCanIncrease}
+                      aria-label={atLimit ? `وصلت للوزن المتاح من ${item.product.name}` : `زيادة الوزن بمقدار ${formatWeightAmount(weightStep)}`}
+                      onClick={() => updateQuantity(item.product.id, Math.min(maxQuantity, item.quantity + weightStep), false)}
+                    ><Plus size={17} /></button>
+                    <button
+                      type="button"
+                      onClick={openWeightEditor}
+                      aria-label={`تعديل وزن ${item.product.name}، الوزن الحالي ${formatWeightAmount(item.quantity)}`}
+                      className="min-w-[86px] px-2 text-sm font-bold text-primary"
+                    >{formatWeightAmount(item.quantity)}</button>
+                    <button
+                      aria-label={item.quantity <= weightStep ? `حذف ${item.product.name}` : `تقليل الوزن بمقدار ${formatWeightAmount(weightStep)}`}
+                      onClick={() => item.quantity <= weightStep
+                        ? removeFromCart(item.product.id, false)
+                        : updateQuantity(item.product.id, Math.max(1, item.quantity - weightStep), false)}
+                    >{item.quantity <= weightStep ? <Trash2 size={16} /> : <Minus size={17} />}</button>
+                  </div>
+                ) : <div className="cart-counter">
                   <button disabled={atLimit || !serverReady} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk)}><Plus size={17} /></button>
                   <output aria-label={`كمية ${item.product.name}`} aria-live="polite">{money(item.quantity)}</output>
                   <button aria-label={item.quantity === 1 ? `حذف ${item.product.name}` : `تقليل كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity - 1, !!item.is_bulk)}>{item.quantity === 1 ? <Trash2 size={16} /> : <Minus size={17} />}</button>
