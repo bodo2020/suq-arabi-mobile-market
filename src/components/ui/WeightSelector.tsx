@@ -1,21 +1,46 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog';
 import { Input } from './input';
 import { Button } from './button';
 import { Product } from '@/lib/supabase';
-import { productUnitPrice } from '@/lib/productPurchase';
+import { formatWeightAmount, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 import { useCart } from '@/contexts/useCart';
 
 const MAX_WEIGHT_GRAMS = 100000;
 
-export default function WeightSelector({ product, isOpen, onClose }: { product: Product; isOpen: boolean; onClose: () => void }) {
+interface WeightSelectorProps {
+  product: Product;
+  isOpen: boolean;
+  onClose: () => void;
+  initialWeight?: number;
+  onSelect?: (grams: number) => void;
+}
+
+export default function WeightSelector({ product, isOpen, onClose, initialWeight, onSelect }: WeightSelectorProps) {
   const { items, addToCart, updateQuantity, isInitialized } = useCart();
   const existing = items.find(item => item.product.id === product.id && item.unit_of_measure === 'weight' && !item.is_bulk);
-  const [weight, setWeight] = useState(String(existing?.quantity || 250));
+  const step = productWeightStepGrams(product);
+  const startingWeight = Math.min(
+    MAX_WEIGHT_GRAMS,
+    Math.max(1, Math.round(Number(initialWeight || existing?.quantity || step))),
+  );
+  const [weight, setWeight] = useState(String(startingWeight));
 
   useEffect(() => {
-    if (isOpen) setWeight(String(existing?.quantity || 250));
-  }, [isOpen, existing?.quantity]);
+    if (isOpen) {
+      const next = Math.min(
+        MAX_WEIGHT_GRAMS,
+        Math.max(1, Math.round(Number(initialWeight || existing?.quantity || step))),
+      );
+      setWeight(String(next));
+    }
+  }, [isOpen, initialWeight, existing?.quantity, step]);
+
+  const presets = useMemo(() => {
+    return [...new Set([step, step * 2, step * 5, step * 10])]
+      .filter(value => value > 0 && value <= MAX_WEIGHT_GRAMS)
+      .slice(0, 4);
+  }, [step]);
 
   const amount = Number(weight);
   const valid = Number.isInteger(amount) && amount > 0 && amount <= MAX_WEIGHT_GRAMS;
@@ -23,6 +48,11 @@ export default function WeightSelector({ product, isOpen, onClose }: { product: 
 
   const save = () => {
     if (!valid || !isInitialized) return;
+    if (onSelect) {
+      onSelect(amount);
+      onClose();
+      return;
+    }
     if (existing) updateQuantity(product.id, amount, false);
     else addToCart({ ...product, quantity: amount, price: product.price, unit_of_measure: 'weight', is_bulk: false });
     onClose();
@@ -33,20 +63,23 @@ export default function WeightSelector({ product, isOpen, onClose }: { product: 
       <DialogContent className="max-w-md rounded-3xl" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl">تحب وزن قد إيه؟</DialogTitle>
-          <DialogDescription>{product.name} · {price.toFixed(2)} ج.م للكيلو</DialogDescription>
+          <DialogDescription>
+            {product.name} · {price.toFixed(2)} ج.م للكيلو · الخطوة {formatWeightAmount(step)}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 pt-3">
-          <div className="grid grid-cols-4 gap-2">
-            {[250, 500, 750, 1000].map(value => (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {presets.map(value => (
               <Button
                 key={value}
+                type="button"
                 variant={amount === value ? 'default' : 'outline'}
                 aria-pressed={amount === value}
                 className="min-h-12 rounded-xl px-1"
                 onClick={() => setWeight(String(value))}
               >
-                {value === 1000 ? '١ كيلو' : `${value} جم`}
+                {formatWeightAmount(value)}
               </Button>
             ))}
           </div>
@@ -69,7 +102,9 @@ export default function WeightSelector({ product, isOpen, onClose }: { product: 
             {!valid ? (
               <p id="cart-weight-error" className="mt-2 text-sm text-red-700">اكتب وزنًا صحيحًا من ١ جم إلى ١٠٠ كجم.</p>
             ) : (
-              <p id="cart-weight-help" className="mt-2 text-xs leading-5 text-gray-500">هنتأكد من الكمية المتاحة في فرع عنوانك قبل تأكيد الطلب.</p>
+              <p id="cart-weight-help" className="mt-2 text-xs leading-5 text-gray-500">
+                تقدر تكتب أي وزن مناسب، ومش لازم يكون من مضاعفات خطوة الزيادة.
+              </p>
             )}
           </div>
 
@@ -79,7 +114,7 @@ export default function WeightSelector({ product, isOpen, onClose }: { product: 
           </div>
 
           <Button className="min-h-12 w-full rounded-xl text-base" disabled={!valid || !isInitialized} onClick={save}>
-            {existing ? 'حفظ الوزن' : 'إضافة للسلة'}
+            {onSelect ? 'تأكيد الوزن' : existing ? 'حفظ الوزن' : 'إضافة للسلة'}
           </Button>
         </div>
       </DialogContent>
