@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, Trash2, Scale, Package } from 'lucide-react';
 import { Product } from '@/lib/supabase';
-import { hasBulkPurchase, isWeightedProduct, productUnitPrice } from '@/lib/productPurchase';
+import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 import { useCart } from '@/contexts/useCart';
 import FavoriteButton from './FavoriteButton';
 import WeightSelector from './WeightSelector';
@@ -21,6 +21,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
   const [failedBulkImage, setFailedBulkImage] = useState<string | null>(null);
 
   const weighted = isWeightedProduct(product);
+  const weightStep = weighted ? productWeightStepGrams(product) : 0;
   const wantsBulk = product.displayType === 'bulk' || showBulkQuantity;
   const bulk = wantsBulk && hasBulkPurchase(product);
   const item = items.find(i => i.product.id === product.id && !!i.is_bulk === bulk && (weighted ? i.unit_of_measure === 'weight' : true));
@@ -98,7 +99,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
       </Link>
 
       <p className="mb-2 flex items-center gap-1 text-xs text-gray-500">
-        {weighted ? <><Scale size={14} /> السعر للكيلو</> : bulk ? <><Package size={14} /> عبوة {pack} قطعة</> : 'سعر القطعة'}
+        {weighted ? <><Scale size={14} /> السعر للكيلو · يبدأ من {formatWeightAmount(weightStep)}</> : bulk ? <><Package size={14} /> عبوة {pack} قطعة</> : 'سعر القطعة'}
       </p>
 
       <div className="mb-3 mt-auto flex flex-wrap items-baseline gap-2">
@@ -110,7 +111,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
         <button disabled className="min-h-11 rounded-xl bg-gray-100 text-sm text-gray-500">غير متاح حاليًا</button>
       ) : weighted ? (
         <button disabled={!isInitialized} onClick={add} className="min-h-11 rounded-xl bg-[#005931] px-2 text-sm font-semibold text-white disabled:opacity-50">
-          {item ? `${money(item.quantity)} جم · تعديل` : 'اختار الوزن'}
+          {item ? `${formatWeightAmount(item.quantity)} · تعديل` : `${formatWeightAmount(weightStep)} · اختيار الوزن`}
         </button>
       ) : item ? (
         <div className="flex items-center justify-between rounded-xl bg-green-50 text-[#005931]">
