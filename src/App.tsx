@@ -1,5 +1,6 @@
 import ProfileCompletionGate from './components/ProfileCompletionGate';
 import AddressGuard from './components/AddressGuard';
+import CheckoutAttemptRecovery from './components/CheckoutAttemptRecovery';
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -57,6 +58,7 @@ function App() {
           <CartProvider>
             <BrowserRouter>
               <ProfileCompletionGate />
+              <CheckoutAttemptRecovery />
               <Suspense fallback={<RouteFallback />}>
                 <AddressGuard>
                   <Routes>
