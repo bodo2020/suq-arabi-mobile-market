@@ -318,13 +318,13 @@ const Payment = () => {
   return (
     <CheckoutLayout step={2}>
       <h1 className="checkout-title">آخر خطوة، وطلبك عندنا.</h1>
-      <p className="checkout-intro">السعر والتوصيل والتوفر والفاوچر بيتراجعوا من السيرفر قبل إنشاء الطلب.</p>
+      <p className="checkout-intro">السعر والتوصيل والتوفر وكوبون الخصم بيتراجعوا من السيرفر قبل إنشاء الطلب.</p>
 
       {pendingCheckout && (
         <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <div className="flex items-start gap-2"><RefreshCw size={18} className="mt-0.5 shrink-0" /><div>
             <p className="font-bold">في محاولة طلب سابقة محفوظة بأمان.</p>
-            <p className="mt-1 leading-6">الطلب والفاوچر مقفولين على نفس المحاولة عشان مايتخصمش الفاوچر مرتين. {hasSamePendingCart ? '' : 'السلة الحالية اتغيّرت؛ مش هنمسحها بعد استكمال المحاولة السابقة.'}</p>
+            <p className="mt-1 leading-6">الطلب وكوبون الخصم مقفولين على نفس المحاولة عشان مايتخصمش كوبون الخصم مرتين. {hasSamePendingCart ? '' : 'السلة الحالية اتغيّرت؛ مش هنمسحها بعد استكمال المحاولة السابقة.'}</p>
           </div></div>
         </div>
       )}
@@ -356,29 +356,29 @@ const Payment = () => {
 
             <Card className="border-emerald-100">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Ticket className="h-5 w-5 text-primary" />استخدم فاوچر</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Ticket className="h-5 w-5 text-primary" />استخدم كوبون خصم</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {voucherLocked ? (
                   pendingCheckout?.voucherCode ? (
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                      <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold text-emerald-700">فاوچر المحاولة الحالية</p><p dir="ltr" className="mt-1 text-right font-mono font-bold">{pendingCheckout.voucherCode}</p></div><Badge>مقفول للمحاولة</Badge></div>
+                      <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold text-emerald-700">كوبون الخصم للمحاولة الحالية</p><p dir="ltr" className="mt-1 text-right font-mono font-bold">{pendingCheckout.voucherCode}</p></div><Badge>مقفول للمحاولة</Badge></div>
                       <div className="mt-3 text-sm">هيتخصم <strong className="text-primary">{money(Number(pendingCheckout.voucherAmount || 0))} ج.م</strong></div>
                     </div>
-                  ) : <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">المحاولة الحالية اتبدأت بدون فاوچر.</p>
+                  ) : <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">المحاولة الحالية اتبدأت بدون كوبون خصم.</p>
                 ) : vouchersQuery.isLoading ? (
                   <div className="flex justify-center py-6"><BrandLoader size="sm" /></div>
                 ) : activeVouchers.length === 0 ? (
                   <div className="rounded-2xl border border-dashed p-5 text-center">
                     <Gift className="mx-auto mb-2 text-gray-300" size={30} />
-                    <p className="font-semibold">مفيش فاوچر متاح حاليًا</p>
-                    <p className="mt-1 text-xs text-gray-500">حوّل نقاطك إلى فاوچر الأول.</p>
-                    <Button variant="outline" className="mt-3" onClick={() => navigate('/vouchers')}>قسائمي وتحويل النقاط</Button>
+                    <p className="font-semibold">مفيش كوبون خصم متاح حاليًا</p>
+                    <p className="mt-1 text-xs text-gray-500">حوّل نقاطك إلى كوبون خصم الأول.</p>
+                    <Button variant="outline" className="mt-3" onClick={() => navigate('/vouchers')}>كوبوناتي وتحويل النقاط</Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <button type="button" onClick={() => setSelectedVoucherId('none')} className={`w-full rounded-2xl border p-4 text-right transition ${selectedVoucherId === 'none' ? 'border-primary bg-green-50' : 'hover:bg-gray-50'}`}>
-                      <div className="flex items-center justify-between"><span className="font-semibold">بدون فاوچر</span>{selectedVoucherId === 'none' && <Badge>مختار</Badge>}</div>
+                      <div className="flex items-center justify-between"><span className="font-semibold">بدون كوبون خصم</span>{selectedVoucherId === 'none' && <Badge>مختار</Badge>}</div>
                     </button>
                     {activeVouchers.map(voucher => {
                       const applied = Math.min(Number(voucher.remaining_value_egp || 0), grossTotal);
@@ -392,7 +392,7 @@ const Payment = () => {
                         </button>
                       );
                     })}
-                    <Button variant="ghost" className="w-full" onClick={() => navigate('/vouchers')}>إدارة كل الفاوچرات</Button>
+                    <Button variant="ghost" className="w-full" onClick={() => navigate('/vouchers')}>إدارة كوبونات الخصم</Button>
                   </div>
                 )}
               </CardContent>
@@ -402,14 +402,14 @@ const Payment = () => {
               <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" />طريقة الدفع</CardTitle></CardHeader>
               <CardContent>
                 {payableTotal <= 0 ? (
-                  <div className="rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900"><strong>مش مطلوب دفع إضافي.</strong><p className="mt-1 text-xs">الفاوچر يغطي كامل الطلب.</p></div>
+                  <div className="rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900"><strong>مش مطلوب دفع إضافي.</strong><p className="mt-1 text-xs">كوبون الخصم يغطي كامل الطلب.</p></div>
                 ) : (
                   <RadioGroup value={paymentMethod} onValueChange={value => setPaymentMethod(value as 'cash' | 'wallet')} className="space-y-4" disabled={voucherLocked}>
                     <div className="flex items-start space-x-3 space-x-reverse rounded-lg border p-4 transition-colors hover:bg-accent/50">
                       <RadioGroupItem value="cash" id="cash" className="mt-1" /><div className="flex-1"><Label htmlFor="cash" className="flex cursor-pointer items-center gap-2 font-medium"><DollarSign className="h-4 w-4" />الدفع عند الاستلام</Label><p className="mt-1 text-sm text-muted-foreground">ادفع {money(payableTotal)} ج.م عند وصول طلبك</p></div>
                     </div>
                     <div className="flex items-start space-x-3 space-x-reverse rounded-lg border p-4 transition-colors hover:bg-accent/50">
-                      <RadioGroupItem value="wallet" id="wallet" className="mt-1" /><div className="flex-1"><Label htmlFor="wallet" className="flex cursor-pointer items-center gap-2 font-medium"><Wallet className="h-4 w-4" />المحفظة الإلكترونية</Label><p className="mt-1 text-sm text-muted-foreground">حوّل {money(payableTotal)} ج.م فقط بعد خصم الفاوچر</p></div>
+                      <RadioGroupItem value="wallet" id="wallet" className="mt-1" /><div className="flex-1"><Label htmlFor="wallet" className="flex cursor-pointer items-center gap-2 font-medium"><Wallet className="h-4 w-4" />المحفظة الإلكترونية</Label><p className="mt-1 text-sm text-muted-foreground">حوّل {money(payableTotal)} ج.م فقط بعد خصم كوبون الخصم</p></div>
                     </div>
                   </RadioGroup>
                 )}
@@ -429,7 +429,7 @@ const Payment = () => {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground"><span>مرجع الطلب:</span><Badge variant="secondary" className="max-w-full break-all">{orderReference}</Badge></div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 rounded-xl bg-green-50 p-3 text-xs text-green-800"><ShieldCheck size={18} className="shrink-0" /><span>الأسعار والمخزون والفاوچر بيتأكدوا من السيرفر وقت إنشاء الطلب.</span></div>
+                <div className="flex items-center gap-2 rounded-xl bg-green-50 p-3 text-xs text-green-800"><ShieldCheck size={18} className="shrink-0" /><span>الأسعار والمخزون وكوبون الخصم بيتأكدوا من السيرفر وقت إنشاء الطلب.</span></div>
 
                 <div className="space-y-3">
                   {!pendingCheckout && quote?.items?.length ? quote.items.map(item => (
@@ -443,7 +443,7 @@ const Payment = () => {
                 <Separator />
                 {quote && !pendingCheckout && <div className="space-y-2"><div className="flex justify-between"><span>قيمة المنتجات</span><span className="font-bold">{money(quote.subtotal)} ج.م</span></div><div className="flex justify-between"><span>التوصيل</span><span className="font-bold">{quote.free_delivery ? <span className="text-green-600">مجاناً</span> : `${money(displayedShipping)} ج.م`}</span></div></div>}
                 <div className="flex justify-between text-sm"><span>إجمالي الطلب</span><span className="font-bold">{grossTotal > 0 ? `${money(grossTotal)} ج.م` : '—'}</span></div>
-                {voucherAmount > 0 && <div className="flex justify-between rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800"><span>فاوچر</span><strong>- {money(voucherAmount)} ج.م</strong></div>}
+                {voucherAmount > 0 && <div className="flex justify-between rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800"><span>كوبون خصم</span><strong>- {money(voucherAmount)} ج.م</strong></div>}
                 <Separator />
                 <div className="flex justify-between text-lg font-bold"><span>المطلوب دفعه</span><span className="text-primary">{grossTotal > 0 ? `${money(payableTotal)} ج.م` : '—'}</span></div>
 
@@ -468,9 +468,9 @@ const Payment = () => {
 
       <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>
         <DialogContent className="mx-auto max-w-md">
-          <DialogHeader><DialogTitle className="text-center">تحويل المبلغ عبر المحفظة الإلكترونية</DialogTitle><DialogDescription className="text-center">القيمة دي بعد خصم الفاوچر. استخدم مرجع الطلب مع التحويل.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle className="text-center">تحويل المبلغ عبر المحفظة الإلكترونية</DialogTitle><DialogDescription className="text-center">القيمة دي بعد خصم كوبون الخصم. استخدم مرجع الطلب مع التحويل.</DialogDescription></DialogHeader>
           <div className="space-y-4">
-            <Card><CardContent className="p-4 text-center"><p className="mb-2">المبلغ المطلوب:</p><p className="text-2xl font-bold text-primary">{money(payableTotal)} ج.م</p>{voucherAmount > 0 && <p className="mt-1 text-xs text-emerald-700">تم خصم {money(voucherAmount)} ج.م بالفاوچر</p>}</CardContent></Card>
+            <Card><CardContent className="p-4 text-center"><p className="mb-2">المبلغ المطلوب:</p><p className="text-2xl font-bold text-primary">{money(payableTotal)} ج.م</p>{voucherAmount > 0 && <p className="mt-1 text-xs text-emerald-700">تم خصم {money(voucherAmount)} ج.م بكوبون الخصم</p>}</CardContent></Card>
             <div className="space-y-3"><p className="text-sm">حوّل المبلغ عبر فودافون كاش أو انستا باي إلى:</p><div className="flex items-center justify-between rounded-lg bg-muted p-3"><span className="font-mono text-lg font-bold">{WALLET_PHONE_NUMBER}</span><Button variant="ghost" size="sm" onClick={() => copyToClipboard(WALLET_PHONE_NUMBER, 'phone')} className="h-8 w-8 p-0">{copiedPhone ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}</Button></div></div>
             <div className="space-y-3"><p className="text-sm">مرجع الطلب:</p><div className="flex items-center justify-between gap-2 rounded-lg bg-muted p-3"><span className="min-w-0 break-all font-mono text-xs font-medium">{orderReference}</span><Button variant="ghost" size="sm" onClick={() => copyToClipboard(orderReference, 'order')} className="h-8 w-8 shrink-0 p-0">{copiedOrderNumber ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}</Button></div></div>
             <Button onClick={handleSubmitOrder} className="w-full" disabled={isLoading}>{isLoading ? 'جاري تأكيد الطلب...' : 'تأكيد الطلب'}</Button>
