@@ -20,30 +20,27 @@ export default function WeightSelector({ product, isOpen, onClose, initialWeight
   const { items, addToCart, updateQuantity, isInitialized } = useCart();
   const existing = items.find(item => item.product.id === product.id && item.unit_of_measure === 'weight' && !item.is_bulk);
   const step = productWeightStepGrams(product);
-  const startingWeight = Math.min(
-    MAX_WEIGHT_GRAMS,
-    Math.max(1, Math.round(Number(initialWeight || existing?.quantity || step))),
-  );
+  const stockGrams = Math.max(0, Math.floor(Number(product.quantity || 0) * 1000));
+  const maxAllowed = Math.min(MAX_WEIGHT_GRAMS, stockGrams);
+  const initialCandidate = Math.round(Number(initialWeight || existing?.quantity || step));
+  const startingWeight = maxAllowed > 0 ? Math.min(maxAllowed, Math.max(1, initialCandidate)) : Math.max(1, initialCandidate);
   const [weight, setWeight] = useState(String(startingWeight));
 
   useEffect(() => {
-    if (isOpen) {
-      const next = Math.min(
-        MAX_WEIGHT_GRAMS,
-        Math.max(1, Math.round(Number(initialWeight || existing?.quantity || step))),
-      );
-      setWeight(String(next));
-    }
-  }, [isOpen, initialWeight, existing?.quantity, step]);
+    if (!isOpen) return;
+    const candidate = Math.round(Number(initialWeight || existing?.quantity || step));
+    const next = maxAllowed > 0 ? Math.min(maxAllowed, Math.max(1, candidate)) : Math.max(1, candidate);
+    setWeight(String(next));
+  }, [isOpen, initialWeight, existing?.quantity, step, maxAllowed]);
 
   const presets = useMemo(() => {
     return [...new Set([step, step * 2, step * 5, step * 10])]
-      .filter(value => value > 0 && value <= MAX_WEIGHT_GRAMS)
+      .filter(value => value > 0 && value <= maxAllowed)
       .slice(0, 4);
-  }, [step]);
+  }, [step, maxAllowed]);
 
   const amount = Number(weight);
-  const valid = Number.isInteger(amount) && amount > 0 && amount <= MAX_WEIGHT_GRAMS;
+  const valid = Number.isInteger(amount) && amount > 0 && maxAllowed > 0 && amount <= maxAllowed;
   const price = productUnitPrice(product);
 
   const save = () => {
@@ -69,20 +66,22 @@ export default function WeightSelector({ product, isOpen, onClose, initialWeight
         </DialogHeader>
 
         <div className="space-y-5 pt-3">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {presets.map(value => (
-              <Button
-                key={value}
-                type="button"
-                variant={amount === value ? 'default' : 'outline'}
-                aria-pressed={amount === value}
-                className="min-h-12 rounded-xl px-1"
-                onClick={() => setWeight(String(value))}
-              >
-                {formatWeightAmount(value)}
-              </Button>
-            ))}
-          </div>
+          {presets.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {presets.map(value => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={amount === value ? 'default' : 'outline'}
+                  aria-pressed={amount === value}
+                  className="min-h-12 rounded-xl px-1"
+                  onClick={() => setWeight(String(value))}
+                >
+                  {formatWeightAmount(value)}
+                </Button>
+              ))}
+            </div>
+          )}
 
           <div>
             <label htmlFor="cart-weight" className="mb-2 block text-sm font-medium">أو اكتب الوزن بالجرام</label>
@@ -91,7 +90,7 @@ export default function WeightSelector({ product, isOpen, onClose, initialWeight
               type="number"
               inputMode="numeric"
               min={1}
-              max={MAX_WEIGHT_GRAMS}
+              max={Math.max(1, maxAllowed)}
               step={1}
               value={weight}
               onChange={event => setWeight(event.target.value)}
@@ -100,10 +99,14 @@ export default function WeightSelector({ product, isOpen, onClose, initialWeight
               aria-describedby={!valid ? 'cart-weight-error' : 'cart-weight-help'}
             />
             {!valid ? (
-              <p id="cart-weight-error" className="mt-2 text-sm text-red-700">اكتب وزنًا صحيحًا من ١ جم إلى ١٠٠ كجم.</p>
+              <p id="cart-weight-error" className="mt-2 text-sm text-red-700">
+                {maxAllowed <= 0
+                  ? 'المنتج غير متاح بالوزن حاليًا في فرع عنوانك.'
+                  : `اكتب وزنًا صحيحًا من 1 جم إلى ${formatWeightAmount(maxAllowed)}.`}
+              </p>
             ) : (
               <p id="cart-weight-help" className="mt-2 text-xs leading-5 text-gray-500">
-                تقدر تكتب أي وزن مناسب، ومش لازم يكون من مضاعفات خطوة الزيادة.
+                تقدر تكتب أي وزن مناسب حتى {formatWeightAmount(maxAllowed)}، ومش لازم يكون من مضاعفات خطوة الزيادة.
               </p>
             )}
           </div>
