@@ -5,7 +5,7 @@ import { Package, Scale, Plus, Minus, Share2, ShoppingCart, ShieldCheck } from '
 import TopNavBar from '@/components/layout/TopNavBar';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
-import WeightSelector from '@/components/ui/WeightSelector';
+import WeightedPurchaseControl from '@/components/ui/WeightedPurchaseControl';
 import ProductStructuredData from '@/components/seo/ProductStructuredData';
 import BreadcrumbStructuredData from '@/components/seo/BreadcrumbStructuredData';
 import SEOHead from '@/components/seo/SEOHead';
@@ -33,7 +33,6 @@ const ProductDetail = () => {
   const [loadError, setLoadError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [isWeightSelectorOpen, setIsWeightSelectorOpen] = useState(false);
   const { addToCart, items, updateQuantity, isInitialized } = useCart();
   const { toast } = useToast();
 
@@ -128,10 +127,6 @@ const ProductDetail = () => {
 
   const addRegular = () => {
     if (!product || !isInitialized) return;
-    if (weighted) {
-      setIsWeightSelectorOpen(true);
-      return;
-    }
     addToCart({ ...product, price: product.price, quantity, is_bulk: false });
     setQuantity(1);
     notifyAdded();
@@ -324,12 +319,7 @@ const ProductDetail = () => {
                   )}
                 </div>
               ) : weighted ? (
-                <div className="rounded-2xl border border-gray-100 p-4">
-                  <div className="mb-3 flex items-center gap-2 font-bold"><Scale size={19} className="text-primary" />شراء بالوزن</div>
-                  <Button onClick={() => setIsWeightSelectorOpen(true)} className="min-h-12 w-full rounded-xl" disabled={!isInitialized}>
-                    {items.some(item => item.product.id === product.id && item.unit_of_measure === 'weight' && !item.is_bulk) ? 'تعديل الوزن في السلة' : 'اختيار الوزن'}
-                  </Button>
-                </div>
+                <WeightedPurchaseControl product={product} />
               ) : (
                 <div className="rounded-2xl border border-gray-100 p-4">
                   <div className="mb-3 font-bold">شراء بالقطعة</div>
@@ -368,8 +358,6 @@ const ProductDetail = () => {
             <p className="whitespace-pre-line leading-8 text-gray-600">{product.description}</p>
           </section>
         )}
-
-        {!bulkMode && weighted && <WeightSelector product={product} isOpen={isWeightSelectorOpen} onClose={() => setIsWeightSelectorOpen(false)} />}
 
         {relatedProducts.length > 0 && (
           <section className="mt-5 rounded-3xl border border-gray-100 bg-white p-4 sm:p-6">
