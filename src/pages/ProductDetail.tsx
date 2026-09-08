@@ -1,7 +1,7 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Package, Scale, Plus, Minus, Share2, ShoppingCart, ShieldCheck } from 'lucide-react';
+import { Package, Scale, Plus, Minus, Share2, ShoppingCart } from 'lucide-react';
 import TopNavBar from '@/components/layout/TopNavBar';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/useCart';
 import { Product, getProductById, getRelatedProducts, getCompanyById, Company } from '@/lib/supabase';
-import { hasBulkPurchase, isWeightedProduct, productUnitPrice } from '@/lib/productPurchase';
+import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 
 const money = (value: number) => Number(value || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 });
 
@@ -33,6 +33,7 @@ const ProductDetail = () => {
   const [loadError, setLoadError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [detailWeight, setDetailWeight] = useState(0);
   const { addToCart, items, updateQuantity, isInitialized } = useCart();
   const { toast } = useToast();
 
@@ -49,14 +50,23 @@ const ProductDetail = () => {
       ? (String(product.bulk_name || '').trim() || product.name)
       : product.name
     : '';
+  const favoriteVariantId = bulkMode ? product?.bulk_variant_id || null : null;
+  const regularCartItem = items.find(item => item.product.id === id && !item.is_bulk && item.unit_of_measure !== 'weight');
+  const weightedCartItem = items.find(item => item.product.id === id && !item.is_bulk && item.unit_of_measure === 'weight');
+  const bulkCartItem = items.find(item => item.product.id === id && item.is_bulk);
+  const currentWeight = weighted && product
+    ? Math.max(1, Math.round(Number(weightedCartItem?.quantity || detailWeight || productWeightStepGrams(product))))
+    : 0;
   const displayPrice = product
     ? bulkMode
       ? Number(product.bulk_price || 0)
-      : unitPrice
+      : weighted
+        ? unitPrice * currentWeight / 1000
+        : unitPrice
     : 0;
-  const favoriteVariantId = bulkMode ? product?.bulk_variant_id || null : null;
-  const regularCartItem = items.find(item => item.product.id === id && !item.is_bulk && item.unit_of_measure !== 'weight');
-  const bulkCartItem = items.find(item => item.product.id === id && item.is_bulk);
+  const originalWeightedPrice = product && weighted
+    ? Number(product.price || 0) * currentWeight / 1000
+    : 0;
 
   useEffect(() => {
     let active = true;
@@ -70,11 +80,16 @@ const ProductDetail = () => {
       setRelatedProducts([]);
       setCompany(null);
       setQuantity(1);
+      setDetailWeight(0);
 
       try {
         const data = await getProductById(id);
         if (!data) throw new Error('PRODUCT_NOT_FOUND');
-        if (active) setProduct(data as Product);
+        if (active) {
+          const typed = data as Product;
+          setProduct(typed);
+          if (isWeightedProduct(typed)) setDetailWeight(productWeightStepGrams(typed));
+        }
       } catch (error) {
         console.error('Error fetching product:', error);
         if (active) setLoadError(true);
@@ -265,9 +280,11 @@ const ProductDetail = () => {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <h1 className="text-2xl font-bold leading-relaxed text-gray-900 sm:text-3xl">{displayName}</h1>
-                <p className="mt-2 text-sm text-gray-500">
-                  {bulkMode ? `عبوة جملة مستقلة تحتوي على ${packNumber} قطعة` : weighted ? 'اختار الوزن المناسب ليك' : 'اختار الكمية المناسبة ليك'}
-                </p>
+                {bulkMode ? (
+                  <p className="mt-2 text-sm text-gray-500">عبوة جملة مستقلة تحتوي على {packNumber} قطعة</p>
+                ) : !weighted ? (
+                  <p className="mt-2 text-sm text-gray-500">اختار الكمية المناسبة ليك</p>
+                ) : null}
               </div>
               {bulkMode ? (
                 <Badge variant="secondary" className="shrink-0 gap-1 bg-green-50 text-[#005931]"><Package size={14} />جملة</Badge>
@@ -278,11 +295,16 @@ const ProductDetail = () => {
 
             <div className="mt-5 rounded-2xl bg-green-50/70 p-4">
               {!bulkMode && Number(product.offer_price || 0) > 0 && Number(product.offer_price) < Number(product.price) && (
-                <span className="block text-sm text-gray-400 line-through">{money(product.price)} ج.م</span>
+                <span className="block text-sm text-gray-400 line-through">
+                  {money(weighted ? originalWeightedPrice : Number(product.price || 0))} ج.م
+                </span>
               )}
-              <span className="block text-3xl font-bold text-primary">
-                {money(displayPrice)} ج.م{!bulkMode && weighted ? ' / كجم' : ''}
-              </span>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="text-3xl font-bold text-primary">{money(displayPrice)} ج.م</span>
+                {!bulkMode && weighted && (
+                  <span className="text-sm font-semibold text-primary">/ {formatWeightAmount(currentWeight)}</span>
+                )}
+              </div>
               {bulkMode && (
                 <span className="mt-2 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-[#005931] shadow-sm">
                   <Package size={16} />{packNumber} قطعة في العبوة
@@ -294,11 +316,6 @@ const ProductDetail = () => {
                   عرض منتجات {company.name}
                 </button>
               )}
-            </div>
-
-            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-green-100 bg-white p-3 text-xs leading-6 text-gray-600">
-              <ShieldCheck size={18} className="mt-0.5 shrink-0 text-primary" />
-              <span>التوفر النهائي بيتأكد من مخزون فرع عنوان التوصيل قبل تأكيد الطلب.</span>
             </div>
 
             <div className="mt-6">
@@ -319,7 +336,7 @@ const ProductDetail = () => {
                   )}
                 </div>
               ) : weighted ? (
-                <WeightedPurchaseControl product={product} />
+                <WeightedPurchaseControl product={product} onWeightChange={setDetailWeight} />
               ) : (
                 <div className="rounded-2xl border border-gray-100 p-4">
                   <div className="mb-3 font-bold">شراء بالقطعة</div>
