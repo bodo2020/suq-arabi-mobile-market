@@ -45,6 +45,9 @@ const ProductDetail = () => {
   const pack = product ? Number(product.bulk_quantity || 1) : 1;
   const packNumber = String(Math.max(1, Math.trunc(pack)));
   const bulkImageUrl = product ? String(product.bulk_image_url || '').trim() : '';
+  const bulkUnitType = product
+    ? (String((product as Product & { bulk_variant_type?: string | null }).bulk_variant_type || '').trim() || 'جملة')
+    : 'جملة';
   const displayName = product
     ? bulkMode
       ? (String(product.bulk_name || '').trim() || product.name)
@@ -236,7 +239,7 @@ const ProductDetail = () => {
           <section className="relative rounded-3xl border border-gray-100 bg-white p-4 sm:p-6">
             <div className={`relative aspect-square overflow-hidden rounded-2xl ${bulkMode && !bulkImageUrl ? 'bg-emerald-50/70' : 'bg-gray-50'}`}>
               {bulkMode && !bulkImageUrl ? (
-                <div className="flex h-full w-full items-center justify-center p-8" aria-label={`عبوة ${packNumber}`}>
+                <div className="flex h-full w-full items-center justify-center p-8" aria-label={`${bulkUnitType} ${packNumber} قطعة`}>
                   <div className="flex aspect-square w-[52%] max-w-56 items-center justify-center rounded-[24%] border border-white/20 bg-[#005931] shadow-[0_18px_44px_rgba(0,89,49,0.22)]">
                     <span className="select-none text-6xl font-black leading-none tracking-tight text-white sm:text-7xl">{packNumber}</span>
                   </div>
@@ -281,13 +284,13 @@ const ProductDetail = () => {
               <div className="min-w-0 flex-1">
                 <h1 className="text-2xl font-bold leading-relaxed text-gray-900 sm:text-3xl">{displayName}</h1>
                 {bulkMode ? (
-                  <p className="mt-2 text-sm text-gray-500">عبوة جملة مستقلة تحتوي على {packNumber} قطعة</p>
+                  <p className="mt-2 text-sm text-gray-500">{bulkUnitType} · {packNumber} قطعة</p>
                 ) : !weighted ? (
                   <p className="mt-2 text-sm text-gray-500">اختار الكمية المناسبة ليك</p>
                 ) : null}
               </div>
               {bulkMode ? (
-                <Badge variant="secondary" className="shrink-0 gap-1 bg-green-50 text-[#005931]"><Package size={14} />جملة</Badge>
+                <Badge variant="secondary" className="shrink-0 gap-1 bg-green-50 text-[#005931]"><Package size={14} />{bulkUnitType}</Badge>
               ) : weighted ? (
                 <Badge variant="secondary" className="shrink-0 gap-1"><Scale size={14} />بالميزان</Badge>
               ) : null}
@@ -307,7 +310,7 @@ const ProductDetail = () => {
               </div>
               {bulkMode && (
                 <span className="mt-2 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-[#005931] shadow-sm">
-                  <Package size={16} />{packNumber} قطعة في العبوة
+                  <Package size={16} />{bulkUnitType} · {packNumber} قطعة
                 </span>
               )}
 
@@ -321,17 +324,17 @@ const ProductDetail = () => {
             <div className="mt-6">
               {bulkMode ? (
                 <div className="rounded-2xl border border-green-100 bg-green-50/35 p-4">
-                  <div className="mb-3 flex items-center gap-2 font-bold text-[#005931]"><Package size={19} />شراء الجملة</div>
+                  <div className="mb-3 flex items-center gap-2 font-bold text-[#005931]"><Package size={19} />شراء {bulkUnitType}</div>
                   {bulkCartItem ? (
                     <div className="flex min-h-12 items-center justify-between rounded-xl bg-white text-[#005931] shadow-sm">
-                      <button onClick={() => changeCartQuantity(true, -1)} className="flex h-12 w-12 items-center justify-center" aria-label="تقليل عبوات الجملة"><Minus size={18} /></button>
-                      <strong>{money(bulkCartItem.quantity)} عبوة</strong>
-                      <button onClick={() => changeCartQuantity(true, 1)} className="flex h-12 w-12 items-center justify-center" aria-label="زيادة عبوات الجملة"><Plus size={18} /></button>
+                      <button onClick={() => changeCartQuantity(true, -1)} className="flex h-12 w-12 items-center justify-center" aria-label={`تقليل عدد ${bulkUnitType}`}><Minus size={18} /></button>
+                      <strong>{money(bulkCartItem.quantity)} {bulkUnitType}</strong>
+                      <button onClick={() => changeCartQuantity(true, 1)} className="flex h-12 w-12 items-center justify-center" aria-label={`زيادة عدد ${bulkUnitType}`}><Plus size={18} /></button>
                     </div>
                   ) : (
                     <Button onClick={addBulk} className="flex min-h-12 w-full items-center justify-between rounded-xl px-4" disabled={!isInitialized}>
                       <span className="flex items-center gap-2 font-semibold"><Package size={17} />إضافة للسلة</span>
-                      <span className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-bold">سعر العبوة {money(displayPrice)} ج.م</span>
+                      <span className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-bold">سعر {bulkUnitType} {money(displayPrice)} ج.م</span>
                     </Button>
                   )}
                 </div>
