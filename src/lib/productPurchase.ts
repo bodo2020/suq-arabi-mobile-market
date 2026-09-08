@@ -1,6 +1,17 @@
 import type { Product } from '@/lib/supabase';
 
-const WEIGHT_UNITS = new Set(['weight', 'kg', 'كيلوجرام', 'كجم']);
+const WEIGHT_UNITS = new Set([
+  'weight',
+  'kg',
+  'kgs',
+  'kilogram',
+  'kilograms',
+  'كيلو',
+  'كيلو جرام',
+  'كيلوجرام',
+  'كجم',
+  'كغ',
+]);
 const MAX_WEIGHT_GRAMS = 100000;
 
 export type DisplayProduct = Product & {
@@ -9,8 +20,9 @@ export type DisplayProduct = Product & {
 };
 
 export const isWeightedProduct = (product: Pick<Product, 'barcode_type' | 'unit_of_measure'>) => {
-  const unit = (product.unit_of_measure || '').trim().toLowerCase();
-  return product.barcode_type === 'scale' || WEIGHT_UNITS.has(unit);
+  const barcodeType = String(product.barcode_type || '').trim().toLowerCase();
+  const unit = String(product.unit_of_measure || '').trim().toLowerCase();
+  return barcodeType === 'scale' || WEIGHT_UNITS.has(unit);
 };
 
 export const productUnitPrice = (product: Pick<Product, 'price' | 'offer_price'>) => {
