@@ -74,9 +74,9 @@ export default function Vouchers() {
         queryClient.invalidateQueries({ queryKey: ['loyalty-vouchers', user?.id] }),
       ]);
       setPointsInput(String(redemptionPoints));
-      toast({ title: 'تم إنشاء الفاوچر', description: `${voucher.voucher_code} · ${money(voucher.initial_value_egp)}` });
+      toast({ title: 'تم إنشاء كوبون الخصم', description: `${voucher.voucher_code} · ${money(voucher.initial_value_egp)}` });
     },
-    onError: error => toast({ title: 'تعذر إنشاء الفاوچر', description: loyaltyVoucherError(error), variant: 'destructive' }),
+    onError: error => toast({ title: 'تعذر إنشاء كوبون الخصم', description: loyaltyVoucherError(error), variant: 'destructive' }),
   });
 
   const vouchers = vouchersQuery.data || [];
@@ -84,19 +84,19 @@ export default function Vouchers() {
   const oldVouchers = useMemo(() => vouchers.filter(v => v.status !== 'active' || Number(v.remaining_value_egp) <= 0), [vouchers]);
 
   if (authLoading || !user || cardQuery.isLoading || vouchersQuery.isLoading) {
-    return <MainLayout><TopNavBar hideLogo hideSearch hideCart pageTitle="قسائمي" /><div className="flex min-h-[60vh] items-center justify-center"><BrandLoader label="جاري تحميل قسائمك" /></div></MainLayout>;
+    return <MainLayout><TopNavBar hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" /><div className="flex min-h-[60vh] items-center justify-center"><BrandLoader label="جاري تحميل كوبونات الخصم" /></div></MainLayout>;
   }
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="قسائمي" />
+      <TopNavBar hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" />
       <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6" dir="rtl">
         <section className="overflow-hidden rounded-3xl bg-[#005931] p-5 text-white shadow-lg sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} /><span className="text-sm font-bold">نقاط المعداوي</span></div>
               <div className="mt-2 text-4xl font-black">{Number(card?.points_balance || 0).toLocaleString('ar-EG')} <span className="text-lg font-semibold">نقطة</span></div>
-              <p className="mt-2 text-sm text-emerald-50/90">كل {redemptionPoints.toLocaleString('ar-EG')} نقطة = {money(redemptionValue)} فاوچر.</p>
+              <p className="mt-2 text-sm text-emerald-50/90">كل {redemptionPoints.toLocaleString('ar-EG')} نقطة = كوبون خصم بقيمة {money(redemptionValue)}.</p>
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur">
               <div className="text-xs text-emerald-100">المتاح للتحويل الآن</div>
@@ -106,9 +106,9 @@ export default function Vouchers() {
         </section>
 
         <Card className="rounded-3xl border-gray-100 shadow-sm">
-          <CardHeader><CardTitle className="flex items-center gap-2"><Gift className="text-primary" size={21} />حوّل نقاطك لفاوچر</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Gift className="text-primary" size={21} />حوّل نقاطك لكوبون خصم</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm leading-6 text-gray-500">اختار عدد نقاط بمضاعفات {redemptionPoints.toLocaleString('ar-EG')}. النقاط هتتخصم فور إنشاء الفاوچر، وبعدها تقدر تستخدمه في نقطة البيع أو داخل التطبيق.</p>
+            <p className="text-sm leading-6 text-gray-500">اختار عدد نقاط بمضاعفات {redemptionPoints.toLocaleString('ar-EG')}. النقاط هتتخصم فور إنشاء كوبون الخصم، وبعدها تقدر تستخدمه في نقطة البيع أو داخل التطبيق.</p>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <div>
                 <label className="mb-2 block text-xs font-semibold text-gray-600">عدد النقاط</label>
@@ -128,25 +128,25 @@ export default function Vouchers() {
                 disabled={!canCreate || createMutation.isPending}
                 onClick={() => createMutation.mutate()}
               >
-                {createMutation.isPending ? 'جاري الإنشاء…' : `إنشاء فاوچر ${canCreate ? money(requestedValue) : ''}`}
+                {createMutation.isPending ? 'جاري الإنشاء…' : `إنشاء كوبون خصم ${canCreate ? money(requestedValue) : ''}`}
               </Button>
             </div>
-            {maxConvertiblePoints < redemptionPoints && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">محتاج توصل إلى {redemptionPoints.toLocaleString('ar-EG')} نقطة على الأقل عشان تنشئ أول فاوچر.</p>}
+            {maxConvertiblePoints < redemptionPoints && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">محتاج توصل إلى {redemptionPoints.toLocaleString('ar-EG')} نقطة على الأقل عشان تنشئ أول كوبون خصم.</p>}
             {requestedPoints > maxConvertiblePoints && maxConvertiblePoints >= redemptionPoints && <p className="text-sm text-red-600">أقصى عدد نقاط متاح للتحويل حاليًا هو {maxConvertiblePoints.toLocaleString('ar-EG')} نقطة.</p>}
           </CardContent>
         </Card>
 
         <section className="space-y-3">
-          <div className="flex items-center justify-between"><h2 className="text-xl font-black">الفاوچرات المتاحة</h2><Badge variant="secondary">{activeVouchers.length}</Badge></div>
+          <div className="flex items-center justify-between"><h2 className="text-xl font-black">كوبونات الخصم المتاحة</h2><Badge variant="secondary">{activeVouchers.length}</Badge></div>
           {activeVouchers.length === 0 ? (
-            <div className="rounded-3xl border border-dashed bg-white p-8 text-center text-gray-500"><Ticket className="mx-auto mb-3 text-gray-300" size={34} /><p className="font-semibold">مفيش فاوچرات متاحة حاليًا</p><p className="mt-1 text-sm">حوّل نقاطك من الجزء اللي فوق، والفاوچر هيظهر هنا فورًا.</p></div>
+            <div className="rounded-3xl border border-dashed bg-white p-8 text-center text-gray-500"><Ticket className="mx-auto mb-3 text-gray-300" size={34} /><p className="font-semibold">مفيش كوبونات خصم متاحة حاليًا</p><p className="mt-1 text-sm">حوّل نقاطك من الجزء اللي فوق، وكوبون الخصم هيظهر هنا فورًا.</p></div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {activeVouchers.map(voucher => (
                 <Card key={voucher.id} className="overflow-hidden rounded-3xl border-emerald-100 shadow-sm">
                   <div className="bg-gradient-to-l from-emerald-50 to-white p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <div><p className="text-xs font-bold text-primary">فاوچر المعداوي</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
+                      <div><p className="text-xs font-bold text-primary">كوبون خصم المعداوي</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
                       <Badge className={statusMeta[voucher.status].className}>{statusMeta[voucher.status].label}</Badge>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-3">
@@ -154,7 +154,7 @@ export default function Vouchers() {
                       <div className="rounded-xl bg-white p-3"><div className="text-[11px] text-gray-500">القيمة الأصلية</div><div className="mt-1 text-xl font-black">{money(voucher.initial_value_egp)}</div></div>
                     </div>
                     <div className="mt-4 rounded-2xl bg-white p-3"><LoyaltyBarcode value={voucher.barcode_token} /></div>
-                    <p className="mt-3 flex items-center gap-2 text-xs text-gray-500"><WalletCards size={14} />اعرض الباركود للكاشير أو اختار الفاوچر عند الدفع في التطبيق. لو استخدمت جزء منه، الباقي يفضل محفوظ.</p>
+                    <p className="mt-3 flex items-center gap-2 text-xs text-gray-500"><WalletCards size={14} />اعرض الباركود للكاشير أو اختار كوبون الخصم عند الدفع في التطبيق. لو استخدمت جزء منه، الباقي يفضل محفوظ.</p>
                   </div>
                 </Card>
               ))}
@@ -164,7 +164,7 @@ export default function Vouchers() {
 
         {oldVouchers.length > 0 && (
           <section className="space-y-3 pb-4">
-            <h2 className="text-lg font-bold text-gray-700">قسائم سابقة</h2>
+            <h2 className="text-lg font-bold text-gray-700">كوبونات خصم سابقة</h2>
             <div className="space-y-2">
               {oldVouchers.map(voucher => (
                 <div key={voucher.id} className="flex items-center justify-between gap-3 rounded-2xl border bg-white p-4 text-sm">
