@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import type { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
-import { formatWeightAmount, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
+import { formatWeightAmount, productWeightStepGrams } from '@/lib/productPurchase';
 import WeightSelector from './WeightSelector';
 
 const MAX_WEIGHT_GRAMS = 100000;
@@ -21,7 +21,6 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
   const startingWeight = Math.min(hardMax, Math.max(1, Math.round(Number(existing?.quantity || step))));
   const [selectedWeight, setSelectedWeight] = useState(startingWeight);
   const [selectorOpen, setSelectorOpen] = useState(false);
-  const price = productUnitPrice(product);
 
   useEffect(() => {
     const next = Math.min(hardMax, Math.max(1, Math.round(Number(existing?.quantity || step))));
@@ -29,7 +28,6 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
   }, [product.id, existing?.quantity, step, hardMax]);
 
   const activeWeight = Math.min(hardMax, Math.max(1, Math.round(Number(existing?.quantity || selectedWeight))));
-  const total = price * activeWeight / 1000;
   const canIncrease = activeWeight < hardMax;
   const canDecrease = activeWeight > step;
 
@@ -78,13 +76,6 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
 
   return (
     <div className="rounded-2xl border border-green-100 bg-white p-3" dir="rtl">
-      <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 px-1">
-        <strong className="text-2xl text-[#005931]">
-          {total.toLocaleString('ar-EG', { maximumFractionDigits: 2 })} ج.م
-        </strong>
-        <span className="text-sm font-semibold text-[#005931]">/ {formatWeightAmount(activeWeight)}</span>
-      </div>
-
       <div className="flex min-h-14 items-center justify-between overflow-hidden rounded-2xl bg-green-50 text-[#005931]">
         <button
           type="button"
