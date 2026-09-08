@@ -37,6 +37,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
   const showBulkImage = Boolean(bulkImageUrl && failedBulkImage !== bulkImageUrl);
   const packNumber = String(Math.max(1, Math.trunc(pack)));
   const displayName = bulk ? (String(product.bulk_name || '').trim() || product.name) : product.name;
+  const bulkUnitType = bulk
+    ? (String((product as Product & { bulk_variant_type?: string | null }).bulk_variant_type || '').trim() || 'جملة')
+    : '';
   const variantId = bulk ? product.bulk_variant_id || null : null;
   const detailHref = bulk
     ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}`
@@ -113,7 +116,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
                 className="h-full w-full object-contain transition-transform motion-safe:group-hover:scale-105"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center" aria-label={`عبوة ${packNumber}`}>
+              <div className="flex h-full w-full items-center justify-center" aria-label={`${bulkUnitType} ${packNumber} قطعة`}>
                 <div className="flex aspect-square w-[62%] max-w-28 items-center justify-center rounded-[24%] border border-white/20 bg-[#005931] shadow-[0_10px_28px_rgba(0,89,49,0.20)] transition-transform motion-safe:group-hover:scale-105">
                   <span className="select-none text-4xl font-black leading-none tracking-tight text-white sm:text-5xl">{packNumber}</span>
                 </div>
@@ -135,7 +138,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showBulkQuantity = f
       </Link>
 
       <p className="mb-2 flex items-center gap-1 text-xs text-gray-500">
-        {weighted ? <><Scale size={14} /> بالوزن</> : bulk ? <><Package size={14} /> عبوة {pack} قطعة</> : 'سعر القطعة'}
+        {weighted ? <><Scale size={14} /> بالوزن</> : bulk ? <><Package size={14} /> {bulkUnitType} · {pack} قطعة</> : 'سعر القطعة'}
       </p>
 
       <div className="mb-3 mt-auto flex flex-wrap items-baseline gap-x-2 gap-y-1">
