@@ -36,6 +36,18 @@ export type PlacedOrder = {
   amount_due?: number;
   voucher_remaining_egp?: number | null;
 };
+export type CheckoutAttemptResolution = {
+  exists: boolean;
+  request_id?: string;
+  id?: string;
+  tracking_number?: string;
+  total?: number;
+  loyalty_voucher_amount?: number;
+  amount_due?: number;
+  status?: string;
+  payment_status?: string;
+  created_at?: string;
+};
 const rpc = supabase.rpc.bind(supabase) as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string; code?: string } | null }>;
 export const checkoutLines = (items: CartItem[]): CheckoutLine[] => items.map(item => ({ product_id: item.product.id, quantity: item.quantity, is_bulk: !!item.is_bulk, unit_of_measure: item.unit_of_measure === 'weight' ? 'weight' as const : 'piece' as const })).sort((a,b) => `${a.product_id}:${a.is_bulk}`.localeCompare(`${b.product_id}:${b.is_bulk}`));
 
@@ -80,6 +92,13 @@ export async function placeOrder(order: PendingCheckout) {
   if (error) throw error;
   return data as PlacedOrder;
 }
+
+export async function reconcilePendingCheckoutAttempt(requestId: string) {
+  const { data, error } = await rpc('reconcile_customer_checkout_attempt', { p_request_id: requestId });
+  if (error) throw error;
+  return data as CheckoutAttemptResolution;
+}
+
 const key = (userId: string) => `pending-checkout:${userId}`;
 export function readPendingCheckout(userId: string): PendingCheckout | null {
   const saved = localStorage.getItem(key(userId));
@@ -112,11 +131,11 @@ const messages: Record<string,string> = {
   QUOTE_CHANGED: 'السعر أو بيانات التوصيل اتغيّرت. راجع الملخص المحدّث وأكّد الطلب مرة تانية.',
   CHECKOUT_NOT_READY: 'تأكيد الطلبات الجديد قيد التجهيز. حاول لاحقًا.',
   REQUEST_CONFLICT: 'تعذّر استكمال المحاولة السابقة. راجع طلباتك قبل إنشاء طلب جديد.',
-  VOUCHER_NOT_FOUND: 'الفاوچر غير موجود.',
-  VOUCHER_UNAVAILABLE: 'الفاوچر مستخدم بالكامل أو غير متاح.',
-  VOUCHER_CUSTOMER_MISMATCH: 'الفاوچر لا يخص هذا الحساب.',
-  INVALID_VOUCHER_AMOUNT: 'قيمة الفاوچر المطلوبة غير صالحة.',
-  VOUCHER_BALANCE_CHANGED: 'رصيد الفاوچر اتغيّر. حدّث الصفحة وحاول مرة تانية.',
+  VOUCHER_NOT_FOUND: 'كوبون الخصم غير موجود.',
+  VOUCHER_UNAVAILABLE: 'كوبون الخصم مستخدم بالكامل أو غير متاح.',
+  VOUCHER_CUSTOMER_MISMATCH: 'كوبون الخصم لا يخص هذا الحساب.',
+  INVALID_VOUCHER_AMOUNT: 'قيمة كوبون الخصم المطلوبة غير صالحة.',
+  VOUCHER_BALANCE_CHANGED: 'رصيد كوبون الخصم اتغيّر. حدّث الصفحة وحاول مرة تانية.',
 };
 export function checkoutError(error: unknown): string { return messages[(error as { message?: string })?.message || ''] || 'لم نقدر نتأكد من نتيجة الطلب. أعد المحاولة بنفس الطلب لتجنّب التكرار.'; }
 export const definitelyRejected = (error: unknown) => ['QUOTE_CHANGED','INSUFFICIENT_STOCK','PRODUCT_UNAVAILABLE','PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','INVALID_QUANTITY','INVALID_CART','CHECKOUT_NOT_READY','ADDRESS_REQUIRED','PROFILE_REQUIRED','DELIVERY_UNAVAILABLE','VOUCHER_NOT_FOUND','VOUCHER_UNAVAILABLE','VOUCHER_CUSTOMER_MISMATCH','INVALID_VOUCHER_AMOUNT','VOUCHER_BALANCE_CHANGED'].includes((error as { message?: string })?.message || '');
