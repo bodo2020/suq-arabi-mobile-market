@@ -27,7 +27,7 @@ const Payment = lazy(() => import('./pages/Payment'));
 const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
 const Account = lazy(() => import('./pages/Account'));
 const EditAccount = lazy(() => import('./pages/EditAccount'));
-const Orders = lazy(() => import('./pages/Orders'));
+const Orders = lazy(() => import('./pages/PurchaseHistory'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Favorites = lazy(() => import('./pages/Favorites'));
 const Address = lazy(() => import('./pages/Address'));
