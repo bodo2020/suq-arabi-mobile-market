@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { deactivateCurrentPushDevice } from '@/services/pushNotifications';
 
 type UserContextType = {
   user: User | null;
@@ -141,6 +142,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
+      try {
+        await deactivateCurrentPushDevice();
+      } catch (pushError) {
+        console.warn('Unable to detach push device before sign out:', pushError);
+      }
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error) {
@@ -246,4 +252,3 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     </UserContext.Provider>
   );
 };
-
