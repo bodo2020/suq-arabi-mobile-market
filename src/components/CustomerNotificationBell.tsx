@@ -5,16 +5,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
-
-type NotificationRow = {
-  id: string;
-  title: string;
-  body: string;
-  order_id: string | null;
-  read_at: string | null;
-};
-
-const notificationsTable = () => (supabase as any).from('customer_notifications');
+import {
+  fetchCustomerNotificationCenterV2,
+  type CustomerNotificationItemV2,
+} from '@/services/notificationCenterV2';
 
 const CustomerNotificationBell: React.FC = () => {
   const navigate = useNavigate();
@@ -23,70 +17,51 @@ const CustomerNotificationBell: React.FC = () => {
   const { toast } = useToast();
 
   const unread = useQuery({
-    queryKey: ['customer-notification-unread', user?.id],
+    queryKey: ['customer-notification-unread-v2', user?.id],
     enabled: !!user?.id,
-    queryFn: async () => {
-      const { count, error } = await notificationsTable()
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user!.id)
-        .is('read_at', null);
-      if (error) throw error;
-      return count || 0;
-    },
-    staleTime: 10_000,
+    queryFn: () => fetchCustomerNotificationCenterV2('unread'),
+    staleTime: 8_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
+    retry: 1,
   });
 
   useEffect(() => {
     if (!user?.id) return;
 
     const channel = supabase
-      .channel(`customer-notification-bell:${user.id}`)
+      .channel(`customer-notification-v2:${user.id}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'customer_notifications',
-          filter: `user_id=eq.${user.id}`,
+          table: 'notification_realtime_signals_v2',
+          filter: `recipient_user_id=eq.${user.id}`,
         },
         payload => {
-          const row = payload.new as NotificationRow;
-          void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread', user.id] });
-          void queryClient.invalidateQueries({ queryKey: ['customer-notifications', user.id] });
+          const signal = payload.new as { notification_id?: string; audience?: string };
+          if (signal.audience && signal.audience !== 'customer') return;
 
-          toast({ title: row.title, description: row.body });
+          void (async () => {
+            try {
+              const center = await fetchCustomerNotificationCenterV2('all');
+              const item = center.items.find(entry => entry.id === signal.notification_id);
 
-          if (
-            typeof window !== 'undefined' &&
-            'Notification' in window &&
-            Notification.permission === 'granted' &&
-            document.visibilityState !== 'visible'
-          ) {
-            const browserNotification = new Notification(row.title, {
-              body: row.body,
-              icon: '/elmadawy-logo.png',
-              tag: row.order_id ? `order-${row.order_id}` : row.id,
-            });
-            browserNotification.onclick = () => {
-              window.focus();
-              navigate(row.order_id ? `/orders?order_id=${encodeURIComponent(row.order_id)}` : '/notifications');
-              browserNotification.close();
-            };
-          }
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'customer_notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread', user.id] });
-          void queryClient.invalidateQueries({ queryKey: ['customer-notifications', user.id] });
+              void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread-v2', user.id] });
+              void queryClient.invalidateQueries({ queryKey: ['customer-notification-center-v2', user.id] });
+
+              if (item) {
+                toast({
+                  title: item.title || 'إشعار جديد',
+                  description: item.body || undefined,
+                });
+              }
+            } catch {
+              void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread-v2', user.id] });
+              void queryClient.invalidateQueries({ queryKey: ['customer-notification-center-v2', user.id] });
+            }
+          })();
         },
       )
       .subscribe();
@@ -94,16 +69,18 @@ const CustomerNotificationBell: React.FC = () => {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [user?.id, queryClient, toast, navigate]);
+  }, [navigate, queryClient, toast, user?.id]);
 
   if (!user) return null;
 
-  const count = unread.data || 0;
+  const count = unread.data?.summary.unread || 0;
+  const latest: CustomerNotificationItemV2 | undefined = unread.data?.items?.[0];
 
   return (
     <button
       type="button"
       onClick={() => navigate('/notifications')}
+      title={latest?.title || 'الإشعارات'}
       aria-label={count ? `الإشعارات، ${count} غير مقروء` : 'الإشعارات'}
       className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#005931] transition hover:bg-green-50 active:scale-95"
     >
