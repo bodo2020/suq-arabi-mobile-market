@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/hooks/use-toast';
 import { initializeCustomerPushNotifications } from '@/services/pushNotifications';
 
 export default function PushNotificationsBootstrap() {
   const { user, authLoading } = useUser();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,11 +18,9 @@ export default function PushNotificationsBootstrap() {
     void initializeCustomerPushNotifications({
       onReceived: event => {
         if (disposed) return;
-        toast(event.title || 'المعداوي ماركت', {
+        toast({
+          title: event.title || 'المعداوي ماركت',
           description: event.body || undefined,
-          action: event.actionUrl
-            ? { label: 'فتح', onClick: () => navigate(event.actionUrl as string) }
-            : undefined,
         });
       },
       onAction: event => {
@@ -44,7 +43,7 @@ export default function PushNotificationsBootstrap() {
       disposed = true;
       void cleanup?.();
     };
-  }, [authLoading, navigate, user?.id]);
+  }, [authLoading, navigate, toast, user?.id]);
 
   return null;
 }
