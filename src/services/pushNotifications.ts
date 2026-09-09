@@ -47,6 +47,12 @@ export type CustomerPushEvent = {
   data?: Record<string, unknown>;
 };
 
+export type CustomerPushPermissionResult = 'granted' | 'denied' | 'unsupported';
+
+function nativePushAvailable() {
+  return Capacitor.isNativePlatform() && Boolean((Capacitor as any).isPluginAvailable?.('PushNotifications'));
+}
+
 function getOrCreateDeviceKey() {
   const current = localStorage.getItem(DEVICE_KEY);
   if (current) return current;
@@ -111,9 +117,8 @@ export async function initializeCustomerPushNotifications(callbacks?: {
   onAction?: (event: CustomerPushEvent) => void;
   onError?: (error: unknown) => void;
 }) {
-  if (!Capacitor.isNativePlatform()) return () => undefined;
-  if (!(Capacitor as any).isPluginAvailable?.('PushNotifications')) {
-    console.info('PushNotifications native plugin is not available in this build.');
+  if (!nativePushAvailable()) {
+    if (Capacitor.isNativePlatform()) console.info('PushNotifications native plugin is not available in this build.');
     return () => undefined;
   }
 
@@ -144,22 +149,39 @@ export async function initializeCustomerPushNotifications(callbacks?: {
 
   await createAndroidChannels();
 
-  let permission = await PushNotifications.checkPermissions();
-  if (permission.receive === 'prompt' || permission.receive === 'prompt-with-rationale') {
-    permission = await PushNotifications.requestPermissions();
+  const permission = await PushNotifications.checkPermissions();
+  // Never interrupt the customer with a permission popup on login. If permission was already
+  // granted we refresh the token; otherwise the Notifications screen exposes an explicit CTA.
+  if (permission.receive === 'granted') {
+    await PushNotifications.register();
   }
-  if (permission.receive !== 'granted') {
-    callbacks?.onError?.('PUSH_PERMISSION_DENIED');
-    return async () => {
-      await Promise.all(handles.map(handle => handle.remove().catch(() => undefined)));
-    };
-  }
-
-  await PushNotifications.register();
 
   return async () => {
     await Promise.all(handles.map(handle => handle.remove().catch(() => undefined)));
   };
+}
+
+export async function requestCustomerPushPermissionAndRegister(): Promise<CustomerPushPermissionResult> {
+  if (!nativePushAvailable()) return 'unsupported';
+
+  await createAndroidChannels();
+  let permission = await PushNotifications.checkPermissions();
+  if (permission.receive === 'prompt' || permission.receive === 'prompt-with-rationale') {
+    permission = await PushNotifications.requestPermissions();
+  }
+  if (permission.receive !== 'granted') return 'denied';
+
+  // The bootstrap listener owns the server registration callback.
+  await PushNotifications.register();
+  return 'granted';
+}
+
+export async function getNativePushPermission(): Promise<CustomerPushPermissionResult | 'prompt'> {
+  if (!nativePushAvailable()) return 'unsupported';
+  const permission = await PushNotifications.checkPermissions();
+  if (permission.receive === 'granted') return 'granted';
+  if (permission.receive === 'denied') return 'denied';
+  return 'prompt';
 }
 
 export async function deactivateCurrentPushDevice() {
