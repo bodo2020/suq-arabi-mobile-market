@@ -1,0 +1,37 @@
+name: Prepare Push Plugin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prepare-push-plugin.yml'
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install compatible Capacitor Push plugin
+        run: npm install @capacitor/push-notifications@latest-7 --save
+
+      - name: Verify web build
+        run: npm run build
+
+      - name: Upload updated manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: push-plugin-manifests
+          path: |
+            package.json
+            package-lock.json
+          if-no-files-found: error
+          retention-days: 1
