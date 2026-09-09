@@ -17,7 +17,7 @@ const CustomerNotificationBell: React.FC = () => {
   const { toast } = useToast();
 
   const unread = useQuery({
-    queryKey: ['customer-notification-unread-v2', user?.id],
+    queryKey: ['customer-notification-unread', user?.id],
     enabled: !!user?.id,
     queryFn: () => fetchCustomerNotificationCenterV2('unread'),
     staleTime: 8_000,
@@ -48,7 +48,7 @@ const CustomerNotificationBell: React.FC = () => {
               const center = await fetchCustomerNotificationCenterV2('all');
               const item = center.items.find(entry => entry.id === signal.notification_id);
 
-              void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread-v2', user.id] });
+              void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread', user.id] });
               void queryClient.invalidateQueries({ queryKey: ['customer-notification-center-v2', user.id] });
 
               if (item) {
@@ -58,7 +58,7 @@ const CustomerNotificationBell: React.FC = () => {
                 });
               }
             } catch {
-              void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread-v2', user.id] });
+              void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread', user.id] });
               void queryClient.invalidateQueries({ queryKey: ['customer-notification-center-v2', user.id] });
             }
           })();
