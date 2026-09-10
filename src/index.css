@@ -155,6 +155,22 @@ html.native-platform [role="button"] {
   touch-action: manipulation;
 }
 
+/* Delivery map: on touch devices the page owns vertical swipes until map mode is enabled. */
+.delivery-map-shell {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+
+.delivery-map-shell:not(.is-interactive) .delivery-map-canvas,
+.delivery-map-shell:not(.is-interactive) .delivery-map-canvas * {
+  touch-action: pan-y !important;
+}
+
+.delivery-map-shell.is-interactive .delivery-map-canvas,
+.delivery-map-shell.is-interactive .delivery-map-canvas * {
+  touch-action: none !important;
+}
+
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar, .scrollbar-hide {
   scrollbar-width: none; /* Firefox */
