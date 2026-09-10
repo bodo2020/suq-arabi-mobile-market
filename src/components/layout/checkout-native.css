@@ -1,0 +1,68 @@
+/* Native/mobile checkout fixes. Loaded after checkout.css so these rules override legacy fixed heights. */
+.checkout {
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+.checkout-header {
+  height: auto;
+  min-height: calc(92px + var(--safe-area-top));
+  padding-top: calc(16px + var(--safe-area-top));
+  padding-right: calc(28px + var(--safe-area-right));
+  padding-bottom: 16px;
+  padding-left: calc(28px + var(--safe-area-left));
+}
+
+.checkout-main {
+  padding-bottom: calc(60px + var(--safe-area-bottom));
+}
+
+.address-mobile-action {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .checkout-header {
+    min-height: calc(78px + var(--safe-area-top));
+    padding-top: calc(12px + var(--safe-area-top));
+    padding-right: calc(20px + var(--safe-area-right));
+    padding-bottom: 12px;
+    padding-left: calc(20px + var(--safe-area-left));
+  }
+
+  .checkout-main {
+    padding-right: max(16px, var(--safe-area-right));
+    padding-bottom: calc(118px + var(--safe-area-bottom));
+    padding-left: max(16px, var(--safe-area-left));
+  }
+
+  .address-form {
+    padding-bottom: calc(18px + var(--safe-area-bottom));
+  }
+
+  .address-desktop-submit {
+    display: none !important;
+  }
+
+  .address-mobile-action {
+    display: block;
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 80;
+    border-top: 1px solid #e2e9e4;
+    background: rgba(255, 255, 255, 0.96);
+    padding-top: 10px;
+    padding-right: max(16px, var(--safe-area-right));
+    padding-bottom: max(10px, var(--safe-area-bottom));
+    padding-left: max(16px, var(--safe-area-left));
+    box-shadow: 0 -8px 28px rgba(19, 44, 29, 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .address-mobile-action .cart-primary {
+    margin-top: 0;
+    min-height: 52px;
+  }
+}

@@ -29,6 +29,9 @@ export default function Address() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const back = required || onboarding ? returnTo : checkout ? '/addresses?returnTo=%2Fpayment' : user ? '/addresses' : returnTo;
+  const saveLabel = user
+    ? (required ? 'حفظ العنوان وابدأ التسوق' : onboarding ? 'حفظ العنوان والمتابعة' : 'حفظ العنوان')
+    : required ? 'استخدام العنوان وابدأ التسوق' : 'استخدام العنوان كضيف';
 
   useEffect(() => {
     if (authLoading) return;
@@ -181,7 +184,7 @@ export default function Address() {
     </div>
 
     {loading || authLoading ? <div className="cart-loading"><BrandLoader size="lg" /></div> : loadError ? <div className="cart-alert" role="alert">{loadError}<Button variant="outline" onClick={() => navigate(back)}>رجوع</Button></div> :
-      <form onSubmit={save} className="grid gap-6 lg:grid-cols-[1.25fr_.75fr]" aria-busy={saving}>
+      <form onSubmit={save} className="address-form grid gap-6 lg:grid-cols-[1.25fr_.75fr]" aria-busy={saving}>
         <section className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6">
           <div className="mb-4 flex items-center gap-3"><div className="rounded-xl bg-green-50 p-2.5 text-primary"><MapPin size={20} /></div><div><h2 className="font-bold">حدد موقعك على الخريطة</h2><p className="text-sm text-gray-500">نطاق التوصيل بيتحسب بالطريق الفعلي من الفرع، مش بخط مستقيم.</p></div></div>
           <DeliveryMap key={id || (user ? 'new-user' : 'guest')} value={coordinates} onChange={value => { setCoordinates(value); setError(''); }} onAddressResolved={resolved => setAddress(current => current.trim() ? current : resolved)} />
@@ -195,9 +198,13 @@ export default function Address() {
           <textarea id="delivery-details" value={address} onChange={event => { setAddress(event.target.value); setError(''); }} rows={5} maxLength={1000} required placeholder="مثال: شارع المدرسة، منزل ١٢، الدور ٢ — بجوار الصيدلية" className="w-full rounded-xl border p-3 text-base leading-7" aria-describedby={error ? 'address-error' : undefined} />
           {coordinates && <div className="mt-3 flex items-center gap-2 text-xs text-gray-500"><Navigation size={14} /><span>{coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}</span></div>}
           {error && <p id="address-error" className="text-sm text-red-700 mt-4" role="alert">{error}</p>}
-          <Button type="submit" disabled={saving} className="cart-primary mt-5">{saving ? <BrandLoader size="sm" /> : user ? (required ? 'حفظ العنوان وابدأ التسوق' : onboarding ? 'حفظ العنوان والمتابعة' : 'حفظ العنوان') : required ? 'استخدام العنوان وابدأ التسوق' : 'استخدام العنوان كضيف'}</Button>
+          <Button type="submit" disabled={saving} className="address-desktop-submit cart-primary mt-5">{saving ? <BrandLoader size="sm" /> : saveLabel}</Button>
           {!user && <p className="mt-3 text-center text-xs text-gray-500">هنحفظ العنوان على الجهاز مؤقتًا. تقدر تسجّل دخولك بعدين لإكمال الطلب وحفظه في حسابك.</p>}
         </section>
+
+        <div className="address-mobile-action" aria-label="تأكيد عنوان التوصيل">
+          <Button type="submit" disabled={saving} className="cart-primary">{saving ? <BrandLoader size="sm" /> : saveLabel}</Button>
+        </div>
       </form>}
   </CheckoutLayout>;
 }

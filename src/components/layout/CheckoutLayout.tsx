@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import './checkout.css';
+import './checkout-native.css';
 
 export default function CheckoutLayout({ children, step = 1, backTo, backLabel, showSteps = true }: { children: ReactNode; step?: 1 | 2; backTo?: string; backLabel?: string; showSteps?: boolean }) {
   return <div className="checkout" dir="rtl">

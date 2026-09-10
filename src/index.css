@@ -14,6 +14,19 @@ html, body, #root {
   min-height: 100%;
 }
 
+/* Keep a single document scroll owner. Nested root scroll containers can lock Android WebView pages. */
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body,
+#root {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
 html.native-platform,
 html.native-platform body,
 html.native-platform #root {
@@ -21,7 +34,7 @@ html.native-platform #root {
 }
 
 html.native-platform body {
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -102,16 +115,13 @@ html.native-platform body {
     @apply bg-background text-foreground;
   }
 
-  /* Hide scrollbars but allow scrolling */
   html, body, #root {
     scrollbar-width: none;
     -ms-overflow-style: none;
-    overflow-y: auto;
-    overflow-x: hidden;
   }
 
-  html::-webkit-scrollbar, 
-  body::-webkit-scrollbar, 
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
   #root::-webkit-scrollbar {
     display: none;
     width: 0;
@@ -155,30 +165,35 @@ html.native-platform [role="button"] {
   touch-action: manipulation;
 }
 
-/* Delivery map: on touch devices the page owns vertical swipes until map mode is enabled. */
+/* Delivery map: page scrolling wins until the user explicitly enables map interaction. */
 .delivery-map-shell {
   touch-action: pan-y;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: auto;
 }
 
-.delivery-map-shell:not(.is-interactive) .delivery-map-canvas,
+.delivery-map-shell:not(.is-interactive) .delivery-map-canvas {
+  pointer-events: none;
+  touch-action: pan-y !important;
+}
+
 .delivery-map-shell:not(.is-interactive) .delivery-map-canvas * {
   touch-action: pan-y !important;
 }
 
 .delivery-map-shell.is-interactive .delivery-map-canvas,
 .delivery-map-shell.is-interactive .delivery-map-canvas * {
+  pointer-events: auto;
   touch-action: none !important;
 }
 
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar, .scrollbar-hide {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .hide-scrollbar::-webkit-scrollbar, .scrollbar-hide::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 /* Mobile navigation bar */
@@ -200,7 +215,6 @@ html.native-platform [role="button"] {
   direction: rtl;
 }
 
-/* Override RTL for specific components */
 [dir="rtl"] .carousel-container {
   direction: ltr;
 }
@@ -222,7 +236,6 @@ html.native-platform [role="button"] {
   animation: bounce-x 1s ease-in-out infinite;
 }
 
-/* Improve product name text wrapping */
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
