@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "brand:prepare": "node scripts/materialize-brand-assets.mjs",
+    "dev": "npm run brand:prepare && vite",
+    "build": "npm run brand:prepare && vite build",
+    "build:dev": "npm run brand:prepare && vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "mobile:sync": "npm run build && npx cap sync",
