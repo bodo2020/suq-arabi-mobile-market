@@ -38,6 +38,16 @@ html.native-platform body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Android's outer window uses brand green at the top; the actual app surface stays soft white/green. */
+html.native-android {
+  background: #005931;
+}
+
+html.native-android body,
+html.native-android #root {
+  background: #f6f8f7;
+}
+
 .native-safe-top {
   padding-top: var(--safe-area-top);
 }
@@ -205,6 +215,63 @@ html.native-platform [role="button"] {
 .bottom-nav-item.active { @apply text-primary; }
 .bottom-nav-item.active > span:first-child { @apply bg-green-50; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+/* App-wide connection state. It floats above the bottom nav / checkout action instead of shifting page layouts. */
+.network-status {
+  position: fixed;
+  inset-inline: 14px;
+  bottom: calc(5.8rem + var(--safe-area-bottom));
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 620px;
+  margin-inline: auto;
+  border-radius: 16px;
+  padding: 11px 12px;
+  box-shadow: 0 12px 34px rgba(10, 44, 28, .22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.network-status--offline {
+  border: 1px solid rgba(0, 89, 49, .22);
+  background: rgba(0, 89, 49, .96);
+  color: #fff;
+}
+
+.network-status--restored {
+  border: 1px solid #bde8ce;
+  background: rgba(239, 250, 243, .97);
+  color: #005931;
+  justify-content: center;
+}
+
+.network-status__icon,
+.network-status__retry {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.network-status__icon {
+  background: rgba(255, 255, 255, .13);
+}
+
+.network-status__retry {
+  border: 1px solid rgba(255, 255, 255, .22);
+  background: rgba(255, 255, 255, .1);
+  color: inherit;
+}
+
+@media (min-width: 768px) {
+  .network-status {
+    bottom: 24px;
+  }
+}
 
 /* Fix RTL layout issues */
 .embla {
