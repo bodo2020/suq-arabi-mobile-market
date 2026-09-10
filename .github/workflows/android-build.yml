@@ -8,6 +8,7 @@ on:
     paths:
       - 'src/**'
       - 'public/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.ts'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'src/**'
       - 'public/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.ts'
@@ -64,6 +66,9 @@ jobs:
 
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Prepare Android permissions
+        run: node scripts/prepare-android.mjs
 
       - name: Build debug APK
         working-directory: android
