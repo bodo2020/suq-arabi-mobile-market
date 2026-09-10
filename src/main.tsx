@@ -3,16 +3,28 @@ import { Capacitor } from '@capacitor/core'
 import App from './App.tsx'
 import './index.css'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { hydrateOfflineCatalog, subscribeOfflineCatalog } from './lib/offlineCatalogCache'
 
-// Create a client
+// Create a client. Queries stay paused while the device is offline and refetch
+// automatically when connectivity returns; mutations are never forced offline.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
+      retry: failureCount => (typeof navigator === 'undefined' || navigator.onLine) && failureCount < 2,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      networkMode: 'online',
+      retry: false,
     },
   },
 })
+
+// Restore only non-sensitive public shopping data so a previously opened store
+// can still show categories/products when Android starts without connectivity.
+hydrateOfflineCatalog(queryClient)
+subscribeOfflineCatalog(queryClient)
 
 // Mark the native runtime once so shared UI can adapt to Android/iOS safe areas.
 if (Capacitor.isNativePlatform()) {
