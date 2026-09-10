@@ -2,6 +2,7 @@ import ProfileCompletionGate from './components/ProfileCompletionGate';
 import AddressGuard from './components/AddressGuard';
 import CheckoutAttemptRecovery from './components/CheckoutAttemptRecovery';
 import PushNotificationsBootstrap from './components/PushNotificationsBootstrap';
+import NetworkStatus from './components/NetworkStatus';
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -58,6 +59,7 @@ function App() {
         <BranchProvider>
           <CartProvider>
             <BrowserRouter>
+              <NetworkStatus />
               <PushNotificationsBootstrap />
               <ProfileCompletionGate />
               <CheckoutAttemptRecovery />
