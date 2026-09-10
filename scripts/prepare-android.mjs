@@ -36,8 +36,6 @@ if (!manifest.includes('android:windowSoftInputMode=')) {
 
 await writeFile(manifestPath, manifest, 'utf8');
 
-// Android 15 enforces edge-to-edge for targetSdk 35. Opt out for this WebView shell so
-// the customer UI is laid out below/above system bars instead of underneath them.
 let styles;
 try {
   styles = await readFile(stylesPath, 'utf8');
@@ -46,24 +44,34 @@ try {
   throw error;
 }
 
-if (!styles.includes('android:windowOptOutEdgeToEdgeEnforcement')) {
-  const noActionBarTheme = /(<style\s+name="AppTheme\.NoActionBar"[^>]*>)/;
-  if (noActionBarTheme.test(styles)) {
-    styles = styles.replace(
-      noActionBarTheme,
-      '$1\n        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>',
-    );
-  } else {
-    const appTheme = /(<style\s+name="AppTheme"[^>]*>)/;
-    if (!appTheme.test(styles)) {
-      throw new Error('Could not find an Android app theme to configure system bar insets.');
-    }
-    styles = styles.replace(
-      appTheme,
-      '$1\n        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>',
-    );
+const themeMatch = styles.match(/<style\s+name="(AppTheme\.NoActionBar|AppTheme)"[^>]*>/);
+if (!themeMatch) {
+  throw new Error('Could not find an Android app theme to configure system bars.');
+}
+const themeName = themeMatch[1];
+
+function upsertThemeItem(name, value) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const itemPattern = new RegExp(`<item\\s+name="${escapedName}"[^>]*>[^<]*<\\/item>`);
+  const replacement = `<item name="${name}">${value}</item>`;
+  if (itemPattern.test(styles)) {
+    styles = styles.replace(itemPattern, replacement);
+    return;
   }
-  await writeFile(stylesPath, styles, 'utf8');
+  const openingTheme = new RegExp(`(<style\\s+name="${themeName.replace('.', '\\.')}"[^>]*>)`);
+  styles = styles.replace(openingTheme, `$1\n        ${replacement}`);
 }
 
-console.log('Android native configuration prepared: camera, location, keyboard resize and system-bar insets are enabled.');
+// Android 15 can force WebViews edge-to-edge. Keep the web layout outside the
+// system bars and make those bars part of the Elmadawy visual identity.
+upsertThemeItem('android:windowOptOutEdgeToEdgeEnforcement', 'true');
+upsertThemeItem('android:statusBarColor', '#005931');
+upsertThemeItem('android:navigationBarColor', '#F6F8F7');
+upsertThemeItem('android:windowLightStatusBar', 'false');
+upsertThemeItem('android:windowLightNavigationBar', 'true');
+upsertThemeItem('android:enforceStatusBarContrast', 'false');
+upsertThemeItem('android:enforceNavigationBarContrast', 'false');
+
+await writeFile(stylesPath, styles, 'utf8');
+
+console.log('Android native configuration prepared: camera, location, keyboard resize, branded system bars and safe insets are enabled.');

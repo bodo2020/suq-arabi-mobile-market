@@ -7,6 +7,8 @@ import { getCurrentDeliveryBranchId } from '@/lib/supabase';
 import { getProductsByIds } from '@/lib/branchProductIds';
 
 const key = (item: CartItem) => `${item.product.id}:${!!item.is_bulk}:${item.unit_of_measure || ''}`;
+const offlineCartKey = (userId: string) => `offline_cart:${userId}`;
+const pendingCartKey = (userId: string) => `pending_cart:${userId}`;
 
 export function mergeCartItems(saved: CartItem[], guest: CartItem[]) {
   const merged = new Map(saved.map(item => [key(item), item]));
@@ -27,8 +29,12 @@ function readCart(storageKey: string): CartItem[] {
   return value;
 }
 
+function writeCart(storageKey: string, items: CartItem[]) {
+  localStorage.setItem(storageKey, JSON.stringify(items));
+}
+
 async function reconcileWithBranch(items: CartItem[]): Promise<CartItem[]> {
-  if (!items.length) return [];
+  if (!items.length || !navigator.onLine) return items;
   const branchId = await getCurrentDeliveryBranchId();
   if (!branchId) return items;
 
@@ -113,7 +119,25 @@ export function useCartSync(
           saved.current = JSON.stringify(guest);
           setItems(guest);
           setIsInitialized(true);
-          if (JSON.stringify(guestRaw) !== JSON.stringify(guest)) localStorage.setItem('guest_cart', JSON.stringify(guest));
+          if (JSON.stringify(guestRaw) !== JSON.stringify(guest)) writeCart('guest_cart', guest);
+          return;
+        }
+
+        const pendingKey = pendingCartKey(userId);
+        const shadowKey = offlineCartKey(userId);
+
+        // Android can start with no network. In that case use the last local cart
+        // immediately and postpone all server reconciliation until connectivity returns.
+        if (!navigator.onLine) {
+          const hasPending = localStorage.getItem(pendingKey) !== null;
+          const hasShadow = localStorage.getItem(shadowKey) !== null;
+          const local = hasPending ? readCart(pendingKey) : hasShadow ? readCart(shadowKey) : guest;
+          owner.current = userId;
+          customer.current = null;
+          saved.current = JSON.stringify(local);
+          setItems(local);
+          setIsInitialized(true);
+          setSyncError('أنت بدون إنترنت. تعديلات السلة محفوظة على الجهاز وهتتزامن تلقائيًا لما الشبكة ترجع.');
           return;
         }
 
@@ -126,6 +150,7 @@ export function useCartSync(
           owner.current = userId;
           setItems(guest);
           setIsInitialized(true);
+          writeCart(shadowKey, guest);
           return;
         }
 
@@ -147,7 +172,6 @@ export function useCartSync(
         }
         if (!current()) return;
 
-        const pendingKey = `pending_cart:${userId}`;
         const hasPending = localStorage.getItem(pendingKey) !== null;
         const pending = hasPending ? await reconcileWithBranch(readCart(pendingKey)) : null;
         const merged = pending || mergeCartItems(loaded, guest);
@@ -157,15 +181,34 @@ export function useCartSync(
         customer.current = profile.id;
         owner.current = userId;
         saved.current = JSON.stringify(loaded);
+        writeCart(shadowKey, next);
         if (guest.length || hasPending) {
-          localStorage.setItem(pendingKey, JSON.stringify(next));
+          writeCart(pendingKey, next);
           saved.current = '';
         }
         setItems(next);
         setIsInitialized(true);
       } catch (error) {
         console.error('Error loading branch-aware cart:', error);
-        if (current()) setSyncError('تعذر تحميل السلة المحفوظة حسب فرع عنوانك. أعد المحاولة قبل تعديلها.');
+        if (current()) {
+          // Network can disappear between navigator.onLine and a request. Fall back
+          // to the local cart instead of showing an empty basket.
+          if (!navigator.onLine && userId) {
+            const pendingKey = pendingCartKey(userId);
+            const shadowKey = offlineCartKey(userId);
+            const hasPending = localStorage.getItem(pendingKey) !== null;
+            const hasShadow = localStorage.getItem(shadowKey) !== null;
+            const local = hasPending ? readCart(pendingKey) : hasShadow ? readCart(shadowKey) : readCart('guest_cart');
+            owner.current = userId;
+            customer.current = null;
+            saved.current = JSON.stringify(local);
+            setItems(local);
+            setIsInitialized(true);
+            setSyncError('الاتصال انقطع. سلتك محفوظة على الجهاز وهتتزامن لما الشبكة ترجع.');
+          } else {
+            setSyncError('تعذر تحميل السلة المحفوظة حسب فرع عنوانك. أعد المحاولة قبل تعديلها.');
+          }
+        }
       }
     }
 
@@ -177,21 +220,39 @@ export function useCartSync(
     if (!isInitialized || owner.current === undefined || owner.current !== (user?.id || null)) return;
     const serialized = JSON.stringify(items);
 
-    if (owner.current === null || !customer.current) {
+    if (owner.current === null) {
       try { localStorage.setItem('guest_cart', serialized); }
       catch { setSyncError('تعذر حفظ السلة على الجهاز.'); }
       return;
     }
 
-    if (!customer.current || serialized === saved.current) return;
     const userId = owner.current;
+    const pendingKey = pendingCartKey(userId);
+    const shadowKey = offlineCartKey(userId);
+
+    // Always keep a local shadow copy. This is what makes the cart available on
+    // a cold Android start with no internet.
+    try { localStorage.setItem(shadowKey, serialized); }
+    catch { setSyncError('تعذر حفظ نسخة السلة على الجهاز.'); }
+
+    if (!navigator.onLine || !customer.current) {
+      try {
+        localStorage.setItem(pendingKey, serialized);
+        if (!navigator.onLine) setSyncError('أنت بدون إنترنت. آخر تعديل محفوظ على الجهاز وهيتزامن تلقائيًا.');
+      } catch {
+        setSyncError('تعذر حفظ آخر تعديل على الجهاز.');
+      }
+      return;
+    }
+
+    if (serialized === saved.current) return;
     const run = generation.current;
-    const pendingKey = `pending_cart:${userId}`;
     try { localStorage.setItem(pendingKey, serialized); } catch { /* Still attempt server persistence. */ }
 
     const timeout = setTimeout(() => {
       queue.current = queue.current.then(async () => {
         if (generation.current !== run || owner.current !== userId) return;
+        if (!navigator.onLine) return;
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || session?.user.id !== userId || generation.current !== run) return;
         setIsSaving(true);
@@ -209,9 +270,14 @@ export function useCartSync(
           saved.current = serialized;
           localStorage.removeItem('guest_cart');
           if (JSON.stringify(latest.current) === serialized) localStorage.removeItem(pendingKey);
+          writeCart(shadowKey, latest.current);
           setSyncError(null);
         } catch {
-          if (generation.current === run) setSyncError('تعذر حفظ آخر تعديل. سلتك ما زالت هنا؛ أعد المحاولة.');
+          if (generation.current === run) {
+            setSyncError(navigator.onLine
+              ? 'تعذر حفظ آخر تعديل. سلتك ما زالت هنا؛ أعد المحاولة.'
+              : 'الاتصال انقطع. آخر تعديل محفوظ على الجهاز وهيتزامن تلقائيًا.');
+          }
         } finally {
           if (generation.current === run) setIsSaving(false);
         }
