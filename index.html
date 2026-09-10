@@ -1,9 +1,12 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#005931" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>ماركت المعداوي</title>
     <meta name="description" content="ماركت المعداوي - متجر بقالة عبر الإنترنت" />
     <meta name="author" content="ماركت المعداوي" />
@@ -20,10 +23,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="icon" href="/lovable-uploads/d10815b8-8471-477d-a779-2950224513a7.png" type="image/png">
-    
+
     <!-- Immediately hide Lovable badge as early as possible -->
     <style>
-      a[href*="lovable.dev"], 
+      a[href*="lovable.dev"],
       a[href*="lovable.app"],
       [class*="lovable"],
       [class*="lovable-badge"],
@@ -49,16 +52,15 @@
     <!-- Execute badge hiding function immediately -->
     <script>
       (function() {
-        // Remove any existing badges
         function removeBadges() {
           const selectors = [
             'a[href*="lovable.dev"]',
-            'a[href*="lovable.app"]', 
+            'a[href*="lovable.app"]',
             '[class*="lovable-badge"]',
             '[class*="lovable"]',
             '[id*="lovable"]',
           ];
-          
+
           selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(el => {
               if (el && el.parentNode) {
@@ -67,21 +69,16 @@
             });
           });
         }
-        
-        // Run immediately
-        removeBadges();
 
-        // Run again when DOM is loaded
+        removeBadges();
         document.addEventListener('DOMContentLoaded', removeBadges);
 
-        // Create MutationObserver to watch for dynamically added elements
         if (typeof MutationObserver !== 'undefined') {
           const observer = new MutationObserver(removeBadges);
-          
-          // Start observing as soon as body is available
+
           const startObserving = function() {
             if (document.body) {
-              observer.observe(document.body, { 
+              observer.observe(document.body, {
                 childList: true,
                 subtree: true,
                 attributes: true,
@@ -91,12 +88,9 @@
               setTimeout(startObserving, 10);
             }
           };
-          
+
           startObserving();
         }
-
-        // Run periodically to be extra sure
-        setInterval(removeBadges, 100);
       })();
     </script>
   </head>
@@ -108,4 +102,3 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

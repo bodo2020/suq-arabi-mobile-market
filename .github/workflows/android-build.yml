@@ -1,0 +1,85 @@
+name: Customer Android Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/customer-android-capacitor
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.ts'
+      - 'index.html'
+      - '.github/workflows/android-build.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.ts'
+      - 'index.html'
+      - '.github/workflows/android-build.yml'
+
+concurrency:
+  group: customer-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Create Android project
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Prepare Android permissions
+        run: node scripts/prepare-android.mjs
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: elmadawy-customer-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

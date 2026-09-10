@@ -1,5 +1,5 @@
-
 import { createRoot } from 'react-dom/client'
+import { Capacitor } from '@capacitor/core'
 import App from './App.tsx'
 import './index.css'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -13,6 +13,12 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+// Mark the native runtime once so shared UI can adapt to Android/iOS safe areas.
+if (Capacitor.isNativePlatform()) {
+  const platform = Capacitor.getPlatform();
+  document.documentElement.classList.add('native-platform', `native-${platform}`);
+}
 
 // Add hide-scrollbar class to main elements to hide scrollbars while allowing scrolling
 if (document.documentElement && document.documentElement.classList) {
@@ -28,12 +34,12 @@ const hideLovableBadge = () => {
   const removeBadges = () => {
     const selectors = [
       'a[href*="lovable.dev"]',
-      'a[href*="lovable.app"]', 
+      'a[href*="lovable.app"]',
       '[class*="lovable-badge"]',
       '[class*="lovable"]',
       '[id*="lovable"]',
     ];
-    
+
     selectors.forEach(selector => {
       document.querySelectorAll(selector).forEach(el => {
         if (el && el.parentNode) {
@@ -42,7 +48,7 @@ const hideLovableBadge = () => {
       });
     });
   };
-  
+
   // The observer invokes this after DOM changes; never create recurring timers here.
   removeBadges();
 };
@@ -57,7 +63,7 @@ const observer = new MutationObserver(() => {
 
 // Start observing the document with the configured parameters
 if (document.body) {
-  observer.observe(document.body, { 
+  observer.observe(document.body, {
     childList: true,
     subtree: true,
     attributes: true,
@@ -76,4 +82,3 @@ if (root) {
     </QueryClientProvider>
   );
 }
-
