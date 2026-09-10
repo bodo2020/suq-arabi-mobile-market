@@ -36,6 +36,8 @@ const randomPassword = () => {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 };
 
+const phoneDigits = (value: string) => value.replace(/\D/g, '');
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get('Origin');
   if (!origin || !ALLOWED_ORIGINS.has(origin)) {
@@ -93,7 +95,10 @@ Deno.serve(async (req: Request) => {
     });
     if (listError) throw listError;
 
-    const existingUser = userPage.users.find((user) => user.phone === phone);
+    const normalizedPhone = phoneDigits(phone);
+    const existingUser = userPage.users.find(
+      (user) => user.phone && phoneDigits(user.phone) === normalizedPhone,
+    );
     const password = randomPassword();
     let userId = existingUser?.id;
 
