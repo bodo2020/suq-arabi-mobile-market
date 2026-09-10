@@ -2,8 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+}
+
 html, body, #root {
   direction: rtl;
+  min-height: 100%;
+}
+
+html.native-platform,
+html.native-platform body,
+html.native-platform #root {
+  min-height: 100dvh;
+}
+
+html.native-platform body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.native-safe-top {
+  padding-top: var(--safe-area-top);
+}
+
+.native-safe-bottom {
+  padding-bottom: var(--safe-area-bottom);
 }
 
 @layer base {
@@ -91,9 +118,9 @@ html, body, #root {
     height: 0;
   }
 
-  /* Add top padding for fixed navbar */
+  /* Add top padding for fixed navbar, including Android/iOS safe area. */
   .main-content {
-    padding-top: 6rem; /* Adjust based on navbar height */
+    padding-top: calc(6rem + var(--safe-area-top));
   }
 }
 
@@ -122,6 +149,11 @@ a, button {
   @apply transition-colors duration-200;
 }
 
+html.native-platform a,
+html.native-platform button,
+html.native-platform [role="button"] {
+  touch-action: manipulation;
+}
 
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar, .scrollbar-hide {
@@ -134,7 +166,10 @@ a, button {
 }
 
 /* Mobile navigation bar */
-.bottom-nav { @apply fixed bottom-3 left-3 right-3 z-50 flex h-[68px] items-center justify-around rounded-2xl border border-gray-100 bg-white/95 px-1 shadow-[0_10px_35px_rgba(0,50,28,.16)] backdrop-blur-xl; padding-bottom: env(safe-area-inset-bottom); }
+.bottom-nav {
+  @apply fixed bottom-3 left-3 right-3 z-50 flex h-[68px] items-center justify-around rounded-2xl border border-gray-100 bg-white/95 px-1 shadow-[0_10px_35px_rgba(0,50,28,.16)] backdrop-blur-xl;
+  bottom: calc(0.75rem + var(--safe-area-bottom));
+}
 .bottom-nav-item { @apply flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-gray-500 transition-all; }
 .bottom-nav-item.active { @apply text-primary; }
 .bottom-nav-item.active > span:first-child { @apply bg-green-50; }
