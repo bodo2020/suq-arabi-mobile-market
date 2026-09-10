@@ -13,9 +13,33 @@ const desktopLinks = [
 ];
 const TopNavBar: React.FC<TopNavBarProps> = ({ searchPlaceholder='دور على منتج أو قسم…', onSearchFocus, searchProps={}, hideLogo=false, hideSearch=false, hideCart=false, pageTitle, showBackButton=false, onBack }) => {
   const navigate=useNavigate(); const location=useLocation(); const { getTotalItems }=useCart(); const { user }=useUser(); const cartCount=getTotalItems();
+  const headerRef = React.useRef<HTMLElement | null>(null);
   const searchPage=location.pathname==='/search';
   const focus=()=>{ if(onSearchFocus) onSearchFocus(); else if(!searchPage) navigate('/search'); };
-  return <header className="native-safe-top fixed inset-x-0 top-0 z-50 border-b border-gray-100 bg-white/95 text-[#005931] shadow-sm backdrop-blur-xl">
+
+  React.useLayoutEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const publishHeight = () => {
+      const height = Math.ceil(header.getBoundingClientRect().height);
+      document.documentElement.style.setProperty('--top-nav-height', `${height}px`);
+    };
+
+    publishHeight();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(publishHeight) : null;
+    observer?.observe(header);
+    window.addEventListener('resize', publishHeight);
+    window.addEventListener('orientationchange', publishHeight);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', publishHeight);
+      window.removeEventListener('orientationchange', publishHeight);
+    };
+  }, [hideLogo, hideSearch, pageTitle, showBackButton, user]);
+
+  return <header ref={headerRef} className="native-safe-top fixed inset-x-0 top-0 z-50 border-b border-gray-100 bg-white/95 text-[#005931] shadow-sm backdrop-blur-xl">
     <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-4">
       <div className="flex min-h-11 items-center gap-2.5">
         {showBackButton && <button onClick={onBack||(()=>navigate(-1))} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 active:scale-95"><ArrowRight size={21}/></button>}
