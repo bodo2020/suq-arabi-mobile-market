@@ -2,6 +2,11 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { deactivateCurrentPushDevice } from '@/services/pushNotifications';
+import {
+  sendFirebasePhoneOtp,
+  signOutFirebase,
+  verifyFirebasePhoneOtp,
+} from '@/lib/firebasePhoneAuth';
 
 type UserContextType = {
   user: User | null;
@@ -13,7 +18,7 @@ type UserContextType = {
   signOut: () => Promise<void>;
   updateUser: (data: any) => Promise<any>;
   resetPassword: (username: string) => Promise<any>;
-  signInWithPhone: (phone: string, shouldCreateUser?: boolean) => Promise<any>;
+  signInWithPhone: (phone: string, shouldCreateUser?: boolean, resendCode?: boolean) => Promise<any>;
   verifyPhone: (phone: string, code: string) => Promise<any>;
 };
 
@@ -147,6 +152,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (pushError) {
         console.warn('Unable to detach push device before sign out:', pushError);
       }
+      await signOutFirebase();
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error) {
@@ -186,45 +192,30 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signInWithPhone = async (phone: string, shouldCreateUser = true) => {
+  const signInWithPhone = async (phone: string, shouldCreateUser = true, resendCode = false) => {
     try {
       const normalizedPhone = normalizePhone(phone);
       if (!normalizedPhone || normalizedPhone.length < 8) {
         throw new Error('رقم الهاتف غير صحيح');
       }
 
-      const { data, error } = await supabase.auth.signInWithOtp({
-        phone: normalizedPhone,
-        options: {
-          channel: 'sms',
-          shouldCreateUser,
-        },
-      });
-
-      if (error) throw error;
-      return { data };
+      await sendFirebasePhoneOtp(normalizedPhone, resendCode, shouldCreateUser);
+      return { data: { phone: normalizedPhone, shouldCreateUser } };
     } catch (error) {
       console.error('Error sending phone OTP:', error);
       return { error };
     }
   };
 
-  const verifyPhone = async (phone: string, code: string) => {
+  const verifyPhone = async (_phone: string, code: string) => {
     try {
-      const normalizedPhone = normalizePhone(phone);
       const token = code.trim();
 
       if (!/^\d{6}$/.test(token)) {
         throw new Error('رمز التحقق يجب أن يتكون من 6 أرقام');
       }
 
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: normalizedPhone,
-        token,
-        type: 'sms',
-      });
-
-      if (error) throw error;
+      const data = await verifyFirebasePhoneOtp(token);
       return { data };
     } catch (error) {
       console.error('Error verifying phone OTP:', error);
