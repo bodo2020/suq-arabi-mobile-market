@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, LocateFixed, Search } from 'lucide-react';
+import { Hand, MapPin, LocateFixed, Search } from 'lucide-react';
 import { Button } from './button';
 import { Input } from './input';
 import BrandLoader from './BrandLoader';
@@ -21,13 +21,18 @@ export default function DeliveryMap({ value, onChange, onAddressResolved }: Prop
   const selected = useRef(false);
   const callback = useRef(onChange);
   const addressCallback = useRef(onAddressResolved);
+  const touchDevice = useRef(typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches).current;
+  const interactionEnabledRef = useRef(!touchDevice);
   callback.current = onChange;
   addressCallback.current = onAddressResolved;
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
+  const [mapInteractionEnabled, setMapInteractionEnabled] = useState(!touchDevice);
   const alive = useRef(true);
+
+  interactionEnabledRef.current = mapInteractionEnabled;
 
   const reverseGeocode = (coordinates: Coordinates) => {
     if (!geocoder.current || !addressCallback.current) return;
@@ -52,8 +57,10 @@ export default function DeliveryMap({ value, onChange, onAddressResolved }: Prop
         zoom: value ? 17 : 12,
         mapTypeControl: false,
         streetViewControl: false,
-        fullscreenControl: true,
-        gestureHandling: 'cooperative',
+        fullscreenControl: !touchDevice,
+        gestureHandling: touchDevice ? 'none' : 'cooperative',
+        draggable: !touchDevice,
+        scrollwheel: !touchDevice,
       });
       geocoder.current = new sdk.maps.Geocoder();
 
@@ -64,8 +71,12 @@ export default function DeliveryMap({ value, onChange, onAddressResolved }: Prop
         label: { text: 'م', color: '#ffffff', fontWeight: '700' },
       });
 
-      listeners.push(map.current.addListener('dragstart', () => { selected.current = true; }));
+      listeners.push(map.current.addListener('dragstart', () => {
+        if (touchDevice && !interactionEnabledRef.current) return;
+        selected.current = true;
+      }));
       listeners.push(map.current.addListener('click', (event: any) => {
+        if (touchDevice && !interactionEnabledRef.current) return;
         if (!event.latLng) return;
         selected.current = true;
         map.current.panTo(event.latLng);
@@ -88,6 +99,15 @@ export default function DeliveryMap({ value, onChange, onAddressResolved }: Prop
       if (browser.gm_authFailure === failure) browser.gm_authFailure = previous;
     };
   }, []);
+
+  useEffect(() => {
+    if (!touchDevice || !ready || !map.current) return;
+    map.current.setOptions({
+      gestureHandling: mapInteractionEnabled ? 'greedy' : 'none',
+      draggable: mapInteractionEnabled,
+      scrollwheel: mapInteractionEnabled,
+    });
+  }, [mapInteractionEnabled, ready, touchDevice]);
 
   const move = (coordinates: Coordinates) => {
     if (!alive.current || !map.current) return;
@@ -142,11 +162,24 @@ export default function DeliveryMap({ value, onChange, onAddressResolved }: Prop
       <Input aria-label="ابحث عن شارع أو منطقة" placeholder="ابحث عن شارع أو قرية أو منطقة" value={search} onChange={event => setSearch(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); find(); } }} className="h-12 rounded-xl" />
       <Button type="button" variant="outline" onClick={find} disabled={!ready || busy || !search.trim()} className="h-12 rounded-xl" aria-label="بحث على الخريطة"><Search size={20} /></Button>
     </div>
-    <div className="relative overflow-hidden rounded-2xl border bg-slate-50">
-      <div ref={element} style={{ height: 360 }} aria-label="خريطة Google؛ حرّك الخريطة لتحديد موقع التوصيل" />
+    <div className={`delivery-map-shell relative overflow-hidden rounded-2xl border bg-slate-50 ${mapInteractionEnabled ? 'is-interactive' : ''}`}>
+      <div ref={element} className="delivery-map-canvas" style={{ height: 360 }} aria-label="خريطة Google؛ حرّك الخريطة لتحديد موقع التوصيل" />
       {ready && <MapPin className="absolute pointer-events-none left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-[#005931] fill-white drop-shadow-md" size={40} aria-hidden="true" />}
       {!ready && <div className="absolute inset-0 flex items-center justify-center gap-3 p-6 text-center">{!error && <BrandLoader size="md" />}<span>{error || 'بنحمّل الخريطة'}</span></div>}
+      {touchDevice && ready && <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-3">
+        <Button
+          type="button"
+          variant={mapInteractionEnabled ? 'default' : 'secondary'}
+          onClick={() => setMapInteractionEnabled(current => !current)}
+          className="pointer-events-auto min-h-11 rounded-full px-4 shadow-lg"
+          aria-pressed={mapInteractionEnabled}
+        >
+          <Hand size={17} className="ml-2" />
+          {mapInteractionEnabled ? 'تم — فعّل سكرول الصفحة' : 'حرّك الخريطة'}
+        </Button>
+      </div>}
     </div>
+    {touchDevice && ready && <p className="text-xs leading-6 text-gray-500">السكرول شغال فوق الخريطة عادي. لو عايز تغيّر النقطة اضغط «حرّك الخريطة»، ولما تخلص اضغط «تم».</p>}
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="text-sm text-gray-600">بعد اختيار النقطة، بنحسب مسافة القيادة الفعلية من الفرع. الحد الحالي 10 كم بالطريق.</p>
       <Button type="button" variant="outline" onClick={locate} disabled={!ready || busy} className="min-h-11 rounded-xl"><LocateFixed size={17} className="ml-2" />{busy ? 'لحظة واحدة…' : 'استخدم موقعي'}</Button>
