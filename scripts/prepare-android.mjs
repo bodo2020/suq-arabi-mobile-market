@@ -71,42 +71,51 @@ upsertThemeItem('android:enforceStatusBarContrast', 'false');
 upsertThemeItem('android:enforceNavigationBarContrast', 'false');
 await writeFile(stylesPath, styles, 'utf8');
 
-// Apply the final Elmadawy customer logo to every Android launcher density.
+// Remove Capacitor's default density icons and use the supplied artwork as a no-density
+// launcher source so Android scales it cleanly instead of interpreting a 700px file as mdpi.
 const densities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi'];
 for (const density of densities) {
   const dir = path.join(resRoot, `mipmap-${density}`);
-  await mkdir(dir, { recursive: true });
   await rm(path.join(dir, 'ic_launcher.webp'), { force: true });
   await rm(path.join(dir, 'ic_launcher_round.webp'), { force: true });
-  await copyFile(brandLogoPath, path.join(dir, 'ic_launcher.png'));
-  await copyFile(brandLogoPath, path.join(dir, 'ic_launcher_round.png'));
+  await rm(path.join(dir, 'ic_launcher.png'), { force: true });
+  await rm(path.join(dir, 'ic_launcher_round.png'), { force: true });
 }
 
-// Adaptive icon on Android 8+: keep the supplied artwork intact while allowing launcher masks.
+const mipmapNodpiDir = path.join(resRoot, 'mipmap-nodpi');
 const adaptiveDir = path.join(resRoot, 'mipmap-anydpi-v26');
-const nodpiDir = path.join(resRoot, 'drawable-nodpi');
+const drawableNodpiDir = path.join(resRoot, 'drawable-nodpi');
+await mkdir(mipmapNodpiDir, { recursive: true });
 await mkdir(adaptiveDir, { recursive: true });
-await mkdir(nodpiDir, { recursive: true });
-await copyFile(brandLogoPath, path.join(nodpiDir, 'elmadawy_launcher_foreground.png'));
-await copyFile(brandLogoPath, path.join(nodpiDir, 'elmadawy_splash_logo.png'));
-
-const adaptiveIcon = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/elmadawy_icon_background" />\n    <foreground android:drawable="@drawable/elmadawy_launcher_foreground" />\n</adaptive-icon>\n`;
-await writeFile(path.join(adaptiveDir, 'ic_launcher.xml'), adaptiveIcon, 'utf8');
-await writeFile(path.join(adaptiveDir, 'ic_launcher_round.xml'), adaptiveIcon, 'utf8');
+await mkdir(drawableNodpiDir, { recursive: true });
+await copyFile(brandLogoPath, path.join(mipmapNodpiDir, 'ic_launcher.png'));
+await copyFile(brandLogoPath, path.join(mipmapNodpiDir, 'ic_launcher_round.png'));
+await copyFile(brandLogoPath, path.join(drawableNodpiDir, 'elmadawy_launcher_foreground.png'));
+await copyFile(brandLogoPath, path.join(drawableNodpiDir, 'elmadawy_splash_logo.png'));
 
 const colorsPath = path.join(resRoot, 'values', 'colors.xml');
 let colors = '';
 try { colors = await readFile(colorsPath, 'utf8'); } catch { colors = '<resources>\n</resources>\n'; }
-if (!colors.includes('name="elmadawy_icon_background"')) {
-  colors = colors.replace('</resources>', '    <color name="elmadawy_icon_background">#005931</color>\n</resources>');
-  await writeFile(colorsPath, colors, 'utf8');
-}
+const addColor = (name, value) => {
+  if (!colors.includes(`name="${name}"`)) {
+    colors = colors.replace('</resources>', `    <color name="${name}">${value}</color>\n</resources>`);
+  }
+};
+addColor('elmadawy_icon_background', '#005931');
+addColor('elmadawy_splash_background', '#F6F8F7');
+await writeFile(colorsPath, colors, 'utf8');
 
-// Branded launch screen: soft app surface with the supplied logo centered.
+// Android 8+ adaptive launcher icon. The launcher is free to apply its circle/squircle mask,
+// while the supplied artwork remains the visible foreground.
+const adaptiveIcon = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/elmadawy_icon_background" />\n    <foreground android:drawable="@drawable/elmadawy_launcher_foreground" />\n</adaptive-icon>\n`;
+await writeFile(path.join(adaptiveDir, 'ic_launcher.xml'), adaptiveIcon, 'utf8');
+await writeFile(path.join(adaptiveDir, 'ic_launcher_round.xml'), adaptiveIcon, 'utf8');
+
+// Branded launch screen with a neutral app-surface background and the exact supplied logo.
 const drawableDir = path.join(resRoot, 'drawable');
 await mkdir(drawableDir, { recursive: true });
 await rm(path.join(drawableDir, 'splash.png'), { force: true });
-const splashXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="#F6F8F7" />\n    <item android:gravity="center" android:width="180dp" android:height="180dp">\n        <bitmap android:src="@drawable/elmadawy_splash_logo" android:gravity="fill" />\n    </item>\n</layer-list>\n`;
+const splashXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:gravity="center" android:width="180dp" android:height="180dp">\n        <bitmap android:src="@drawable/elmadawy_splash_logo" android:gravity="fill" />\n    </item>\n</layer-list>\n`;
 await writeFile(path.join(drawableDir, 'splash.xml'), splashXml, 'utf8');
 
 console.log('Android native configuration prepared: permissions, system bars, Elmadawy launcher icon and branded splash are enabled.');
