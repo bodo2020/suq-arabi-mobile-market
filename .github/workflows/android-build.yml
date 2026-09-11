@@ -75,8 +75,10 @@ jobs:
           APP_VERSION_NAME: 1.2.${{ github.run_number }}
         run: node scripts/set-android-version.mjs
 
-      - name: Prepare Android permissions and brand
-        run: node scripts/prepare-android.mjs
+      - name: Prepare Android permissions, brand and back behavior
+        run: |
+          node scripts/prepare-android.mjs
+          node scripts/prepare-android-back.mjs
 
       - name: Build debug APK
         working-directory: android
