@@ -73,7 +73,6 @@ jobs:
       - name: Apply Android version
         env:
           APP_VERSION_NAME: 1.2.${{ github.run_number }}
-          APP_VERSION_CODE: ${{ 120000 + github.run_number }}
         run: node scripts/set-android-version.mjs
 
       - name: Prepare Android permissions and brand
