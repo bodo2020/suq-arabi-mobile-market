@@ -6,6 +6,9 @@ const stylesPath = 'android/app/src/main/res/values/styles.xml';
 const brandLogoPath = 'resources/android-brand/elmadawy-logo.png';
 const firebaseConfigPath = 'firebase/android/google-services.json';
 const androidFirebaseConfigPath = 'android/app/google-services.json';
+const debugKeystorePath = 'firebase/android/elmadawy-debug.keystore';
+const androidDebugKeystorePath = 'android/app/elmadawy-debug.keystore';
+const androidAppGradlePath = 'android/app/build.gradle';
 const resRoot = 'android/app/src/main/res';
 
 const requiredPermissions = [
@@ -25,6 +28,21 @@ if (logoBytes.length < 8 || !logoBytes.subarray(0, 8).equals(pngSignature)) {
 // Capacitor's Android project is generated in CI, so materialize the matching
 // Firebase app configuration after `npx cap add/sync android` and before Gradle.
 await copyFile(firebaseConfigPath, androidFirebaseConfigPath);
+await copyFile(debugKeystorePath, androidDebugKeystorePath);
+
+// GitHub-hosted runners otherwise create a fresh debug signing key on every build.
+// Firebase Phone Auth validates the APK certificate, so keep debug builds signed
+// with the stable certificate whose SHA-1/SHA-256 fingerprints are registered.
+let appGradle = await readFile(androidAppGradlePath, 'utf8');
+if (!appGradle.includes("storeFile file('elmadawy-debug.keystore')")) {
+  const signingConfig = `android {\n    signingConfigs {\n        debug {\n            storeFile file('elmadawy-debug.keystore')\n            storePassword 'android'\n            keyAlias 'androiddebugkey'\n            keyPassword 'android'\n        }\n    }`;
+  const patchedGradle = appGradle.replace(/android\s*\{/, signingConfig);
+  if (patchedGradle === appGradle) {
+    throw new Error(`Could not add the stable debug signing config to ${androidAppGradlePath}.`);
+  }
+  appGradle = patchedGradle;
+  await writeFile(androidAppGradlePath, appGradle, 'utf8');
+}
 
 let manifest;
 try {
@@ -169,3 +187,4 @@ const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list
 await writeFile(path.join(drawableDir, 'elmadawy_splash.xml'), splashBackgroundXml, 'utf8');
 
 console.log('Android Firebase config and brand assets verified and applied.');
+
