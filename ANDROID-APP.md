@@ -68,6 +68,9 @@ Workflow: `Customer Android Build`
 - App icon وAdaptive icon من هوية المعداوي.
 - Splash screen النهائي.
 - Firebase `google-services.json` لتفعيل Push Notifications على Android.
+- مفتاح Debug ثابت (`firebase/android/elmadawy-debug.keystore`) حتى تظل بصمات
+  SHA-1 وSHA-256 المسجلة في Firebase صالحة لنسخ الاختبار المبنية عبر GitHub Actions.
 - Signing keystore خاص بالمعداوي محفوظ في GitHub Secrets، وليس داخل المستودع.
 - Release AAB workflow.
 - اختبار تسجيل الدخول، السلة، Checkout، العناوين، الخرائط، الباركود والإشعارات على جهاز Android حقيقي.
+
