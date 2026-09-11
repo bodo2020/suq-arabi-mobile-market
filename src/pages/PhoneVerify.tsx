@@ -102,7 +102,7 @@ const PhoneVerify = () => {
 
     try {
       const fullPhone = formatInternationalPhone(phone, countryCode);
-      const { error } = await signInWithPhone(fullPhone, !isRecovery, isResend);
+      const { error } = await signInWithPhone(fullPhone, !isRecovery);
       if (error) throw error;
 
       setStep('verification');
@@ -173,7 +173,6 @@ const PhoneVerify = () => {
   return (
     <MainLayout>
       <div className="p-4 max-w-md mx-auto">
-        <div id="firebase-phone-recaptcha" />
         <div className="flex items-center mb-6">
           <button onClick={() => navigate(-1)} className="p-2" aria-label="الرجوع">
             <ArrowRight size={24} />

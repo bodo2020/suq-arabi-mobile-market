@@ -4,8 +4,6 @@ import path from 'node:path';
 const manifestPath = 'android/app/src/main/AndroidManifest.xml';
 const stylesPath = 'android/app/src/main/res/values/styles.xml';
 const brandLogoPath = 'resources/android-brand/elmadawy-logo.png';
-const firebaseConfigPath = 'firebase/android/google-services.json';
-const androidFirebaseConfigPath = 'android/app/google-services.json';
 const resRoot = 'android/app/src/main/res';
 
 const requiredPermissions = [
@@ -21,10 +19,6 @@ const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 if (logoBytes.length < 8 || !logoBytes.subarray(0, 8).equals(pngSignature)) {
   throw new Error(`${brandLogoPath} is not a valid PNG file.`);
 }
-
-// Capacitor's Android project is generated in CI, so materialize the matching
-// Firebase app configuration after `npx cap add/sync android` and before Gradle.
-await copyFile(firebaseConfigPath, androidFirebaseConfigPath);
 
 let manifest;
 try {
@@ -168,4 +162,4 @@ await writeFile(path.join(drawableDir, 'elmadawy_splash_icon.xml'), splashIconXm
 const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:drawable="@drawable/elmadawy_splash_icon" />\n</layer-list>\n`;
 await writeFile(path.join(drawableDir, 'elmadawy_splash.xml'), splashBackgroundXml, 'utf8');
 
-console.log('Android Firebase config and brand assets verified and applied.');
+console.log('Android brand assets verified and applied: Elmadawy launcher icon, adaptive icon and splash screen are active.');

@@ -6,12 +6,6 @@ const config: CapacitorConfig = {
   appId: 'com.elmadawy.market.customer',
   appName: 'المعداوي ماركت',
   webDir: 'dist',
-  plugins: {
-    FirebaseAuthentication: {
-      providers: ['phone'],
-      authDomain: 'elmadawy-c165b.firebaseapp.com',
-    },
-  },
   server: liveReloadUrl
     ? {
         url: liveReloadUrl,
