@@ -1,7 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export type HomeSectionType = 'hero_banners' | 'categories' | 'featured_products' | 'product_collection' | 'smart_recommendations';
-export type HomeEventType = 'impression' | 'click';
+export type HomeEventType = 'impression' | 'click' | 'add_to_cart';
+export type HomeExperimentVariant = 'A' | 'B';
 
 export interface HomeSectionConfig {
   id: string;
@@ -16,6 +17,8 @@ export interface HomeSectionConfig {
   starts_at?: string | null;
   ends_at?: string | null;
   branch_ids?: string[] | null;
+  experiment_key?: string | null;
+  experiment_variant?: HomeExperimentVariant | null;
 }
 
 export interface PublicHomePageConfig {
@@ -27,7 +30,7 @@ export interface PublicHomePageConfig {
   sections: HomeSectionConfig[];
 }
 
-const CACHE_PREFIX = 'elmadawy_home_page_v2';
+const CACHE_PREFIX = 'elmadawy_home_page_v3';
 const SESSION_KEY = 'elmadawy_home_analytics_session_v1';
 const cacheKey = (branchId?: string | null, scope = 'guest') => `${CACHE_PREFIX}:${branchId || 'global'}:${scope}`;
 
@@ -50,7 +53,7 @@ const writeCachedHome = (branchId: string | null | undefined, scope: string, con
   }
 };
 
-const makeSessionKey = () => {
+export const getHomeAnalyticsSessionKey = () => {
   try {
     const existing = sessionStorage.getItem(SESSION_KEY);
     if (existing) return existing;
@@ -68,10 +71,17 @@ export const defaultHomeSections: HomeSectionConfig[] = [
   { id: 'fallback-collections', section_key: 'fallback-collections', section_type: 'product_collection', title: 'مختارات المعداوي', sort_order: 30, is_active: true, data_source: { all: true } },
 ];
 
-export const getPublicHomePage = async (branchId?: string | null, cacheScope = 'guest'): Promise<PublicHomePageConfig | null> => {
+export const getPublicHomePage = async (
+  branchId?: string | null,
+  cacheScope = 'guest',
+  experimentSeed = getHomeAnalyticsSessionKey(),
+): Promise<PublicHomePageConfig | null> => {
   try {
     const client = supabase as any;
-    const { data, error } = await client.rpc('get_public_home_page', { p_branch_id: branchId || null });
+    const { data, error } = await client.rpc('get_public_home_page', {
+      p_branch_id: branchId || null,
+      p_experiment_seed: experimentSeed,
+    });
     if (error) throw error;
     if (!data || !Array.isArray(data.sections)) return readCachedHome(branchId, cacheScope);
 
@@ -115,7 +125,7 @@ export const trackHomeEvent = async (
       p_home_page_id: pageId,
       p_section_id: sectionId,
       p_branch_id: branchId || null,
-      p_session_key: makeSessionKey(),
+      p_session_key: getHomeAnalyticsSessionKey(),
       p_event_type: eventType,
       p_metadata: metadata,
     });
