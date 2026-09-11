@@ -84,7 +84,7 @@ const Categories = () => {
         ) : visibleCategories.length > 0 ? (
           <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
             {visibleCategories.map(category => (
-              <CategoryItem key={category.id} category={category} onClick={handleCategoryClick} />
+              <CategoryItem key={category.id} category={category} onClick={handleCategoryClick} variant="modern" />
             ))}
           </div>
         ) : (
