@@ -4,7 +4,13 @@ import { getCurrentDeliveryBranchId, getProducts, supabase } from '@/lib/supabas
 import CollectionSkeleton from '@/components/ui/CollectionSkeleton';
 import CollectionsList from './CollectionsList';
 
-const ProductCollectionsSection = () => {
+interface ProductCollectionsSectionProps {
+  collectionId?: string;
+  titleOverride?: string;
+  subtitleOverride?: string;
+}
+
+const ProductCollectionsSection: React.FC<ProductCollectionsSectionProps> = ({ collectionId, titleOverride, subtitleOverride }) => {
   const { data: branchId, isLoading: branchLoading } = useQuery({
     queryKey: ['delivery-branch-id'],
     queryFn: () => getCurrentDeliveryBranchId(),
@@ -36,20 +42,20 @@ const ProductCollectionsSection = () => {
   });
 
   if (branchLoading || collectionsLoading || productsLoading) {
-    return (
-      <div className="space-y-6">
-        {[...Array(2)].map((_, i) => <CollectionSkeleton key={i} />)}
-      </div>
-    );
+    return <div className="space-y-6"><CollectionSkeleton /></div>;
   }
 
-  if (!productCollections.length || !branchId || productsError) return null;
+  const selectedCollections = productCollections
+    .filter(collection => !collectionId || collection.id === collectionId)
+    .map(collection => collectionId ? {
+      ...collection,
+      title: titleOverride || collection.title,
+      description: subtitleOverride ?? collection.description,
+    } : collection);
 
-  return (
-    <div className="space-y-6">
-      <CollectionsList collections={productCollections} products={products} />
-    </div>
-  );
+  if (!selectedCollections.length || !branchId || productsError) return null;
+
+  return <div className="space-y-6"><CollectionsList collections={selectedCollections} products={products} /></div>;
 };
 
 export default ProductCollectionsSection;

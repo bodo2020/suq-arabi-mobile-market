@@ -1,45 +1,84 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronLeft, MapPin } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
-import CategoryItem from '@/components/ui/CategoryItem';
 import StoreStructuredData from '@/components/seo/StoreStructuredData';
-import { getCategories, supabase, MainCategory } from '@/lib/supabase';
-import BannerSkeleton from '@/components/ui/BannerSkeleton';
-import CategorySkeleton from '@/components/ui/CategorySkeleton';
-import { Skeleton } from '@/components/ui/skeleton';
+import DynamicHomeSections from '@/components/sections/DynamicHomeSections';
+import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
-import { Button } from '@/components/ui/button';
 import { readGuestAddress } from '@/lib/deliveryAddress';
-const ProductCollectionsSection=lazy(()=>import('@/components/sections/ProductCollectionsSection'));
-const BannersContainer=lazy(()=>import('@/components/ui/BannersContainer'));
 
-const Index=()=>{
- const navigate=useNavigate(); const {user, authLoading}=useUser();
- const [guestAddress,setGuestAddress]=useState(()=>readGuestAddress());
- useEffect(()=>{const refresh=()=>setGuestAddress(readGuestAddress());window.addEventListener('guest-address-changed',refresh);window.addEventListener('storage',refresh);return()=>{window.removeEventListener('guest-address-changed',refresh);window.removeEventListener('storage',refresh);};},[]);
- const addressQuery=useQuery({queryKey:['home-default-address',user?.id],enabled:!!user&&!authLoading,queryFn:async()=>{const {data,error}=await supabase.from('customer_addresses').select('address,latitude,longitude').eq('user_id',user!.id).eq('is_default',true).maybeSingle();if(error)throw error;return data;},staleTime:0});
- const address=user?addressQuery.data?.address||'':guestAddress?.address||'';
- const categoriesQuery=useQuery({queryKey:['categories'],queryFn:getCategories,staleTime:300000,refetchOnWindowFocus:false});
- const bannersQuery=useQuery({queryKey:['active-banners'],queryFn:async()=>{const {data,error}=await supabase.from('banners').select('*').eq('active',true).order('position');if(error)throw error;return data||[];},staleTime:300000,refetchOnWindowFocus:false});
+const Index = () => {
+  const navigate = useNavigate();
+  const { user, authLoading } = useUser();
+  const [guestAddress, setGuestAddress] = useState(() => readGuestAddress());
 
- const categories=categoriesQuery.data||[];
- const category=(cat:MainCategory)=>navigate(`/category/${cat.id}`);
- const openAddress=()=>{if(!user&&!guestAddress){navigate('/add-address?returnTo=%2F');return;}navigate('/address-manager');};
- return <MainLayout><StoreStructuredData/><TopNavBar onSearchFocus={()=>navigate('/search')}/>
-  <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
-   <button onClick={openAddress} className="mb-5 flex min-h-16 w-full items-center gap-3 rounded-2xl border border-green-100 bg-white p-4 text-right shadow-sm hover:border-green-200" aria-label={address?'تغيير عنوان التوصيل':'إضافة عنوان توصيل'}>
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary"><MapPin size={20}/></span><span className="min-w-0 flex-1"><span className="block text-xs text-gray-500">التوصيل إلى</span><strong className="block truncate text-sm text-gray-900">{authLoading||(user&&addressQuery.isLoading)?'جاري تحميل عنوانك…':user&&addressQuery.isError?'تعذّر تحميل العنوان — اضغط للمراجعة':address||'حدد عنوانك على الخريطة'}</strong>{!user&&guestAddress&&<span className="mt-1 block text-[11px] text-primary">ضيف · {Number(guestAddress.distance_km).toFixed(1)} كم من الفرع</span>}</span><ChevronLeft size={20} className="text-primary"/>
-   </button>
-   {bannersQuery.isLoading?<BannerSkeleton/>:(bannersQuery.data?.length||0)>0&&<Suspense fallback={<BannerSkeleton/>}><div className="mb-7 overflow-hidden rounded-3xl shadow-sm"><BannersContainer banners={bannersQuery.data!}/></div></Suspense>}
-   <section className="mb-8 rounded-3xl bg-white p-4 shadow-sm sm:p-6">
-    <div className="mb-4 flex items-center justify-between"><div><h2 className="text-xl font-bold">تسوق حسب القسم</h2><p className="mt-1 text-xs text-gray-500">وصل للي محتاجه بسرعة</p></div><Link to="/categories" className="flex min-h-10 items-center gap-1 rounded-xl px-3 text-sm font-semibold text-primary hover:bg-green-50">عرض الكل<ChevronLeft size={17}/></Link></div>
-    {categoriesQuery.isLoading?<div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-7">{Array.from({length:7}).map((_,i)=><CategorySkeleton key={i}/>)}</div>:categoriesQuery.isError?<div className="rounded-2xl bg-gray-50 p-6 text-center"><p className="mb-3 text-sm text-gray-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={()=>categoriesQuery.refetch()}>إعادة المحاولة</Button></div>:<div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 scrollbar-hide md:grid md:grid-cols-6 md:overflow-visible lg:grid-cols-8">{categories.map(cat=><div key={cat.id} className="w-24 shrink-0 snap-start md:w-auto"><CategoryItem category={cat} onClick={category}/></div>)}</div>}
-   </section>
-   <section><div className="mb-4"><h2 className="text-xl font-bold">مختارات المعداوي</h2><p className="mt-1 text-xs text-gray-500">منتجات مختارة عشان تسوقك يبقى أسهل</p></div><Suspense fallback={<div className="grid grid-cols-2 gap-3 md:grid-cols-4">{Array.from({length:4}).map((_,i)=><Skeleton key={i} className="h-64 rounded-2xl"/>)}</div>}><ProductCollectionsSection/></Suspense></section>
-  </div>
- </MainLayout>;
+  useEffect(() => {
+    const refresh = () => setGuestAddress(readGuestAddress());
+    window.addEventListener('guest-address-changed', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('guest-address-changed', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+
+  const addressQuery = useQuery({
+    queryKey: ['home-default-address', user?.id],
+    enabled: !!user && !authLoading,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customer_addresses')
+        .select('address,latitude,longitude')
+        .eq('user_id', user!.id)
+        .eq('is_default', true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 0,
+  });
+
+  const address = user ? addressQuery.data?.address || '' : guestAddress?.address || '';
+  const openAddress = () => {
+    if (!user && !guestAddress) {
+      navigate('/add-address?returnTo=%2F');
+      return;
+    }
+    navigate('/address-manager');
+  };
+
+  return (
+    <MainLayout>
+      <StoreStructuredData />
+      <TopNavBar onSearchFocus={() => navigate('/search')} />
+      <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
+        <button
+          onClick={openAddress}
+          className="mb-5 flex min-h-16 w-full items-center gap-3 rounded-2xl border border-green-100 bg-white p-4 text-right shadow-sm transition hover:border-green-200"
+          aria-label={address ? 'تغيير عنوان التوصيل' : 'إضافة عنوان توصيل'}
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary"><MapPin size={20} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs text-gray-500">التوصيل إلى</span>
+            <strong className="block truncate text-sm text-gray-900">
+              {authLoading || (user && addressQuery.isLoading)
+                ? 'جاري تحميل عنوانك…'
+                : user && addressQuery.isError
+                  ? 'تعذّر تحميل العنوان — اضغط للمراجعة'
+                  : address || 'حدد عنوانك على الخريطة'}
+            </strong>
+            {!user && guestAddress && <span className="mt-1 block text-[11px] text-primary">ضيف · {Number(guestAddress.distance_km).toFixed(1)} كم من الفرع</span>}
+          </span>
+          <ChevronLeft size={20} className="text-primary" />
+        </button>
+
+        <DynamicHomeSections />
+      </div>
+    </MainLayout>
+  );
 };
+
 export default Index;
