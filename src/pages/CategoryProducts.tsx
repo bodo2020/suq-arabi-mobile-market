@@ -8,9 +8,8 @@ import ProductFilters from '@/components/ui/ProductFilters';
 import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
 import BreadcrumbStructuredData from '@/components/seo/BreadcrumbStructuredData';
 import SEOHead from '@/components/seo/SEOHead';
-import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories, supabase } from '@/lib/supabase';
+import { MainCategory, Product, getProducts, getCategories, supabase } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useUser } from '@/contexts/UserContext';
 import { getProductListWithVariants } from '@/utils/productUtils';
 
 const sortOptions = [
@@ -32,8 +31,7 @@ const CategoryProducts = () => {
   const navigate = useNavigate();
   const productsRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { user } = useUser();
-  
+
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -47,35 +45,27 @@ const CategoryProducts = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const [categoriesData] = await Promise.all([
-          getCategories()
-        ]);
-        
+        const categoriesData = await getCategories();
         const categoryData = categoriesData.find(cat => cat.id === id);
         if (categoryData) {
           setCategoryInfo(categoryData);
-          
-          // Fetch products and filter out unavailable ones
           const productsData = await getProducts(id, false);
           const availableProducts = productsData.filter(product => product.quantity && product.quantity > 0);
-          
+
           setAllProducts(availableProducts);
           setProducts(filterAndSortProducts(availableProducts, currentSort, selectedCompany));
-          
-          // Fetch companies used in this category
+
           const uniqueCompanyIds = [...new Set(availableProducts
             .map(p => p.company_id)
-            .filter(id => id !== null))] as string[];
-          
+            .filter(companyId => companyId !== null))] as string[];
+
           if (uniqueCompanyIds.length > 0) {
             const { data: companiesData } = await supabase
               .from('companies')
               .select('id, name')
               .in('id', uniqueCompanyIds);
-            
-            if (companiesData) {
-              setCompanies(companiesData);
-            }
+
+            if (companiesData) setCompanies(companiesData);
           }
         }
       } catch (error) {
@@ -85,22 +75,18 @@ const CategoryProducts = () => {
       }
     };
 
-    fetchData();
+    void fetchData();
   }, [id]);
 
-  // Update products when sort or company filter changes
   useEffect(() => {
     setProducts(filterAndSortProducts(allProducts, currentSort, selectedCompany));
   }, [currentSort, selectedCompany, allProducts]);
 
   const filterAndSortProducts = (productsToFilter: Product[], sortType: string, companyFilter: string) => {
-    // Filter by company first
     let filteredProducts = [...productsToFilter];
     if (companyFilter !== "all") {
       filteredProducts = filteredProducts.filter(product => product.company_id === companyFilter);
     }
-
-    // Then sort
     return sortProducts(filteredProducts, sortType);
   };
 
@@ -123,45 +109,24 @@ const CategoryProducts = () => {
         });
       case "newest":
       default:
-        return sortedProducts.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+        return sortedProducts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
   };
 
-  const handleSortChange = (value: string) => {
-    setCurrentSort(value);
-  };
-
-  const handleCompanyChange = (value: string) => {
-    setSelectedCompany(value);
-  };
-
-  const handleFiltersClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
+  const handleFiltersClick = (event: React.MouseEvent) => event.stopPropagation();
 
   if (loading) {
     return (
       <MainLayout>
-        <TopNavBar 
-          hideLogo={true}
-          hideSearch={true}
-          pageTitle="تحميل..."
-          showBackButton={true}
-          onBack={() => navigate(-1)}
-        />
+        <TopNavBar hideLogo hideSearch pageTitle="تحميل..." showBackButton onBack={() => navigate(-1)} />
         <div className={`${!isMobile ? 'mt-24' : ''}`}>
-          <div className="w-full px-4">
-            <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
+          <div className="w-full px-3 sm:px-4">
+            <div className="mx-auto max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               <div className="sticky top-0 z-10 mb-4 bg-white">
-                <div className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
+                <div className="h-12 animate-pulse rounded-lg bg-gray-100" />
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {[...Array(12)].map((_, index) => (
-                  <ProductCardSkeleton key={index} />
-                ))}
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
+                {[...Array(12)].map((_, index) => <ProductCardSkeleton key={index} />)}
               </div>
             </div>
           </div>
@@ -172,66 +137,54 @@ const CategoryProducts = () => {
 
   return (
     <MainLayout>
-      <SEOHead 
+      <SEOHead
         title={`منتجات ${categoryInfo?.name || "القسم"} - متجرك الإلكتروني`}
         description={`تسوق من مجموعة ${categoryInfo?.name || "منتجات القسم"} بأفضل الأسعار مع توصيل مجاني`}
         type="product.group"
       />
-      
+
       {products.length > 0 && (
-        <ProductListStructuredData 
-          products={products} 
-          listName={`منتجات ${categoryInfo?.name || "القسم"}`} 
-        />
+        <ProductListStructuredData products={products} listName={`منتجات ${categoryInfo?.name || "القسم"}`} />
       )}
-      
-      <BreadcrumbStructuredData 
+
+      <BreadcrumbStructuredData
         items={[
           { name: "الرئيسية", url: "/" },
           { name: "الأقسام", url: "/categories" },
           { name: categoryInfo?.name || "القسم", url: `/category/${id}` }
         ]}
       />
-      
+
       <div className="container px-0 py-0">
-        <TopNavBar 
-          hideLogo={true}
-          hideSearch={true}
-          pageTitle={`منتجات ${categoryInfo?.name}`}
-          showBackButton={true}
-          onBack={() => navigate(-1)}
-        />
+        <TopNavBar hideLogo hideSearch pageTitle={`منتجات ${categoryInfo?.name}`} showBackButton onBack={() => navigate(-1)} />
 
         <div className={`${!isMobile ? 'mt-24' : ''}`}>
-          <div className="w-full px-4">
-            <div className="max-w-md mx-auto md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
-              <div className="sticky top-0 z-10 mb-4 bg-white">
+          <div className="w-full px-3 sm:px-4">
+            <div className="mx-auto max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
+              <div className="sticky top-0 z-10 mb-3 bg-white sm:mb-4">
                 <div onClick={handleFiltersClick}>
                   <ProductFilters
-                    onSortChange={handleSortChange}
+                    onSortChange={setCurrentSort}
                     sortOptions={sortOptions}
                     currentSort={currentSort}
                     companies={companies}
                     selectedCompany={selectedCompany}
-                    onCompanyChange={handleCompanyChange}
+                    onCompanyChange={setSelectedCompany}
                   />
                 </div>
               </div>
 
-              <div ref={productsRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {getProductListWithVariants(products).map((product) => (
-                  <div key={product.variantKey} className="flex-shrink-0">
-                    <ProductCard key={product.variantKey} product={product} />
-                  </div>
+              <div ref={productsRef} className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
+                {getProductListWithVariants(products).map(product => (
+                  <ProductCard key={product.variantKey} product={product} />
                 ))}
               </div>
 
               {products.length === 0 && !loading && (
-                <div className="text-center py-8 text-gray-500">
-                  {selectedCompany !== "all" 
+                <div className="py-8 text-center text-gray-500">
+                  {selectedCompany !== "all"
                     ? "لا توجد منتجات متوفرة لهذه الشركة في هذا القسم"
-                    : "لا توجد منتجات متوفرة في هذا القسم"
-                  }
+                    : "لا توجد منتجات متوفرة في هذا القسم"}
                 </div>
               )}
             </div>
