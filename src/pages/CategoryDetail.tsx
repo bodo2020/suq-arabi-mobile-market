@@ -55,7 +55,7 @@ const CategoryDetail = () => {
   }, [id]);
 
   const sections = useMemo<ProductSection[]>(() => {
-    const grouped = subcategories.map(subcategory => ({
+    const grouped: ProductSection[] = subcategories.map(subcategory => ({
       id: subcategory.id,
       subcategoryId: subcategory.id,
       name: subcategory.name,
