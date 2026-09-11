@@ -17,6 +17,17 @@ type UserContextType = {
   verifyPhone: (phone: string, code: string) => Promise<any>;
 };
 
+type TestOtpResponse = {
+  testNumber?: boolean;
+  sent?: boolean;
+  verified?: boolean;
+  error?: string;
+  session?: {
+    access_token: string;
+    refresh_token: string;
+  };
+};
+
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const normalizePhone = (value: string) => {
@@ -24,6 +35,35 @@ const normalizePhone = (value: string) => {
   if (!trimmed) return '';
   if (trimmed.startsWith('+')) return `+${trimmed.slice(1).replace(/\D/g, '')}`;
   return `+${trimmed.replace(/\D/g, '')}`;
+};
+
+const invokeTestOtp = async (
+  action: 'send' | 'verify',
+  phone: string,
+  code?: string,
+): Promise<{ data: TestOtpResponse | null; error: any }> => {
+  const result = await supabase.functions.invoke<TestOtpResponse>('customer-test-otp', {
+    body: {
+      action,
+      phone,
+      ...(code ? { code } : {}),
+    },
+  });
+
+  return { data: result.data ?? null, error: result.error };
+};
+
+const testOtpErrorMessage = (code?: string) => {
+  switch (code) {
+    case 'TOO_MANY_ATTEMPTS':
+      return 'تم إدخال رمز غير صحيح عدة مرات. حاول مرة أخرى بعد 15 دقيقة.';
+    case 'TEST_OTP_EXPIRED':
+      return 'انتهت صلاحية رقم الاختبار. حدّث إعداد الاختبار ثم حاول مرة أخرى.';
+    case 'INVALID_CODE':
+      return 'رمز التحقق غير صحيح.';
+    default:
+      return 'تعذر التحقق من رمز الاختبار. حاول مرة أخرى.';
+  }
 };
 
 export const useUser = () => {
@@ -193,6 +233,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('رقم الهاتف غير صحيح');
       }
 
+      // Test numbers are resolved only on the server. No test phone or fixed code is bundled in the app.
+      try {
+        const testResult = await invokeTestOtp('send', normalizedPhone);
+        if (!testResult.error && testResult.data?.testNumber) {
+          return { data: { testOtp: true } };
+        }
+      } catch (testOtpError) {
+        console.warn('Test OTP probe unavailable; falling back to regular phone OTP.', testOtpError);
+      }
+
       const { data, error } = await supabase.auth.signInWithOtp({
         phone: normalizedPhone,
         options: {
@@ -216,6 +266,27 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!/^\d{6}$/.test(token)) {
         throw new Error('رمز التحقق يجب أن يتكون من 6 أرقام');
+      }
+
+      try {
+        const testResult = await invokeTestOtp('verify', normalizedPhone, token);
+        if (!testResult.error && testResult.data?.testNumber) {
+          if (!testResult.data.verified || !testResult.data.session) {
+            throw new Error(testOtpErrorMessage(testResult.data.error));
+          }
+
+          const { data, error } = await supabase.auth.setSession({
+            access_token: testResult.data.session.access_token,
+            refresh_token: testResult.data.session.refresh_token,
+          });
+          if (error) throw error;
+          return { data };
+        }
+      } catch (testOtpError) {
+        if (testOtpError instanceof Error && /رمز|اختبار|دقيقة/.test(testOtpError.message)) {
+          throw testOtpError;
+        }
+        console.warn('Test OTP verifier unavailable; trying regular Supabase OTP.', testOtpError);
       }
 
       const { data, error } = await supabase.auth.verifyOtp({
