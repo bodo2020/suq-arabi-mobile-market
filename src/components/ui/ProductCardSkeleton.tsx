@@ -3,7 +3,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const ProductCardSkeleton = () => {
   return (
-    <div className="flex h-full flex-col rounded-[18px] bg-white p-1.5 ring-1 ring-black/[0.03] sm:rounded-[22px] sm:p-2.5">
+    <div
+      data-product-card-skeleton="compact"
+      className="flex h-full flex-col rounded-[18px] bg-white p-1.5 ring-1 ring-black/[0.03] sm:rounded-[22px] sm:p-2.5"
+    >
       <div className="relative mb-5 aspect-square sm:mb-7">
         <Skeleton className="absolute inset-0 rounded-[14px] sm:rounded-[18px]" />
         <Skeleton className="absolute left-1 top-1 h-7 w-7 rounded-full sm:left-2 sm:top-2 sm:h-9 sm:w-9" />
