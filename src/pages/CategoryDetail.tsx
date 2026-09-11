@@ -18,6 +18,7 @@ type ProductSection = {
 };
 
 const PREVIEW_LIMIT = 6;
+const CHIP_BAR_HEIGHT = 58;
 
 const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,8 +28,10 @@ const CategoryDetail = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<string>('');
+  const [chipsPinned, setChipsPinned] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const chipAnchorRef = useRef<HTMLDivElement | null>(null);
   const restoredScroll = useRef(false);
 
   useEffect(() => {
@@ -98,20 +101,56 @@ const CategoryDetail = () => {
   }, [loading, id]);
 
   useEffect(() => {
-    if (!sections.length || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(entries => {
-      const visible = entries
-        .filter(entry => entry.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible?.target?.id) setActiveSection(visible.target.id.replace('category-section-', ''));
-    }, { rootMargin: '-24% 0px -60% 0px', threshold: [0.01, 0.2, 0.5] });
+    if (!sections.length || !subcategories.length) return;
+    let frame = 0;
 
-    sections.forEach(section => {
-      const node = sectionRefs.current[section.id];
-      if (node) observer.observe(node);
-    });
-    return () => observer.disconnect();
-  }, [sections]);
+    const readTopNavHeight = () => {
+      const value = getComputedStyle(document.documentElement).getPropertyValue('--top-nav-height');
+      return Number.parseFloat(value) || 68;
+    };
+
+    const updateFromScroll = () => {
+      frame = 0;
+      const topNavHeight = readTopNavHeight();
+      const anchor = chipAnchorRef.current;
+      if (anchor) {
+        const shouldPin = anchor.getBoundingClientRect().top <= topNavHeight + 1;
+        setChipsPinned(current => current === shouldPin ? current : shouldPin);
+      }
+
+      const activationLine = topNavHeight + CHIP_BAR_HEIGHT + 18;
+      let nextSection = sections[0]?.id || '';
+
+      for (const section of sections) {
+        const node = sectionRefs.current[section.id];
+        if (!node) continue;
+        if (node.getBoundingClientRect().top <= activationLine) nextSection = section.id;
+        else break;
+      }
+
+      const atPageEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 6;
+      if (atPageEnd && sections.length > 0) nextSection = sections[sections.length - 1].id;
+
+      if (nextSection) setActiveSection(current => current === nextSection ? current : nextSection);
+    };
+
+    const requestUpdate = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(updateFromScroll);
+    };
+
+    updateFromScroll();
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+    window.addEventListener('orientationchange', requestUpdate);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+      window.removeEventListener('orientationchange', requestUpdate);
+    };
+  }, [sections, subcategories.length]);
 
   const scrollToSection = (sectionId: string) => {
     const element = sectionRefs.current[sectionId];
@@ -173,33 +212,37 @@ const CategoryDetail = () => {
         </div>
 
         {subcategories.length > 0 && (
-          <div
-            className="sticky z-40 mb-5 border-y border-emerald-100/70 bg-white/96 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur-xl"
-            style={{ top: 'var(--top-nav-height, 68px)' }}
-          >
-            <div className="hide-scrollbar flex w-full flex-nowrap gap-1.5 overflow-x-auto scroll-smooth px-3 sm:gap-2 sm:px-5" dir="rtl">
-              {subcategories.map(subcategory => {
-                const selected = activeSection === subcategory.id;
-                const count = products.filter(product => product.subcategory_id === subcategory.id).length;
-                return (
-                  <button
-                    key={subcategory.id}
-                    ref={node => { chipRefs.current[subcategory.id] = node; }}
-                    type="button"
-                    onClick={() => scrollToSection(subcategory.id)}
-                    className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white text-slate-700'}`}
-                    aria-pressed={selected}
-                  >
-                    {subcategory.image_url && (
-                      <span className="h-5 w-5 shrink-0 overflow-hidden rounded-full bg-white sm:h-6 sm:w-6">
-                        <SmartImage src={subcategory.image_url} alt="" preloadMargin="900px 0px" className="h-full w-full object-cover" />
-                      </span>
-                    )}
-                    <span>{subcategory.name}</span>
-                    {count > 0 && <span className={`text-[9px] sm:text-[10px] ${selected ? 'text-emerald-100' : 'text-slate-400'}`}>{count}</span>}
-                  </button>
-                );
-              })}
+          <div ref={chipAnchorRef} className="relative mb-5 h-[58px]">
+            <div
+              className={`${chipsPinned ? 'fixed inset-x-0 z-[45]' : 'absolute inset-x-0 top-0 z-40'} border-y border-emerald-100/70 bg-white/96 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur-xl`}
+              style={chipsPinned ? { top: 'var(--top-nav-height, 68px)' } : undefined}
+            >
+              <div className="mx-auto w-full max-w-7xl">
+                <div className="hide-scrollbar flex w-full flex-nowrap gap-1.5 overflow-x-auto scroll-smooth px-3 sm:gap-2 sm:px-5" dir="rtl">
+                  {subcategories.map(subcategory => {
+                    const selected = activeSection === subcategory.id;
+                    const count = products.filter(product => product.subcategory_id === subcategory.id).length;
+                    return (
+                      <button
+                        key={subcategory.id}
+                        ref={node => { chipRefs.current[subcategory.id] = node; }}
+                        type="button"
+                        onClick={() => scrollToSection(subcategory.id)}
+                        className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white text-slate-700'}`}
+                        aria-pressed={selected}
+                      >
+                        {subcategory.image_url && (
+                          <span className="h-5 w-5 shrink-0 overflow-hidden rounded-full bg-white sm:h-6 sm:w-6">
+                            <SmartImage src={subcategory.image_url} alt="" preloadMargin="900px 0px" className="h-full w-full object-cover" />
+                          </span>
+                        )}
+                        <span>{subcategory.name}</span>
+                        {count > 0 && <span className={`text-[9px] sm:text-[10px] ${selected ? 'text-emerald-100' : 'text-slate-400'}`}>{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -212,7 +255,7 @@ const CategoryDetail = () => {
                 key={section.id}
                 id={`category-section-${section.id}`}
                 ref={node => { sectionRefs.current[section.id] = node; }}
-                style={{ scrollMarginTop: 'calc(var(--top-nav-height, 68px) + 64px)' }}
+                style={{ scrollMarginTop: 'calc(var(--top-nav-height, 68px) + 74px)' }}
               >
                 <div className="mb-2.5 flex items-end justify-between gap-3 sm:mb-3">
                   <div className="min-w-0">
