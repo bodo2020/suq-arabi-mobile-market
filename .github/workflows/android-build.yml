@@ -35,6 +35,9 @@ jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      APP_VERSION_BASE: '1.2'
+      APP_VERSION_CODE_BASE: '120000'
 
     steps:
       - name: Checkout
@@ -67,7 +70,13 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Prepare Android permissions
+      - name: Apply Android version
+        env:
+          APP_VERSION_NAME: 1.2.${{ github.run_number }}
+          APP_VERSION_CODE: ${{ 120000 + github.run_number }}
+        run: node scripts/set-android-version.mjs
+
+      - name: Prepare Android permissions and brand
         run: node scripts/prepare-android.mjs
 
       - name: Build debug APK
@@ -76,10 +85,13 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
+      - name: Name versioned APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "android/app/build/outputs/apk/debug/elmadawy-customer-v1.2.${{ github.run_number }}.apk"
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: elmadawy-customer-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: elmadawy-customer-v1.2.${{ github.run_number }}
+          path: android/app/build/outputs/apk/debug/elmadawy-customer-v1.2.${{ github.run_number }}.apk
           if-no-files-found: error
           retention-days: 14
