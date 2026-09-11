@@ -126,12 +126,12 @@ const CategoryDetail = () => {
     return (
       <MainLayout>
         <TopNavBar hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} />
-        <div className="mx-auto w-full max-w-7xl px-4 pb-8 pt-2">
+        <div className="mx-auto w-full max-w-7xl px-3 pb-8 pt-2 sm:px-4">
           <div className="mb-4 h-36 animate-pulse rounded-[28px] bg-emerald-50" />
-          <div className="mb-5 flex gap-2 overflow-hidden">
-            {Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-10 w-24 shrink-0 animate-pulse rounded-full bg-gray-100" />)}
+          <div className="mb-5 flex flex-wrap gap-2 overflow-hidden">
+            {Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-9 w-24 animate-pulse rounded-full bg-gray-100" />)}
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => <ProductCardSkeleton key={index} />)}
           </div>
         </div>
@@ -144,18 +144,18 @@ const CategoryDetail = () => {
       <TopNavBar hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} />
 
       <div className="mx-auto w-full max-w-7xl pb-10 pt-1">
-        <div className="px-4 sm:px-5">
-          <section className="relative mb-5 overflow-hidden rounded-[28px] border border-emerald-100 bg-[#ecf8f2] min-h-[145px]">
+        <div className="px-3 sm:px-5">
+          <section className="relative mb-4 min-h-[135px] overflow-hidden rounded-[24px] border border-emerald-100 bg-[#ecf8f2] sm:mb-5 sm:min-h-[145px] sm:rounded-[28px]">
             {categoryInfo?.image_url && (
               <img src={categoryInfo.image_url} alt="" className="absolute inset-y-0 left-0 h-full w-[46%] object-cover opacity-95" decoding="async" />
             )}
             <div className="absolute inset-0 bg-gradient-to-l from-[#eefaf4] via-[#eefaf4]/95 to-[#eefaf4]/30" />
-            <div className="relative z-10 flex min-h-[145px] max-w-[72%] flex-col justify-center p-5 sm:p-6">
-              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-white/90 text-[#005931] shadow-sm"><Layers3 size={18} /></div>
-              <h1 className="text-2xl font-black leading-tight text-slate-950">{categoryInfo?.name || 'القسم'}</h1>
-              <p className="mt-1.5 text-sm font-medium text-slate-600">{products.length ? `${products.length} منتج متاح` : 'اكتشف منتجات القسم'}</p>
+            <div className="relative z-10 flex min-h-[135px] max-w-[74%] flex-col justify-center p-4 sm:min-h-[145px] sm:p-6">
+              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white/90 text-[#005931] shadow-sm sm:h-9 sm:w-9"><Layers3 size={18} /></div>
+              <h1 className="text-xl font-black leading-tight text-slate-950 sm:text-2xl">{categoryInfo?.name || 'القسم'}</h1>
+              <p className="mt-1.5 text-xs font-medium text-slate-600 sm:text-sm">{products.length ? `${products.length} منتج متاح` : 'اكتشف منتجات القسم'}</p>
               {products.length > 0 && id && (
-                <button type="button" onClick={() => navigate(`/category/${id}/products`)} className="mt-3 flex w-fit items-center gap-1 text-sm font-bold text-[#005931]">
+                <button type="button" onClick={() => navigate(`/category/${id}/products`)} className="mt-2.5 flex w-fit items-center gap-1 text-xs font-bold text-[#005931] sm:mt-3 sm:text-sm">
                   كل المنتجات <ChevronLeft size={16} />
                 </button>
               )}
@@ -165,10 +165,10 @@ const CategoryDetail = () => {
 
         {subcategories.length > 0 && (
           <div
-            className="sticky z-30 mb-5 border-y border-emerald-100/70 bg-[#f6f8f7]/95 py-2.5 backdrop-blur-xl"
+            className="sticky z-30 mb-5 border-y border-emerald-100/70 bg-[#f6f8f7]/96 py-2.5 backdrop-blur-xl"
             style={{ top: 'var(--top-nav-height, 68px)' }}
           >
-            <div className="flex gap-2 overflow-x-auto px-4 sm:px-5" style={{ scrollbarWidth: 'none' }}>
+            <div className="flex flex-wrap gap-1.5 px-3 sm:gap-2 sm:px-5">
               {subcategories.map(subcategory => {
                 const selected = activeSection === subcategory.id;
                 const count = products.filter(product => product.subcategory_id === subcategory.id).length;
@@ -177,12 +177,12 @@ const CategoryDetail = () => {
                     key={subcategory.id}
                     type="button"
                     onClick={() => scrollToSection(subcategory.id)}
-                    className={`flex h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 text-sm font-bold transition ${selected ? 'border-[#005931] bg-[#005931] text-white shadow-sm' : 'border-emerald-100 bg-white text-slate-700'}`}
+                    className={`flex h-9 max-w-full items-center gap-1.5 rounded-full border px-2.5 text-xs font-bold transition sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'border-[#005931] bg-[#005931] text-white shadow-sm' : 'border-emerald-100 bg-white text-slate-700'}`}
                     aria-pressed={selected}
                   >
-                    {subcategory.image_url && <img src={subcategory.image_url} alt="" className="h-6 w-6 rounded-full object-cover" loading="lazy" />}
-                    <span>{subcategory.name}</span>
-                    {count > 0 && <span className={`text-[10px] ${selected ? 'text-emerald-100' : 'text-slate-400'}`}>{count}</span>}
+                    {subcategory.image_url && <img src={subcategory.image_url} alt="" className="h-5 w-5 rounded-full object-cover sm:h-6 sm:w-6" loading="lazy" />}
+                    <span className="truncate">{subcategory.name}</span>
+                    {count > 0 && <span className={`text-[9px] sm:text-[10px] ${selected ? 'text-emerald-100' : 'text-slate-400'}`}>{count}</span>}
                   </button>
                 );
               })}
@@ -190,7 +190,7 @@ const CategoryDetail = () => {
           </div>
         )}
 
-        <div className="space-y-7 px-4 sm:px-5">
+        <div className="space-y-6 px-3 sm:space-y-7 sm:px-5">
           {sections.map(section => {
             const preview = getProductListWithVariants(section.products).slice(0, PREVIEW_LIMIT);
             return (
@@ -198,23 +198,21 @@ const CategoryDetail = () => {
                 key={section.id}
                 id={`category-section-${section.id}`}
                 ref={node => { sectionRefs.current[section.id] = node; }}
-                style={{ scrollMarginTop: 'calc(var(--top-nav-height, 68px) + 72px)' }}
+                style={{ scrollMarginTop: 'calc(var(--top-nav-height, 68px) + 106px)' }}
               >
-                <div className="mb-3 flex items-end justify-between gap-3">
+                <div className="mb-2.5 flex items-end justify-between gap-3 sm:mb-3">
                   <div className="min-w-0">
-                    <h2 className="truncate text-lg font-black text-slate-950">{section.name}</h2>
-                    <p className="mt-0.5 text-xs font-medium text-slate-400">{section.products.length} منتج</p>
+                    <h2 className="truncate text-base font-black text-slate-950 sm:text-lg">{section.name}</h2>
+                    <p className="mt-0.5 text-[11px] font-medium text-slate-400 sm:text-xs">{section.products.length} منتج</p>
                   </div>
-                  <button type="button" onClick={() => openSubcategory(section)} className="flex shrink-0 items-center gap-0.5 rounded-full px-2 py-1 text-sm font-bold text-[#005931]">
-                    عرض الكل <ChevronLeft size={16} />
+                  <button type="button" onClick={() => openSubcategory(section)} className="flex shrink-0 items-center gap-0.5 rounded-full px-2 py-1 text-xs font-bold text-[#005931] sm:text-sm">
+                    عرض الكل <ChevronLeft size={15} />
                   </button>
                 </div>
 
-                <div className="flex snap-x gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible lg:grid-cols-5 xl:grid-cols-6" style={{ scrollbarWidth: 'none' }}>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                   {preview.map(product => (
-                    <div key={product.variantKey || product.id} className="w-[170px] min-w-[170px] snap-start sm:w-[190px] sm:min-w-[190px] md:w-auto md:min-w-0">
-                      <ProductCard product={product} />
-                    </div>
+                    <ProductCard key={product.variantKey || product.id} product={product} />
                   ))}
                 </div>
               </section>
@@ -224,18 +222,18 @@ const CategoryDetail = () => {
           {sections.length === 0 && subcategories.length > 0 && (
             <section>
               <h2 className="mb-3 text-lg font-black text-slate-950">الأقسام الفرعية</h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              <div className="flex flex-wrap gap-2.5">
                 {subcategories.map(subcategory => (
                   <button
                     key={subcategory.id}
                     type="button"
                     onClick={() => id && navigate(`/category/${id}/subcategory/${subcategory.id}`)}
-                    className="overflow-hidden rounded-2xl border border-emerald-100 bg-white p-2 text-right shadow-sm"
+                    className="min-w-[96px] flex-1 basis-[30%] overflow-hidden rounded-2xl border border-emerald-100 bg-white p-2 text-right shadow-sm sm:basis-[22%]"
                   >
                     <div className="aspect-[4/3] overflow-hidden rounded-xl bg-emerald-50">
                       {subcategory.image_url ? <img src={subcategory.image_url} alt={subcategory.name} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full items-center justify-center text-2xl font-black text-[#005931]">{subcategory.name.charAt(0)}</div>}
                     </div>
-                    <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-2.5"><span className="line-clamp-1 text-sm font-bold">{subcategory.name}</span><ChevronLeft size={15} className="text-[#005931]" /></div>
+                    <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-2.5"><span className="line-clamp-1 text-xs font-bold sm:text-sm">{subcategory.name}</span><ChevronLeft size={15} className="text-[#005931]" /></div>
                   </button>
                 ))}
               </div>
