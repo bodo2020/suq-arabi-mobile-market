@@ -1,6 +1,8 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -24,20 +26,41 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   size = 'md',
 }) => {
   const { isFavorite, toggleFavorite, isLoading, user, favoritesLoaded } = useFavorites();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  if (!user) return null;
+  const baseClassName = cn(
+    'relative flex items-center justify-center transition-colors duration-200',
+    size === 'sm' && 'h-8 w-8',
+    size === 'md' && 'h-11 w-11',
+    size === 'lg' && 'h-14 w-14',
+    className,
+  );
+
+  if (!user) {
+    const handleGuestFavorite = (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toast({ title: 'سجل دخولك أولاً', description: 'سجل الدخول علشان تحفظ المنتجات في المفضلة.' });
+      navigate('/phone-login');
+    };
+
+    return (
+      <button
+        type="button"
+        onClick={handleGuestFavorite}
+        aria-label="سجل الدخول لإضافة المنتج للمفضلة"
+        className={baseClassName}
+        style={{ padding: 0, background: 'transparent' }}
+      >
+        <Heart size={sizeMap[size]} strokeWidth={2.1} className="text-slate-400 transition-colors active:text-[#005931]" />
+      </button>
+    );
+  }
 
   if (!favoritesLoaded) {
     return (
-      <div
-        className={cn(
-          'flex items-center justify-center transition-shadow duration-200',
-          size === 'sm' && 'h-8 w-8',
-          size === 'md' && 'h-11 w-11',
-          size === 'lg' && 'h-14 w-14',
-          className,
-        )}
-      >
+      <div className={baseClassName}>
         <Heart size={sizeMap[size]} strokeWidth={2} className="animate-pulse text-gray-200" />
       </div>
     );
@@ -56,13 +79,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
       onClick={handleClick}
       aria-label={selected ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
       disabled={isLoading}
-      className={cn(
-        'relative flex items-center justify-center transition-shadow duration-200',
-        size === 'sm' && 'h-8 w-8',
-        size === 'md' && 'h-11 w-11',
-        size === 'lg' && 'h-14 w-14',
-        className,
-      )}
+      className={baseClassName}
       style={{ padding: 0, background: 'transparent' }}
     >
       <Heart
@@ -70,7 +87,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         strokeWidth={2}
         className={cn(
           'transition-colors duration-300',
-          selected ? 'fill-[#22C55E] text-[#22C55E]' : 'text-gray-300 group-hover:text-primary',
+          selected ? 'fill-[#005931] text-[#005931]' : 'text-slate-400 group-hover:text-[#005931]',
         )}
       />
       {isLoading && <Skeleton className="absolute inset-0 rounded-full" />}
