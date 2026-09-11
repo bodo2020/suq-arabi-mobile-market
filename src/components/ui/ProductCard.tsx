@@ -6,6 +6,7 @@ import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPric
 import { useCart } from '@/contexts/useCart';
 import FavoriteButton from './FavoriteButton';
 import WeightSelector from './WeightSelector';
+import SmartImage from './SmartImage';
 
 interface ProductCardProps {
   product: Product & { displayType?: 'regular' | 'bulk'; variantKey?: string };
@@ -18,7 +19,6 @@ const money = (value: number) => Number(value).toLocaleString('ar-EG', { maximum
 const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = false, showBulkQuantity = false }) => {
   const { items, addToCart, updateQuantity, removeFromCart, isInitialized } = useCart();
   const [weightOpen, setWeightOpen] = useState(false);
-  const [failedBulkImage, setFailedBulkImage] = useState<string | null>(null);
 
   const weighted = isWeightedProduct(product);
   const weightStep = weighted ? productWeightStepGrams(product) : 0;
@@ -36,8 +36,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const reachedStockLimit = Boolean(item && item.quantity >= maxCartQuantity);
   const limitedStock = !weighted && !unavailable && maxCartQuantity > 0 && maxCartQuantity <= 5;
   const bulkImageUrl = bulk ? String(product.bulk_image_url || '').trim() : '';
-  const showBulkImage = Boolean(bulkImageUrl && failedBulkImage !== bulkImageUrl);
-  const packNumber = String(Math.max(1, Math.trunc(pack)));
   const displayName = bulk ? (String(product.bulk_name || '').trim() || product.name) : product.name;
   const bulkUnitType = bulk
     ? (String((product as Product & { bulk_variant_type?: string | null }).bulk_variant_type || '').trim() || 'جملة')
@@ -46,6 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
   const detailHref = bulk
     ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}`
     : `/product/${product.id}`;
+  const imageSrc = bulkImageUrl || product.image_urls?.[0] || '/placeholder.svg';
 
   const selectedWeight = weighted
     ? Math.min(maxCartQuantity || weightStep, Math.max(1, Math.round(Number(item?.quantity || weightStep))))
@@ -127,34 +126,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
     >
       <div className="relative mb-5 sm:mb-7">
         <Link to={detailHref} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
-          <div className={`relative aspect-square overflow-hidden rounded-[14px] p-2 sm:rounded-[18px] sm:p-3.5 ${bulk && !showBulkImage ? 'bg-emerald-50' : 'bg-gradient-to-b from-[#fafbfa] to-[#f4f7f5]'}`}>
-            {bulk ? (
-              showBulkImage ? (
-                <img
-                  src={bulkImageUrl}
-                  alt={displayName}
-                  loading="lazy"
-                  decoding="async"
-                  onError={() => setFailedBulkImage(bulkImageUrl)}
-                  className="h-full w-full object-contain transition-transform duration-300 motion-safe:group-hover/card:scale-[1.04]"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center" aria-label={`${bulkUnitType} ${packNumber} قطعة`}>
-                  <div className="flex aspect-square w-[58%] max-w-28 items-center justify-center rounded-[26%] bg-[#005931] shadow-[0_8px_20px_rgba(0,89,49,0.18)] transition-transform duration-300 motion-safe:group-hover/card:scale-[1.04]">
-                    <span className="select-none text-2xl font-black leading-none tracking-tight text-white sm:text-5xl">{packNumber}</span>
-                  </div>
-                </div>
-              )
-            ) : (
-              <img
-                src={product.image_urls?.[0] || '/placeholder.svg'}
-                alt={displayName}
-                loading="lazy"
-                decoding="async"
-                onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
-                className="h-full w-full object-contain transition-transform duration-300 motion-safe:group-hover/card:scale-[1.04]"
-              />
-            )}
+          <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5">
+            <SmartImage
+              src={imageSrc}
+              alt={displayName}
+              preloadMargin="800px 0px"
+              className="h-full w-full object-contain transition-transform duration-300 motion-safe:group-hover/card:scale-[1.04]"
+            />
           </div>
         </Link>
 
@@ -174,14 +152,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           <div className="absolute -bottom-4 left-1 z-30 max-w-[calc(100%-8px)] sm:-bottom-5 sm:left-2 sm:max-w-[calc(100%-16px)]">
             {weighted ? (
               item ? (
-                <div className="flex h-9 w-[98px] max-w-full items-center overflow-hidden rounded-full border border-emerald-100 bg-white text-[#005931] shadow-[0_6px_16px_rgba(15,23,42,0.14)] sm:h-12 sm:w-auto sm:min-w-[132px]">
-                  <button type="button" onClick={decreaseWeight} disabled={!isInitialized} aria-label={selectedWeight <= weightStep ? `حذف ${displayName} من السلة` : `تقليل الوزن بمقدار ${formatWeightAmount(weightStep)}`} className="flex h-9 w-8 shrink-0 items-center justify-center disabled:opacity-30 sm:h-12 sm:w-11">
+                <div className="flex h-9 w-[98px] max-w-full items-center overflow-hidden rounded-full border border-[#dcefe5] bg-[#eef9f3] text-[#005931] shadow-[0_6px_16px_rgba(0,89,49,0.10)] sm:h-12 sm:w-auto sm:min-w-[132px]">
+                  <button type="button" onClick={decreaseWeight} disabled={!isInitialized} aria-label={selectedWeight <= weightStep ? `حذف ${displayName} من السلة` : `تقليل الوزن بمقدار ${formatWeightAmount(weightStep)}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                     {selectedWeight <= weightStep ? <Trash2 className="h-3.5 w-3.5 sm:h-[17px] sm:w-[17px]" /> : <Minus className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" />}
                   </button>
-                  <button type="button" onClick={() => setWeightOpen(true)} className="min-w-0 flex-1 px-0.5 text-center" aria-label={`تعديل الوزن الحالي ${formatWeightAmount(selectedWeight)}`}>
+                  <button type="button" onClick={() => setWeightOpen(true)} className="min-w-0 flex-1 px-0.5 text-center text-[#005931]" aria-label={`تعديل الوزن الحالي ${formatWeightAmount(selectedWeight)}`}>
                     <strong className="block truncate whitespace-nowrap text-[9px] sm:text-xs">{formatWeightAmount(selectedWeight)}</strong>
                   </button>
-                  <button type="button" onClick={increaseWeight} disabled={!isInitialized || !weightCanIncrease} aria-label={`زيادة الوزن بمقدار ${formatWeightAmount(weightStep)}`} className="flex h-9 w-8 shrink-0 items-center justify-center bg-[#005931] text-white disabled:opacity-30 sm:h-12 sm:w-11">
+                  <button type="button" onClick={increaseWeight} disabled={!isInitialized || !weightCanIncrease} aria-label={`زيادة الوزن بمقدار ${formatWeightAmount(weightStep)}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                     <Plus className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
                   </button>
                 </div>
@@ -197,12 +175,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
                 </button>
               )
             ) : item ? (
-              <div className="flex h-9 w-[94px] max-w-full items-center overflow-hidden rounded-full border border-slate-100 bg-white text-[#005931] shadow-[0_6px_16px_rgba(15,23,42,0.14)] sm:h-12 sm:w-auto sm:min-w-[122px]">
-                <button type="button" onClick={decreaseRegularOrBulk} disabled={!isInitialized} aria-label={item.quantity <= 1 ? `حذف ${displayName} من السلة` : `تقليل كمية ${displayName}`} className="flex h-9 w-8 shrink-0 items-center justify-center disabled:opacity-30 sm:h-12 sm:w-11">
+              <div className="flex h-9 w-[94px] max-w-full items-center overflow-hidden rounded-full border border-[#dcefe5] bg-[#eef9f3] text-[#005931] shadow-[0_6px_16px_rgba(0,89,49,0.10)] sm:h-12 sm:w-auto sm:min-w-[122px]">
+                <button type="button" onClick={decreaseRegularOrBulk} disabled={!isInitialized} aria-label={item.quantity <= 1 ? `حذف ${displayName} من السلة` : `تقليل كمية ${displayName}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                   {item.quantity <= 1 ? <Trash2 className="h-3.5 w-3.5 sm:h-[17px] sm:w-[17px]" /> : <Minus className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" />}
                 </button>
-                <span aria-live="polite" className="min-w-6 flex-1 text-center text-[11px] font-black text-slate-900 sm:min-w-9 sm:text-sm">{money(item.quantity)}</span>
-                <button type="button" onClick={addRegularOrBulk} disabled={!isInitialized || reachedStockLimit} aria-label={reachedStockLimit ? `وصلت للكمية المتاحة من ${displayName}` : `زيادة كمية ${displayName}`} className="flex h-9 w-8 shrink-0 items-center justify-center bg-[#005931] text-white disabled:opacity-30 sm:h-12 sm:w-11">
+                <span aria-live="polite" className="min-w-6 flex-1 text-center text-[11px] font-black text-[#005931] sm:min-w-9 sm:text-sm">{money(item.quantity)}</span>
+                <button type="button" onClick={addRegularOrBulk} disabled={!isInitialized || reachedStockLimit} aria-label={reachedStockLimit ? `وصلت للكمية المتاحة من ${displayName}` : `زيادة كمية ${displayName}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                   <Plus className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
                 </button>
               </div>
