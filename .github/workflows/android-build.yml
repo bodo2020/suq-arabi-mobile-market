@@ -35,6 +35,8 @@ jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      VITE_GOOGLE_MAPS_API_KEY: ${{ vars.VITE_GOOGLE_MAPS_API_KEY }}
 
     steps:
       - name: Checkout
