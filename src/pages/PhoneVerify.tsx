@@ -1,7 +1,7 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Phone, ArrowRight, Check, Loader } from 'lucide-react';
+import { Phone, ArrowRight, Check } from 'lucide-react';
 import MainLayout from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -9,7 +9,6 @@ import { useUser } from '@/contexts/UserContext';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Input } from '@/components/ui/input';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
-import { supabase } from '@/lib/supabase';
 import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
 import { loadOnboardingState, nextOnboardingPath, safeReturnTo } from '@/lib/onboarding';
 
@@ -45,6 +44,7 @@ const PhoneVerify = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const [rateLimitError, setRateLimitError] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
+  const [isTestOtp, setIsTestOtp] = useState(false);
   const [countryCode, setCountryCode] = useState<Country>(
     KNOWN_COUNTRIES.find((country) => country.code === countryCodeFromQuery) || DEFAULT_COUNTRY
   );
@@ -102,16 +102,23 @@ const PhoneVerify = () => {
 
     try {
       const fullPhone = formatInternationalPhone(phone, countryCode);
-      const { error } = await signInWithPhone(fullPhone, !isRecovery);
+      const { data, error } = await signInWithPhone(fullPhone, !isRecovery);
       if (error) throw error;
 
+      const testOtp = Boolean(data?.testOtp);
+      setIsTestOtp(testOtp);
       setStep('verification');
       setCode('');
       setResendSeconds(60);
-      toast({
-        title: isResend ? 'تم إعادة إرسال رمز التحقق' : 'تم إرسال رمز التحقق',
-        description: 'تم إرسال رمز مكون من 6 أرقام إلى هاتفك',
-      });
+      toast(testOtp
+        ? {
+            title: 'رقم الاختبار جاهز',
+            description: 'استخدم رمز الاختبار المخصص لإكمال تسجيل الدخول.',
+          }
+        : {
+            title: isResend ? 'تم إعادة إرسال رمز التحقق' : 'تم إرسال رمز التحقق',
+            description: 'تم إرسال رمز مكون من 6 أرقام إلى هاتفك',
+          });
     } catch (error: any) {
       const isRateLimited = error?.status === 429 || error?.code === 'over_sms_send_rate_limit';
       if (isRateLimited) setRateLimitError(true);
@@ -201,7 +208,10 @@ const PhoneVerify = () => {
                 <div className="flex gap-2 items-center">
                   <CountryCodeSelector
                     value={countryCode}
-                    onChange={setCountryCode}
+                    onChange={(country) => {
+                      setCountryCode(country);
+                      setIsTestOtp(false);
+                    }}
                     className="min-w-[80px]"
                   />
                   <Input
@@ -217,6 +227,7 @@ const PhoneVerify = () => {
                       setPhone(event.target.value);
                       setErrors((prev) => ({ ...prev, phone: '' }));
                       setRateLimitError(false);
+                      setIsTestOtp(false);
                     }}
                     className="text-right ltr flex-1"
                     placeholder={countryCode.code === 'EG' ? '1xxxxxxxxx' : 'xxx-xxxx-xxx'}
@@ -246,7 +257,7 @@ const PhoneVerify = () => {
           ) : (
             <>
               <p className="text-center mb-6">
-                أدخل الرمز المرسل إلى
+                {isTestOtp ? 'أدخل رمز الاختبار المخصص للرقم' : 'أدخل الرمز المرسل إلى'}
                 <br />
                 <span className="font-bold" dir="ltr">{formatInternationalPhone(phone, countryCode)}</span>
               </p>
@@ -301,7 +312,7 @@ const PhoneVerify = () => {
                     ? 'جاري إعادة الإرسال...'
                     : resendSeconds > 0
                       ? `إعادة الإرسال بعد ${resendSeconds} ثانية`
-                      : 'إعادة إرسال الرمز'}
+                      : isTestOtp ? 'إعادة تهيئة رمز الاختبار' : 'إعادة إرسال الرمز'}
                 </button>
 
                 <div>
@@ -310,6 +321,7 @@ const PhoneVerify = () => {
                     onClick={() => {
                       setStep('phone');
                       setCode('');
+                      setIsTestOtp(false);
                       setErrors({ phone: '', code: '' });
                     }}
                     className="text-primary text-sm"
