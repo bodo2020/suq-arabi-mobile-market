@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
 import {
   defaultHomeSections,
+  getHomeAnalyticsSessionKey,
   getHomeRecommendationIds,
   getPublicHomePage,
   HomeSectionConfig,
@@ -30,6 +31,12 @@ const SectionHeading = ({ title, subtitle, href }: { title?: string | null; subt
     {href && <Link to={href} className="flex min-h-10 shrink-0 items-center gap-1 rounded-xl px-3 text-sm font-bold text-[#005931] hover:bg-emerald-50">عرض الكل<ChevronLeft size={17} /></Link>}
   </div>
 );
+
+const eventMetadata = (section: HomeSectionConfig) => ({
+  section_type: section.section_type,
+  experiment_key: section.experiment_key || null,
+  experiment_variant: section.experiment_variant || null,
+});
 
 const TrackedSection = ({
   pageId,
@@ -52,20 +59,38 @@ const TrackedSection = ({
       const visible = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.25);
       if (visible && !impressionSent.current) {
         impressionSent.current = true;
-        void trackHomeEvent(pageId, section.id, branchId, 'impression', { section_type: section.section_type });
+        void trackHomeEvent(pageId, section.id, branchId, 'impression', eventMetadata(section));
         observer.disconnect();
       }
     }, { threshold: [0.25] });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [pageId, branchId, section.id, section.section_type]);
+  }, [pageId, branchId, section.id, section.section_type, section.experiment_key, section.experiment_variant]);
 
   return (
     <div
       ref={ref}
-      onClickCapture={() => {
+      onClickCapture={event => {
         if (!pageId || section.id.startsWith('fallback-')) return;
-        void trackHomeEvent(pageId, section.id, branchId, 'click', { section_type: section.section_type });
+        const metadata = eventMetadata(section);
+        const target = event.target instanceof Element ? event.target : null;
+        const button = target?.closest('button');
+        const actionLabel = button?.getAttribute('aria-label')?.trim() || '';
+
+        void trackHomeEvent(pageId, section.id, branchId, 'click', {
+          ...metadata,
+          action_label: actionLabel || undefined,
+        });
+
+        // ProductCard uses an Arabic aria-label beginning with "إضافة" only for the
+        // first add action. Quantity increments use "زيادة", so cart intent is not
+        // inflated by every + tap after the product is already in the cart.
+        if (actionLabel.startsWith('إضافة')) {
+          void trackHomeEvent(pageId, section.id, branchId, 'add_to_cart', {
+            ...metadata,
+            action_label: actionLabel.slice(0, 240),
+          });
+        }
       }}
     >
       {children}
@@ -76,6 +101,10 @@ const TrackedSection = ({
 const DynamicHomeSections = () => {
   const navigate = useNavigate();
   const { user } = useUser();
+  const guestSessionKey = React.useMemo(() => getHomeAnalyticsSessionKey(), []);
+  const experimentSeed = user?.id || guestSessionKey;
+  const cacheScope = user?.id || `guest:${guestSessionKey}`;
+
   const branchQuery = useQuery({
     queryKey: ['delivery-branch-id'],
     queryFn: getCurrentDeliveryBranchId,
@@ -83,10 +112,9 @@ const DynamicHomeSections = () => {
     refetchOnWindowFocus: true,
   });
 
-  const cacheScope = user?.id || 'guest';
   const homeQuery = useQuery({
-    queryKey: ['public-home-page', branchQuery.data || 'global', cacheScope],
-    queryFn: () => getPublicHomePage(branchQuery.data || null, cacheScope),
+    queryKey: ['public-home-page', branchQuery.data || 'global', cacheScope, experimentSeed],
+    queryFn: () => getPublicHomePage(branchQuery.data || null, cacheScope, experimentSeed),
     enabled: !branchQuery.isLoading,
     staleTime: 60_000,
     refetchOnWindowFocus: true,
