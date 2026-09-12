@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - work/customer-android-capacitor
     paths:
       - 'src/**'
@@ -65,6 +66,17 @@ jobs:
         run: |
           if [ ! -d android ]; then
             npx cap add android
+          fi
+
+      - name: Configure Firebase client
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "Firebase google-services.json configured."
+          else
+            echo "GOOGLE_SERVICES_JSON is not configured; APK will build but native FCM registration will stay unavailable."
           fi
 
       - name: Sync Capacitor
