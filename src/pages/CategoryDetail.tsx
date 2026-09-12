@@ -73,9 +73,17 @@ const CategoryDetail = () => {
     return grouped;
   }, [products, subcategories]);
 
+  const visibleSubcategories = useMemo(
+    () => subcategories.filter(subcategory => sections.some(section => section.subcategoryId === subcategory.id)),
+    [sections, subcategories],
+  );
+
   useEffect(() => {
-    if (!sections.length) return;
-    setActiveSection(current => current || sections[0].id);
+    if (!sections.length) {
+      setActiveSection('');
+      return;
+    }
+    setActiveSection(current => sections.some(section => section.id === current) ? current : sections[0].id);
   }, [sections]);
 
   useEffect(() => {
@@ -101,7 +109,7 @@ const CategoryDetail = () => {
   }, [loading, id]);
 
   useEffect(() => {
-    if (!sections.length || !subcategories.length) return;
+    if (!sections.length || !visibleSubcategories.length) return;
     let frame = 0;
 
     const readTopNavHeight = () => {
@@ -150,7 +158,7 @@ const CategoryDetail = () => {
       window.removeEventListener('resize', requestUpdate);
       window.removeEventListener('orientationchange', requestUpdate);
     };
-  }, [sections, subcategories.length]);
+  }, [sections, visibleSubcategories.length]);
 
   const scrollToSection = (sectionId: string) => {
     const element = sectionRefs.current[sectionId];
@@ -211,7 +219,7 @@ const CategoryDetail = () => {
           </section>
         </div>
 
-        {subcategories.length > 0 && (
+        {visibleSubcategories.length > 0 && (
           <div ref={chipAnchorRef} className="relative mb-5 h-[58px]">
             <div
               className={`${chipsPinned ? 'fixed inset-x-0 z-[45]' : 'absolute inset-x-0 top-0 z-40'} border-y border-emerald-100/70 bg-white/96 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur-xl`}
@@ -219,7 +227,7 @@ const CategoryDetail = () => {
             >
               <div className="mx-auto w-full max-w-7xl">
                 <div className="hide-scrollbar flex w-full flex-nowrap gap-1.5 overflow-x-auto scroll-smooth px-3 sm:gap-2 sm:px-5" dir="rtl">
-                  {subcategories.map(subcategory => {
+                  {visibleSubcategories.map(subcategory => {
                     const selected = activeSection === subcategory.id;
                     const count = products.filter(product => product.subcategory_id === subcategory.id).length;
                     return (
