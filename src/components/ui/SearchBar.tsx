@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, QrCode } from 'lucide-react';
+import { Barcode, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface SearchBarProps {
@@ -59,8 +59,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className="relative flex items-center bg-gray-50 rounded-xl border border-gray-200 focus-within:border-green-600 overflow-hidden">
-        <div className="flex min-w-0 items-center flex-1 relative">
+      <div className="relative flex items-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 transition-colors focus-within:border-[#005931] focus-within:bg-white">
+        <div className="relative flex min-w-0 flex-1 items-center">
           <Search size={20} className="absolute right-3 text-gray-400" />
           <input
             type="search"
@@ -71,7 +71,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onFocus={handleFocus}
             placeholder={placeholder}
             readOnly={readOnly}
-            className={`min-w-0 w-full pl-2 pr-10 py-3 bg-transparent border-none outline-none text-gray-900 placeholder-gray-500 text-sm ${
+            className={`min-w-0 w-full bg-transparent py-3 pl-2 pr-10 text-sm text-gray-900 outline-none placeholder:text-gray-500 ${
               readOnly ? 'cursor-pointer' : ''
             }`}
           />
@@ -79,10 +79,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <button
           type="button"
           onClick={handleBarcodeClick}
-          aria-label="البحث بالباركود"
-          className="flex h-11 w-11 shrink-0 items-center justify-center border-r border-gray-200 hover:bg-green-50 transition-colors"
+          aria-label="مسح باركود المنتج"
+          title="مسح باركود المنتج"
+          className="group flex h-11 w-12 shrink-0 items-center justify-center border-r border-gray-200 bg-white/70 transition-colors hover:bg-emerald-50 active:bg-emerald-100"
         >
-          <QrCode size={20} className="text-[#005931]" />
+          <Barcode size={23} strokeWidth={2.2} className="text-[#005931] transition-transform group-active:scale-95" />
         </button>
       </div>
     </form>
