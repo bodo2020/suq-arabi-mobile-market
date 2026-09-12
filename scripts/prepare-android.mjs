@@ -10,6 +10,7 @@ const requiredPermissions = [
   'android.permission.CAMERA',
   'android.permission.ACCESS_FINE_LOCATION',
   'android.permission.ACCESS_COARSE_LOCATION',
+  'android.permission.POST_NOTIFICATIONS',
 ];
 
 // Fail the build immediately if the brand file is not a real PNG.
@@ -162,4 +163,4 @@ await writeFile(path.join(drawableDir, 'elmadawy_splash_icon.xml'), splashIconXm
 const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:drawable="@drawable/elmadawy_splash_icon" />\n</layer-list>\n`;
 await writeFile(path.join(drawableDir, 'elmadawy_splash.xml'), splashBackgroundXml, 'utf8');
 
-console.log('Android brand assets verified and applied: Elmadawy launcher icon, adaptive icon and splash screen are active.');
+console.log('Android brand assets verified and applied: Elmadawy launcher icon, adaptive icon, splash screen and notification permission are active.');
