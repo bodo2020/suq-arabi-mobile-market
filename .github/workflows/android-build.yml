@@ -10,6 +10,7 @@ on:
       - 'src/**'
       - 'public/**'
       - 'scripts/**'
+      - 'config/firebase/**'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.ts'
@@ -22,6 +23,7 @@ on:
       - 'src/**'
       - 'public/**'
       - 'scripts/**'
+      - 'config/firebase/**'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.ts'
@@ -39,6 +41,7 @@ jobs:
     env:
       APP_VERSION_BASE: '1.2'
       APP_VERSION_CODE_BASE: '120000'
+      CUSTOMER_FIREBASE_FALLBACK: 'config/firebase/google-services.customer.json'
 
     steps:
       - name: Checkout
@@ -63,12 +66,12 @@ jobs:
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+          if [ -n "$GOOGLE_SERVICES_JSON" ] || [ -f "$CUSTOMER_FIREBASE_FALLBACK" ]; then
             echo "VITE_NATIVE_PUSH_CONFIGURED=true" >> "$GITHUB_ENV"
             echo "Firebase native push is enabled for this build."
           else
             echo "VITE_NATIVE_PUSH_CONFIGURED=false" >> "$GITHUB_ENV"
-            echo "Firebase native push is disabled for this build because GOOGLE_SERVICES_JSON is missing."
+            echo "Firebase native push is disabled because no client config is available."
           fi
 
       - name: Build React app
@@ -86,9 +89,12 @@ jobs:
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
-            echo "Firebase google-services.json configured."
+            echo "Firebase google-services.json configured from GitHub secret."
+          elif [ -f "$CUSTOMER_FIREBASE_FALLBACK" ]; then
+            cp "$CUSTOMER_FIREBASE_FALLBACK" android/app/google-services.json
+            echo "Firebase google-services.json configured from the recovered customer app config."
           else
-            echo "GOOGLE_SERVICES_JSON is not configured; native FCM stays disabled in this APK."
+            echo "No Firebase client config is available; native FCM stays disabled in this APK."
           fi
 
       - name: Sync Capacitor
