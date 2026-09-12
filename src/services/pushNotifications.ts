@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 const TOKEN_KEY = 'elmadawy.push.token';
 const DEVICE_KEY = 'elmadawy.push.device-key';
+const NATIVE_PUSH_CONFIGURED = String(import.meta.env.VITE_NATIVE_PUSH_CONFIGURED || '').toLowerCase() === 'true';
 
 type PermissionState = 'prompt' | 'prompt-with-rationale' | 'granted' | 'denied';
 
@@ -50,7 +51,9 @@ export type CustomerPushEvent = {
 export type CustomerPushPermissionResult = 'granted' | 'denied' | 'unsupported';
 
 function nativePushAvailable() {
-  return Capacitor.isNativePlatform() && Boolean((Capacitor as any).isPluginAvailable?.('PushNotifications'));
+  return NATIVE_PUSH_CONFIGURED
+    && Capacitor.isNativePlatform()
+    && Boolean((Capacitor as any).isPluginAvailable?.('PushNotifications'));
 }
 
 function getOrCreateDeviceKey() {
@@ -118,7 +121,7 @@ export async function initializeCustomerPushNotifications(callbacks?: {
   onError?: (error: unknown) => void;
 }) {
   if (!nativePushAvailable()) {
-    if (Capacitor.isNativePlatform()) console.info('PushNotifications native plugin is not available in this build.');
+    if (Capacitor.isNativePlatform()) console.info('PushNotifications is disabled because Firebase client config is unavailable in this build.');
     return () => undefined;
   }
 
@@ -150,8 +153,7 @@ export async function initializeCustomerPushNotifications(callbacks?: {
   await createAndroidChannels();
 
   const permission = await PushNotifications.checkPermissions();
-  // Never interrupt the customer with a permission popup on login. If permission was already
-  // granted we refresh the token; otherwise the Notifications screen exposes an explicit CTA.
+  // If permission was already granted, refresh the token without showing another prompt.
   if (permission.receive === 'granted') {
     await PushNotifications.register();
   }
