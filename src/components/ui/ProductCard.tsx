@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
+import { Bell, BellRing, Loader2, Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 import { useCart } from '@/contexts/useCart';
@@ -12,13 +12,24 @@ interface ProductCardProps {
   product: Product & { displayType?: 'regular' | 'bulk'; variantKey?: string };
   hideIfUnavailable?: boolean;
   showBulkQuantity?: boolean;
+  showRestockReminder?: boolean;
+  restockReminderActive?: boolean;
+  onRestockReminderToggle?: (nextActive: boolean) => Promise<void> | void;
 }
 
 const money = (value: number) => Number(value).toLocaleString('ar-EG', { maximumFractionDigits: 2 });
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = false, showBulkQuantity = false }) => {
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  hideIfUnavailable = false,
+  showBulkQuantity = false,
+  showRestockReminder = false,
+  restockReminderActive = false,
+  onRestockReminderToggle,
+}) => {
   const { items, addToCart, updateQuantity, removeFromCart, isInitialized } = useCart();
   const [weightOpen, setWeightOpen] = useState(false);
+  const [reminderPending, setReminderPending] = useState(false);
 
   const weighted = isWeightedProduct(product);
   const weightStep = weighted ? productWeightStepGrams(product) : 0;
@@ -109,6 +120,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
       return;
     }
     updateQuantity(product.id, Math.max(1, selectedWeight - weightStep), false);
+  };
+
+  const toggleRestockReminder = async () => {
+    if (!onRestockReminderToggle || reminderPending) return;
+    setReminderPending(true);
+    try {
+      await onRestockReminderToggle(!restockReminderActive);
+    } finally {
+      setReminderPending(false);
+    }
   };
 
   const rawUnit = String(product.unit_of_measure || '').trim();
@@ -221,7 +242,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, hideIfUnavailable = 
           <p className="mt-1 truncate text-[8px] font-semibold text-slate-500 sm:mt-1.5 sm:text-[11px]">{formatWeightAmount(selectedWeight)}: <span className="font-black text-[#005931]">{money(selectedWeightPrice)} ج.م</span></p>
         )}
 
-        {unavailable && <div className="mt-1.5 flex h-7 items-center justify-center rounded-lg bg-slate-100 text-[9px] font-bold text-slate-500 sm:mt-2 sm:h-9 sm:rounded-xl sm:text-xs">غير متاح</div>}
+        {unavailable && (
+          showRestockReminder ? (
+            <button
+              type="button"
+              onClick={() => void toggleRestockReminder()}
+              disabled={reminderPending || !onRestockReminderToggle}
+              className={`mt-1.5 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-xl border px-2 text-[9px] font-black transition sm:mt-2 sm:min-h-10 sm:text-xs ${restockReminderActive ? 'border-emerald-200 bg-emerald-50 text-[#005931]' : 'border-slate-200 bg-slate-50 text-slate-700'} disabled:opacity-60`}
+              aria-pressed={restockReminderActive}
+            >
+              {reminderPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : restockReminderActive ? <BellRing className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+              <span>{restockReminderActive ? 'التذكير مفعّل' : 'نبّهني عند التوفر'}</span>
+            </button>
+          ) : (
+            <div className="mt-1.5 flex h-7 items-center justify-center rounded-lg bg-slate-100 text-[9px] font-bold text-slate-500 sm:mt-2 sm:h-9 sm:rounded-xl sm:text-xs">غير متاح</div>
+          )
+        )}
       </div>
 
       {weightOpen && weighted && item && (
