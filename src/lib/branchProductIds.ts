@@ -19,3 +19,18 @@ export async function getProductsByIds(productIds: string[]): Promise<Product[]>
   if (error) throw error;
   return (Array.isArray(data) ? data : []) as Product[];
 }
+
+export async function getFavoriteProductsByIds(productIds: string[]): Promise<Product[]> {
+  const ids = [...new Set(productIds.filter(Boolean))];
+  if (!ids.length) return [];
+
+  const branchId = await getCurrentDeliveryBranchId();
+  if (!branchId) throw new Error('DELIVERY_ADDRESS_REQUIRED');
+
+  const { data, error } = await rpc('get_customer_branch_favorite_products_v1', {
+    p_branch_id: branchId,
+    p_product_ids: ids,
+  });
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []) as Product[];
+}
