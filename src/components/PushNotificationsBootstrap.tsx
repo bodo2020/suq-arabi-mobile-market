@@ -90,14 +90,21 @@ export default function PushNotificationsBootstrap() {
       }
 
       // Ask once per installation, shortly after a signed-in customer reaches the app.
-      // The native registration listener above is already attached, so a granted permission
-      // immediately produces an FCM token and persists it through register_push_device_v2.
+      // Unsupported builds do not consume the one-time marker, so a later Firebase-enabled
+      // update can request permission normally without asking the customer to clear app data.
       try {
         if (!localStorage.getItem(PUSH_PERMISSION_PROMPTED_KEY)) {
           permissionTimer = window.setTimeout(() => {
-            localStorage.setItem(PUSH_PERMISSION_PROMPTED_KEY, new Date().toISOString());
             void requestCustomerPushPermissionAndRegister().then(result => {
-              if (disposed || result !== 'granted') return;
+              if (disposed || result === 'unsupported') return;
+
+              try {
+                localStorage.setItem(PUSH_PERMISSION_PROMPTED_KEY, new Date().toISOString());
+              } catch {
+                // Push can still work when localStorage is unavailable.
+              }
+
+              if (result !== 'granted') return;
               toast({
                 title: 'تم تفعيل الإشعارات',
                 description: 'هيوصلك تحديث الطلب والعروض المهمة من المعداوي ماركت.',
