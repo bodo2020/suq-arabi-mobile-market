@@ -5,7 +5,9 @@ import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { fetchCustomerNotificationCenterV2 } from '@/services/notificationCenterV2';
-import { initializeCustomerPushNotifications } from '@/services/pushNotifications';
+import { initializeCustomerPushNotifications, requestCustomerPushPermissionAndRegister } from '@/services/pushNotifications';
+
+const PUSH_PERMISSION_PROMPTED_KEY = 'elmadawy.push.permission-prompted.v1';
 
 export default function PushNotificationsBootstrap() {
   const { user, authLoading } = useUser();
@@ -61,8 +63,8 @@ export default function PushNotificationsBootstrap() {
 
     let disposed = false;
     let cleanup: (() => void | Promise<void>) | undefined;
+    let permissionTimer: number | undefined;
 
-    // Push remains optional. This only attaches listeners/registers when the native app is already allowed.
     void initializeCustomerPushNotifications({
       onReceived: event => {
         if (disposed) return;
@@ -82,13 +84,37 @@ export default function PushNotificationsBootstrap() {
       },
     }).then(fn => {
       cleanup = fn;
-      if (disposed) void cleanup?.();
+      if (disposed) {
+        void cleanup?.();
+        return;
+      }
+
+      // Ask once per installation, shortly after a signed-in customer reaches the app.
+      // The native registration listener above is already attached, so a granted permission
+      // immediately produces an FCM token and persists it through register_push_device_v2.
+      try {
+        if (!localStorage.getItem(PUSH_PERMISSION_PROMPTED_KEY)) {
+          permissionTimer = window.setTimeout(() => {
+            localStorage.setItem(PUSH_PERMISSION_PROMPTED_KEY, new Date().toISOString());
+            void requestCustomerPushPermissionAndRegister().then(result => {
+              if (disposed || result !== 'granted') return;
+              toast({
+                title: 'تم تفعيل الإشعارات',
+                description: 'هيوصلك تحديث الطلب والعروض المهمة من المعداوي ماركت.',
+              });
+            }).catch(error => console.warn('Push permission request failed:', error));
+          }, 2500);
+        }
+      } catch {
+        // localStorage can be unavailable in unusual WebView privacy modes; push remains optional.
+      }
     }).catch(error => {
       console.warn('Optional push is not available:', error);
     });
 
     return () => {
       disposed = true;
+      if (permissionTimer) window.clearTimeout(permissionTimer);
       void cleanup?.();
     };
   }, [authLoading, navigate, toast, user?.id]);
