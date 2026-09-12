@@ -6,10 +6,16 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import { supabase } from '@/integrations/supabase/client';
-import type { Product } from '@/lib/supabase';
-import { getProductsByIds } from '@/lib/branchProductIds';
+import { getCurrentDeliveryBranchId, type Product } from '@/lib/supabase';
+import { getFavoriteProductsByIds } from '@/lib/branchProductIds';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import {
+  backInStockReminderKey,
+  getMyBackInStockReminders,
+  setBackInStockReminder,
+} from '@/services/backInStockReminders';
 import {
   DisplayProduct,
   displayProductName,
@@ -28,12 +34,15 @@ const favoriteRowKey = (row: FavoriteRow) => row.variant_id
 
 const Favorites = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [favorites, setFavorites] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, customerId, favoritesLoaded, favoritesVersion } = useFavorites();
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
   const [query, setQuery] = useState('');
+  const [deliveryBranchId, setDeliveryBranchId] = useState<string | null>(null);
+  const [reminderKeys, setReminderKeys] = useState<Set<string>>(() => new Set());
   const requestVersion = useRef(0);
   const currentCustomer = useRef(customerId);
   currentCustomer.current = customerId;
@@ -45,6 +54,7 @@ const Favorites = () => {
   useEffect(() => {
     requestVersion.current += 1;
     setFavorites([]);
+    setReminderKeys(new Set());
     setError(false);
     if (customerId && favoritesLoaded) void fetchFavorites(customerId);
     else if (favoritesLoaded) {
@@ -58,6 +68,9 @@ const Favorites = () => {
     const version = requestVersion.current;
     try {
       setLoading(true);
+      const branchId = await getCurrentDeliveryBranchId();
+      if (!branchId) throw new Error('DELIVERY_ADDRESS_REQUIRED');
+
       const { data: favoritesData, error: favoritesError } = await supabase
         .from('favorites')
         .select('product_id,variant_id')
@@ -69,7 +82,10 @@ const Favorites = () => {
         new Map(rows.map(row => [favoriteRowKey(row), row])).values(),
       );
       const productIds = [...new Set(uniqueRows.map(favorite => favorite.product_id))];
-      const productsData = await getProductsByIds(productIds);
+      const [productsData, reminders] = await Promise.all([
+        getFavoriteProductsByIds(productIds),
+        getMyBackInStockReminders(branchId),
+      ]);
       const byId = new Map(productsData.map(product => [product.id, product]));
 
       const ordered = uniqueRows.map(row => {
@@ -92,12 +108,56 @@ const Favorites = () => {
         };
       }).filter((product): product is DisplayProduct => Boolean(product));
 
-      if (currentCustomer.current === id && requestVersion.current === version) setFavorites(ordered);
+      if (currentCustomer.current === id && requestVersion.current === version) {
+        setDeliveryBranchId(branchId);
+        setFavorites(ordered);
+        setReminderKeys(new Set(reminders.map(reminder => backInStockReminderKey(reminder.product_id, reminder.variant_id))));
+      }
     } catch (loadError) {
       console.error('Error loading branch favorites:', loadError);
       if (requestVersion.current === version) setError(true);
     } finally {
       if (currentCustomer.current === id && requestVersion.current === version) setLoading(false);
+    }
+  };
+
+  const toggleRestockReminder = async (product: DisplayProduct, nextActive: boolean) => {
+    if (!deliveryBranchId) {
+      toast({ title: 'اختار عنوان التوصيل', description: 'لازم نعرف فرعك علشان نبلغك وقت توفر المنتج.' });
+      return;
+    }
+
+    const variantId = product.displayType === 'bulk' ? product.bulk_variant_id || null : null;
+    const key = backInStockReminderKey(product.id, variantId);
+
+    try {
+      const result = await setBackInStockReminder({
+        productId: product.id,
+        variantId,
+        deliveryBranchId,
+        enabled: nextActive,
+      });
+
+      setReminderKeys(current => {
+        const next = new Set(current);
+        if (result.active) next.add(key);
+        else next.delete(key);
+        return next;
+      });
+
+      if (result.available) {
+        toast({ title: 'المنتج متوفر دلوقتي', description: 'حدّثنا المفضلة علشان تقدر تضيفه للسلة.' });
+        setRetry(value => value + 1);
+        return;
+      }
+
+      toast(nextActive
+        ? { title: 'التذكير اتفعل', description: 'هنبلغك أول ما المنتج يرجع متوفر في فرعك.' }
+        : { title: 'التذكير اتلغى', description: 'مش هنبعت تنبيه توفر للمنتج ده.' });
+    } catch (reminderError) {
+      console.error('Unable to update back-in-stock reminder:', reminderError);
+      toast({ title: 'تعذر تحديث التذكير', description: 'حاول مرة تانية.', variant: 'destructive' });
+      throw reminderError;
     }
   };
 
@@ -107,13 +167,13 @@ const Favorites = () => {
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
         <div className="mb-6 rounded-3xl bg-green-50 p-5 sm:p-7">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-primary"><Heart size={25} />حاجات بتحبها</h1>
-          <p className="mt-2 text-sm leading-6 text-gray-600">القطعة والجملة ليهم مفضلة مستقلة، وبنظهر المتاح منهم حاليًا في فرع عنوان التوصيل.</p>
+          <p className="mt-2 text-sm leading-6 text-gray-600">المفضلة بتفضل محفوظة حتى لو المنتج خلص. ولو مش متوفر تقدر تفعل «نبّهني عند التوفر» وهنبلغك أول ما يرجع في فرعك.</p>
         </div>
 
         {user && !loading && !error && favorites.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <input type="search" aria-label="البحث في المفضلة" placeholder="دور في المفضلة…" value={query} onChange={event => setQuery(event.target.value)} className="min-h-12 min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4" />
-            <p role="status" className="w-full text-sm text-gray-500">{visible.length} من {favorites.length} اختيار متاح في الفرع</p>
+            <p role="status" className="w-full text-sm text-gray-500">{visible.length} من {favorites.length} اختيار في المفضلة</p>
           </div>
         )}
 
@@ -134,13 +194,25 @@ const Favorites = () => {
           <div className="rounded-3xl bg-white p-8 text-center"><h2 className="text-lg font-bold">مفيش منتجات مطابقة</h2><p className="my-3 text-gray-500">جرّب كلمة بحث مختلفة.</p><Button variant="outline" onClick={() => setQuery('')}>مسح البحث</Button></div>
         ) : favorites.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {visible.map(product => <ProductCard key={productCardKey(product)} product={product} />)}
+            {visible.map(product => {
+              const variantId = product.displayType === 'bulk' ? product.bulk_variant_id || null : null;
+              const reminderKey = backInStockReminderKey(product.id, variantId);
+              return (
+                <ProductCard
+                  key={productCardKey(product)}
+                  product={product}
+                  showRestockReminder
+                  restockReminderActive={reminderKeys.has(reminderKey)}
+                  onRestockReminderToggle={nextActive => toggleRestockReminder(product, nextActive)}
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="mx-auto flex max-w-md flex-col items-center justify-center py-16 text-center">
             <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100"><Heart size={32} className="text-gray-300" /></div>
-            <h3 className="mb-2 text-lg font-medium text-gray-900">مفيش منتجات مفضلة متاحة في فرعك</h3>
-            <p className="mb-6 text-sm text-gray-500">المنتج المفضل هيرجع يظهر هنا تلقائيًا لما يبقى متوفر في الفرع.</p>
+            <h3 className="mb-2 text-lg font-medium text-gray-900">المفضلة فاضية</h3>
+            <p className="mb-6 text-sm text-gray-500">ضيف المنتجات اللي بتحبها وهتفضل ظاهرة هنا حتى لو خلصت مؤقتًا.</p>
             <Button onClick={() => navigate('/')} className="min-w-32"><ShoppingBag size={16} className="ml-2" />تسوق الآن</Button>
           </div>
         )}
