@@ -53,6 +53,35 @@ const formatDate = (value: string) => {
   }
 };
 
+const normalizeReturnImagePath = (value: string): string | null => {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  if (!/^https?:\/\//i.test(raw)) {
+    return raw.replace(/^\/+/, '').replace(/^returns\//, '');
+  }
+
+  try {
+    const url = new URL(raw);
+    const markers = [
+      '/storage/v1/object/public/returns/',
+      '/storage/v1/object/sign/returns/',
+      '/storage/v1/object/authenticated/returns/',
+    ];
+
+    for (const marker of markers) {
+      const markerIndex = url.pathname.indexOf(marker);
+      if (markerIndex >= 0) {
+        return decodeURIComponent(url.pathname.slice(markerIndex + marker.length));
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
 const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) => {
   const [expanded, setExpanded] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -79,7 +108,35 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
     },
   });
 
-  const images = request.images || [];
+  const imageRefs = request.images || [];
+  const {
+    data: signedImages = [],
+    isLoading: imagesLoading,
+    isError: imagesError,
+    refetch: refetchImages,
+  } = useQuery({
+    queryKey: ['return-request-images', request.id, imageRefs.join('|')],
+    enabled: expanded && imageRefs.length > 0,
+    staleTime: 8 * 60_000,
+    refetchInterval: expanded && imageRefs.length > 0 ? 10 * 60_000 : false,
+    queryFn: async (): Promise<string[]> => {
+      const paths = imageRefs
+        .map(normalizeReturnImagePath)
+        .filter((path): path is string => Boolean(path));
+
+      if (!paths.length) return [];
+
+      const { data, error } = await supabase.storage
+        .from('returns')
+        .createSignedUrls(paths, 15 * 60);
+
+      if (error) throw error;
+
+      return (data || [])
+        .map(item => item.signedUrl)
+        .filter((url): url is string => Boolean(url));
+    },
+  });
 
   return (
     <article className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
@@ -183,26 +240,42 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
             )}
           </div>
 
-          {images.length > 0 && (
+          {imageRefs.length > 0 && (
             <div className="mt-6 border-t border-gray-200 pt-5">
               <div className="flex items-center gap-2">
                 <Images size={19} className="text-primary" />
                 <h3 className="font-bold">الصور المرفقة</h3>
-                <span className="text-xs text-gray-500">({images.length})</span>
+                <span className="text-xs text-gray-500">({imageRefs.length})</span>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {images.map((image, index) => (
-                  <button
-                    type="button"
-                    key={`${image}-${index}`}
-                    onClick={() => setSelectedImage(image)}
-                    className="aspect-square overflow-hidden rounded-xl border border-gray-100 bg-white"
-                    aria-label={`عرض الصورة ${index + 1}`}
-                  >
-                    <img src={image} alt={`صورة مرفقة ${index + 1}`} className="h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
+
+              {imagesLoading ? (
+                <div className="flex min-h-28 items-center justify-center">
+                  <BrandLoader size="sm" label="جاري تأمين الصور" />
+                </div>
+              ) : imagesError ? (
+                <div role="alert" className="mt-4 rounded-2xl border border-red-100 bg-white p-5 text-center">
+                  <p className="text-sm font-semibold">تعذّر تحميل الصور المرفقة بأمان.</p>
+                  <Button variant="outline" className="mt-3 rounded-xl" onClick={() => void refetchImages()}>
+                    إعادة المحاولة
+                  </Button>
+                </div>
+              ) : signedImages.length === 0 ? (
+                <p className="mt-4 rounded-2xl bg-white p-4 text-sm text-gray-500">لا توجد صور متاحة للعرض.</p>
+              ) : (
+                <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {signedImages.map((image, index) => (
+                    <button
+                      type="button"
+                      key={`${request.id}-image-${index}`}
+                      onClick={() => setSelectedImage(image)}
+                      className="aspect-square overflow-hidden rounded-xl border border-gray-100 bg-white"
+                      aria-label={`عرض الصورة ${index + 1}`}
+                    >
+                      <img src={image} alt={`صورة مرفقة ${index + 1}`} className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
