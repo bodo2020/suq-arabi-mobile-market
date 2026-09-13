@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getRoadDistance } from '@/lib/roadDistance';
 
 export const DEFAULT_DELIVERY_CENTER = { lat: 31.256622, lng: 31.168264 } as const;
 export const DELIVERY_RADIUS_KM = 10;
@@ -37,10 +38,6 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
 export async function resolveDeliveryLocation(latitude: number, longitude: number): Promise<DeliveryMatch | null> {
-  // Customer delivery verification intentionally uses the database delivery-radius check for now.
-  // The shared route-distance Edge Function is reserved for authenticated staff/delivery workflows,
-  // so customer/guest address selection must not depend on it. Road routing can be reintroduced later
-  // through a dedicated customer-safe endpoint without blocking address creation today.
   const { data, error } = await rpc('find_delivery_branch', {
     p_latitude: latitude,
     p_longitude: longitude,
@@ -51,13 +48,14 @@ export async function resolveDeliveryLocation(latitude: number, longitude: numbe
   const candidate = rows[0] as Omit<DeliveryMatch, 'road_distance_km' | 'road_duration_minutes'> | undefined;
   if (!candidate) return null;
 
-  const straightDistanceKm = Number(candidate.distance_km);
+  const route = await getRoadDistance(candidate.branch_id, latitude, longitude);
+  if (!route.deliverable || route.road_distance_km == null) return null;
+
   return {
     ...candidate,
-    distance_km: straightDistanceKm,
-    // Temporary compatibility values until customer road-distance routing is enabled again.
-    road_distance_km: straightDistanceKm,
-    road_duration_minutes: null,
+    distance_km: Number(route.road_distance_km),
+    road_distance_km: Number(route.road_distance_km),
+    road_duration_minutes: route.duration_minutes,
   };
 }
 
