@@ -20,6 +20,8 @@ import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import OrderTimeline from '@/components/orders/OrderTimeline';
+import OrderEtaPanel from '@/components/orders/OrderEtaPanel';
+import { getMyOrderEtas, type OrderEta } from '@/lib/orderEta';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 
@@ -49,6 +51,7 @@ type OrderRow = {
   delivery_person: string | null;
   created_at: string;
   updated_at: string | null;
+  eta?: OrderEta | null;
 };
 
 const STATUS_META: Record<string, { label: string; description: string; className: string }> = {
@@ -167,14 +170,18 @@ const Orders = () => {
       if (customerError) throw customerError;
       if (!customer?.id) return [];
 
-      const { data, error } = await supabase
-        .from('online_orders')
-        .select('*')
-        .eq('customer_id', customer.id)
-        .order('created_at', { ascending: false });
+      const [ordersResult, etaByOrder] = await Promise.all([
+        supabase
+          .from('online_orders')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .order('created_at', { ascending: false }),
+        getMyOrderEtas(),
+      ]);
 
-      if (error) throw error;
-      return (data || []) as unknown as OrderRow[];
+      if (ordersResult.error) throw ordersResult.error;
+      const rows = (ordersResult.data || []) as unknown as OrderRow[];
+      return rows.map(order => ({ ...order, eta: etaByOrder[order.id] || null }));
     },
     enabled: !!user && !!session,
     refetchInterval: 30_000,
@@ -347,6 +354,8 @@ const Orders = () => {
                           <p className="mt-1 text-xs leading-6 opacity-80">{status.description}</p>
                           {order.updated_at && <p className="mt-2 text-[11px] opacity-70">آخر تحديث: {formatDate(order.updated_at)}</p>}
                         </div>
+
+                        <OrderEtaPanel eta={order.eta} detailed={expanded} />
 
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
                           <div>
