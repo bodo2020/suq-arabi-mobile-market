@@ -69,14 +69,13 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
     enabled: expanded,
     staleTime: 60_000,
     queryFn: async (): Promise<ReturnRequestItem[]> => {
-      const { data, error } = await supabase
-        .from('return_request_items')
-        .select('*, products(*)')
-        .eq('return_request_id', request.id)
-        .order('created_at', { ascending: true });
+      const client = supabase as any;
+      const { data, error } = await client.rpc('get_my_return_request_items_v1', {
+        p_return_request_id: request.id,
+      });
 
       if (error) throw error;
-      return (data || []) as unknown as ReturnRequestItem[];
+      return (Array.isArray(data) ? data : []) as ReturnRequestItem[];
     },
   });
 
