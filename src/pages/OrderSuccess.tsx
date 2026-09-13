@@ -1,9 +1,12 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BellRing, CheckCircle, Home, PackageSearch, Copy, CheckCheck } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import OrderEtaPanel from '@/components/orders/OrderEtaPanel';
+import { getMyOrderEta } from '@/lib/orderEta';
 
 const OrderSuccess = () => {
   const navigate = useNavigate();
@@ -12,6 +15,13 @@ const OrderSuccess = () => {
   const [copied, setCopied] = React.useState(false);
 
   const { orderId, orderNumber } = location.state || {};
+  const { data: orderEta } = useQuery({
+    queryKey: ['order-eta', orderId],
+    queryFn: () => getMyOrderEta(orderId),
+    enabled: Boolean(orderId),
+    refetchInterval: 30_000,
+    staleTime: 10_000,
+  });
 
   const copyOrderNumber = () => {
     if (!orderNumber) return;
@@ -54,6 +64,8 @@ const OrderSuccess = () => {
               </Button>
             </div>
           )}
+
+          <OrderEtaPanel eta={orderEta} detailed />
 
           <div className="mt-6 flex items-center gap-2 rounded-2xl border border-green-100 bg-green-50/60 p-4 text-right">
             <BellRing size={21} className="shrink-0 text-primary" />
