@@ -10,7 +10,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { safeReturnTo } from '@/lib/onboarding';
 import { customerRpc } from '@/lib/customerPersistence';
-import { readGuestAddress, resolveDeliveryLocation, saveGuestAddress } from '@/lib/deliveryAddress';
+import {
+  readGuestAddress,
+  resolveDeliveryLocation,
+  saveGuestAddress,
+  type DeliveryMatch,
+} from '@/lib/deliveryAddress';
+
+type DeliveryVerificationStatus = 'idle' | 'checking' | 'valid' | 'outside' | 'error';
 
 export default function Address() {
   const { id } = useParams();
@@ -29,6 +36,9 @@ export default function Address() {
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<DeliveryVerificationStatus>('idle');
+  const [verifiedMatch, setVerifiedMatch] = useState<DeliveryMatch | null>(null);
+  const [verificationRetry, setVerificationRetry] = useState(0);
   const back = required || onboarding ? returnTo : checkout ? '/addresses?returnTo=%2Fpayment' : user ? '/addresses' : returnTo;
   const saveLabel = user
     ? (required ? 'حفظ العنوان وابدأ التسوق' : onboarding ? 'حفظ العنوان والمتابعة' : 'حفظ العنوان')
@@ -42,6 +52,8 @@ export default function Address() {
     setAddress('');
     setAddressEdited(false);
     setCoordinates(null);
+    setVerificationStatus('idle');
+    setVerifiedMatch(null);
 
     const guest = readGuestAddress();
 
@@ -84,6 +96,43 @@ export default function Address() {
     return () => { active = false; };
   }, [id, user?.id, authLoading, required]);
 
+  useEffect(() => {
+    if (!coordinates || loading || authLoading) {
+      setVerificationStatus('idle');
+      setVerifiedMatch(null);
+      return;
+    }
+
+    let active = true;
+    setVerificationStatus('checking');
+    setVerifiedMatch(null);
+
+    const timer = window.setTimeout(() => {
+      void resolveDeliveryLocation(coordinates.lat, coordinates.lng)
+        .then(match => {
+          if (!active) return;
+          if (!match) {
+            setVerificationStatus('outside');
+            setVerifiedMatch(null);
+            return;
+          }
+          setVerifiedMatch(match);
+          setVerificationStatus('valid');
+        })
+        .catch(verificationError => {
+          if (!active) return;
+          console.error('delivery verification failed', verificationError);
+          setVerifiedMatch(null);
+          setVerificationStatus('error');
+        });
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [coordinates?.lat, coordinates?.lng, loading, authLoading, verificationRetry]);
+
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (saving || loading || loadError) return;
@@ -95,15 +144,23 @@ export default function Address() {
       setError('اكتب تفاصيل العنوان.');
       return;
     }
+    if (verificationStatus === 'checking') {
+      setError('استنى لحظة لحد ما نتحقق من نطاق التوصيل.');
+      return;
+    }
+    if (verificationStatus === 'outside') {
+      setError('العنوان خارج نطاق التوصيل.');
+      return;
+    }
+    if (verificationStatus !== 'valid' || !verifiedMatch) {
+      setError('تعذر التحقق من التوصيل الآن. أعد المحاولة.');
+      return;
+    }
 
     setSaving(true);
     setError('');
     try {
-      const match = await resolveDeliveryLocation(coordinates.lat, coordinates.lng);
-      if (!match) {
-        setError('العنوان خارج نطاق التوصيل.');
-        return;
-      }
+      const match = verifiedMatch;
 
       if (!user) {
         saveGuestAddress({
@@ -113,7 +170,7 @@ export default function Address() {
           longitude: coordinates.lng,
           assigned_branch_id: match.branch_id,
           branch_name: match.branch_name,
-          distance_km: Number(match.road_distance_km),
+          distance_km: Number(match.distance_km),
           road_distance_km: Number(match.road_distance_km),
           road_duration_minutes: match.road_duration_minutes,
           delivery_price: Number(match.delivery_fee || 0),
@@ -173,14 +230,21 @@ export default function Address() {
       navigate(back);
     } catch (saveError) {
       console.error(saveError);
-      const code = (saveError as { message?: string })?.message || '';
-      setError(code.includes('ROUTE')
-        ? 'تعذر التحقق من التوصيل الآن. حاول مرة أخرى.'
-        : 'تعذر حفظ العنوان. حاول مرة أخرى.');
+      setError('تعذر حفظ العنوان. حاول مرة أخرى.');
     } finally {
       setSaving(false);
     }
   };
+
+  const canSubmit = Boolean(
+    !saving
+    && !loading
+    && !loadError
+    && coordinates
+    && address.trim()
+    && verificationStatus === 'valid'
+    && verifiedMatch,
+  );
 
   return <CheckoutLayout step={2} showSteps={checkout && Boolean(user)} backTo={back} backLabel="رجوع">
     <div className="mb-5">
@@ -188,7 +252,7 @@ export default function Address() {
     </div>
 
     {loading || authLoading ? <div className="cart-loading"><BrandLoader size="lg" /></div> : loadError ? <div className="cart-alert" role="alert">{loadError}<Button variant="outline" onClick={() => navigate(back)}>رجوع</Button></div> :
-      <form onSubmit={save} className="address-form grid gap-6 lg:grid-cols-[1.25fr_.75fr]" aria-busy={saving}>
+      <form onSubmit={save} className="address-form grid gap-6 lg:grid-cols-[1.25fr_.75fr]" aria-busy={saving || verificationStatus === 'checking'}>
         <section className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-xl bg-green-50 p-2.5 text-primary"><MapPin size={20} /></div>
@@ -198,7 +262,12 @@ export default function Address() {
             key={id || (user ? 'new-user' : 'guest')}
             value={coordinates}
             autoLocate={!coordinates && !id}
-            onChange={value => { setCoordinates(value); setError(''); }}
+            onChange={value => {
+              setCoordinates(value);
+              setError('');
+              setVerifiedMatch(null);
+              setVerificationStatus('checking');
+            }}
             onAddressResolved={resolved => {
               if (!addressEdited && resolved) setAddress(resolved);
             }}
@@ -221,14 +290,48 @@ export default function Address() {
             required
             placeholder="الشارع، رقم البيت، الدور، الشقة أو علامة مميزة"
             className="w-full rounded-xl border p-3 text-base leading-7"
-            aria-describedby={error ? 'address-error' : undefined}
+            aria-describedby={error ? 'address-error' : 'delivery-verification-status'}
           />
+
+          <div id="delivery-verification-status" className="mt-4" aria-live="polite">
+            {verificationStatus === 'checking' && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <BrandLoader size="sm" />
+                <span>جاري التحقق من نطاق التوصيل...</span>
+              </div>
+            )}
+            {verificationStatus === 'valid' && verifiedMatch && (
+              <p className="text-sm font-medium text-green-700">
+                التوصيل متاح لهذا العنوان عبر {verifiedMatch.branch_name}.
+              </p>
+            )}
+            {verificationStatus === 'outside' && (
+              <p className="text-sm font-medium text-red-700">العنوان خارج نطاق التوصيل حاليًا.</p>
+            )}
+            {verificationStatus === 'error' && (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-medium text-red-700">تعذر التحقق من التوصيل الآن.</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setError('');
+                    setVerificationRetry(value => value + 1);
+                  }}
+                >
+                  إعادة المحاولة
+                </Button>
+              </div>
+            )}
+          </div>
+
           {error && <p id="address-error" className="text-sm text-red-700 mt-4" role="alert">{error}</p>}
-          <Button type="submit" disabled={saving} className="address-desktop-submit cart-primary mt-5">{saving ? <BrandLoader size="sm" /> : saveLabel}</Button>
+          <Button type="submit" disabled={!canSubmit} className="address-desktop-submit cart-primary mt-5">{saving ? <BrandLoader size="sm" /> : saveLabel}</Button>
         </section>
 
         <div className="address-mobile-action" aria-label="تأكيد عنوان التوصيل">
-          <Button type="submit" disabled={saving} className="cart-primary">{saving ? <BrandLoader size="sm" /> : saveLabel}</Button>
+          <Button type="submit" disabled={!canSubmit} className="cart-primary">{saving ? <BrandLoader size="sm" /> : saveLabel}</Button>
         </div>
       </form>}
   </CheckoutLayout>;
