@@ -35,40 +35,56 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 async function googleRoute(originLat: number, originLng: number, latitude: number, longitude: number) {
   if (!GOOGLE_KEY) return null;
-  const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
-  url.searchParams.set("origin", `${originLat},${originLng}`);
-  url.searchParams.set("destination", `${latitude},${longitude}`);
-  url.searchParams.set("mode", "driving");
-  url.searchParams.set("alternatives", "false");
-  url.searchParams.set("key", GOOGLE_KEY);
+  try {
+    const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
+    url.searchParams.set("origin", `${originLat},${originLng}`);
+    url.searchParams.set("destination", `${latitude},${longitude}`);
+    url.searchParams.set("mode", "driving");
+    url.searchParams.set("alternatives", "false");
+    url.searchParams.set("key", GOOGLE_KEY);
 
-  const response = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
-  const payload = await response.json().catch(() => null) as Record<string, any> | null;
-  const leg = payload?.routes?.[0]?.legs?.[0];
-  if (!response.ok || payload?.status !== "OK" || !leg) return null;
+    const response = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) });
+    const payload = await response.json().catch(() => null) as Record<string, any> | null;
+    const leg = payload?.routes?.[0]?.legs?.[0];
+    if (!response.ok || payload?.status !== "OK" || !leg) {
+      console.warn("customer-route-distance google unavailable", response.status, payload?.status ?? "NO_STATUS");
+      return null;
+    }
 
-  return {
-    distanceKm: Number(leg.distance?.value || 0) / 1000,
-    durationMinutes: Math.max(1, Math.round(Number(leg.duration?.value || 0) / 60)),
-    provider: "google" as const,
-  };
+    return {
+      distanceKm: Number(leg.distance?.value || 0) / 1000,
+      durationMinutes: Math.max(1, Math.round(Number(leg.duration?.value || 0) / 60)),
+      provider: "google" as const,
+    };
+  } catch (error) {
+    console.warn("customer-route-distance google failed", error instanceof Error ? error.message : error);
+    return null;
+  }
 }
 
 async function osrmRoute(originLat: number, originLng: number, latitude: number, longitude: number) {
-  const url = `https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${longitude},${latitude}?overview=false&alternatives=false&steps=false`;
-  const response = await fetch(url, {
-    headers: { "User-Agent": "ElmadawyMarket/1.0" },
-    signal: AbortSignal.timeout(10000),
-  });
-  const payload = await response.json().catch(() => null) as Record<string, any> | null;
-  const route = payload?.routes?.[0];
-  if (!response.ok || payload?.code !== "Ok" || !route) return null;
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${longitude},${latitude}?overview=false&alternatives=false&steps=false`;
+    const response = await fetch(url, {
+      headers: { "User-Agent": "ElmadawyMarket/1.0" },
+      signal: AbortSignal.timeout(8000),
+    });
+    const payload = await response.json().catch(() => null) as Record<string, any> | null;
+    const route = payload?.routes?.[0];
+    if (!response.ok || payload?.code !== "Ok" || !route) {
+      console.warn("customer-route-distance osrm unavailable", response.status, payload?.code ?? "NO_CODE");
+      return null;
+    }
 
-  return {
-    distanceKm: Number(route.distance || 0) / 1000,
-    durationMinutes: Math.max(1, Math.round(Number(route.duration || 0) / 60)),
-    provider: "osrm" as const,
-  };
+    return {
+      distanceKm: Number(route.distance || 0) / 1000,
+      durationMinutes: Math.max(1, Math.round(Number(route.duration || 0) / 60)),
+      provider: "osrm" as const,
+    };
+  } catch (error) {
+    console.warn("customer-route-distance osrm failed", error instanceof Error ? error.message : error);
+    return null;
+  }
 }
 
 Deno.serve(async (request: Request) => {
@@ -76,6 +92,10 @@ Deno.serve(async (request: Request) => {
   if (request.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
 
   try {
+    if (!SUPABASE_URL || !SERVICE_ROLE || !ANON_KEY) {
+      return json({ error: "SERVER_NOT_CONFIGURED" }, 500);
+    }
+
     const suppliedApiKey = request.headers.get("apikey") ?? "";
     const authHeader = request.headers.get("authorization") ?? "";
     const anonCaller = suppliedApiKey === ANON_KEY || authHeader === `Bearer ${ANON_KEY}`;
@@ -137,13 +157,29 @@ Deno.serve(async (request: Request) => {
         deliverable: false,
         distance_method: "straight_line_reject",
         provider: null,
+        degraded: false,
       });
     }
 
     const route = await googleRoute(originLat, originLng, latitude, longitude)
       ?? await osrmRoute(originLat, originLng, latitude, longitude);
 
-    if (!route) return json({ error: "ROUTE_PROVIDER_UNAVAILABLE" }, 502);
+    if (!route) {
+      // Do not block checkout just because an external routing provider is temporarily unavailable.
+      // The cart RPC already selected this active delivery branch using the same straight-line radius.
+      return json({
+        branch_id: branch.id,
+        branch_name: branch.name,
+        road_distance_km: Number(straight.toFixed(3)),
+        straight_distance_km: Number(straight.toFixed(3)),
+        duration_minutes: null,
+        delivery_radius_km: radius,
+        deliverable: radius <= 0 ? true : straight <= radius,
+        distance_method: "straight_line_fallback",
+        provider: null,
+        degraded: true,
+      });
+    }
 
     return json({
       branch_id: branch.id,
@@ -155,6 +191,7 @@ Deno.serve(async (request: Request) => {
       deliverable: radius <= 0 ? true : route.distanceKm <= radius,
       distance_method: "driving",
       provider: route.provider,
+      degraded: false,
     });
   } catch (error) {
     console.error("customer-route-distance failed", error);
