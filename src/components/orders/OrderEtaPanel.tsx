@@ -117,7 +117,25 @@ const riskMeta = (risk: string) => {
 };
 
 const OrderEtaPanel = ({ eta, detailed = false }: OrderEtaPanelProps) => {
-  if (!eta || ['completed', 'cancelled'].includes(eta.risk)) return null;
+  const hostRef = React.useRef<HTMLDivElement>(null);
+  const [fallbackOrderId, setFallbackOrderId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (eta?.order_id) {
+      setFallbackOrderId(null);
+      return;
+    }
+
+    const article = hostRef.current?.closest('article[id^="order-"]');
+    const articleId = article?.id || '';
+    setFallbackOrderId(articleId.startsWith('order-') ? articleId.slice('order-'.length) : null);
+  }, [eta?.order_id]);
+
+  const orderId = eta?.order_id || fallbackOrderId;
+
+  if (!eta || ['completed', 'cancelled'].includes(eta.risk)) {
+    return <div ref={hostRef}>{orderId ? <DeliveryPinCard orderId={orderId} /> : null}</div>;
+  }
 
   const meta = riskMeta(eta.risk);
   const components = eta.components || {};
@@ -135,55 +153,57 @@ const OrderEtaPanel = ({ eta, detailed = false }: OrderEtaPanelProps) => {
   const roadMinutes = readMinutes(components.road_minutes);
 
   return (
-    <section className={`mt-4 rounded-2xl border p-4 ${meta.wrapper}`} aria-label="موعد وصول الطلب">
-      <div className="flex items-start gap-3">
-        <span className={`mt-0.5 shrink-0 ${meta.accent}`}>{meta.icon}</span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold opacity-70">موعد الوصول المتوقع</p>
-              <p className="mt-1 text-xl font-bold" dir="rtl">
-                {formatTime(eta.live_window_start)} – {formatTime(eta.live_window_end)}
-              </p>
+    <div ref={hostRef}>
+      <section className={`mt-4 rounded-2xl border p-4 ${meta.wrapper}`} aria-label="موعد وصول الطلب">
+        <div className="flex items-start gap-3">
+          <span className={`mt-0.5 shrink-0 ${meta.accent}`}>{meta.icon}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold opacity-70">موعد الوصول المتوقع</p>
+                <p className="mt-1 text-xl font-bold" dir="rtl">
+                  {formatTime(eta.live_window_start)} – {formatTime(eta.live_window_end)}
+                </p>
+              </div>
+              {remainingMinutes > 0 && (
+                <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold">
+                  متبقي حوالي {remainingMinutes} دقيقة
+                </span>
+              )}
             </div>
-            {remainingMinutes > 0 && (
-              <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold">
-                متبقي حوالي {remainingMinutes} دقيقة
-              </span>
+            <p className="mt-2 text-xs font-semibold">{meta.label}</p>
+            <p className="mt-1 text-[11px] leading-5 opacity-70">
+              الموعد شامل مراجعة الطلب والتجهيز وانتظار المندوب والطريق، وبيتحدث تلقائيًا.
+            </p>
+          </div>
+        </div>
+
+        <DeliveryPinCard orderId={eta.order_id} />
+
+        {detailed && (
+          <div className="mt-4 grid grid-cols-3 gap-2 border-t border-current/10 pt-4">
+            <div className="rounded-xl bg-white/75 p-3 text-center">
+              <p className="text-[10px] opacity-65">تجهيز الطلب</p>
+              <p className="mt-1 text-sm font-bold">{preparationMinutes} د</p>
+            </div>
+            <div className="rounded-xl bg-white/75 p-3 text-center">
+              <p className="text-[10px] opacity-65">توزيع وانتظار</p>
+              <p className="mt-1 text-sm font-bold">{dispatchMinutes} د</p>
+            </div>
+            <div className="rounded-xl bg-white/75 p-3 text-center">
+              <p className="text-[10px] opacity-65">وقت الطريق</p>
+              <p className="mt-1 text-sm font-bold">{roadMinutes} د</p>
+            </div>
+            {fullOrderMinutes > 0 && (
+              <div className="col-span-3 flex items-center justify-center gap-2 rounded-xl bg-white/75 p-2.5 text-xs font-semibold">
+                <TimerReset size={15} />
+                الزمن الكامل المحسوب للطلب: {fullOrderMinutes} دقيقة
+              </div>
             )}
           </div>
-          <p className="mt-2 text-xs font-semibold">{meta.label}</p>
-          <p className="mt-1 text-[11px] leading-5 opacity-70">
-            الموعد شامل مراجعة الطلب والتجهيز وانتظار المندوب والطريق، وبيتحدث تلقائيًا.
-          </p>
-        </div>
-      </div>
-
-      <DeliveryPinCard orderId={eta.order_id} />
-
-      {detailed && (
-        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-current/10 pt-4">
-          <div className="rounded-xl bg-white/75 p-3 text-center">
-            <p className="text-[10px] opacity-65">تجهيز الطلب</p>
-            <p className="mt-1 text-sm font-bold">{preparationMinutes} د</p>
-          </div>
-          <div className="rounded-xl bg-white/75 p-3 text-center">
-            <p className="text-[10px] opacity-65">توزيع وانتظار</p>
-            <p className="mt-1 text-sm font-bold">{dispatchMinutes} د</p>
-          </div>
-          <div className="rounded-xl bg-white/75 p-3 text-center">
-            <p className="text-[10px] opacity-65">وقت الطريق</p>
-            <p className="mt-1 text-sm font-bold">{roadMinutes} د</p>
-          </div>
-          {fullOrderMinutes > 0 && (
-            <div className="col-span-3 flex items-center justify-center gap-2 rounded-xl bg-white/75 p-2.5 text-xs font-semibold">
-              <TimerReset size={15} />
-              الزمن الكامل المحسوب للطلب: {fullOrderMinutes} دقيقة
-            </div>
-          )}
-        </div>
-      )}
-    </section>
+        )}
+      </section>
+    </div>
   );
 };
 
