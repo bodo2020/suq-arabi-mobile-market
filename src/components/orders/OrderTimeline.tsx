@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { supabase } from '@/lib/supabase';
@@ -27,6 +27,93 @@ type HistoryRow = {
   new_status: string;
   created_at: string;
   notes: string | null;
+};
+
+type DeliveryPinPayload = {
+  order_id: string;
+  pin: string;
+  expires_at: string;
+};
+
+type RpcResult = Promise<{ data: unknown; error: { message?: string } | null }>;
+
+const callRpc = supabase.rpc.bind(supabase) as unknown as (
+  name: string,
+  args?: Record<string, unknown>,
+) => RpcResult;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const DeliveryPinCard = ({ orderId }: { orderId: string }) => {
+  const pinQuery = useQuery({
+    queryKey: ['customer-delivery-pin', orderId],
+    queryFn: async (): Promise<DeliveryPinPayload | null> => {
+      const { data, error } = await callRpc('get_my_order_delivery_pin_v1', { p_order_id: orderId });
+      if (error) {
+        const message = error.message || '';
+        if (
+          message.includes('delivery_pin_unavailable') ||
+          message.includes('order_access_denied') ||
+          message.includes('authentication_required')
+        ) {
+          return null;
+        }
+        throw new Error(message || 'delivery_pin_load_failed');
+      }
+      if (!isRecord(data)) return null;
+      const pin = typeof data.pin === 'string' ? data.pin.trim() : '';
+      const expiresAt = typeof data.expires_at === 'string' ? data.expires_at : '';
+      if (!pin || !expiresAt) return null;
+      return {
+        order_id: orderId,
+        pin,
+        expires_at: expiresAt,
+      };
+    },
+    retry: 1,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+
+  if (pinQuery.isLoading) {
+    return (
+      <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-center text-sm font-semibold text-emerald-800">
+        جاري تحميل كود تأكيد الاستلام…
+      </div>
+    );
+  }
+
+  if (pinQuery.isError) {
+    return (
+      <button
+        type="button"
+        onClick={() => void pinQuery.refetch()}
+        className="mt-5 w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center text-sm font-semibold text-amber-900"
+      >
+        تعذر تحميل كود الاستلام — اضغط للمحاولة مرة أخرى
+      </button>
+    );
+  }
+
+  const deliveryPin = pinQuery.data;
+  if (!deliveryPin?.pin) return null;
+
+  return (
+    <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-center shadow-sm" aria-label="كود تأكيد استلام الطلب">
+      <div className="flex items-center justify-center gap-2 text-sm font-bold text-emerald-900">
+        <ShieldCheck size={18} />
+        كود تأكيد الاستلام
+      </div>
+      <div dir="ltr" className="mt-2 select-all text-3xl font-black tracking-[0.35em] text-emerald-950">
+        {deliveryPin.pin}
+      </div>
+      <p className="mt-2 text-xs font-semibold leading-5 text-emerald-800">
+        ادي الكود للمندوب فقط بعد ما تستلم الطلب وتتأكد إن كل حاجة تمام.
+      </p>
+    </div>
+  );
 };
 
 const formatTime = (value?: string | null) => {
@@ -115,6 +202,8 @@ const OrderTimeline: React.FC<OrderTimelineProps> = ({ order }) => {
           </div>
         );
       })}
+
+      {!['delivered', 'cancelled'].includes(order.status) && <DeliveryPinCard orderId={order.id} />}
 
       {history.isError && (
         <div className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
