@@ -30,6 +30,7 @@ const Payment = lazy(() => import('./pages/Payment'));
 const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
 const Account = lazy(() => import('./pages/Account'));
 const EditAccount = lazy(() => import('./pages/EditAccount'));
+const CustomerReceivables = lazy(() => import('./pages/CustomerReceivables'));
 const Vouchers = lazy(() => import('./pages/Vouchers'));
 const Orders = lazy(() => import('./pages/PurchaseHistory'));
 const Notifications = lazy(() => import('./pages/Notifications'));
@@ -84,6 +85,7 @@ function App() {
                     <Route path="/payment" element={<Payment />} />
                     <Route path="/order-success" element={<OrderSuccess />} />
                     <Route path="/account" element={<Account />} />
+                    <Route path="/account/debts" element={<CustomerReceivables />} />
                     <Route path="/edit-account" element={<EditAccount />} />
                     <Route path="/vouchers" element={<Vouchers />} />
                     <Route path="/orders" element={<Orders />} />
