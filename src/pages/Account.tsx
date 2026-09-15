@@ -15,6 +15,7 @@ import {
   Gift,
   Sparkles,
   Ticket,
+  WalletCards,
 } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
@@ -27,6 +28,7 @@ import { getMyLoyaltyCard } from '@/lib/loyalty';
 
 const shortcuts = [
   { to: '/orders', label: 'مشترياتي', description: 'مشتريات الفرع وطلبات الأونلاين في مكان واحد', icon: Package },
+  { to: '/account/debts', label: 'مديونيتي', description: 'الرصيد المستحق، حد الآجل وكل فاتورة وسداد بالتفصيل', icon: WalletCards },
   { to: '/vouchers', label: 'كوبوناتي', description: 'حوّل نقاطك لكوبون خصم واستخدمه في الفرع أو التطبيق', icon: Ticket },
   { to: '/favorites', label: 'المفضلة', description: 'منتجاتك المفضلة جاهزة للتسوق', icon: Heart },
 ];
@@ -195,7 +197,7 @@ const Account = () => {
               </Link>
             </section>
 
-            <section aria-label="التسوق والطلبات" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+            <section aria-label="التسوق والطلبات" className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
               {shortcuts.map(({ to, label, description, icon: Icon }) => (
                 <Link key={to} to={to} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-green-200 sm:p-5">
                   <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-primary"><Icon size={23} /></span>
