@@ -3,6 +3,7 @@ import AddressGuard from './components/AddressGuard';
 import CheckoutAttemptRecovery from './components/CheckoutAttemptRecovery';
 import PushNotificationsBootstrap from './components/PushNotificationsBootstrap';
 import NetworkStatus from './components/NetworkStatus';
+import CartSourceConflictNotifier from './components/CartSourceConflictNotifier';
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -27,6 +28,9 @@ const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Search = lazy(() => import('./pages/Search'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Payment = lazy(() => import('./pages/Payment'));
+const MarketplacePayment = lazy(() => import('./pages/MarketplacePayment'));
+const MarketplaceStores = lazy(() => import('./pages/MarketplaceStores'));
+const MarketplaceStore = lazy(() => import('./pages/MarketplaceStore'));
 const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
 const Account = lazy(() => import('./pages/Account'));
 const EditAccount = lazy(() => import('./pages/EditAccount'));
@@ -63,6 +67,7 @@ function App() {
               <PushNotificationsBootstrap />
               <ProfileCompletionGate />
               <CheckoutAttemptRecovery />
+              <CartSourceConflictNotifier />
               <Suspense fallback={<RouteFallback />}>
                 <AddressGuard>
                   <Routes>
@@ -74,6 +79,8 @@ function App() {
                     <Route path="/change-phone" element={<ChangePhone />} />
                     <Route path="/address-registration" element={<AddressRegistration />} />
                     <Route path="/" element={<Index />} />
+                    <Route path="/stores" element={<MarketplaceStores />} />
+                    <Route path="/stores/:branchId" element={<MarketplaceStore />} />
                     <Route path="/categories" element={<Categories />} />
                     <Route path="/category/:id" element={<CategoryDetail />} />
                     <Route path="/category/:id/products" element={<CategoryProducts />} />
@@ -82,6 +89,7 @@ function App() {
                     <Route path="/search" element={<Search />} />
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/payment" element={<Payment />} />
+                    <Route path="/marketplace-payment" element={<MarketplacePayment />} />
                     <Route path="/order-success" element={<OrderSuccess />} />
                     <Route path="/account" element={<Account />} />
                     <Route path="/edit-account" element={<EditAccount />} />
