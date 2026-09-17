@@ -24,6 +24,15 @@ export type SelectedDeliveryPoint = {
   longitude: number;
 };
 
+type PersistedBranchRuntime = {
+  version: 1;
+  savedAt: number;
+  runtime: BranchRuntimeContext;
+};
+
+const RUNTIME_STORAGE_KEY = 'elmadawy_branch_runtime_cache_v1';
+const RUNTIME_MAX_AGE_MS = 1000 * 60 * 60 * 48;
+
 const rpc = supabase.rpc.bind(supabase) as unknown as (
   name: string,
   args: Record<string, unknown>,
@@ -31,6 +40,44 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 
 let cachedRuntime: BranchRuntimeContext | null | undefined;
 let pendingRuntime: Promise<BranchRuntimeContext | null> | null = null;
+
+function readPersistedBranchRuntime(): BranchRuntimeContext | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(RUNTIME_STORAGE_KEY);
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw) as PersistedBranchRuntime;
+    if (
+      cached.version !== 1 ||
+      !cached.runtime?.delivery_branch_id ||
+      Date.now() - Number(cached.savedAt || 0) > RUNTIME_MAX_AGE_MS
+    ) {
+      window.localStorage.removeItem(RUNTIME_STORAGE_KEY);
+      return null;
+    }
+
+    return cached.runtime;
+  } catch {
+    return null;
+  }
+}
+
+function persistBranchRuntime(runtime: BranchRuntimeContext) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const payload: PersistedBranchRuntime = {
+      version: 1,
+      savedAt: Date.now(),
+      runtime,
+    };
+    window.localStorage.setItem(RUNTIME_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Offline cache is best-effort and must never block shopping.
+  }
+}
 
 export async function loadSelectedDeliveryPoint(): Promise<SelectedDeliveryPoint | null> {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -86,21 +133,38 @@ export async function loadBranchRuntimeContext(force = false): Promise<BranchRun
   if (!force && cachedRuntime !== undefined) return cachedRuntime;
   if (!force && pendingRuntime) return pendingRuntime;
 
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    const persisted = readPersistedBranchRuntime();
+    cachedRuntime = persisted;
+    return persisted;
+  }
+
   pendingRuntime = (async () => {
-    const branchId = await resolveSelectedBranchId();
-    if (!branchId) {
-      cachedRuntime = null;
-      return null;
-    }
+    try {
+      const branchId = await resolveSelectedBranchId();
+      if (!branchId) {
+        cachedRuntime = null;
+        return null;
+      }
 
-    const { data, error } = await rpc('get_customer_branch_runtime', { p_branch_id: branchId });
-    if (error) {
-      cachedRuntime = null;
-      return null;
-    }
+      const { data, error } = await rpc('get_customer_branch_runtime', { p_branch_id: branchId });
+      if (error) {
+        const persisted = readPersistedBranchRuntime();
+        cachedRuntime = persisted;
+        return persisted;
+      }
 
-    cachedRuntime = data && typeof data === 'object' ? data as BranchRuntimeContext : null;
-    return cachedRuntime;
+      cachedRuntime = data && typeof data === 'object' ? data as BranchRuntimeContext : null;
+      if (cachedRuntime) persistBranchRuntime(cachedRuntime);
+      return cachedRuntime;
+    } catch (error) {
+      const persisted = readPersistedBranchRuntime();
+      if (persisted) {
+        cachedRuntime = persisted;
+        return persisted;
+      }
+      throw error;
+    }
   })();
 
   try {
