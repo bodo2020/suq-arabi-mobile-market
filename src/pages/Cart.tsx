@@ -53,7 +53,7 @@ export default function Cart() {
 
   const proceed = () => {
     if (blocked) return;
-    navigate(user ? '/payment' : '/phone-verify?returnTo=%2Fpayment');
+    navigate(user ? '/payment' : '/phone-login?returnTo=%2Fpayment');
   };
 
   const retryQuote = async () => {
@@ -162,7 +162,7 @@ export default function Cart() {
         <div className="cart-summary-total"><span>الإجمالي</span><strong>{quotePending ? '...' : money(total)} <small>ج.م</small></strong></div>
         {quote && quote.min_order_amount > 0 && <p className="cart-help">الحد الأدنى للطلب من الفرع: {money(quote.min_order_amount)} ج.م</p>}
         {cta}
-        {!user && <p className="cart-help">هنطلب رقم موبايلك عشان تكمّل طلبك ونحفظ العنوان في حسابك.</p>}
+        {!user && <p className="cart-help">سجّل برقم موبايلك وكلمة المرور عشان تكمّل الطلب.</p>}
       </aside></div>
 
       <div className="cart-mobile-action"><div><span>الإجمالي شامل التوصيل</span><strong>{quotePending ? '...' : `${money(total)} ج.م`}</strong></div>{cta}</div>
