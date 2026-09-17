@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Bell, BellRing, CheckCheck, Clock3, Gift, Package, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, CheckCheck, Clock3, Gift, Package, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
@@ -12,6 +12,7 @@ import {
   fetchCustomerNotificationCenterV2,
   markAllCustomerNotificationsReadV2,
   markCustomerNotificationReadV2,
+  type CustomerNotificationCenterV2,
   type CustomerNotificationItemV2,
 } from '@/services/notificationCenterV2';
 
@@ -51,12 +52,23 @@ const severityClasses = (severity: CustomerNotificationItemV2['severity']) => {
   return 'border-green-100 bg-green-50/70 text-primary';
 };
 
+const markCenterRead = (current: CustomerNotificationCenterV2 | undefined, clearItems = false) => {
+  if (!current) return current;
+  const readAt = new Date().toISOString();
+  return {
+    ...current,
+    summary: { ...current.summary, unread: 0 },
+    items: clearItems ? [] : current.items.map(item => ({ ...item, read_at: item.read_at || readAt })),
+  };
+};
+
 const Notifications = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, session, authLoading } = useUser();
   const { toast } = useToast();
   const [filter, setFilter] = useState<Filter>('all');
+  const [markingAll, setMarkingAll] = useState(false);
 
   const notifications = useQuery({
     queryKey: ['customer-notification-center-v2', user?.id, filter],
@@ -70,12 +82,26 @@ const Notifications = () => {
 
   const items = notifications.data?.items || [];
   const unreadCount = notifications.data?.summary.unread || 0;
-  const todayCount = notifications.data?.summary.today || 0;
-  const visible = useMemo(() => items, [items]);
 
   const invalidateNotificationCaches = () => {
     void queryClient.invalidateQueries({ queryKey: ['customer-notification-center-v2', user?.id] });
     void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread', user?.id] });
+  };
+
+  const applyAllReadToCache = () => {
+    if (!user?.id) return;
+    queryClient.setQueryData<CustomerNotificationCenterV2>(
+      ['customer-notification-center-v2', user.id, 'all'],
+      current => markCenterRead(current),
+    );
+    queryClient.setQueryData<CustomerNotificationCenterV2>(
+      ['customer-notification-center-v2', user.id, 'unread'],
+      current => markCenterRead(current, true),
+    );
+    queryClient.setQueryData<CustomerNotificationCenterV2>(
+      ['customer-notification-unread', user.id],
+      current => markCenterRead(current, true),
+    );
   };
 
   const markRead = async (id: string) => {
@@ -84,12 +110,18 @@ const Notifications = () => {
   };
 
   const markAllRead = async () => {
-    if (!user?.id || unreadCount === 0) return;
+    if (!user?.id || unreadCount === 0 || markingAll) return;
+    setMarkingAll(true);
     try {
       await markAllCustomerNotificationsReadV2();
+      applyAllReadToCache();
       invalidateNotificationCaches();
+      toast({ title: 'تم تحديد كل الإشعارات كمقروءة' });
     } catch {
+      invalidateNotificationCaches();
       toast({ title: 'تعذر تحديث الإشعارات', description: 'حاول مرة تانية.', variant: 'destructive' });
+    } finally {
+      setMarkingAll(false);
     }
   };
 
@@ -112,56 +144,35 @@ const Notifications = () => {
   return (
     <MainLayout>
       <TopNavBar hideLogo hideSearch hideCart pageTitle="الإشعارات" showBackButton />
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
         {authLoading ? (
           <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل الإشعارات" /></div>
-        ) : !session || !user ? (
-          <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
-            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary"><Bell size={30} /></span>
-            <h1 className="text-2xl font-bold">إشعاراتك في مكان واحد</h1>
-            <p className="mb-6 mt-3 text-sm leading-7 text-gray-500">سجّل دخولك عشان تستقبل تحديثات الطلب والعروض والتنبيهات المرتبطة بحسابك.</p>
-            <Button className="min-h-12 w-full rounded-xl" onClick={() => navigate('/phone-login')}>تسجيل الدخول</Button>
-          </section>
-        ) : (
-          <div className="space-y-5">
-            <section className="rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-7">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-primary">
-                    <BellRing size={24} />
-                    <h1 className="text-2xl font-bold">مركز إشعاراتك</h1>
-                  </div>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
-                    الإشعارات داخل التطبيق مفعّلة تلقائيًا. تحديثات الطلب والعروض والمكافآت تظهر هنا وتحفظ حالة القراءة على حسابك.
+        ) : !session || !user ? null : (
+          <div className="space-y-4">
+            <section className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary">
+                  <Bell size={22} />
+                </span>
+                <div className="min-w-0">
+                  <h1 className="text-lg font-black text-gray-950">الإشعارات</h1>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {unreadCount > 0 ? `${unreadCount.toLocaleString('ar-EG')} جديد` : 'كل الإشعارات مقروءة'}
                   </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex min-h-11 items-center rounded-xl bg-white px-3 text-xs font-semibold text-green-700 shadow-sm">
-                    <CheckCheck size={16} className="ml-2" /> داخل التطبيق مفعّل
-                  </span>
-                  {unreadCount > 0 && (
-                    <Button variant="outline" className="min-h-11 rounded-xl bg-white" onClick={() => void markAllRead()}>
-                      <CheckCheck size={16} className="ml-2" /> تحديد الكل كمقروء
-                    </Button>
-                  )}
                 </div>
               </div>
 
-              {!notifications.isLoading && !notifications.isError && (
-                <div className="mt-5 grid grid-cols-3 gap-3 sm:max-w-lg">
-                  <div className="rounded-2xl bg-white p-4 shadow-sm">
-                    <p className="text-xs text-gray-500">غير مقروء</p>
-                    <p className="mt-1 text-2xl font-bold text-primary">{unreadCount.toLocaleString('ar-EG')}</p>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4 shadow-sm">
-                    <p className="text-xs text-gray-500">اليوم</p>
-                    <p className="mt-1 text-2xl font-bold">{todayCount.toLocaleString('ar-EG')}</p>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4 shadow-sm">
-                    <p className="text-xs text-gray-500">الإجمالي</p>
-                    <p className="mt-1 text-2xl font-bold">{Number(notifications.data?.summary.total || 0).toLocaleString('ar-EG')}</p>
-                  </div>
-                </div>
+              {unreadCount > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void markAllRead()}
+                  disabled={markingAll}
+                  className="min-h-10 shrink-0 rounded-xl border-green-200 px-3 text-xs font-bold text-primary"
+                >
+                  {markingAll ? <BrandLoader size="sm" /> : <CheckCheck size={16} className="ml-1.5" />}
+                  {markingAll ? 'جاري الحفظ' : 'قراءة الكل'}
+                </Button>
               )}
             </section>
 
@@ -178,22 +189,21 @@ const Notifications = () => {
                 <p className="mt-2 text-sm text-gray-500">راجع اتصالك وحاول مرة تانية.</p>
                 <Button className="mt-5 rounded-xl" onClick={() => void notifications.refetch()}>إعادة المحاولة</Button>
               </section>
-            ) : visible.length === 0 ? (
+            ) : items.length === 0 ? (
               <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
                 <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 text-gray-400"><Bell size={30} /></span>
                 <h2 className="mt-4 text-xl font-bold">{filter === 'unread' ? 'مفيش إشعارات جديدة' : 'مفيش إشعارات لسه'}</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">أي رسالة من المعداوي ماركت أو تحديث مرتبط بحسابك هيظهر هنا تلقائيًا.</p>
               </section>
             ) : (
               <div className="space-y-3">
-                {visible.map(item => {
+                {items.map(item => {
                   const Icon = categoryIcon(item);
                   return (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => void openNotification(item)}
-                      className={`w-full rounded-2xl border p-4 text-right shadow-sm transition hover:border-green-200 sm:p-5 ${item.read_at ? 'border-gray-100 bg-white' : 'border-green-100 bg-green-50/40'}`}
+                      className={`w-full rounded-2xl border p-4 text-right shadow-sm transition active:scale-[0.995] sm:p-5 ${item.read_at ? 'border-gray-100 bg-white' : 'border-green-100 bg-green-50/40'}`}
                     >
                       <div className="flex items-start gap-3">
                         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${severityClasses(item.severity)}`}>
