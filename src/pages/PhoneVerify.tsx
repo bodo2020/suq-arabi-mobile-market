@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
 import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
 import { safeReturnTo } from '@/lib/onboarding';
+import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -92,6 +93,21 @@ export default function PhoneVerify() {
     setRateLimitError(false);
     try {
       const fullPhone = formatInternationalPhone(phone, countryCode);
+
+      if (!isRecovery) {
+        const registered = await customerPhoneIsRegistered(fullPhone);
+        if (registered) {
+          setInitialSendDone(true);
+          const next = new URLSearchParams({
+            phone: formatPhoneNumber(phone, countryCode),
+            countryCode: countryCode.code,
+            returnTo,
+          });
+          navigate(`/phone-login?${next.toString()}`, { replace: true });
+          return;
+        }
+      }
+
       const { data, error } = await signInWithPhone(fullPhone, !isRecovery);
       if (error) throw error;
 
