@@ -73,8 +73,6 @@ const Account = () => {
   const name = profile.data?.name || user?.user_metadata?.name || 'أهلًا بيك';
   const address = defaultAddress.data;
   const locationLabel = [address?.cities?.name, address?.areas?.name, address?.neighborhoods?.name].filter(Boolean).join(' - ');
-  const redemptionPoints = Number(loyalty.data?.redemption_points || 1000);
-  const redemptionValue = Number(loyalty.data?.redemption_value_egp || 1);
 
   const logout = async () => {
     if (signingOut) return;
@@ -164,11 +162,6 @@ const Account = () => {
                       </div>
                       <LoyaltyBarcode value={loyalty.data.barcode_token} />
                     </div>
-
-                    <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/5 px-4 py-3 text-xs text-emerald-50">
-                      <span>كل 1 جنيه شراء = 1 نقطة</span>
-                      <span className="font-bold">{redemptionPoints.toLocaleString('ar-EG')} نقطة = {redemptionValue.toLocaleString('ar-EG')} ج.م كوبون خصم</span>
-                    </div>
                   </>
                 )}
               </div>
@@ -198,7 +191,7 @@ const Account = () => {
             <section aria-label="التسوق والطلبات" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
               {shortcuts.map(({ to, label, description, icon: Icon }) => (
                 <Link key={to} to={to} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-green-200 sm:p-5">
-                  <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-primary"><Icon size={23} /></span>
+                  <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-primary shadow-sm"><Icon size={23} /></span>
                   <h2 className="font-bold">{label}</h2>
                   <p className="mt-2 text-xs leading-6 text-gray-500">{description}</p>
                 </Link>
