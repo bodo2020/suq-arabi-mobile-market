@@ -104,6 +104,8 @@ const messages: Record<string, string> = {
   PRICE_UNAVAILABLE: 'سعر أحد المنتجات غير متاح حاليًا.',
   INVALID_QUANTITY: 'راجع كميات المنتجات في السلة.',
   INVALID_CART: 'راجع محتويات السلة وحاول تاني.',
+  SAAS_APP_SUSPENDED: 'الخدمة متوقفة مؤقتًا بواسطة إدارة المنصة.',
+  SAAS_CAPABILITY_DISABLED: 'الطلبات الأونلاين متوقفة مؤقتًا بواسطة إدارة المنصة.',
 };
 export function cartQuoteError(error: unknown) {
   const message = (error as { message?: string })?.message || '';
