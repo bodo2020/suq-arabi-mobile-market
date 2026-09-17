@@ -140,31 +140,22 @@ export async function loadBranchRuntimeContext(force = false): Promise<BranchRun
   }
 
   pendingRuntime = (async () => {
-    try {
-      const branchId = await resolveSelectedBranchId();
-      if (!branchId) {
-        cachedRuntime = null;
-        return null;
-      }
-
-      const { data, error } = await rpc('get_customer_branch_runtime', { p_branch_id: branchId });
-      if (error) {
-        const persisted = readPersistedBranchRuntime();
-        cachedRuntime = persisted;
-        return persisted;
-      }
-
-      cachedRuntime = data && typeof data === 'object' ? data as BranchRuntimeContext : null;
-      if (cachedRuntime) persistBranchRuntime(cachedRuntime);
-      return cachedRuntime;
-    } catch (error) {
-      const persisted = readPersistedBranchRuntime();
-      if (persisted) {
-        cachedRuntime = persisted;
-        return persisted;
-      }
-      throw error;
+    const branchId = await resolveSelectedBranchId();
+    if (!branchId) {
+      cachedRuntime = null;
+      return null;
     }
+
+    const { data, error } = await rpc('get_customer_branch_runtime', { p_branch_id: branchId });
+    if (error) {
+      const persisted = readPersistedBranchRuntime();
+      cachedRuntime = persisted?.delivery_branch_id === branchId ? persisted : null;
+      return cachedRuntime;
+    }
+
+    cachedRuntime = data && typeof data === 'object' ? data as BranchRuntimeContext : null;
+    if (cachedRuntime) persistBranchRuntime(cachedRuntime);
+    return cachedRuntime;
   })();
 
   try {
