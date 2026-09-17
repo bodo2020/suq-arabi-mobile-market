@@ -1,8 +1,8 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Phone, ArrowRight, Check } from 'lucide-react';
-import MainLayout from '@/components/layout/AuthLayout';
+import { ArrowRight, Check, Phone, ShieldCheck } from 'lucide-react';
+import AuthLayout from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
@@ -10,7 +10,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { Input } from '@/components/ui/input';
 import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
 import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
-import { loadOnboardingState, nextOnboardingPath, safeReturnTo } from '@/lib/onboarding';
+import { safeReturnTo } from '@/lib/onboarding';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -25,7 +25,7 @@ const KNOWN_COUNTRIES: Country[] = [
   { name: 'الإمارات', code: 'AE', dialCode: '+971', flag: '🇦🇪' },
 ];
 
-const PhoneVerify = () => {
+export default function PhoneVerify() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -34,11 +34,12 @@ const PhoneVerify = () => {
   const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const phoneFromQuery = queryParams.get('phone') || '';
   const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
-  const isRecovery = queryParams.get('mode') === 'recovery';
+  const mode = queryParams.get('mode') === 'recovery' ? 'recovery' : 'signup';
+  const isRecovery = mode === 'recovery';
   const returnTo = safeReturnTo(queryParams.get('returnTo'));
 
   const [phone, setPhone] = useState(phoneFromQuery);
-  const [step, setStep] = useState<'phone' | 'verification'>('phone');
+  const [step, setStep] = useState<'phone' | 'verification'>(phoneFromQuery ? 'verification' : 'phone');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -46,60 +47,49 @@ const PhoneVerify = () => {
   const [resendSeconds, setResendSeconds] = useState(0);
   const [isTestOtp, setIsTestOtp] = useState(false);
   const [countryCode, setCountryCode] = useState<Country>(
-    KNOWN_COUNTRIES.find((country) => country.code === countryCodeFromQuery) || DEFAULT_COUNTRY
+    KNOWN_COUNTRIES.find(country => country.code === countryCodeFromQuery) || DEFAULT_COUNTRY,
   );
   const [errors, setErrors] = useState({ phone: '', code: '' });
+  const [initialSendDone, setInitialSendDone] = useState(false);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
     const timer = window.setInterval(() => {
-      setResendSeconds((seconds) => Math.max(0, seconds - 1));
+      setResendSeconds(seconds => Math.max(0, seconds - 1));
     }, 1000);
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
 
-  const formatPhoneNumber = (phoneNumber: string, country: Country) => {
-    const digits = localPhoneDigits(phoneNumber, country.dialCode, country.code);
-    if (country.code === 'EG' && digits.length > 0) {
-      return digits.startsWith('0') ? digits.substring(1) : digits;
-    }
-    return digits;
+  const formatPhoneNumber = (value: string, country: Country) => {
+    const digits = localPhoneDigits(value, country.dialCode, country.code);
+    return country.code === 'EG' && digits.startsWith('0') ? digits.slice(1) : digits;
   };
 
-  const formatInternationalPhone = (phoneNumber: string, country: Country) => {
-    const formattedNumber = formatPhoneNumber(phoneNumber, country);
-    const dialCode = country.dialCode.replace(/\D/g, '');
-    return `+${dialCode}${formattedNumber}`;
+  const formatInternationalPhone = (value: string, country: Country) => {
+    const digits = formatPhoneNumber(value, country);
+    return `+${country.dialCode.replace(/\D/g, '')}${digits}`;
   };
-
-  const validateEgyptianPhone = (value: string) => value.startsWith('1') && value.length === 10;
 
   const validatePhone = () => {
-    const cleanPhone = formatPhoneNumber(phone, countryCode);
-    if (!cleanPhone) {
-      setErrors((prev) => ({ ...prev, phone: 'يرجى إدخال رقم هاتف' }));
+    const digits = formatPhoneNumber(phone, countryCode);
+    if (!digits) {
+      setErrors(prev => ({ ...prev, phone: 'اكتب رقم الموبايل.' }));
       return false;
     }
-
-    if (countryCode.code === 'EG' && !validateEgyptianPhone(cleanPhone)) {
-      setErrors((prev) => ({
-        ...prev,
-        phone: 'يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 1 (10 أرقام)',
-      }));
+    if (countryCode.code === 'EG' && !(digits.startsWith('1') && digits.length === 10)) {
+      setErrors(prev => ({ ...prev, phone: 'اكتب رقم موبايل مصري صحيح، مثل 01012345678.' }));
       return false;
     }
-
     return true;
   };
 
   const sendOtp = async (isResend = false) => {
-    if (loading || resendLoading || resendSeconds > 0) return;
+    if (loading || resendLoading || (isResend && resendSeconds > 0)) return;
     if (!validatePhone()) return;
 
     const setBusy = isResend ? setResendLoading : setLoading;
     setBusy(true);
     setRateLimitError(false);
-
     try {
       const fullPhone = formatInternationalPhone(phone, countryCode);
       const { data, error } = await signInWithPhone(fullPhone, !isRecovery);
@@ -110,24 +100,21 @@ const PhoneVerify = () => {
       setStep('verification');
       setCode('');
       setResendSeconds(60);
-      toast(testOtp
-        ? {
-            title: 'رقم الاختبار جاهز',
-            description: 'استخدم رمز الاختبار المخصص لإكمال تسجيل الدخول.',
-          }
-        : {
-            title: isResend ? 'تم إعادة إرسال رمز التحقق' : 'تم إرسال رمز التحقق',
-            description: 'تم إرسال رمز مكون من 6 أرقام إلى هاتفك',
-          });
-    } catch (error: any) {
-      const isRateLimited = error?.status === 429 || error?.code === 'over_sms_send_rate_limit';
-      if (isRateLimited) setRateLimitError(true);
-
+      setInitialSendDone(true);
       toast({
-        title: isRateLimited ? 'تم تجاوز الحد المسموح' : 'تعذر إرسال الرمز',
-        description: isRateLimited
-          ? 'يرجى الانتظار قليلاً قبل طلب رمز جديد.'
-          : authErrorMessage(error, 'خدمة إرسال الرسائل غير متاحة حاليًا. حاول مرة أخرى بعد قليل.'),
+        title: isResend ? 'تم إعادة إرسال الرمز' : 'تم إرسال رمز التحقق',
+        description: testOtp ? 'استخدم رمز الاختبار المخصص لإكمال التحقق.' : 'أدخل الرمز المكون من 6 أرقام.',
+      });
+    } catch (error: any) {
+      const rateLimited = error?.status === 429 || error?.code === 'over_sms_send_rate_limit';
+      if (rateLimited) setRateLimitError(true);
+      toast({
+        title: rateLimited ? 'تم تجاوز الحد المسموح' : 'تعذر إرسال الرمز',
+        description: rateLimited
+          ? 'انتظر قليلًا قبل طلب رمز جديد.'
+          : authErrorMessage(error, isRecovery
+            ? 'تعذر إرسال رمز الاستعادة. تأكد من الرقم وحاول مرة أخرى.'
+            : 'تعذر إرسال رمز إنشاء الحساب. حاول مرة أخرى.'),
         variant: 'destructive',
       });
     } finally {
@@ -135,41 +122,38 @@ const PhoneVerify = () => {
     }
   };
 
-  const handleVerifyCode = async () => {
+  useEffect(() => {
+    if (!phoneFromQuery || initialSendDone) return;
+    void sendOtp(false);
+    // Send exactly once when arriving from login with a prefilled phone.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const verify = async () => {
     if (loading || resendLoading) return;
     if (!/^\d{6}$/.test(code)) {
-      setErrors((prev) => ({ ...prev, code: 'يرجى إدخال الرمز المكون من 6 أرقام' }));
+      setErrors(prev => ({ ...prev, code: 'اكتب الرمز المكون من 6 أرقام.' }));
       return;
     }
 
     setLoading(true);
-
     try {
       const fullPhone = formatInternationalPhone(phone, countryCode);
       const { data, error } = await verifyPhone(fullPhone, code);
       if (error) throw error;
-
       const verifiedUser = data?.user;
-      if (!verifiedUser?.id) {
-        throw new Error('تعذر إنشاء جلسة دخول بعد التحقق من الرقم');
-      }
-
-      toast({
-        title: 'تم التحقق بنجاح',
-        description: 'تم التحقق من رقم هاتفك بنجاح',
-      });
+      if (!verifiedUser?.id) throw new Error('تعذر إنشاء جلسة بعد التحقق');
 
       if (isRecovery) {
         navigate('/update-password?source=phone', { replace: true });
         return;
       }
 
-      const state = await loadOnboardingState(verifiedUser.id);
-      navigate(nextOnboardingPath(state, returnTo), { replace: true });
+      navigate(`/register?returnTo=${encodeURIComponent(returnTo)}`, { replace: true });
     } catch (error: any) {
       toast({
         title: 'تعذر التحقق',
-        description: authErrorMessage(error, 'تعذر إكمال الدخول. راجع الرمز والاتصال ثم حاول مرة أخرى.'),
+        description: authErrorMessage(error, 'راجع الرمز وحاول مرة أخرى.'),
         variant: 'destructive',
       });
     } finally {
@@ -178,165 +162,107 @@ const PhoneVerify = () => {
   };
 
   return (
-    <MainLayout>
-      <div className="p-4 max-w-md mx-auto">
-        <div className="flex items-center mb-6">
-          <button onClick={() => navigate(-1)} className="p-2" aria-label="الرجوع">
-            <ArrowRight size={24} />
+    <AuthLayout>
+      <div className="mx-auto w-full max-w-md px-1 py-2" dir="rtl">
+        <div className="mb-6 flex items-center">
+          <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600" aria-label="الرجوع">
+            <ArrowRight size={22} />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">
-            {isRecovery ? 'استعادة الحساب' : step === 'phone' ? 'أهلًا بيك في المعداوي' : 'تأكيد رقمك'}
-          </h1>
+          <div className="flex-1 text-center">
+            <h1 className="text-xl font-black text-slate-950">{isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل'}</h1>
+            <p className="mt-1 text-xs text-slate-500">{isRecovery ? 'OTP لمرة واحدة لتعيين باسورد جديد' : 'OTP لمرة واحدة لإنشاء الحساب'}</p>
+          </div>
           <div className="w-10" />
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-sm">
+        <div className="rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.07)] sm:p-6">
           {step === 'phone' ? (
-            <>
-              <p className="text-center mb-6">
-                {isRecovery
-                  ? 'سنرسل رمز تحقق إلى رقم الهاتف المسجل على حسابك'
-                  : 'سيتم إرسال رمز تحقق في رسالة SMS إلى هاتفك'}
+            <div className="space-y-5">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f5ee] text-[#005931]">
+                <Phone size={26} />
+              </div>
+              <p className="text-center text-sm leading-6 text-slate-500">
+                {isRecovery ? 'اكتب رقم حسابك وهنبعتلك رمز لاستعادة كلمة المرور.' : 'اكتب رقمك وهتبعتلك رسالة واحدة لتأكيد إنشاء الحساب.'}
               </p>
 
-              <div className="mb-6">
-                <div className="flex items-center mb-2">
-                  <Phone size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="phone" className="font-medium">رقم الهاتف</label>
-                </div>
-
-                <div className="flex gap-2 items-center">
+              <div>
+                <label htmlFor="phone" className="mb-2 block text-sm font-bold text-slate-800">رقم الموبايل</label>
+                <div className="flex min-h-14 items-stretch gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1.5 focus-within:border-[#005931] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#005931]/10">
                   <CountryCodeSelector
                     value={countryCode}
-                    onChange={(country) => {
-                      setCountryCode(country);
-                      setIsTestOtp(false);
-                    }}
-                    className="min-w-[80px]"
+                    onChange={country => { setCountryCode(country); setErrors({ phone: '', code: '' }); }}
+                    className="min-w-[86px] border-0 bg-transparent shadow-none"
                   />
+                  <div className="my-2 w-px bg-slate-200" />
                   <Input
                     id="phone"
                     type="tel"
-                    autoComplete="tel-national"
                     inputMode="tel"
-                    disabled={loading}
-                    aria-invalid={Boolean(errors.phone)}
-                    onKeyDown={(event) => { if (event.key === 'Enter') void sendOtp(false); }}
+                    autoComplete="tel-national"
                     value={phone}
-                    onChange={(event) => {
-                      setPhone(event.target.value);
-                      setErrors((prev) => ({ ...prev, phone: '' }));
-                      setRateLimitError(false);
-                      setIsTestOtp(false);
-                    }}
-                    className="text-right ltr flex-1"
-                    placeholder={countryCode.code === 'EG' ? '1xxxxxxxxx' : 'xxx-xxxx-xxx'}
+                    disabled={loading}
+                    onChange={event => { setPhone(event.target.value); setErrors(prev => ({ ...prev, phone: '' })); }}
+                    onKeyDown={event => { if (event.key === 'Enter') void sendOtp(false); }}
+                    placeholder={countryCode.code === 'EG' ? '010 1234 5678' : 'رقم الموبايل'}
+                    className="h-auto flex-1 border-0 bg-transparent px-2 text-left text-base font-semibold shadow-none focus-visible:ring-0"
                     dir="ltr"
                   />
                 </div>
-
-                <p className="text-xs text-gray-500 mt-1 text-right">
-                  {countryCode.code === 'EG'
-                    ? 'اكتب رقمك مثل 01012345678، أو الصقه مع كود الدولة +20.'
-                    : 'أدخل رقم الهاتف بدون رمز الدولة'}
-                </p>
-
-                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-                {rateLimitError && (
-                  <p className="text-amber-600 text-sm mt-1">
-                    تم طلب رموز كثيرة. انتظر قليلاً قبل المحاولة مرة أخرى.
-                  </p>
-                )}
+                {errors.phone && <p className="mt-2 text-sm text-red-600">{errors.phone}</p>}
+                {rateLimitError && <p className="mt-2 text-sm text-amber-700">تم طلب رموز كثيرة. انتظر قليلًا قبل المحاولة مرة أخرى.</p>}
               </div>
 
-              <Button onClick={() => void sendOtp(false)} disabled={loading || resendSeconds > 0} className="w-full">
-                {loading && <BrandLoader size="sm" className="ml-2" />}
-                {loading ? 'جاري إرسال الرمز...' : resendSeconds > 0 ? `حاول بعد ${resendSeconds} ثانية` : 'إرسال رمز التحقق'}
+              <Button onClick={() => void sendOtp(false)} disabled={loading} className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black">
+                {loading ? <><BrandLoader size="sm" className="ml-2" />جاري إرسال الرمز</> : 'إرسال رمز التحقق'}
               </Button>
-            </>
+            </div>
           ) : (
-            <>
-              <p className="text-center mb-6">
-                {isTestOtp ? 'أدخل رمز الاختبار المخصص للرقم' : 'أدخل الرمز المرسل إلى'}
+            <div className="space-y-5">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f5ee] text-[#005931]">
+                <ShieldCheck size={27} />
+              </div>
+              <p className="text-center text-sm leading-6 text-slate-500">
+                {isTestOtp ? 'أدخل رمز الاختبار' : 'أدخل الرمز المرسل إلى'}
                 <br />
-                <span className="font-bold" dir="ltr">{formatInternationalPhone(phone, countryCode)}</span>
+                <bdi dir="ltr" className="font-black text-slate-800">{formatInternationalPhone(phone, countryCode)}</bdi>
               </p>
 
-              <div className="mb-6">
-                <div className="flex items-center mb-2">
-                  <Check size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="code" className="font-medium">رمز التحقق</label>
-                </div>
-                <div className="flex justify-center mb-4">
+              <div>
+                <div className="mb-3 flex items-center justify-center gap-2 text-sm font-bold text-slate-800"><Check size={17} className="text-[#005931]" />رمز التحقق</div>
+                <div className="flex justify-center" dir="ltr">
                   <InputOTP
-                    id="code"
                     aria-label="رمز التحقق المكون من 6 أرقام"
-                    aria-invalid={Boolean(errors.code)}
                     autoComplete="one-time-code"
                     inputMode="numeric"
                     disabled={loading || resendLoading}
                     maxLength={6}
                     value={code}
-                    onChange={(value) => {
-                      setCode(normalizeDigits(value).replace(/\D/g, ''));
-                      setErrors((prev) => ({ ...prev, code: '' }));
-                    }}
-                    dir="ltr"
+                    onChange={value => { setCode(normalizeDigits(value).replace(/\D/g, '')); setErrors(prev => ({ ...prev, code: '' })); }}
                   >
                     <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
+                      {[0, 1, 2, 3, 4, 5].map(index => <InputOTPSlot key={index} index={index} />)}
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
-                {errors.code && <p className="text-red-500 text-sm text-center">{errors.code}</p>}
+                {errors.code && <p className="mt-3 text-center text-sm text-red-600">{errors.code}</p>}
               </div>
 
-              <Button onClick={handleVerifyCode} disabled={loading || code.length !== 6} className="w-full">
-                {loading && <BrandLoader size="sm" className="ml-2" />}
-                التحقق من الرمز
+              <Button onClick={() => void verify()} disabled={loading || code.length !== 6} className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black">
+                {loading ? <><BrandLoader size="sm" className="ml-2" />جاري التحقق</> : 'تأكيد الرمز'}
               </Button>
 
-              <div className="mt-4 text-center space-y-3">
-                <button
-                  onClick={() => void sendOtp(true)}
-                  className="text-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loading || resendLoading || resendSeconds > 0}
-                  type="button"
-                >
-                  {resendLoading
-                    ? 'جاري إعادة الإرسال...'
-                    : resendSeconds > 0
-                      ? `إعادة الإرسال بعد ${resendSeconds} ثانية`
-                      : isTestOtp ? 'إعادة تهيئة رمز الاختبار' : 'إعادة إرسال الرمز'}
+              <div className="space-y-2 text-center text-sm">
+                <button type="button" onClick={() => void sendOtp(true)} disabled={loading || resendLoading || resendSeconds > 0} className="min-h-10 font-bold text-[#005931] disabled:opacity-50">
+                  {resendLoading ? 'جاري إعادة الإرسال...' : resendSeconds > 0 ? `إعادة الإرسال بعد ${resendSeconds} ثانية` : 'إعادة إرسال الرمز'}
                 </button>
-
                 <div>
-                  <button
-                    disabled={loading || resendLoading}
-                    onClick={() => {
-                      setStep('phone');
-                      setCode('');
-                      setIsTestOtp(false);
-                      setErrors({ phone: '', code: '' });
-                    }}
-                    className="text-primary text-sm"
-                    type="button"
-                  >
-                    تغيير رقم الهاتف
-                  </button>
+                  <button type="button" onClick={() => { setStep('phone'); setCode(''); setInitialSendDone(true); }} className="min-h-10 text-slate-500">تغيير رقم الموبايل</button>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
-    </MainLayout>
+    </AuthLayout>
   );
-};
-
-export default PhoneVerify;
+}
