@@ -3,6 +3,15 @@
  * ProductCard owns its internal compact styling; this file standardizes
  * the containers around it (grids and horizontal rails).
  */
+[data-product-card="v3-compact"] h3 {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 639px) {
   /* Any product grid becomes the same three-column mobile grid. */
   .grid:has(> [data-product-card="v3-compact"]),
