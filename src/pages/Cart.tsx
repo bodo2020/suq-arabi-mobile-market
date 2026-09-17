@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, RefreshCw, Route } from 'lucide-react';
+import { ArrowLeft, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, RefreshCw, Clock3 } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
 import WeightSelector from '@/components/ui/WeightSelector';
@@ -68,6 +68,8 @@ export default function Cart() {
   const subtotal = Number(quote?.subtotal ?? getTotalPrice());
   const shipping = Number(quote?.shipping_cost ?? branch?.delivery_fee ?? 0);
   const total = Number(quote?.total ?? subtotal + shipping);
+  const deliveryEtaStart = Math.max(10, Math.round(Number(branch?.estimated_delivery_minutes || 45) / 5) * 5);
+  const deliveryEtaEnd = deliveryEtaStart + 5;
 
   return <CheckoutLayout>
     {syncError && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{syncError}</span><Button variant="outline" onClick={retrySync}>إعادة المحاولة</Button></div>}
@@ -81,13 +83,8 @@ export default function Cart() {
       </div>
 
       {branch && <div className="cart-alert" role="status">
-        <Route size={18} />
-        <span>
-          السلة متصلة بفرع <strong>{quote?.branch_name || branch.branch_name}</strong>
-          {quote?.road_distance_km != null ? ` · مسافة الطريق ${money(Number(quote.road_distance_km))} كم` : ''}
-          {quote?.road_duration_minutes ? ` · حوالي ${money(Number(quote.road_duration_minutes))} دقيقة` : ''}.
-          {' '}الأسعار والمخزون والتوصيل محسوبة على نفس الفرع.
-        </span>
+        <Clock3 size={18} />
+        <span>متوقع التوصيل خلال <strong>{money(deliveryEtaStart)}–{money(deliveryEtaEnd)} دقيقة</strong></span>
       </div>}
 
       <div className="cart-grid"><section className="cart-list" aria-label="منتجات السلة">
@@ -165,7 +162,6 @@ export default function Cart() {
         <div className="cart-summary-total"><span>الإجمالي</span><strong>{quotePending ? '...' : money(total)} <small>ج.م</small></strong></div>
         {quote && quote.min_order_amount > 0 && <p className="cart-help">الحد الأدنى للطلب من الفرع: {money(quote.min_order_amount)} ج.م</p>}
         {cta}
-        <p className="cart-help">مسافة التوصيل هنا هي مسافة القيادة على الطريق، وليست المسافة المباشرة بين النقطتين.</p>
         {!user && <p className="cart-help">هنطلب رقم موبايلك عشان تكمّل طلبك ونحفظ العنوان في حسابك.</p>}
       </aside></div>
 
