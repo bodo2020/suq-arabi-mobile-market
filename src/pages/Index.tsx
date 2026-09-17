@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import StoreStructuredData from '@/components/seo/StoreStructuredData';
 import DynamicHomeSections from '@/components/sections/DynamicHomeSections';
+import NearbyMarketplaceStores from '@/components/sections/NearbyMarketplaceStores';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import { readGuestAddress } from '@/lib/deliveryAddress';
@@ -42,6 +43,10 @@ const Index = () => {
   });
 
   const address = user ? addressQuery.data?.address || '' : guestAddress?.address || '';
+  const latitude = user ? addressQuery.data?.latitude : guestAddress?.latitude;
+  const longitude = user ? addressQuery.data?.longitude : guestAddress?.longitude;
+  const marketplaceLocationKey = latitude != null && longitude != null ? `${Number(latitude).toFixed(5)}:${Number(longitude).toFixed(5)}` : '';
+
   const openAddress = () => {
     if (!user && !guestAddress) {
       navigate('/add-address?returnTo=%2F');
@@ -75,6 +80,7 @@ const Index = () => {
           <ChevronLeft size={20} className="text-primary" />
         </button>
 
+        <NearbyMarketplaceStores locationKey={marketplaceLocationKey} />
         <DynamicHomeSections />
       </div>
     </MainLayout>
