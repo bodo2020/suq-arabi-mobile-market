@@ -191,7 +191,7 @@ const Account = () => {
             <section aria-label="التسوق والطلبات" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
               {shortcuts.map(({ to, label, description, icon: Icon }) => (
                 <Link key={to} to={to} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-green-200 sm:p-5">
-                  <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-primary shadow-sm"><Icon size={23} /></span>
+                  <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-primary"><Icon size={23} /></span>
                   <h2 className="font-bold">{label}</h2>
                   <p className="mt-2 text-xs leading-6 text-gray-500">{description}</p>
                 </Link>
