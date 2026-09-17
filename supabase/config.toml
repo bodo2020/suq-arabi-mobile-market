@@ -11,7 +11,7 @@ schemas = ["public", "storage", "graphql_public"]
 # Extra schemas to add to the search_path of every request. public is always included.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
-# for accidental or malicious requests.
+# for accidental or malicious queries.
 max_rows = 1000
 
 [db]
@@ -22,52 +22,36 @@ port = 54322
 major_version = 15
 
 [studio]
-# Port to use for the Supabase Studio interface.
+# Port to use for the local Studio URL.
 port = 54323
 
-# Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
-# are monitored, and you can view the emails that would have been sent from the web interface.
 [inbucket]
-# Port to use for the email testing server web interface.
+# Port to use for the local email testing UI.
 port = 54324
 smtp_port = 54325
 pop3_port = 54326
 
 [storage]
-# The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
 [auth]
-# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
-# in emails.
 site_url = "http://localhost:5173"
-# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = ["http://elmadawymarket.store", "https://elmadawymarket.store", "http://www.elmadawymarket.store", "https://www.elmadawymarket.store", "http://localhost:5173", "http://127.0.0.1:5173", "capacitor://localhost"]
-# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 seconds (one
-# week).
 jwt_expiry = 3600
-# Allow/disallow new user signups to your project.
 enable_signup = true
 
-# Phone auth settings
 [auth.sms]
 enable_signup = true
 enable_confirmations = true
 template = "Your verification code is {{ .Code }}"
-# Add rate limit settings
-rate_limit_sms_sent = 3    # Maximum number of SMS that can be sent to a phone number in 60 minutes
-rate_limit_sms_verified = 3   # Maximum number of successful SMS verifications in 60 minutes
+rate_limit_sms_sent = 3
+rate_limit_sms_verified = 3
 
-# Use an external OAuth provider. The full list of providers are: "apple", "azure", "bitbucket",
-# "discord", "facebook", "github", "gitlab", "google", "keycloak", "linkedin", "notion", "twitch",
-# "twitter", "slack", "spotify", "workos", "zoom".
 [auth.external.apple]
 enabled = false
 client_id = ""
 secret = ""
-# Overrides the default auth redirectUrl.
 redirect_uri = ""
-# Overrides the default OAuth provider URL.
 url = ""
 
 [auth.external.azure]
@@ -186,7 +170,7 @@ url = ""
 enabled = false
 port = 54327
 vector_port = 54328
-# Setup BigQuery project to enable log viewer on local development stack.
+
 [analytics.big_query]
 project_id = ""
 dataset_id = ""
@@ -195,4 +179,4 @@ key_file = ""
 [functions]
 create-verification-table = { verify_jwt = true }
 phone-verify = { verify_jwt = true }
-
+customer-auth-route = { verify_jwt = false }
