@@ -1,9 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { KeyRound, ShieldCheck, UserRound } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
+import PasswordInput from '@/components/auth/PasswordInput';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import BrandLoader from '@/components/ui/BrandLoader';
 import { supabase } from '@/lib/supabase';
 import { loadOnboardingState, nextOnboardingPath, safeReturnTo } from '@/lib/onboarding';
 
@@ -14,37 +17,82 @@ export default function Register() {
   const returnTo = safeReturnTo(params.get('returnTo'));
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [checking, setChecking] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
   useEffect(() => {
     let active = true;
-    void supabase.auth.getUser().then(({ data, error }) => {
-      if (!active) return;
-      if (error || !data.user?.phone) {
-        navigate(`/phone-verify?returnTo=${encodeURIComponent(returnTo)}`, { replace: true });
-        return;
+    void (async () => {
+      try {
+        const { data, error: userError } = await supabase.auth.getUser();
+        if (!active) return;
+        if (userError || !data.user?.phone) {
+          navigate(`/phone-login?returnTo=${encodeURIComponent(returnTo)}`, { replace: true });
+          return;
+        }
+
+        setPhone(`+${data.user.phone.replace(/^\+/, '')}`);
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('name')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+        if (!active) return;
+        if (customer?.name) setName(String(customer.name));
+        setChecking(false);
+      } catch {
+        if (active) {
+          setChecking(false);
+          setError('تعذر تحميل الحساب. راجع الاتصال وحاول مرة أخرى.');
+        }
       }
-      setPhone(`+${data.user.phone.replace(/^\+/, '')}`);
-      setChecking(false);
-    }).catch(() => { if (active) { setChecking(false); setError('تعذر تحميل الحساب. حدّث الصفحة وحاول مرة أخرى.'); } });
+    })();
     return () => { active = false; };
   }, [navigate, returnTo]);
+
   async function completeProfile(event: React.FormEvent) {
     event.preventDefault();
     if (busy || checking) return;
+
     const fullName = name.trim().replace(/\s+/g, ' ');
-    if (fullName.length < 2) { setError('اكتب اسمك، حرفين على الأقل.'); return; }
-    setBusy(true); setError('');
+    if (fullName.length < 2) {
+      setError('اكتب اسمك، حرفين على الأقل.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('كلمة المرور لازم تكون 8 أحرف أو أكثر.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('كلمتا المرور غير متطابقتين.');
+      return;
+    }
+
+    setBusy(true);
+    setError('');
     try {
       const { data, error: userError } = await supabase.auth.getUser();
       if (userError || !data.user?.phone) throw userError || new Error('Missing session');
+
+      const { error: passwordError } = await supabase.auth.updateUser({
+        password,
+        data: { password_login_enabled: true },
+      });
+      if (passwordError) throw passwordError;
+
       const [firstName, ...rest] = fullName.split(' ');
       const { error: saveError } = await supabase.from('customers').upsert({
-        user_id: data.user.id, name: fullName, first_name: firstName,
-        last_name: rest.join(' ') || null, phone: `+${data.user.phone.replace(/^\+/, '')}`,
+        user_id: data.user.id,
+        name: fullName,
+        first_name: firstName,
+        last_name: rest.join(' ') || null,
+        phone: `+${data.user.phone.replace(/^\+/, '')}`,
       }, { onConflict: 'user_id' });
       if (saveError) throw saveError;
+
       await queryClient.invalidateQueries({ queryKey: ['customerData', data.user.id] });
       await queryClient.invalidateQueries({ queryKey: ['customer-favorites', data.user.id] });
       queryClient.setQueryData(['profile-completion', data.user.id], { name: fullName });
@@ -52,22 +100,89 @@ export default function Register() {
       const state = await loadOnboardingState(data.user.id);
       await queryClient.invalidateQueries({ queryKey: ['onboarding-state', data.user.id] });
       navigate(nextOnboardingPath({ ...state, hasName: true }, returnTo), { replace: true });
-    } catch { setError('تعذر حفظ بياناتك. راجع الاتصال وحاول مرة أخرى.'); }
-    finally { setBusy(false); }
+    } catch (saveError: any) {
+      setError(saveError?.message?.includes('password')
+        ? 'تعذر حفظ كلمة المرور. اختار كلمة أقوى وحاول مرة أخرى.'
+        : 'تعذر حفظ بياناتك. راجع الاتصال وحاول مرة أخرى.');
+    } finally {
+      setBusy(false);
+    }
   }
-  return <AuthLayout>
-    <h1 className="text-center font-bold mb-2">خلّينا نتعرف عليك</h1>
-    <p className="text-center text-gray-600 mb-6">خطوة بسيطة لأول مرة: اكتب اسمك، وبعدها هنحدد عنوان التوصيل عشان طلباتك توصل لبابك.</p>
-    {checking ? <p role="status" className="text-center">جاري التأكد من حسابك...</p> :
-      <form onSubmit={completeProfile} className="space-y-5" aria-busy={busy}>
-        <p className="text-center rounded-xl bg-green-50 p-3 text-green-800">رقمك اتأكد · <bdi dir="ltr">{phone}</bdi></p>
-        <div><label htmlFor="fullName" className="block mb-2 font-medium">اسمك</label>
-          <Input id="fullName" autoComplete="name" autoFocus maxLength={100} value={name} disabled={busy}
-            placeholder="الاسم اللي تحب نناديك بيه" aria-invalid={Boolean(error)} aria-describedby={error ? 'registration-error' : undefined}
-            onChange={event => { setName(event.target.value); setError(''); }} />
+
+  return (
+    <AuthLayout>
+      <div className="mx-auto w-full max-w-md" dir="rtl">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#e8f5ee] text-[#005931]">
+            <UserRound size={30} />
+          </div>
+          <h1 className="text-2xl font-black text-slate-950">كمّل بيانات حسابك</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">دي آخر خطوة بعد تأكيد رقمك، وبعدها هتدخل بالباسورد من غير OTP كل مرة.</p>
         </div>
-        {error && <p id="registration-error" role="alert" className="text-sm text-red-700">{error}</p>}
-        <Button className="w-full" type="submit" disabled={busy || !phone}>{busy ? 'جاري حفظ حسابك...' : 'حفظ ومتابعة'}</Button>
-      </form>}
-  </AuthLayout>;
+
+        {checking ? (
+          <div className="flex min-h-48 items-center justify-center"><BrandLoader label="جاري التأكد من حسابك" /></div>
+        ) : (
+          <form onSubmit={completeProfile} className="space-y-5 rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.07)] sm:p-6" aria-busy={busy}>
+            <div className="flex items-center gap-2 rounded-2xl bg-[#f0faf5] px-4 py-3 text-sm font-bold text-[#005931]">
+              <ShieldCheck size={18} />
+              <span>تم تأكيد رقمك</span>
+              <bdi dir="ltr" className="mr-auto font-semibold">{phone}</bdi>
+            </div>
+
+            <div>
+              <label htmlFor="fullName" className="mb-2 block text-sm font-bold text-slate-800">اسمك</label>
+              <Input
+                id="fullName"
+                autoComplete="name"
+                autoFocus
+                maxLength={100}
+                value={name}
+                disabled={busy}
+                placeholder="الاسم اللي تحب نناديك بيه"
+                className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
+                onChange={event => { setName(event.target.value); setError(''); }}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-800">
+                <KeyRound size={17} className="text-[#005931]" />
+                كلمة المرور
+              </label>
+              <PasswordInput
+                id="password"
+                autoComplete="new-password"
+                value={password}
+                disabled={busy}
+                placeholder="8 أحرف أو أكثر"
+                className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
+                onChange={event => { setPassword(event.target.value); setError(''); }}
+              />
+              <p className="mt-2 text-xs text-slate-500">هتستخدمها بعد كده مع رقم موبايلك بدل إرسال OTP كل مرة.</p>
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="mb-2 block text-sm font-bold text-slate-800">تأكيد كلمة المرور</label>
+              <PasswordInput
+                id="confirmPassword"
+                autoComplete="new-password"
+                value={confirmPassword}
+                disabled={busy}
+                placeholder="اكتب كلمة المرور مرة تانية"
+                className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
+                onChange={event => { setConfirmPassword(event.target.value); setError(''); }}
+              />
+            </div>
+
+            {error && <p id="registration-error" role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+
+            <Button className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black" type="submit" disabled={busy || !phone}>
+              {busy ? <><BrandLoader size="sm" className="ml-2" />جاري حفظ حسابك</> : 'حفظ ومتابعة'}
+            </Button>
+          </form>
+        )}
+      </div>
+    </AuthLayout>
+  );
 }
