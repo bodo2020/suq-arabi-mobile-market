@@ -30,6 +30,15 @@ export type Product = {
   delivery_branch_id?: string;
   inventory_branch_id?: string;
   pricing_branch_id?: string;
+  commerce_source?: 'owned' | 'marketplace';
+  catalog_scope?: 'elmadawy' | 'partner';
+  marketplace_listing_id?: string;
+  merchant_id?: string;
+  merchant_name?: string;
+  marketplace_branch_id?: string;
+  marketplace_branch_name?: string;
+  preparation_minutes?: number | null;
+  fallback_reason?: string;
 };
 
 export type MainCategory = {
@@ -197,7 +206,10 @@ export async function getProducts(categoryIdOrSubcategoryId?: string, isSubcateg
 
 export async function getProductById(id: string) {
   const rows = await getBranchCatalog({ productId: id, limit: 1 });
-  return rows[0] || null;
+  if (rows[0]) return rows[0];
+
+  const { findMarketplaceProductForCurrentAddress } = await import('@/lib/marketplace');
+  return findMarketplaceProductForCurrentAddress(id);
 }
 
 export async function getProductsByCompany(companyId: string) {
@@ -220,8 +232,20 @@ export async function searchProducts(query: string) {
 }
 
 export async function searchProductByBarcode(barcode: string) {
-  const rows = await getBranchCatalog({ barcode, limit: 1 });
-  return rows[0] || null;
+  const normalized = barcode.trim();
+  const rows = await getBranchCatalog({ barcode: normalized, limit: 1 });
+  if (rows[0]) return rows[0];
+
+  const { getNearbyMarketplaceStores, getMarketplaceStoreCatalog } = await import('@/lib/marketplace');
+  const stores = await getNearbyMarketplaceStores(50);
+  for (const store of stores) {
+    const products = await getMarketplaceStoreCatalog(store.branch_id, normalized, 20);
+    const exact = products.find(product =>
+      product.barcode === normalized || product.bulk_barcode === normalized
+    );
+    if (exact) return exact;
+  }
+  return null;
 }
 
 export async function submitOrder(order: Omit<Order, 'id' | 'created_at'>) {
