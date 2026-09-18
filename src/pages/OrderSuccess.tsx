@@ -15,7 +15,7 @@ const OrderSuccess = () => {
   const { toast } = useToast();
   const [copied, setCopied] = React.useState(false);
 
-  const { orderId, orderNumber, combined, storesCount } = location.state || {};
+  const { orderId, orderGroupId, orderNumber, combined, storesCount } = location.state || {};
   const { data: orderEta } = useQuery({
     queryKey: ['order-eta', orderId],
     queryFn: () => getMyOrderEta(orderId),
@@ -47,7 +47,8 @@ const OrderSuccess = () => {
   };
 
   const openTracking = () => {
-    navigate(orderId ? `/orders?order_id=${encodeURIComponent(orderId)}` : '/orders');
+    const targetId = combined && orderGroupId ? orderGroupId : orderId;
+    navigate(targetId ? `/orders?order_id=${encodeURIComponent(targetId)}` : '/orders');
   };
 
   return (
