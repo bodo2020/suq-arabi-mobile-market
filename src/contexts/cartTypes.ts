@@ -27,7 +27,7 @@ export type CartItem = BaseCartItem & {
   marketplace_branch_name?: string | null;
 };
 
-export type CartAddResult = 'added' | 'conflict' | 'not_ready';
+export type CartAddResult = 'added' | 'conflict' | 'limit' | 'not_ready';
 
 export const cartSourceIdentity = (item: CartItem) => item.commerce_source === 'marketplace'
   ? `marketplace:${item.merchant_id || ''}:${item.marketplace_branch_id || ''}`
@@ -37,7 +37,22 @@ export const cartItemIdentity = (item: CartItem) => item.commerce_source === 'ma
   ? `${cartSourceIdentity(item)}:${item.marketplace_listing_id || item.product.id}:${!!item.is_bulk}:${item.unit_of_measure || ''}`
   : `owned:${item.product.id}:${!!item.is_bulk}:${item.unit_of_measure || ''}`;
 
-export const isMarketplaceCart = (items: CartItem[]) => items.length > 0 && items.every(item => item.commerce_source === 'marketplace');
+export const cartSourceIdentities = (items: CartItem[]) => [...new Set(items.map(cartSourceIdentity))];
+
+export const marketplaceBranchIds = (items: CartItem[]) => [...new Set(
+  items
+    .filter(item => item.commerce_source === 'marketplace')
+    .map(item => item.marketplace_branch_id)
+    .filter((value): value is string => Boolean(value)),
+)];
+
+export const isMarketplaceCart = (items: CartItem[]) =>
+  items.length > 0 && items.every(item => item.commerce_source === 'marketplace');
+
+export const isSingleMarketplaceCart = (items: CartItem[]) =>
+  isMarketplaceCart(items) && marketplaceBranchIds(items).length === 1;
+
+export const isCombinedCart = (items: CartItem[]) => cartSourceIdentities(items).length > 1;
 
 export type CartContextType = {
   items: CartItem[];
