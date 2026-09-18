@@ -270,14 +270,27 @@ export default function CombinedPayment() {
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-xl border p-3">
-                <span className="text-gray-500">المسافة التقديرية</span>
+                <span className="text-gray-500">
+                  {quote.delivery.distance_source === 'verified_road_route' && !quote.delivery.route_degraded
+                    ? 'مسافة الطريق'
+                    : 'المسافة التقديرية'}
+                </span>
                 <strong className="mt-1 block">{money(quote.delivery.route_distance_km)} كم</strong>
               </div>
               <div className="rounded-xl border p-3">
-                <span className="text-gray-500">زمن الطريق التقديري</span>
+                <span className="text-gray-500">
+                  {quote.delivery.distance_source === 'verified_road_route' && !quote.delivery.route_degraded
+                    ? 'زمن الطريق'
+                    : 'زمن الطريق التقديري'}
+                </span>
                 <strong className="mt-1 block">{quote.delivery.estimated_route_minutes} دقيقة</strong>
               </div>
             </div>
+            {quote.delivery.distance_source === 'verified_road_route' && <p className="mt-3 text-xs text-gray-500">
+              {quote.delivery.route_degraded
+                ? 'تعذر الوصول لمزوّد الطرق مؤقتًا؛ تم استخدام تقدير احتياطي آمن وسيُعاد التحقق قبل تأكيد الطلب.'
+                : `المسار محسوب عبر ${quote.delivery.route_provider === 'google' ? 'Google Maps' : 'خدمة الطرق الاحتياطية'} وسيُعاد التحقق منه قبل تسجيل الطلب.`}
+            </p>}
           </CardContent>
         </Card>}
 
