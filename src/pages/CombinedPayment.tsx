@@ -156,7 +156,8 @@ export default function CombinedPayment() {
       setPending(null);
       clearCart();
 
-      const leadOrderId = placed.orders?.[0]?.order_id;
+      const leadOrderId = placed.orders?.find(order => order.source_kind === 'owned')?.order_id
+        || placed.orders?.[0]?.order_id;
       navigate('/order-success', {
         state: {
           orderId: leadOrderId,
