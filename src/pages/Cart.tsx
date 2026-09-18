@@ -16,7 +16,7 @@ import { formatWeightAmount, productWeightStepGrams } from '@/lib/productPurchas
 const money = (value: number) => new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(value);
 const localItemPrice = (item: CartItem) => item.is_bulk ? item.product.bulk_price || 0 : item.product.offer_price || item.product.price || 0;
 const localItemTotal = (item: CartItem) => localItemPrice(item) * item.quantity / (item.unit_of_measure === 'weight' && !item.is_bulk ? 1000 : 1);
-const itemKey = (item: CartItem) => cartItemIdentity(item);
+const itemKey = (item: CartItem) => `${item.product.id}:${!!item.is_bulk}:${item.unit_of_measure === 'weight' ? 'weight' : 'piece'}`;
 const quoteLineKey = (line: CartQuoteLine) => `${line.product_id}:${!!line.is_bulk}:${line.unit_of_measure}`;
 
 export default function Cart() {
@@ -27,7 +27,7 @@ export default function Cart() {
   const [weightItem, setWeightItem] = useState<CartItem | null>(null);
 
   const quoteSignature = useMemo(
-    () => items.map(item => `${itemKey(item)}:${item.quantity}`).sort().join('|'),
+    () => items.map(item => `${cartItemIdentity(item)}:${item.quantity}`).sort().join('|'),
     [items],
   );
 
