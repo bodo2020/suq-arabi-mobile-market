@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CartItem, cartItemIdentity, cartSourceIdentity } from './cartTypes';
+import { CartItem, cartItemIdentity } from './cartTypes';
 import { useUser } from './UserContext';
 import { customerRpc } from '@/lib/customerPersistence';
 import { getCurrentDeliveryBranchId } from '@/lib/supabase';
@@ -10,14 +10,26 @@ import { getMarketplaceStoreCatalog } from '@/lib/marketplace';
 const offlineCartKey = (userId: string) => `offline_cart:${userId}`;
 const pendingCartKey = (userId: string) => `pending_cart:${userId}`;
 
+function keepAllowedSources(items: CartItem[]) {
+  const allowedPartnerBranches: string[] = [];
+  return items.filter(item => {
+    if (item.commerce_source !== 'marketplace') return true;
+    const branchId = item.marketplace_branch_id;
+    if (!branchId) return false;
+    if (allowedPartnerBranches.includes(branchId)) return true;
+    if (allowedPartnerBranches.length >= 2) return false;
+    allowedPartnerBranches.push(branchId);
+    return true;
+  });
+}
+
 export function mergeCartItems(saved: CartItem[], guest: CartItem[]) {
-  if (saved.length && guest.length && cartSourceIdentity(saved[0]) !== cartSourceIdentity(guest[0])) return guest;
   const merged = new Map(saved.map(item => [cartItemIdentity(item), item]));
   for (const item of guest) {
     const existing = merged.get(cartItemIdentity(item));
     merged.set(cartItemIdentity(item), existing ? { ...existing, quantity: existing.quantity + item.quantity } : item);
   }
-  return [...merged.values()];
+  return keepAllowedSources([...merged.values()]);
 }
 
 function readCart(storageKey: string): CartItem[] {
@@ -25,44 +37,65 @@ function readCart(storageKey: string): CartItem[] {
   if (!raw) return [];
   const value = JSON.parse(raw);
   if (!Array.isArray(value) || value.some(item => !item?.product?.id || !Number.isInteger(item.quantity) || item.quantity <= 0)) throw new Error('Invalid saved cart');
-  return value;
+  return keepAllowedSources(value);
 }
 function writeCart(storageKey: string, items: CartItem[]) { localStorage.setItem(storageKey, JSON.stringify(items)); }
 
 async function reconcileWithCommerce(items: CartItem[]): Promise<CartItem[]> {
-  if (!items.length || !navigator.onLine) return items;
-  const sources = new Set(items.map(cartSourceIdentity));
-  if (sources.size !== 1) return [];
+  if (!items.length || !navigator.onLine) return keepAllowedSources(items);
 
-  if (items[0].commerce_source === 'marketplace') {
-    const branchId = items[0].marketplace_branch_id;
-    if (!branchId || items.some(item => item.commerce_source !== 'marketplace' || item.marketplace_branch_id !== branchId)) return [];
+  const candidate = keepAllowedSources(items);
+  const result: CartItem[] = [];
+
+  const ownedItems = candidate.filter(item => item.commerce_source !== 'marketplace');
+  if (ownedItems.length) {
+    const branchId = await getCurrentDeliveryBranchId();
+    if (branchId) {
+      const products = await getProductsByIds([...new Set(ownedItems.map(item => item.product.id))]);
+      const byId = new Map(products.map(product => [product.id, product]));
+      for (const item of ownedItems) {
+        const product = byId.get(item.product.id);
+        if (!product) continue;
+        if (item.is_bulk && !product.bulk_enabled) continue;
+        const stock = Math.max(0, Number(product.quantity || 0));
+        const maxQuantity = item.unit_of_measure === 'weight'
+          ? Math.floor(stock * 1000)
+          : item.is_bulk
+            ? Math.floor(stock / Math.max(1, Number(product.bulk_quantity || 1)))
+            : Math.floor(stock);
+        if (maxQuantity <= 0) continue;
+        result.push({ ...item, product, quantity: Math.min(item.quantity, maxQuantity), commerce_source: 'owned' });
+      }
+    }
+  }
+
+  const marketplaceItems = candidate.filter(item => item.commerce_source === 'marketplace');
+  const branchIds = [...new Set(marketplaceItems.map(item => item.marketplace_branch_id).filter((value): value is string => Boolean(value)))].slice(0, 2);
+  for (const branchId of branchIds) {
     const catalog = await getMarketplaceStoreCatalog(branchId, null, 500);
     const byListing = new Map(catalog.map(product => [product.marketplace_listing_id, product]));
-    return items.flatMap(item => {
+    for (const item of marketplaceItems.filter(value => value.marketplace_branch_id === branchId)) {
       const product = item.marketplace_listing_id ? byListing.get(item.marketplace_listing_id) : null;
-      if (!product) return [];
+      if (!product) continue;
       const stock = Math.max(0, Number(product.quantity || 0));
       const isWeight = item.unit_of_measure === 'weight';
       const maxQuantity = isWeight ? Math.floor(stock * 1000) : Math.floor(stock);
-      if (maxQuantity <= 0) return [];
-      return [{ ...item, product, quantity: Math.min(item.quantity, maxQuantity) }];
-    });
+      if (maxQuantity <= 0) continue;
+      result.push({
+        ...item,
+        product,
+        quantity: Math.min(item.quantity, maxQuantity),
+        commerce_source: 'marketplace',
+        marketplace_listing_id: item.marketplace_listing_id || product.marketplace_listing_id || null,
+        merchant_id: item.merchant_id || product.merchant_id || null,
+        merchant_name: item.merchant_name || product.merchant_name || null,
+        marketplace_branch_id: branchId,
+        marketplace_branch_name: item.marketplace_branch_name || product.marketplace_branch_name || null,
+      });
+    }
   }
 
-  const branchId = await getCurrentDeliveryBranchId();
-  if (!branchId) return items;
-  const products = await getProductsByIds(items.map(item => item.product.id));
-  const byId = new Map(products.map(product => [product.id, product]));
-  return items.flatMap(item => {
-    const product = byId.get(item.product.id);
-    if (!product) return [];
-    if (item.is_bulk && !product.bulk_enabled) return [];
-    const stock = Math.max(0, Number(product.quantity || 0));
-    const maxQuantity = item.unit_of_measure === 'weight' ? Math.floor(stock * 1000) : item.is_bulk ? Math.floor(stock / Math.max(1, Number(product.bulk_quantity || 1))) : Math.floor(stock);
-    if (maxQuantity <= 0) return [];
-    return [{ ...item, product, quantity: Math.min(item.quantity, maxQuantity), commerce_source: 'owned' as const }];
-  });
+  return keepAllowedSources(result);
 }
 
 type SavedMetadata = {
@@ -89,39 +122,54 @@ async function hydrateRows(rows: Array<{ product_id: string; quantity: number; m
       if (!product) continue;
       const metadata = row.metadata as SavedMetadata | null;
       if (metadata?.is_bulk && !product.bulk_enabled) continue;
-      result.push({ product, quantity: row.quantity, is_bulk: !!metadata?.is_bulk, unit_of_measure: metadata?.unit_of_measure || undefined, commerce_source: 'owned' });
+      result.push({
+        product,
+        quantity: row.quantity,
+        is_bulk: !!metadata?.is_bulk,
+        unit_of_measure: metadata?.unit_of_measure || undefined,
+        commerce_source: 'owned',
+      });
     }
   }
 
-  if (marketRows.length) {
-    const metadata = marketRows.map(row => row.metadata as SavedMetadata);
-    const branchIds = [...new Set(metadata.map(value => value.branch_id).filter(Boolean))];
-    if (branchIds.length === 1) {
-      const catalog = await getMarketplaceStoreCatalog(branchIds[0] as string, null, 500);
-      const byListing = new Map(catalog.map(product => [product.marketplace_listing_id, product]));
-      for (const row of marketRows) {
-        const meta = row.metadata as SavedMetadata;
-        const product = meta.listing_id ? byListing.get(meta.listing_id) : null;
-        if (!product) continue;
-        result.push({
-          product,
-          quantity: row.quantity,
-          is_bulk: false,
-          unit_of_measure: meta.unit_of_measure || undefined,
-          commerce_source: 'marketplace',
-          marketplace_listing_id: meta.listing_id || null,
-          merchant_id: meta.merchant_id || product.merchant_id,
-          merchant_name: meta.merchant_name || product.merchant_name,
-          marketplace_branch_id: meta.branch_id || product.marketplace_branch_id,
-          marketplace_branch_name: meta.branch_name || product.marketplace_branch_name,
-        });
-      }
+  const branchIds = [...new Set(
+    marketRows
+      .map(row => (row.metadata as SavedMetadata | null)?.branch_id)
+      .filter((value): value is string => Boolean(value)),
+  )].slice(0, 2);
+
+  for (const branchId of branchIds) {
+    const catalog = await getMarketplaceStoreCatalog(branchId, null, 500);
+    const byListing = new Map(catalog.map(product => [product.marketplace_listing_id, product]));
+    for (const row of marketRows) {
+      const meta = row.metadata as SavedMetadata;
+      if (meta.branch_id !== branchId) continue;
+      const product = meta.listing_id ? byListing.get(meta.listing_id) : null;
+      if (!product) continue;
+      result.push({
+        product,
+        quantity: row.quantity,
+        is_bulk: false,
+        unit_of_measure: meta.unit_of_measure || undefined,
+        commerce_source: 'marketplace',
+        marketplace_listing_id: meta.listing_id || null,
+        merchant_id: meta.merchant_id || product.merchant_id,
+        merchant_name: meta.merchant_name || product.merchant_name,
+        marketplace_branch_id: branchId,
+        marketplace_branch_name: meta.branch_name || product.marketplace_branch_name,
+      });
     }
   }
-  return reconcileWithCommerce(result);
+
+  return keepAllowedSources(result);
 }
 
-export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.SetStateAction<CartItem[]>>, isInitialized: boolean, setIsInitialized: React.Dispatch<React.SetStateAction<boolean>>) {
+export function useCartSync(
+  items: CartItem[],
+  setItems: React.Dispatch<React.SetStateAction<CartItem[]>>,
+  isInitialized: boolean,
+  setIsInitialized: React.Dispatch<React.SetStateAction<boolean>>,
+) {
   const { user, authLoading } = useUser();
   const [reload, setReload] = useState(0);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -204,7 +252,7 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
 
         const { data: rows, error } = await supabase.from('cart_items').select('product_id,quantity,metadata').eq('customer_id', profile.id);
         if (error) throw error;
-        let loaded = rows.length ? await hydrateRows(rows) : [];
+        const loaded = rows.length ? await hydrateRows(rows) : [];
         if (!current()) return;
         const hasPending = localStorage.getItem(pendingKey) !== null;
         const pending = hasPending ? await reconcileWithCommerce(readCart(pendingKey)) : null;
@@ -253,8 +301,12 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
     const shadowKey = offlineCartKey(userId);
     try { localStorage.setItem(shadowKey, serialized); } catch { setSyncError('تعذر حفظ نسخة السلة على الجهاز.'); }
     if (!navigator.onLine || !customer.current) {
-      try { localStorage.setItem(pendingKey, serialized); if (!navigator.onLine) setSyncError('أنت بدون إنترنت. آخر تعديل محفوظ على الجهاز وهيتزامن تلقائيًا.'); }
-      catch { setSyncError('تعذر حفظ آخر تعديل على الجهاز.'); }
+      try {
+        localStorage.setItem(pendingKey, serialized);
+        if (!navigator.onLine) setSyncError('أنت بدون إنترنت. آخر تعديل محفوظ على الجهاز وهيتزامن تلقائيًا.');
+      } catch {
+        setSyncError('تعذر حفظ آخر تعديل على الجهاز.');
+      }
       return;
     }
     if (serialized === saved.current) return;
@@ -293,9 +345,17 @@ export function useCartSync(items: CartItem[], setItems: React.Dispatch<React.Se
           writeCart(shadowKey, latest.current);
           setSyncError(null);
         } catch {
-          if (generation.current === run) setSyncError(navigator.onLine ? 'تعذر حفظ آخر تعديل. سلتك ما زالت هنا؛ أعد المحاولة.' : 'الاتصال انقطع. آخر تعديل محفوظ على الجهاز وهيتزامن تلقائيًا.');
-        } finally { if (generation.current === run) setIsSaving(false); }
-      }).catch(() => { if (generation.current === run) setSyncError('تعذر حفظ السلة. أعد المحاولة.'); });
+          if (generation.current === run) {
+            setSyncError(navigator.onLine
+              ? 'تعذر حفظ آخر تعديل. سلتك ما زالت هنا؛ أعد المحاولة.'
+              : 'الاتصال انقطع. آخر تعديل محفوظ على الجهاز وهيتزامن تلقائيًا.');
+          }
+        } finally {
+          if (generation.current === run) setIsSaving(false);
+        }
+      }).catch(() => {
+        if (generation.current === run) setSyncError('تعذر حفظ السلة. أعد المحاولة.');
+      });
     }, 350);
     return () => clearTimeout(timeout);
   }, [items, isInitialized, user?.id]);
