@@ -4,16 +4,12 @@ import {
   CartItem,
   CommerceProductInput,
   cartItemIdentity,
-  cartSourceIdentity,
+  marketplaceBranchIds,
   type CartAddResult,
 } from './cartTypes';
 import { useCartSync } from './cartSupabaseSync';
 
 export const CartContext = React.createContext<CartContextType | undefined>(undefined);
-
-const productSourceIdentity = (product: CommerceProductInput) => product.commerce_source === 'marketplace'
-  ? `marketplace:${product.merchant_id || ''}:${product.marketplace_branch_id || ''}`
-  : 'owned';
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -23,16 +19,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addToCart = useCallback((product: CommerceProductInput): CartAddResult => {
     if (!isInitialized) return 'not_ready';
 
-    const incomingSource = productSourceIdentity(product);
-    const currentSource = items[0] ? cartSourceIdentity(items[0]) : null;
-    if (currentSource && currentSource !== incomingSource) {
-      window.dispatchEvent(new CustomEvent('cart-source-conflict', {
-        detail: {
-          currentMerchant: items[0]?.merchant_name || 'المعداوي ماركت',
-          incomingMerchant: product.merchant_name || 'المعداوي ماركت',
-        },
-      }));
-      return 'conflict';
+    if (product.commerce_source === 'marketplace') {
+      if (!product.marketplace_branch_id || !product.merchant_id || !product.marketplace_listing_id) {
+        return 'conflict';
+      }
+      const partnerBranches = marketplaceBranchIds(items);
+      const isExistingPartner = partnerBranches.includes(product.marketplace_branch_id);
+      if (!isExistingPartner && partnerBranches.length >= 2) {
+        window.dispatchEvent(new CustomEvent('cart-source-conflict', {
+          detail: {
+            reason: 'partner_limit',
+            incomingMerchant: product.merchant_name || 'المتجر الجديد',
+            partnerCount: partnerBranches.length,
+          },
+        }));
+        return 'limit';
+      }
     }
 
     const nextItem: CartItem = {
