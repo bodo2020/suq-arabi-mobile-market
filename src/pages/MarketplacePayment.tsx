@@ -61,7 +61,7 @@ export default function MarketplacePayment() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!authLoading && isInitialized && !user) navigate('/phone-verify?returnTo=%2Fmarketplace-payment', { replace: true });
+    if (!authLoading && isInitialized && !user) navigate('/phone-login?returnTo=%2Fmarketplace-payment', { replace: true });
   }, [authLoading, isInitialized, user, navigate]);
 
   const customerQuery = useQuery({
@@ -93,7 +93,7 @@ export default function MarketplacePayment() {
   const quote = quoteQuery.data;
   const handleSubmit = async () => {
     if (submitting.current || loading || isSaving) return;
-    if (!user) return navigate('/phone-verify?returnTo=%2Fmarketplace-payment');
+    if (!user) return navigate('/phone-login?returnTo=%2Fmarketplace-payment');
     if (!customerQuery.data?.customer?.id || !customerQuery.data.customer.name?.trim()) return navigate('/register?returnTo=%2Fmarketplace-payment');
     if (!addressId) return navigate('/addresses?returnTo=%2Fmarketplace-payment');
     if (syncError && !pending) return toast({ title: 'السلة لم تُحفظ بعد', description: 'أعد المحاولة قبل تأكيد الطلب.', variant: 'destructive' });
