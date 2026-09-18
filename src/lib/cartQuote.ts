@@ -207,7 +207,7 @@ export async function quoteCart(items: CartItem[]): Promise<CartQuote> {
     };
   }
 
-  const { data, error } = await rpc('quote_customer_cart', {
+  const { data, error } = await rpc('quote_customer_cart_v2', {
     p_items: checkoutLines(items),
     p_latitude: point.latitude,
     p_longitude: point.longitude,
