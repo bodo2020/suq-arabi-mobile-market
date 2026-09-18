@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
 import { checkoutLines } from '@/lib/checkout';
 import { marketplaceCheckoutLines } from '@/lib/marketplaceCheckout';
+import { getMultiStoreRoadQuote } from '@/lib/multistoreRoadRoute';
 
 export type CombinedCheckoutSource =
   | { source_kind: 'owned'; items: ReturnType<typeof checkoutLines> }
@@ -37,10 +38,17 @@ export type CombinedOrderQuote = {
   merchant_delivery_subsidy: number;
   elmadawy_delivery_subsidy: number;
   total: number;
+  route_quote_id: string;
+  road_verified: boolean;
   delivery: {
     route_distance_km: number;
     estimated_route_minutes: number;
     detour_km: number;
+    distance_source?: 'estimated_haversine' | 'verified_road_route';
+    route_quote_id?: string;
+    route_quote_expires_at?: string;
+    route_provider?: 'google' | 'osrm' | 'straight_line_fallback';
+    route_degraded?: boolean;
     customer_delivery_fee: number;
     extra_pickup_fee: number;
     stops: Array<{
@@ -119,10 +127,28 @@ export function combinedCheckoutSources(items: CartItem[]): CombinedCheckoutSour
   return sources;
 }
 
+async function loadAddressPoint(addressId: string) {
+  const { data, error } = await supabase
+    .from('customer_addresses')
+    .select('latitude,longitude')
+    .eq('id', addressId)
+    .maybeSingle();
+  if (error) throw error;
+  const latitude = Number(data?.latitude);
+  const longitude = Number(data?.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error('DELIVERY_ADDRESS_REQUIRED');
+  }
+  return { latitude, longitude };
+}
+
 export async function quoteCombinedOrder(sources: CombinedCheckoutSource[], addressId: string) {
-  const { data, error } = await rpc('quote_combined_order_v1', {
+  const point = await loadAddressPoint(addressId);
+  const road = await getMultiStoreRoadQuote(sources, point.latitude, point.longitude);
+  const { data, error } = await rpc('quote_combined_order_v2', {
     p_sources: sources,
     p_address_id: addressId,
+    p_route_quote_id: road.route_quote_id,
   });
   if (error) throw error;
   return data as CombinedOrderQuote;
@@ -132,13 +158,14 @@ export async function placeCombinedOrder(order: PendingCombinedCheckout) {
   const freshQuote = await quoteCombinedOrder(order.sources, order.addressId);
   if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
 
-  const { data, error } = await rpc('place_combined_order_group_v1', {
+  const { data, error } = await rpc('place_combined_order_group_v2', {
     p_group_id: order.groupId,
     p_sources: order.sources,
     p_address_id: order.addressId,
     p_payment_method: order.paymentMethod,
     p_notes: order.notes,
     p_quote_token: order.quoteToken,
+    p_route_quote_id: freshQuote.route_quote_id,
   });
   if (error) throw error;
   return data as PlacedCombinedOrder;
@@ -185,6 +212,13 @@ const messages: Record<string, string> = {
   PRICE_UNAVAILABLE: 'سعر أحد المنتجات غير متاح حاليًا.',
   MIN_ORDER_NOT_MET: 'قيمة الطلب أقل من الحد الأدنى لأحد المتاجر.',
   QUOTE_CHANGED: 'السعر أو المخزون أو مسار التوصيل اتغيّر. راجع الملخص وحاول تاني.',
+  INVALID_MULTI_STORE_ROUTE: 'راجع المتاجر الموجودة في السلة قبل حساب الطريق.',
+  ROAD_QUOTE_REQUIRED: 'تعذر تثبيت مسار التوصيل. حاول مرة تانية.',
+  ROAD_QUOTE_EXPIRED: 'مسار التوصيل انتهت صلاحيته. راجع الملخص وحاول تاني.',
+  ROAD_QUOTE_MISMATCH: 'العنوان أو المتاجر اتغيروا أثناء حساب الطريق.',
+  ROUTE_QUOTE_STORE_FAILED: 'تعذر تثبيت مسار الطريق حاليًا.',
+  MULTISTORE_ROUTE_FAILED: 'تعذر حساب مسار المتاجر المجمّع حاليًا.',
+  ROUTE_DISTANCE_UNAVAILABLE: 'تعذر حساب طريق التوصيل حاليًا. حاول مرة تانية.',
   INVALID_QUANTITY: 'راجع كميات المنتجات.',
   INVALID_CART: 'راجع محتويات السلة.',
   INVALID_MULTI_STORE_CART: 'السلة المجمعة لازم تحتوي على مصدرين إلى ثلاثة بحد أقصى.',
@@ -207,7 +241,9 @@ export function combinedDefinitelyRejected(error: unknown) {
     'MULTISTORE_DETOUR_TOO_HIGH','STORE_DETOUR_LIMIT_EXCEEDED','STORE_NOT_MULTISTORE_ELIGIBLE',
     'STORE_HUB_MISMATCH','DUPLICATE_STORE','INSUFFICIENT_STOCK','PRODUCT_UNAVAILABLE',
     'PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','MIN_ORDER_NOT_MET',
-    'QUOTE_CHANGED','INVALID_QUANTITY','INVALID_CART','INVALID_MULTI_STORE_CART','INVALID_ORDER',
+    'QUOTE_CHANGED','INVALID_MULTI_STORE_ROUTE','ROAD_QUOTE_REQUIRED','ROAD_QUOTE_EXPIRED',
+    'ROAD_QUOTE_MISMATCH','ROUTE_QUOTE_STORE_FAILED','MULTISTORE_ROUTE_FAILED','ROUTE_DISTANCE_UNAVAILABLE',
+    'INVALID_QUANTITY','INVALID_CART','INVALID_MULTI_STORE_CART','INVALID_ORDER',
     'SAAS_APP_SUSPENDED','SAAS_CAPABILITY_DISABLED',
   ].includes(message);
 }

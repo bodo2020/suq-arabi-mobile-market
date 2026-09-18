@@ -5,6 +5,7 @@ import { loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
 import { checkoutLines } from '@/lib/checkout';
 import { marketplaceCheckoutLines, type MarketplaceQuote } from '@/lib/marketplaceCheckout';
 import { getRoadDistance } from '@/lib/roadDistance';
+import { getMultiStoreRoadQuote } from '@/lib/multistoreRoadRoute';
 
 export type CartQuoteLine = {
   listing_id?: string;
@@ -51,6 +52,11 @@ export type CombinedDeliveryQuote = {
   extra_pickup_fee: number;
   distance_fee: number;
   free_delivery: boolean;
+  distance_source?: 'estimated_haversine' | 'verified_road_route';
+  route_quote_id?: string;
+  route_quote_expires_at?: string;
+  route_provider?: 'google' | 'osrm' | 'straight_line_fallback';
+  route_degraded?: boolean;
   delivery_campaign?: DeliveryCampaign | null;
   stops: Array<{
     type: 'pickup' | 'customer';
@@ -120,6 +126,8 @@ type CombinedQuoteRpc = {
   total: number;
   delivery: CombinedDeliveryQuote;
   quote_token: string;
+  route_quote_id?: string;
+  road_verified?: boolean;
 };
 
 const rpc = supabase.rpc.bind(supabase) as unknown as (
@@ -158,10 +166,17 @@ export async function quoteCart(items: CartItem[]): Promise<CartQuote> {
 
   const sourceCount = cartSourceIdentities(items).length;
   if (sourceCount > 1) {
-    const { data, error } = await rpc('quote_combined_cart_v1', {
-      p_sources: combinedSources(items),
+    const sources = combinedSources(items);
+    const road = await getMultiStoreRoadQuote(
+      sources as Array<{ source_kind: 'owned' | 'marketplace'; branch_id?: string }>,
+      point.latitude,
+      point.longitude,
+    );
+    const { data, error } = await rpc('quote_combined_cart_v2', {
+      p_sources: sources,
       p_latitude: point.latitude,
       p_longitude: point.longitude,
+      p_route_quote_id: road.route_quote_id,
     });
     if (error) throw error;
     const quote = data as CombinedQuoteRpc;
@@ -257,6 +272,12 @@ const messages: Record<string, string> = {
   STORE_HUB_MISMATCH: 'المتاجر المجمعة لازم تكون ضمن نفس فرع المعداوي المسؤول عن التوصيل.',
   DUPLICATE_STORE: 'راجع المتاجر الموجودة في السلة.',
   MIN_ORDER_NOT_MET: 'قيمة السلة أقل من الحد الأدنى لأحد المتاجر.',
+  INVALID_MULTI_STORE_ROUTE: 'راجع المتاجر الموجودة في السلة قبل حساب الطريق.',
+  ROAD_QUOTE_REQUIRED: 'تعذر تثبيت مسار التوصيل. حاول مرة تانية.',
+  ROAD_QUOTE_EXPIRED: 'مسار التوصيل انتهت صلاحيته وتم تحديثه. حاول مرة تانية.',
+  ROAD_QUOTE_MISMATCH: 'العنوان أو المتاجر اتغيروا أثناء حساب الطريق. راجع السلة.',
+  ROUTE_QUOTE_STORE_FAILED: 'تعذر تثبيت مسار التوصيل حاليًا. حاول مرة تانية.',
+  MULTISTORE_ROUTE_FAILED: 'تعذر حساب مسار المتاجر المجمّع حاليًا.',
   ROUTE_DISTANCE_UNAVAILABLE: 'تعذر حساب مسافة الطريق حاليًا. حاول مرة تانية بعد لحظات.',
   ROUTE_PROVIDER_UNAVAILABLE: 'تعذر الاتصال بخدمة الطرق حاليًا. حاول مرة تانية بعد لحظات.',
   INSUFFICIENT_STOCK: 'كمية أحد المنتجات أكبر من المتاح حاليًا.',

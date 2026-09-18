@@ -180,3 +180,7 @@ key_file = ""
 create-verification-table = { verify_jwt = true }
 phone-verify = { verify_jwt = true }
 customer-auth-route = { verify_jwt = false }
+
+
+[functions.customer-multistore-route]
+verify_jwt = false
