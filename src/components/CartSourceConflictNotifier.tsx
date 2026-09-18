@@ -1,1 +1,44 @@
-import { useEffect } from 'react';\nimport { useToast } from '@/hooks/use-toast';\n\ntype ConflictDetail = {\n  reason?: 'partner_limit' | 'hub_mismatch' | 'not_eligible';\n  currentMerchant?: string;\n  incomingMerchant?: string;\n  partnerCount?: number;\n};\n\nexport default function CartSourceConflictNotifier() {\n  const { toast } = useToast();\n\n  useEffect(() => {\n    const onConflict = (event: Event) => {\n      const detail = (event as CustomEvent<ConflictDetail>).detail || {};\n      if (detail.reason === 'partner_limit') {\n        toast({\n          title: 'وصلت للحد الأقصى للمحلات الشريكة',\n          description: 'تقدر تجمع فرع المعداوي مع محلين شركاء بحد أقصى. احذف محل شريك من السلة قبل إضافة ' + (detail.incomingMerchant || 'المتجر الجديد') + '.',\n          variant: 'destructive',\n        });\n        return;\n      }\n      if (detail.reason === 'hub_mismatch') {\n        toast({\n          title: 'المتجر مش على نفس رحلة التوصيل',\n          description: 'المحلات المجمعة لازم تكون تابعة لنفس فرع المعداوي المسؤول عن عنوانك.',\n          variant: 'destructive',\n        });\n        return;\n      }\n      toast({\n        title: 'المتجر غير مؤهل للدمج حاليًا',\n        description: (detail.incomingMerchant || 'المتجر') + ' محتاج طلب منفصل حسب إعدادات التوصيل الحالية.',\n        variant: 'destructive',\n      });\n    };\n    window.addEventListener('cart-source-conflict', onConflict);\n    return () => window.removeEventListener('cart-source-conflict', onConflict);\n  }, [toast]);\n\n  return null;\n}
+import { useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
+
+type ConflictDetail = {
+  reason?: 'partner_limit' | 'hub_mismatch' | 'not_eligible';
+  currentMerchant?: string;
+  incomingMerchant?: string;
+  partnerCount?: number;
+};
+
+export default function CartSourceConflictNotifier() {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const onConflict = (event: Event) => {
+      const detail = (event as CustomEvent<ConflictDetail>).detail || {};
+      if (detail.reason === 'partner_limit') {
+        toast({
+          title: 'وصلت للحد الأقصى للمحلات الشريكة',
+          description: 'تقدر تجمع فرع المعداوي مع محلين شركاء بحد أقصى. احذف محل شريك من السلة قبل إضافة ' + (detail.incomingMerchant || 'المتجر الجديد') + '.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (detail.reason === 'hub_mismatch') {
+        toast({
+          title: 'المتجر مش على نفس رحلة التوصيل',
+          description: 'المحلات المجمعة لازم تكون تابعة لنفس فرع المعداوي المسؤول عن عنوانك.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      toast({
+        title: 'المتجر غير مؤهل للدمج حاليًا',
+        description: (detail.incomingMerchant || 'المتجر') + ' محتاج طلب منفصل حسب إعدادات التوصيل الحالية.',
+        variant: 'destructive',
+      });
+    };
+    window.addEventListener('cart-source-conflict', onConflict);
+    return () => window.removeEventListener('cart-source-conflict', onConflict);
+  }, [toast]);
+
+  return null;
+}
