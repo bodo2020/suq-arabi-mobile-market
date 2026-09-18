@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 import { useBranch } from '@/contexts/BranchContext';
-import { CartItem } from '@/contexts/cartTypes';
+import { CartItem, cartItemIdentity, isMarketplaceCart } from '@/contexts/cartTypes';
 import { cartQuoteError, quoteCart, type CartQuoteLine } from '@/lib/cartQuote';
 import { formatWeightAmount, productWeightStepGrams } from '@/lib/productPurchase';
 
@@ -27,7 +27,7 @@ export default function Cart() {
   const [weightItem, setWeightItem] = useState<CartItem | null>(null);
 
   const quoteSignature = useMemo(
-    () => items.map(item => `${itemKey(item)}:${item.quantity}`).sort().join('|'),
+    () => items.map(item => `${cartItemIdentity(item)}:${item.quantity}`).sort().join('|'),
     [items],
   );
 
@@ -51,9 +51,12 @@ export default function Cart() {
   const serverReady = Boolean(quote) && !quotePending && !quoteError;
   const blocked = !isInitialized || authLoading || !!syncError || isSaving || branchLoading || !!branchError || !branch || !serverReady;
 
+  const marketplaceCart = isMarketplaceCart(items);
+
   const proceed = () => {
     if (blocked) return;
-    navigate(user ? '/payment' : '/phone-login?returnTo=%2Fpayment');
+    const target = marketplaceCart ? '/marketplace-payment' : '/payment';
+    navigate(user ? target : `/phone-login?returnTo=${encodeURIComponent(target)}`);
   };
 
   const retryQuote = async () => {
@@ -68,7 +71,10 @@ export default function Cart() {
   const subtotal = Number(quote?.subtotal ?? getTotalPrice());
   const shipping = Number(quote?.shipping_cost ?? branch?.delivery_fee ?? 0);
   const total = Number(quote?.total ?? subtotal + shipping);
-  const deliveryEtaStart = Math.max(10, Math.round(Number(branch?.estimated_delivery_minutes || 45) / 5) * 5);
+  const deliveryEtaStart = Math.max(
+    10,
+    Math.round(Number(quote?.estimated_delivery_minutes || branch?.estimated_delivery_minutes || 45) / 5) * 5,
+  );
   const deliveryEtaEnd = deliveryEtaStart + 5;
 
   return <CheckoutLayout>
@@ -84,7 +90,10 @@ export default function Cart() {
 
       {branch && <div className="cart-alert" role="status">
         <Clock3 size={18} />
-        <span>متوقع التوصيل خلال <strong>{money(deliveryEtaStart)}–{money(deliveryEtaEnd)} دقيقة</strong></span>
+        <span>
+          {marketplaceCart && quote?.merchant_name ? <>طلب من <strong>{quote.merchant_name}</strong> · </> : null}
+          متوقع التوصيل خلال <strong>{money(deliveryEtaStart)}–{money(deliveryEtaEnd)} دقيقة</strong>
+        </span>
       </div>}
 
       <div className="cart-grid"><section className="cart-list" aria-label="منتجات السلة">

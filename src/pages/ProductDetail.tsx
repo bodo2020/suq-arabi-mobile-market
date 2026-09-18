@@ -175,14 +175,16 @@ const ProductDetail = () => {
   const addRegular = () => {
     if (!product || !isInitialized || unavailable) return;
     const safeQuantity = Math.min(quantity, maxRegularQuantity);
-    addToCart({ ...product, price: product.price, quantity: safeQuantity, is_bulk: false });
-    setQuantity(1);
-    notifyAdded();
+    const result = addToCart({ ...product, price: product.price, quantity: safeQuantity, is_bulk: false });
+    if (result === 'added') {
+      setQuantity(1);
+      notifyAdded();
+    }
   };
 
   const addBulk = () => {
     if (!product || !isInitialized || !bulkMode || unavailable) return;
-    addToCart({
+    const result = addToCart({
       ...product,
       name: displayName,
       image_urls: bulkImageUrl ? [bulkImageUrl] : product.image_urls,
@@ -190,7 +192,7 @@ const ProductDetail = () => {
       quantity: 1,
       is_bulk: true,
     });
-    notifyAdded();
+    if (result === 'added') notifyAdded();
   };
 
   const changePieceQuantity = (bulk: boolean, delta: number) => {
@@ -213,14 +215,14 @@ const ProductDetail = () => {
     if (weightedCartItem) {
       updateQuantity(product.id, next, false);
     } else {
-      addToCart({
+      const result = addToCart({
         ...product,
         quantity: next,
         price: product.price,
         unit_of_measure: 'weight',
         is_bulk: false,
       });
-      notifyAdded();
+      if (result === 'added') notifyAdded();
     }
   };
 
