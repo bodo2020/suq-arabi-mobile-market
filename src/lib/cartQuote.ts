@@ -20,6 +20,19 @@ export type CartQuoteLine = {
   bulk_quantity: number | null;
 };
 
+export type DeliveryCampaign = {
+  id: string;
+  name: string;
+  type: 'free_delivery' | 'delivery_credit' | 'free_extra_pickup';
+  target_kind?: 'hub' | 'merchant' | 'branch';
+  target_id?: string;
+  discount: number;
+  merchant_contribution?: number;
+  elmadawy_contribution?: number;
+  starts_at?: string;
+  ends_at?: string;
+};
+
 export type CombinedDeliveryQuote = {
   hub_branch_id: string;
   hub_branch_name: string;
@@ -38,6 +51,7 @@ export type CombinedDeliveryQuote = {
   extra_pickup_fee: number;
   distance_fee: number;
   free_delivery: boolean;
+  delivery_campaign?: DeliveryCampaign | null;
   stops: Array<{
     type: 'pickup' | 'customer';
     source_kind?: 'owned' | 'marketplace';
@@ -76,6 +90,7 @@ export type CartQuote = {
   delivery_cost?: number;
   merchant_delivery_subsidy?: number;
   elmadawy_delivery_subsidy?: number;
+  delivery_campaign?: DeliveryCampaign | null;
   delivery?: CombinedDeliveryQuote;
 };
 
@@ -179,6 +194,7 @@ export async function quoteCart(items: CartItem[]): Promise<CartQuote> {
       delivery_cost: Number(quote.delivery_cost || 0),
       merchant_delivery_subsidy: Number(quote.merchant_delivery_subsidy || 0),
       elmadawy_delivery_subsidy: Number(quote.elmadawy_delivery_subsidy || 0),
+      delivery_campaign: quote.delivery?.delivery_campaign || null,
       delivery: quote.delivery,
     };
   }
@@ -193,9 +209,10 @@ export async function quoteCart(items: CartItem[]): Promise<CartQuote> {
       p_longitude: point.longitude,
     });
     if (error) throw error;
-    const quote = data as MarketplaceQuote;
+    const quote = data as MarketplaceQuote & { delivery_campaign?: DeliveryCampaign | null };
     return {
       ...quote,
+      delivery_campaign: quote.delivery_campaign || null,
       items: quote.items.map(line => ({ ...line, is_bulk: false, bulk_quantity: null })),
       delivery_branch_id: quote.branch_id,
       inventory_branch_id: quote.branch_id,
@@ -207,7 +224,7 @@ export async function quoteCart(items: CartItem[]): Promise<CartQuote> {
     };
   }
 
-  const { data, error } = await rpc('quote_customer_cart_v2', {
+  const { data, error } = await rpc('quote_customer_cart_v3', {
     p_items: checkoutLines(items),
     p_latitude: point.latitude,
     p_longitude: point.longitude,

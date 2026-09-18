@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, RefreshCw, Clock3 } from 'lucide-react';
+import { ArrowLeft, BadgePercent, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, RefreshCw, Clock3 } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
 import WeightSelector from '@/components/ui/WeightSelector';
@@ -97,6 +97,11 @@ export default function Cart() {
         </span>
       </div>}
 
+      {quote?.delivery_campaign && Number(quote.delivery_campaign.discount || 0) > 0 && <div className="cart-alert" role="status">
+        <BadgePercent size={18} />
+        <span><strong>{quote.delivery_campaign.name}</strong> · وفّرت {money(Number(quote.delivery_campaign.discount || 0))} ج.م من التوصيل</span>
+      </div>}
+
       <div className="cart-grid"><section className="cart-list" aria-label="منتجات السلة">
         {items.map(item => {
           const line = quoteLines.get(itemKey(item));
@@ -168,6 +173,7 @@ export default function Cart() {
         <h2>ملخص سلتك</h2>
         <div className="cart-summary-row"><span>قيمة المنتجات</span><strong>{quotePending ? '...' : `${money(subtotal)} ج.م`}</strong></div>
         <div className="cart-summary-row"><span>التوصيل</span>{quotePending ? <small>جاري الحساب</small> : shipping <= 0 ? <strong className="text-primary">مجاني</strong> : <strong>{money(shipping)} ج.م</strong>}</div>
+        {quote?.delivery_campaign && Number(quote.delivery_campaign.discount || 0) > 0 && <div className="cart-summary-row"><span>{quote.delivery_campaign.name}</span><small className="text-primary">خصم {money(Number(quote.delivery_campaign.discount || 0))} ج.م</small></div>}
         {quote?.free_delivery && <div className="cart-summary-row"><span>عرض التوصيل</span><small className="text-primary">توصيل مجاني مطبق</small></div>}
         <div className="cart-summary-total"><span>الإجمالي</span><strong>{quotePending ? '...' : money(total)} <small>ج.م</small></strong></div>
         {quote && quote.min_order_amount > 0 && <p className="cart-help">الحد الأدنى للطلب من الفرع: {money(quote.min_order_amount)} ج.م</p>}
