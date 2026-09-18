@@ -1,23 +1,48 @@
+import type { CartItem as BaseCartItem, Product } from '@/lib/supabase';
 
-import { CartItem as BaseCartItem, Product } from "@/lib/supabase";
+export type CommerceSource = 'owned' | 'marketplace';
+
+export type CommerceProductInput = Product & {
+  price: number;
+  quantity: number;
+  is_bulk?: boolean;
+  unit_of_measure?: string;
+  commerce_source?: CommerceSource;
+  marketplace_listing_id?: string | null;
+  merchant_id?: string | null;
+  merchant_name?: string | null;
+  marketplace_branch_id?: string | null;
+  marketplace_branch_name?: string | null;
+};
 
 export type CartItem = BaseCartItem & {
   is_bulk?: boolean;
   unit_of_measure?: string;
   barcode?: string;
+  commerce_source?: CommerceSource;
+  marketplace_listing_id?: string | null;
+  merchant_id?: string | null;
+  merchant_name?: string | null;
+  marketplace_branch_id?: string | null;
+  marketplace_branch_name?: string | null;
 };
+
+export type CartAddResult = 'added' | 'conflict' | 'not_ready';
+
+export const cartSourceIdentity = (item: CartItem) => item.commerce_source === 'marketplace'
+  ? `marketplace:${item.merchant_id || ''}:${item.marketplace_branch_id || ''}`
+  : 'owned';
+
+export const cartItemIdentity = (item: CartItem) => item.commerce_source === 'marketplace'
+  ? `${cartSourceIdentity(item)}:${item.marketplace_listing_id || item.product.id}:${!!item.is_bulk}:${item.unit_of_measure || ''}`
+  : `owned:${item.product.id}:${!!item.is_bulk}:${item.unit_of_measure || ''}`;
+
+export const isMarketplaceCart = (items: CartItem[]) => items.length > 0 && items.every(item => item.commerce_source === 'marketplace');
 
 export type CartContextType = {
   items: CartItem[];
-  cart: {
-    items: CartItem[];
-  };
-  addToCart: (product: Product & { 
-    price: number; 
-    quantity: number; 
-    is_bulk?: boolean;
-    unit_of_measure?: string;
-  }) => void;
+  cart: { items: CartItem[] };
+  addToCart: (product: CommerceProductInput) => CartAddResult;
   removeFromCart: (productId: string, is_bulk?: boolean) => void;
   updateQuantity: (productId: string, quantity: number, is_bulk?: boolean) => void;
   clearCart: () => void;
@@ -29,4 +54,3 @@ export type CartContextType = {
   isSaving: boolean;
   retrySync: () => void;
 };
-
