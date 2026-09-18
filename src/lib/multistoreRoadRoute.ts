@@ -14,6 +14,7 @@ export type MultiStoreRoadQuote = {
   ordered_partner_branch_ids: string[];
   has_owned: boolean;
   baseline_distance_km: number;
+  baseline_duration_minutes: number;
   route_distance_km: number;
   detour_km: number;
   route_duration_minutes: number;
