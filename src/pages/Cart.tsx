@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 import { useBranch } from '@/contexts/BranchContext';
-import { CartItem, cartItemIdentity, isMarketplaceCart } from '@/contexts/cartTypes';
+import { CartItem, cartItemIdentity, isCombinedCart, isSingleMarketplaceCart } from '@/contexts/cartTypes';
 import { cartQuoteError, quoteCart, type CartQuoteLine } from '@/lib/cartQuote';
 import { formatWeightAmount, productWeightStepGrams } from '@/lib/productPurchase';
 
@@ -51,11 +51,12 @@ export default function Cart() {
   const serverReady = Boolean(quote) && !quotePending && !quoteError;
   const blocked = !isInitialized || authLoading || !!syncError || isSaving || branchLoading || !!branchError || !branch || !serverReady;
 
-  const marketplaceCart = isMarketplaceCart(items);
+  const combinedCart = isCombinedCart(items);
+  const marketplaceCart = isSingleMarketplaceCart(items);
 
   const proceed = () => {
     if (blocked) return;
-    const target = marketplaceCart ? '/marketplace-payment' : '/payment';
+    const target = combinedCart ? '/combined-payment' : marketplaceCart ? '/marketplace-payment' : '/payment';
     navigate(user ? target : `/phone-login?returnTo=${encodeURIComponent(target)}`);
   };
 
@@ -91,7 +92,7 @@ export default function Cart() {
       {branch && <div className="cart-alert" role="status">
         <Clock3 size={18} />
         <span>
-          {marketplaceCart && quote?.merchant_name ? <>طلب من <strong>{quote.merchant_name}</strong> · </> : null}
+          {combinedCart && quote?.stores_count ? <>طلب مجمّع من <strong>{money(quote.stores_count)} متاجر</strong> · </> : marketplaceCart && quote?.merchant_name ? <>طلب من <strong>{quote.merchant_name}</strong> · </> : null}
           متوقع التوصيل خلال <strong>{money(deliveryEtaStart)}–{money(deliveryEtaEnd)} دقيقة</strong>
         </span>
       </div>}
@@ -124,11 +125,11 @@ export default function Cart() {
             product: { ...item.product, quantity: availableStock },
           });
 
-          return <article key={itemKey(item)} className="cart-line">
+          return <article key={cartItemIdentity(item)} className="cart-line">
             <Link className="cart-image" to={productHref} tabIndex={-1} aria-hidden="true"><img src={item.product.image_urls?.[0] || '/placeholder.svg'} alt="" loading="lazy" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }} /></Link>
             <div>
               <div className="cart-line-heading">
-                <div><Link to={productHref} className="cart-product-name">{item.product.name}</Link><div className="cart-kind">{item.is_bulk ? <><Package size={14} />{bulkUnitType} · {money(bulkQty)} قطعة</> : isWeight ? <><Scale size={14} />بالوزن · الخطوة {formatWeightAmount(weightStep)}</> : 'بالقطعة'}</div></div>
+                <div><Link to={productHref} className="cart-product-name">{item.product.name}</Link><div className="mt-1 text-[11px] font-bold text-primary">{item.commerce_source === 'marketplace' ? (item.merchant_name || item.marketplace_branch_name || 'متجر شريك') : 'ماركت المعداوي'}</div><div className="cart-kind">{item.is_bulk ? <><Package size={14} />{bulkUnitType} · {money(bulkQty)} قطعة</> : isWeight ? <><Scale size={14} />بالوزن · الخطوة {formatWeightAmount(weightStep)}</> : 'بالقطعة'}</div></div>
                 <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>
               </div>
               <p className="cart-unit-price">{money(unitPrice)} ج.م {item.is_bulk ? `/ ${bulkUnitType}` : isWeight ? '/ كجم' : '/ قطعة'}{line && <span className="mr-2 text-[11px] text-primary">سعر الفرع</span>}</p>

@@ -36,6 +36,22 @@ type PurchaseItem = {
   unit_of_measure?: string;
   is_bulk?: boolean;
   bulk_quantity?: number;
+  source_kind?: 'owned' | 'marketplace';
+  merchant_name?: string | null;
+  branch_name?: string | null;
+};
+
+type PurchaseGroupOrder = {
+  order_id: string;
+  source_kind: 'owned' | 'marketplace';
+  merchant_id: string;
+  merchant_name: string;
+  branch_id: string;
+  branch_name: string;
+  status: string;
+  total: number;
+  subtotal: number;
+  pickup_sequence: number | null;
 };
 
 type PurchaseRow = {
@@ -56,6 +72,11 @@ type PurchaseRow = {
   loyalty_points_earned: number | string | null;
   created_at: string;
   updated_at: string | null;
+  is_multi_store?: boolean;
+  order_group_id?: string | null;
+  stores_count?: number;
+  partner_stores_count?: number;
+  group_orders?: PurchaseGroupOrder[];
 };
 
 const STATUS_META: Record<string, { label: string; description: string; className: string }> = {
@@ -218,7 +239,10 @@ export default function PurchaseHistory() {
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${storePurchase ? 'bg-emerald-50 text-emerald-800' : 'bg-blue-50 text-blue-800'}`}>{storePurchase ? <Store size={13} /> : <Truck size={13} />}{storePurchase ? 'شراء من الفرع' : 'طلب أونلاين'}</span>
+                              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${storePurchase ? 'bg-emerald-50 text-emerald-800' : 'bg-blue-50 text-blue-800'}`}>
+                                {storePurchase ? <Store size={13} /> : <Truck size={13} />}
+                                {storePurchase ? 'شراء من الفرع' : purchase.is_multi_store ? `طلب مجمّع · ${Number(purchase.stores_count || 0).toLocaleString('ar-EG')} متاجر` : 'طلب أونلاين'}
+                              </span>
                               {purchase.branch_name && <span className="text-xs text-gray-500">{purchase.branch_name}</span>}
                             </div>
                             <p className="mt-3 text-xs text-gray-500">{storePurchase ? 'رقم الفاتورة' : 'رقم الطلب'}</p>
@@ -264,12 +288,32 @@ export default function PurchaseHistory() {
                               const quantity = Number(item.quantity || 0);
                               const price = Number(item.price || 0);
                               const lineTotal = Number(item.total ?? quantity * price);
-                              return <div key={`${purchase.id}-item-${index}`} className="flex items-center gap-3 rounded-2xl border border-gray-100 p-3"><div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50">{item.image_url ? <img src={item.image_url} alt={item.name || 'منتج'} className="h-full w-full object-cover" loading="lazy" /> : <Box size={22} className="text-gray-400" />}</div><div className="min-w-0 flex-1"><p className="font-semibold">{item.name || 'منتج'}</p><p className="mt-1 text-xs text-gray-500">{quantity} {item.unit_of_measure === 'weight' ? 'كجم' : item.is_bulk ? 'وحدة جملة' : 'قطعة'} × {formatMoney(price)}</p></div><p className="shrink-0 text-sm font-bold">{formatMoney(lineTotal)}</p></div>;
+                              return <div key={`${purchase.id}-item-${index}`} className="flex items-center gap-3 rounded-2xl border border-gray-100 p-3"><div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50">{item.image_url ? <img src={item.image_url} alt={item.name || 'منتج'} className="h-full w-full object-cover" loading="lazy" /> : <Box size={22} className="text-gray-400" />}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{item.name || 'منتج'}</p>{purchase.is_multi_store && item.merchant_name && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600">{item.merchant_name}</span>}</div><p className="mt-1 text-xs text-gray-500">{quantity} {item.unit_of_measure === 'weight' ? 'كجم' : item.is_bulk ? 'وحدة جملة' : 'قطعة'} × {formatMoney(price)}</p></div><p className="shrink-0 text-sm font-bold">{formatMoney(lineTotal)}</p></div>;
                             }) : <p className="text-sm text-gray-500">تفاصيل المنتجات غير متاحة.</p>}</div>
                             <div className="mt-5 space-y-2 border-t border-gray-100 pt-4 text-sm">{!storePurchase && Number(purchase.shipping_cost || 0) > 0 && <div className="flex justify-between"><span className="text-gray-500">التوصيل</span><span>{formatMoney(purchase.shipping_cost)}</span></div>}<div className="flex justify-between text-base font-bold"><span>الإجمالي</span><span className="text-primary">{formatMoney(purchase.total)}</span></div></div>
                           </section>
 
-                          <div className="mt-5 flex flex-col gap-2 sm:flex-row">{!storePurchase && purchase.status === 'delivered' && <Button variant="outline" className="min-h-12 flex-1 rounded-xl" onClick={() => navigate(`/create-return/${purchase.id}`)}><RefreshCw size={16} className="ml-2" />طلب استرجاع</Button>}<Button className="min-h-12 flex-1 rounded-xl" onClick={() => navigate('/')}><ShoppingBag size={16} className="ml-2" />تسوق مرة أخرى</Button></div>
+                          {purchase.is_multi_store && purchase.status === 'delivered' && (purchase.group_orders || []).length > 0 && (
+                            <section className="mt-5 rounded-2xl border border-gray-100 bg-white p-5">
+                              <h3 className="font-bold">استرجاع من متجر محدد</h3>
+                              <p className="mt-1 text-xs leading-6 text-gray-500">كل متجر له Sub-order مستقل، فاختار المتجر اللي فيه المنتج المراد استرجاعه.</p>
+                              <div className="mt-3 space-y-2">
+                                {(purchase.group_orders || []).map(groupOrder => (
+                                  <div key={groupOrder.order_id} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 p-3">
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm font-bold">{groupOrder.merchant_name || groupOrder.branch_name}</p>
+                                      <p className="mt-1 text-xs text-gray-500">{formatMoney(groupOrder.subtotal)}</p>
+                                    </div>
+                                    <Button size="sm" variant="outline" className="shrink-0 rounded-lg" onClick={() => navigate(`/create-return/${groupOrder.order_id}`)}>
+                                      <RefreshCw size={14} className="ml-1" />استرجاع
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+                          )}
+
+                          <div className="mt-5 flex flex-col gap-2 sm:flex-row">{!storePurchase && purchase.status === 'delivered' && !purchase.is_multi_store && <Button variant="outline" className="min-h-12 flex-1 rounded-xl" onClick={() => navigate(`/create-return/${purchase.id}`)}><RefreshCw size={16} className="ml-2" />طلب استرجاع</Button>}<Button className="min-h-12 flex-1 rounded-xl" onClick={() => navigate('/')}><ShoppingBag size={16} className="ml-2" />تسوق مرة أخرى</Button></div>
                         </div>
                       )}
                     </article>

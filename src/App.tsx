@@ -30,6 +30,7 @@ const Search = lazy(() => import('./pages/Search'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Payment = lazy(() => import('./pages/Payment'));
 const MarketplacePayment = lazy(() => import('./pages/MarketplacePayment'));
+const CombinedPayment = lazy(() => import('./pages/CombinedPayment'));
 const MarketplaceStores = lazy(() => import('./pages/MarketplaceStores'));
 const MarketplaceStore = lazy(() => import('./pages/MarketplaceStore'));
 const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
@@ -92,6 +93,7 @@ function App() {
                       <Route path="/cart" element={<Cart />} />
                       <Route path="/payment" element={<Payment />} />
                       <Route path="/marketplace-payment" element={<MarketplacePayment />} />
+                      <Route path="/combined-payment" element={<CombinedPayment />} />
                       <Route path="/order-success" element={<OrderSuccess />} />
                       <Route path="/account" element={<Account />} />
                       <Route path="/edit-account" element={<EditAccount />} />

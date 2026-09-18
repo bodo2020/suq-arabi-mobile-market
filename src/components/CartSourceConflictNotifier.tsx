@@ -1,15 +1,38 @@
 import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
+type ConflictDetail = {
+  reason?: 'partner_limit' | 'hub_mismatch' | 'not_eligible';
+  currentMerchant?: string;
+  incomingMerchant?: string;
+  partnerCount?: number;
+};
+
 export default function CartSourceConflictNotifier() {
   const { toast } = useToast();
 
   useEffect(() => {
     const onConflict = (event: Event) => {
-      const detail = (event as CustomEvent<{ currentMerchant?: string; incomingMerchant?: string }>).detail || {};
+      const detail = (event as CustomEvent<ConflictDetail>).detail || {};
+      if (detail.reason === 'partner_limit') {
+        toast({
+          title: 'وصلت للحد الأقصى للمحلات الشريكة',
+          description: 'تقدر تجمع فرع المعداوي مع محلين شركاء بحد أقصى. احذف محل شريك من السلة قبل إضافة ' + (detail.incomingMerchant || 'المتجر الجديد') + '.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (detail.reason === 'hub_mismatch') {
+        toast({
+          title: 'المتجر مش على نفس رحلة التوصيل',
+          description: 'المحلات المجمعة لازم تكون تابعة لنفس فرع المعداوي المسؤول عن عنوانك.',
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({
-        title: 'السلة مرتبطة بمتجر آخر',
-        description: `سلتك الحالية من ${detail.currentMerchant || 'متجر آخر'}. أنهِها أو أفرغها قبل إضافة منتجات من ${detail.incomingMerchant || 'المتجر الجديد'}.`,
+        title: 'المتجر غير مؤهل للدمج حاليًا',
+        description: (detail.incomingMerchant || 'المتجر') + ' محتاج طلب منفصل حسب إعدادات التوصيل الحالية.',
         variant: 'destructive',
       });
     };
