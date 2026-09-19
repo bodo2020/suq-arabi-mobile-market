@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock3, ShieldCheck, TimerReset, TriangleAlert } from 'lucide-react';
+import { Clock3, PackageCheck, ShieldCheck, TimerReset, TriangleAlert } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { OrderEta } from '@/lib/orderEta';
 import { supabase } from '@/lib/supabase';
@@ -91,6 +91,21 @@ const readMinutes = (value: number | undefined) => {
   return Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
 };
 
+const confidenceLabel = (confidence: string) => {
+  if (confidence === 'high') return 'ثقة عالية';
+  if (confidence === 'medium') return 'ثقة جيدة';
+  return 'تقدير مبدئي';
+};
+
+const stageLabel = (stage: string) => {
+  if (stage === 'received') return 'تم استلام الطلب';
+  if (stage === 'in_fulfillment') return 'الطلب تحت التجهيز';
+  if (stage === 'ready') return 'الطلب جاهز للمندوب';
+  if (stage === 'dispatched') return 'الطلب خرج للتوصيل';
+  if (stage === 'arrived') return 'المندوب وصل';
+  return null;
+};
+
 const riskMeta = (risk: string) => {
   if (risk === 'late') {
     return {
@@ -151,6 +166,15 @@ const OrderEtaPanel = ({ eta, detailed = false }: OrderEtaPanelProps) => {
     readMinutes(components.driver_to_branch_minutes) +
     readMinutes(components.prior_stops_minutes);
   const roadMinutes = readMinutes(components.road_minutes);
+  const readyRemainingMinutes = readMinutes(components.ready_remaining_minutes);
+  const readyEta = typeof components.ready_eta === 'string' ? components.ready_eta : null;
+  const pendingCustomerSubstitutions = readMinutes(components.pending_customer_substitutions);
+  const isIntelligentEta = eta.model_version === 'eta-v2-intelligent';
+  const stage = stageLabel(eta.stage);
+  const progressRatio = Number(components.progress_ratio);
+  const progressPercent = Number.isFinite(progressRatio)
+    ? Math.max(0, Math.min(100, Math.round((1 - progressRatio) * 100)))
+    : null;
 
   return (
     <div ref={hostRef}>
@@ -165,15 +189,37 @@ const OrderEtaPanel = ({ eta, detailed = false }: OrderEtaPanelProps) => {
                   {formatTime(eta.live_window_start)} – {formatTime(eta.live_window_end)}
                 </p>
               </div>
-              {remainingMinutes > 0 && (
-                <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold">
-                  متبقي حوالي {remainingMinutes} دقيقة
-                </span>
-              )}
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {isIntelligentEta && (
+                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold">
+                    {confidenceLabel(eta.confidence)}
+                  </span>
+                )}
+                {remainingMinutes > 0 && (
+                  <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold">
+                    متبقي حوالي {remainingMinutes} دقيقة
+                  </span>
+                )}
+              </div>
             </div>
             <p className="mt-2 text-xs font-semibold">{meta.label}</p>
+            {stage && <p className="mt-1 text-[11px] font-bold opacity-80">{stage}</p>}
+            {isIntelligentEta && readyEta && readyRemainingMinutes > 0 && eta.stage !== 'dispatched' && (
+              <div className="mt-2 flex items-center gap-2 rounded-xl bg-white/70 px-3 py-2 text-xs font-semibold">
+                <PackageCheck size={15} className="shrink-0" />
+                <span>التجهيز متوقع يخلص حوالي {formatTime(readyEta)}</span>
+                {progressPercent !== null && progressPercent > 0 && (
+                  <span className="mr-auto opacity-70">{progressPercent}%</span>
+                )}
+              </div>
+            )}
+            {pendingCustomerSubstitutions > 0 && (
+              <p className="mt-2 rounded-xl bg-amber-100/80 px-3 py-2 text-[11px] font-bold leading-5 text-amber-950">
+                في بديل مستني موافقتك، وده محسوب ضمن وقت الوصول المتوقع.
+              </p>
+            )}
             <p className="mt-1 text-[11px] leading-5 opacity-70">
-              الموعد شامل مراجعة الطلب والتجهيز وانتظار المندوب والطريق، وبيتحدث تلقائيًا.
+              الموعد بيتحدث تلقائيًا حسب تقدم التجهيز، ضغط الفرع، توفر المندوب والطريق.
             </p>
           </div>
         </div>
@@ -197,7 +243,7 @@ const OrderEtaPanel = ({ eta, detailed = false }: OrderEtaPanelProps) => {
             {fullOrderMinutes > 0 && (
               <div className="col-span-3 flex items-center justify-center gap-2 rounded-xl bg-white/75 p-2.5 text-xs font-semibold">
                 <TimerReset size={15} />
-                الزمن الكامل المحسوب للطلب: {fullOrderMinutes} دقيقة
+                الزمن الكامل المحسوب للطلب: {fullOrderMinutes} دقيقة{isIntelligentEta ? ' · تحديث ذكي لحظي' : ''}
               </div>
             )}
           </div>
