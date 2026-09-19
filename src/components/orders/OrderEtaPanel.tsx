@@ -15,6 +15,19 @@ type DeliveryPinPayload = {
   expires_at: string;
 };
 
+type DeliveryProofPayload = {
+  order_id: string;
+  delivered_at: string;
+  verification_method: 'pin' | 'group_lead_pin' | string;
+  pin_verified: boolean;
+  location_status: 'verified' | 'low_accuracy' | 'far_from_dropoff' | 'missing' | string;
+  distance_to_dropoff_m: number | null;
+  payment_method: string | null;
+  payment_status: string | null;
+  collected_amount: number;
+  proof_source: string;
+};
+
 type RpcResult = Promise<{ data: unknown; error: { message?: string } | null }>;
 
 const callRpc = supabase.rpc.bind(supabase) as unknown as (
@@ -26,6 +39,29 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
 const DeliveryPinCard = ({ orderId }: { orderId: string }) => {
+  const proofQuery = useQuery({
+    queryKey: ['customer-delivery-proof', orderId],
+    queryFn: async (): Promise<DeliveryProofPayload | null> => {
+      const { data, error } = await callRpc('get_my_order_delivery_proof_v1', { p_order_id: orderId });
+      if (error) {
+        const message = error.message || '';
+        if (
+          message.includes('order_access_denied') ||
+          message.includes('authentication_required')
+        ) {
+          return null;
+        }
+        return null;
+      }
+      if (!isRecord(data)) return null;
+      return data as unknown as DeliveryProofPayload;
+    },
+    retry: false,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+
   const pinQuery = useQuery({
     queryKey: ['customer-delivery-pin', orderId],
     queryFn: async (): Promise<DeliveryPinPayload | null> => {
@@ -57,7 +93,43 @@ const DeliveryPinCard = ({ orderId }: { orderId: string }) => {
     refetchOnWindowFocus: true,
   });
 
+  const deliveryProof = proofQuery.data;
   const deliveryPin = pinQuery.data;
+
+  if (deliveryProof) {
+    const deliveredAt = new Date(deliveryProof.delivered_at);
+    const deliveredLabel = Number.isNaN(deliveredAt.getTime())
+      ? null
+      : new Intl.DateTimeFormat('ar-EG', {
+          day: 'numeric',
+          month: 'short',
+          hour: 'numeric',
+          minute: '2-digit',
+        }).format(deliveredAt);
+
+    return (
+      <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-center shadow-sm" aria-label="تأكيد تسليم الطلب">
+        <div className="flex items-center justify-center gap-2 text-sm font-black text-emerald-950">
+          <ShieldCheck size={19} />
+          تم تأكيد تسليم الطلب
+        </div>
+        <p className="mt-2 text-xs font-semibold leading-5 text-emerald-900">
+          {deliveryProof.pin_verified
+            ? 'تم التحقق من الاستلام باستخدام كود التأكيد.'
+            : 'تم تسجيل إثبات التسليم.'}
+        </p>
+        {deliveredLabel && (
+          <p className="mt-1 text-[11px] font-semibold text-emerald-800">وقت التسليم: {deliveredLabel}</p>
+        )}
+        {deliveryProof.collected_amount > 0 && (
+          <p className="mt-1 text-[11px] font-bold text-emerald-900">
+            تم تسجيل تحصيل {Number(deliveryProof.collected_amount).toLocaleString('ar-EG', { maximumFractionDigits: 2 })} ج.م
+          </p>
+        )}
+      </div>
+    );
+  }
+
   if (!deliveryPin?.pin) return null;
 
   return (
