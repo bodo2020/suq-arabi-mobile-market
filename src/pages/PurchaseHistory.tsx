@@ -2,6 +2,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  AlertTriangle,
   Box,
   CheckCircle2,
   ChevronDown,
@@ -23,6 +24,10 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import OrderTimeline from '@/components/orders/OrderTimeline';
 import { supabase } from '@/lib/supabase';
+import {
+  getCustomerOrderGroupsOperations,
+  type OrderGroupOperations,
+} from '@/lib/orderGroupOperations';
 import { useUser } from '@/contexts/UserContext';
 
 type TabType = 'current' | 'previous';
@@ -77,6 +82,7 @@ type PurchaseRow = {
   stores_count?: number;
   partner_stores_count?: number;
   group_orders?: PurchaseGroupOrder[];
+  group_operations?: OrderGroupOperations | null;
 };
 
 const STATUS_META: Record<string, { label: string; description: string; className: string }> = {
@@ -95,6 +101,33 @@ const PAYMENT_STATUS_META: Record<string, { label: string; className: string }> 
   paid: { label: 'مدفوع', className: 'bg-green-50 text-green-800' },
   failed: { label: 'فشل الدفع', className: 'bg-red-50 text-red-800' },
   refunded: { label: 'تم رد المبلغ', className: 'bg-blue-50 text-blue-800' },
+};
+
+const GROUP_ROUTE_PHASE_META: Record<string, { label: string; description: string; className: string }> = {
+  waiting_dispatch: { label: 'بنجهز رحلة التوصيل', description: 'هنحدد المندوب وتوقيت التحرك أول ما نقاط الاستلام تبقى جاهزة.', className: 'border-gray-100 bg-gray-50 text-gray-700' },
+  driver_assigned: { label: 'تم تعيين المندوب', description: 'المندوب استلم الرحلة وهيبدأ التحرك لنقاط الاستلام.', className: 'border-blue-100 bg-blue-50 text-blue-800' },
+  heading_to_pickups: { label: 'المندوب متجه للاستلام', description: 'المندوب في طريقه لأول نقطة استلام.', className: 'border-blue-100 bg-blue-50 text-blue-800' },
+  collecting_pickups: { label: 'المندوب بيجمع طلبك', description: 'المندوب بيمر على المتاجر بالترتيب قبل ما يتحرك ليك.', className: 'border-violet-100 bg-violet-50 text-violet-800' },
+  all_pickups_collected: { label: 'تم استلام كل الطلبات', description: 'كل نقاط الاستلام خلصت والمندوب جاهز يتحرك لعنوانك.', className: 'border-indigo-100 bg-indigo-50 text-indigo-800' },
+  on_the_way: { label: 'المندوب في الطريق إليك', description: 'تم جمع طلبك من كل المتاجر والمندوب متجه لعنوانك.', className: 'border-indigo-100 bg-indigo-50 text-indigo-800' },
+  arrived_customer: { label: 'المندوب وصل', description: 'المندوب وصل لموقع التسليم. جهّز كود الاستلام.', className: 'border-emerald-100 bg-emerald-50 text-emerald-800' },
+  delivered: { label: 'تم التسليم', description: 'تم توصيل الطلب المجمع بنجاح.', className: 'border-green-100 bg-green-50 text-green-800' },
+  delivery_issue: { label: 'في مشكلة في رحلة التوصيل', description: 'فريق التشغيل بيتابع الرحلة وهنحدث الحالة أول ما المشكلة تتحل.', className: 'border-red-100 bg-red-50 text-red-800' },
+  return_to_branch: { label: 'الرحلة راجعة للفرع', description: 'فريق التشغيل بيتابع الطلب وهنوضح الخطوة الجاية فورًا.', className: 'border-amber-100 bg-amber-50 text-amber-800' },
+};
+
+const routePhaseMeta = (phase?: string | null) =>
+  GROUP_ROUTE_PHASE_META[phase || 'waiting_dispatch'] || {
+    label: 'جاري تحديث رحلة التوصيل',
+    description: 'بيتم تحديث حالة الرحلة تلقائيًا.',
+    className: 'border-gray-100 bg-gray-50 text-gray-700',
+  };
+
+const formatClock = (value?: string | null) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('ar-EG', { hour: 'numeric', minute: '2-digit' }).format(date);
 };
 
 const formatDate = (dateString: string) => {
@@ -145,10 +178,27 @@ export default function PurchaseHistory() {
       if (!user) return [];
       const { data, error } = await (supabase.rpc as any)('get_my_purchase_history', { p_limit: 200 });
       if (error) throw error;
-      return (Array.isArray(data) ? data : []) as PurchaseRow[];
+      const rows = (Array.isArray(data) ? data : []) as PurchaseRow[];
+      const groupIds = rows
+        .filter(row => row.is_multi_store)
+        .map(row => row.order_group_id || row.id)
+        .filter((value): value is string => Boolean(value));
+      const groupOperations = await getCustomerOrderGroupsOperations(groupIds);
+      return rows.map(row => {
+        if (!row.is_multi_store) return row;
+        const groupId = row.order_group_id || row.id;
+        const operations = groupOperations[groupId] || null;
+        return {
+          ...row,
+          order_group_id: groupId,
+          group_operations: operations,
+          delivery_person: operations?.route?.driver_name || row.delivery_person,
+          updated_at: operations?.updated_at || row.updated_at,
+        };
+      });
     },
     enabled: !!user && !!session,
-    refetchInterval: 30_000,
+    refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     staleTime: 10_000,
   });
@@ -232,6 +282,13 @@ export default function PurchaseHistory() {
                   const status = STATUS_META[purchase.status] || (storePurchase ? STATUS_META.store_completed : { label: purchase.status, description: 'يتم تحديث حالة الطلب.', className: 'bg-gray-50 text-gray-700 border-gray-100' });
                   const paymentStatus = purchase.payment_status ? PAYMENT_STATUS_META[purchase.payment_status] : null;
                   const points = Number(purchase.loyalty_points_earned || 0);
+                  const groupRoute = purchase.group_operations?.route;
+                  const groupRouteProgress = purchase.group_operations?.route_progress;
+                  const groupRouteStops = purchase.group_operations?.route_stops || [];
+                  const pickupTotal = Number(groupRouteProgress?.pickups_total || 0);
+                  const pickupCompleted = Number(groupRouteProgress?.pickups_completed || 0);
+                  const pickupPercent = pickupTotal > 0 ? Math.min(100, Math.round((pickupCompleted / pickupTotal) * 100)) : 0;
+                  const groupPhase = routePhaseMeta(groupRouteProgress?.delivery_phase);
 
                   return (
                     <article id={`purchase-${purchase.id}`} key={`${purchase.source_channel}-${purchase.id}`} className="scroll-mt-28 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
@@ -254,6 +311,68 @@ export default function PurchaseHistory() {
 
                         {!storePurchase && <div className={`mt-4 rounded-2xl border p-4 ${status.className}`}><p className="font-bold">{status.label}</p><p className="mt-1 text-xs leading-6 opacity-80">{status.description}</p></div>}
 
+                        {!storePurchase && purchase.is_multi_store && (
+                          <div className="mt-4 space-y-3">
+                            <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm font-bold">حالة المتاجر</p>
+                                {Number(purchase.group_operations?.route_duration_minutes || 0) > 0 && (
+                                  <span className="text-[11px] text-gray-500">
+                                    مسار التوصيل ≈ {Number(purchase.group_operations?.route_duration_minutes).toLocaleString('ar-EG')} دقيقة
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                {(purchase.group_operations?.stores || []).map(store => {
+                                  const storeStatus = STATUS_META[store.status] || { label: store.status, description: '', className: 'bg-gray-50 text-gray-700 border-gray-100' };
+                                  return (
+                                    <div key={store.order_id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2.5">
+                                      <div className="min-w-0">
+                                        <p className="truncate text-xs font-bold">{store.branch_name || store.merchant_name}</p>
+                                        <p className="mt-0.5 text-[10px] text-gray-500">{store.source_kind === 'owned' ? 'ماركت المعداوي' : 'متجر شريك'}</p>
+                                      </div>
+                                      <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${storeStatus.className}`}>{storeStatus.label}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div className={`rounded-2xl border p-4 ${groupPhase.className}`}>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex min-w-0 items-start gap-3">
+                                  <Truck size={20} className="mt-0.5 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold">{groupPhase.label}</p>
+                                    <p className="mt-1 text-xs leading-6 opacity-80">{groupPhase.description}</p>
+                                    {groupRoute?.driver_name && <p className="mt-1 text-[11px] font-semibold opacity-80">المندوب: {groupRoute.driver_name}</p>}
+                                  </div>
+                                </div>
+                                {pickupTotal > 0 && <span className="shrink-0 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold">{pickupCompleted}/{pickupTotal} استلام</span>}
+                              </div>
+                              {pickupTotal > 0 && (
+                                <div className="mt-3">
+                                  <div className="h-2 overflow-hidden rounded-full bg-white/70">
+                                    <div className="h-full rounded-full bg-current transition-all" style={{ width: `${pickupPercent}%` }} />
+                                  </div>
+                                  {groupRouteProgress?.next_pickup && (
+                                    <p className="mt-2 text-[11px] opacity-80">
+                                      النقطة الحالية: {groupRouteProgress.next_pickup.display_name}
+                                      {formatClock(groupRouteProgress.next_pickup.eta) ? ` · وصول متوقع ${formatClock(groupRouteProgress.next_pickup.eta)}` : ''}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                              {Number(groupRouteProgress?.pickup_issues_open || 0) > 0 && (
+                                <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
+                                  <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                                  فيه تأخير مؤقت في إحدى نقاط الاستلام، وفريق التشغيل بيتابعها بدون إلغاء باقي الطلب.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
                           <div><p className="text-xs text-gray-500">الإجمالي</p><p className="mt-1 text-lg font-bold text-primary">{formatMoney(purchase.total)}</p></div>
                           {points > 0 && <div className="rounded-xl bg-emerald-50 px-3 py-2 text-emerald-800"><p className="flex items-center gap-1 text-[11px]"><Gift size={13} />نقاط العملية</p><p className="mt-0.5 font-bold">+{points.toLocaleString('ar-EG')}</p></div>}
@@ -270,7 +389,63 @@ export default function PurchaseHistory() {
                           <div className="grid gap-5 lg:grid-cols-2">
                             <section className="rounded-2xl bg-white p-5">
                               <h3 className="flex items-center gap-2 font-bold">{storePurchase ? <Store size={19} className="text-primary" /> : <Package size={19} className="text-primary" />}{storePurchase ? 'بيانات الشراء' : 'تتبع الطلب'}</h3>
-                              {storePurchase ? <div className="mt-4 space-y-3 text-sm"><div className="rounded-xl bg-emerald-50 p-4 text-emerald-800">تم تسجيل الفاتورة على حسابك وقت الشراء من الفرع.</div>{purchase.branch_name && <p><span className="text-gray-500">الفرع: </span>{purchase.branch_name}</p>}</div> : purchase.status === 'cancelled' ? <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">تم إلغاء الطلب.</div> : <OrderTimeline order={purchase as any} />}
+                              {storePurchase ? (
+                                <div className="mt-4 space-y-3 text-sm"><div className="rounded-xl bg-emerald-50 p-4 text-emerald-800">تم تسجيل الفاتورة على حسابك وقت الشراء من الفرع.</div>{purchase.branch_name && <p><span className="text-gray-500">الفرع: </span>{purchase.branch_name}</p>}</div>
+                              ) : purchase.status === 'cancelled' ? (
+                                <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">تم إلغاء الطلب.</div>
+                              ) : purchase.is_multi_store ? (
+                                <div className="mt-4 space-y-3">
+                                  {(purchase.group_operations?.stores || []).map(store => {
+                                    const storeStatus = STATUS_META[store.status] || { label: store.status, description: 'يتم تحديث حالة المتجر.', className: 'bg-gray-50 text-gray-700 border-gray-100' };
+                                    return (
+                                      <div key={store.order_id} className="rounded-2xl border border-gray-100 p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div>
+                                            <p className="font-bold">{store.branch_name || store.merchant_name}</p>
+                                            <p className="mt-1 text-xs leading-6 text-gray-500">{storeStatus.description}</p>
+                                          </div>
+                                          <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-bold ${storeStatus.className}`}>{storeStatus.label}</span>
+                                        </div>
+                                        {store.predicted_ready_at && !['ready','shipped','delivered','cancelled'].includes(store.status) && (
+                                          <p className="mt-3 text-[11px] text-gray-500">التجهيز المتوقع: {formatDate(store.predicted_ready_at)}</p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+
+                                  {groupRouteStops.length > 0 && (
+                                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
+                                      <div className="flex items-center justify-between gap-3">
+                                        <p className="text-sm font-bold text-indigo-950">مسار الاستلام والتوصيل</p>
+                                        {groupRoute?.estimated_minutes ? <span className="text-[11px] text-indigo-700">≈ {groupRoute.estimated_minutes} دقيقة</span> : null}
+                                      </div>
+                                      <div className="mt-3 space-y-3">
+                                        {groupRouteStops.map(stop => {
+                                          const completed = Boolean(stop.completed_at);
+                                          const arrived = Boolean(stop.arrived_at) && !completed;
+                                          return (
+                                            <div key={`${purchase.id}-route-stop-${stop.stop_order}`} className="flex items-start gap-3">
+                                              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-black ${completed ? 'border-primary bg-primary text-white' : arrived ? 'border-indigo-500 bg-white text-indigo-700' : 'border-gray-200 bg-white text-gray-400'}`}>
+                                                {completed ? <CheckCircle2 size={15} /> : stop.stop_order}
+                                              </span>
+                                              <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                  <p className="text-sm font-bold">{stop.stop_type === 'customer' ? 'التسليم' : 'استلام'} · {stop.display_name}</p>
+                                                  {stop.eta && !completed ? <span className="text-[10px] text-gray-500">{formatClock(stop.eta)}</span> : null}
+                                                </div>
+                                                <p className="mt-1 text-[11px] text-gray-500">{completed ? 'تمت النقطة' : arrived ? 'المندوب وصل للنقطة' : stop.ready ? 'جاهزة للاستلام' : 'في الانتظار'}</p>
+                                                {stop.has_issue && <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-amber-800"><AlertTriangle size={13} />في تأخير مؤقت والنظام بيتابعه</p>}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <OrderTimeline order={purchase as any} />
+                              )}
                             </section>
                             <section className="rounded-2xl bg-white p-5">
                               <h3 className="flex items-center gap-2 font-bold"><ReceiptText size={19} className="text-primary" />بيانات الدفع</h3>
