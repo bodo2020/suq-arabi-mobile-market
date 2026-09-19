@@ -12,6 +12,7 @@ import {
   ReceiptText,
   RefreshCw,
   ShoppingBag,
+  Store,
   Truck,
   XCircle,
 } from 'lucide-react';
@@ -22,6 +23,10 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import OrderTimeline from '@/components/orders/OrderTimeline';
 import OrderEtaPanel from '@/components/orders/OrderEtaPanel';
 import { getMyOrderEtas, type OrderEta } from '@/lib/orderEta';
+import {
+  getCustomerOrderGroupsOperations,
+  type OrderGroupOperations,
+} from '@/lib/orderGroupOperations';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 
@@ -51,7 +56,11 @@ type OrderRow = {
   delivery_person: string | null;
   created_at: string;
   updated_at: string | null;
+  order_group_id?: string | null;
   eta?: OrderEta | null;
+  is_combined?: boolean;
+  group_operations?: OrderGroupOperations | null;
+  child_order_ids?: string[];
 };
 
 const STATUS_META: Record<string, { label: string; description: string; className: string }> = {
@@ -140,6 +149,71 @@ const paymentMethodLabel = (method: string | null) => {
 
 const orderNumber = (order: OrderRow) => order.tracking_number || order.id.slice(0, 8).toUpperCase();
 
+const deriveGroupStatus = (children: OrderRow[]) => {
+  const active = children.filter(order => order.status !== 'cancelled');
+  if (active.length === 0) return 'cancelled';
+  if (active.every(order => order.status === 'delivered')) return 'delivered';
+  if (active.some(order => ['shipped', 'delivered'].includes(order.status))) return 'shipped';
+  if (active.every(order => ['ready', 'shipped', 'delivered'].includes(order.status))) return 'ready';
+  if (active.some(order => ['preparing', 'ready', 'shipped', 'delivered'].includes(order.status))) return 'preparing';
+  if (active.every(order => order.status === 'confirmed')) return 'confirmed';
+  return 'pending';
+};
+
+const collapseOrderGroups = (
+  rows: OrderRow[],
+  etaByOrder: Record<string, OrderEta>,
+  groupOperations: Record<string, OrderGroupOperations | null>,
+) => {
+  const singles: OrderRow[] = [];
+  const groups = new Map<string, OrderRow[]>();
+
+  rows.forEach(order => {
+    if (!order.order_group_id) {
+      singles.push({ ...order, eta: etaByOrder[order.id] || null });
+      return;
+    }
+    const children = groups.get(order.order_group_id) || [];
+    children.push(order);
+    groups.set(order.order_group_id, children);
+  });
+
+  const combined = [...groups.entries()].map(([groupId, children]) => {
+    const sorted = [...children].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+    const first = sorted[0];
+    const operations = groupOperations[groupId] || null;
+    const createdAt = sorted[0]?.created_at || first.created_at;
+    const updatedAt = sorted
+      .map(order => order.updated_at)
+      .filter((value): value is string => Boolean(value))
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || first.updated_at;
+
+    return {
+      ...first,
+      id: groupId,
+      order_group_id: groupId,
+      status: operations?.status || deriveGroupStatus(sorted),
+      total: sorted.reduce((sum, order) => sum + Number(order.total || 0), 0),
+      shipping_cost: sorted.reduce((sum, order) => sum + Number(order.shipping_cost || 0), 0),
+      items: sorted.flatMap(order => normalizeItems(order.items)),
+      tracking_number: `G-${groupId.replace(/-/g, '').slice(0, 12).toUpperCase()}`,
+      delivery_person: sorted.find(order => Boolean(order.delivery_person))?.delivery_person || null,
+      created_at: createdAt,
+      updated_at: operations?.updated_at || updatedAt,
+      eta: null,
+      is_combined: true,
+      group_operations: operations,
+      child_order_ids: sorted.map(order => order.id),
+    } satisfies OrderRow;
+  });
+
+  return [...singles, ...combined].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+};
+
 const Orders = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -181,7 +255,11 @@ const Orders = () => {
 
       if (ordersResult.error) throw ordersResult.error;
       const rows = (ordersResult.data || []) as unknown as OrderRow[];
-      return rows.map(order => ({ ...order, eta: etaByOrder[order.id] || null }));
+      const groupIds = rows
+        .map(order => order.order_group_id)
+        .filter((value): value is string => Boolean(value));
+      const groupOperations = await getCustomerOrderGroupsOperations(groupIds);
+      return collapseOrderGroups(rows, etaByOrder, groupOperations);
     },
     enabled: !!user && !!session,
     refetchInterval: 30_000,
@@ -340,6 +418,12 @@ const Orders = () => {
                             <p className="text-xs text-gray-500">رقم الطلب</p>
                             <h2 dir="ltr" className="mt-1 break-all text-right text-lg font-bold">#{orderNumber(order)}</h2>
                             <p className="mt-1 text-xs text-gray-500">{formatDate(order.created_at)}</p>
+                            {order.is_combined && (
+                              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-bold text-primary">
+                                <Store size={13} />
+                                طلب مجمع من {Number(order.group_operations?.stores_count || order.child_order_ids?.length || 0).toLocaleString('ar-EG')} متاجر
+                              </span>
+                            )}
                           </div>
                           <span className={`inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-xs font-bold ${status.className}`}>
                             {order.status === 'shipped' && <Truck size={14} className="ml-1.5" />}
@@ -355,7 +439,40 @@ const Orders = () => {
                           {order.updated_at && <p className="mt-2 text-[11px] opacity-70">آخر تحديث: {formatDate(order.updated_at)}</p>}
                         </div>
 
-                        <OrderEtaPanel eta={order.eta} detailed={expanded} />
+                        {order.is_combined ? (
+                          <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-sm font-bold">حالة المتاجر</p>
+                              {Number(order.group_operations?.route_duration_minutes || 0) > 0 && (
+                                <span className="text-[11px] text-gray-500">
+                                  مسار التوصيل ≈ {Number(order.group_operations?.route_duration_minutes).toLocaleString('ar-EG')} دقيقة
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                              {(order.group_operations?.stores || []).map(store => {
+                                const storeStatus = STATUS_META[store.status] || {
+                                  label: store.status,
+                                  description: '',
+                                  className: 'bg-gray-50 text-gray-700 border-gray-100',
+                                };
+                                return (
+                                  <div key={store.order_id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2.5">
+                                    <div className="min-w-0">
+                                      <p className="truncate text-xs font-bold">{store.branch_name || store.merchant_name}</p>
+                                      <p className="mt-0.5 text-[10px] text-gray-500">{store.source_kind === 'owned' ? 'ماركت المعداوي' : 'متجر شريك'}</p>
+                                    </div>
+                                    <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${storeStatus.className}`}>
+                                      {storeStatus.label}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <OrderEtaPanel eta={order.eta} detailed={expanded} />
+                        )}
 
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
                           <div>
@@ -401,6 +518,32 @@ const Orders = () => {
                               <h3 className="flex items-center gap-2 font-bold"><Package size={19} className="text-primary" />تتبع الطلب</h3>
                               {order.status === 'cancelled' ? (
                                 <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">تم إلغاء الطلب. لو محتاج مساعدة تواصل مع خدمة العملاء.</div>
+                              ) : order.is_combined ? (
+                                <div className="mt-4 space-y-3">
+                                  {(order.group_operations?.stores || []).map(store => {
+                                    const storeStatus = STATUS_META[store.status] || {
+                                      label: store.status,
+                                      description: 'يتم تحديث حالة المتجر.',
+                                      className: 'bg-gray-50 text-gray-700 border-gray-100',
+                                    };
+                                    return (
+                                      <div key={store.order_id} className="rounded-2xl border border-gray-100 p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div>
+                                            <p className="font-bold">{store.branch_name || store.merchant_name}</p>
+                                            <p className="mt-1 text-xs leading-6 text-gray-500">{storeStatus.description}</p>
+                                          </div>
+                                          <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-bold ${storeStatus.className}`}>
+                                            {storeStatus.label}
+                                          </span>
+                                        </div>
+                                        {store.predicted_ready_at && !['ready', 'shipped', 'delivered', 'cancelled'].includes(store.status) && (
+                                          <p className="mt-3 text-[11px] text-gray-500">التجهيز المتوقع: {formatDate(store.predicted_ready_at)}</p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               ) : (
                                 <OrderTimeline order={order} />
                               )}
@@ -465,8 +608,13 @@ const Orders = () => {
 
                           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                             {order.status === 'delivered' && (
-                              <Button variant="outline" className="min-h-12 flex-1 rounded-xl" onClick={() => navigate(`/create-return/${order.id}`)}>
-                                <RefreshCw size={16} className="ml-2" />طلب استرجاع
+                              <Button
+                                variant="outline"
+                                className="min-h-12 flex-1 rounded-xl"
+                                onClick={() => navigate(order.is_combined ? '/return-requests' : `/create-return/${order.id}`)}
+                              >
+                                <RefreshCw size={16} className="ml-2" />
+                                {order.is_combined ? 'إدارة مرتجعات الطلب' : 'طلب استرجاع'}
                               </Button>
                             )}
                             {['delivered', 'cancelled'].includes(order.status) && (
