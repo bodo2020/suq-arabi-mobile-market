@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CreditCard, MapPin, ShieldCheck, Store, Wallet } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
+import SubstitutionPreferenceCard from '@/components/checkout/SubstitutionPreferenceCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -24,6 +25,7 @@ import {
   savePendingMarketplaceCheckout,
   type PendingMarketplaceCheckout,
 } from '@/lib/marketplaceCheckout';
+import { DEFAULT_SUBSTITUTION_POLICY, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
 
 const WALLET_PHONE_NUMBER = '01005245096';
 const money = (value: number) => new Intl.NumberFormat('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0));
@@ -36,6 +38,7 @@ export default function MarketplacePayment() {
   const submitting = useRef(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'wallet'>('cash');
   const [notes, setNotes] = useState('');
+  const [substitutionPolicy, setSubstitutionPolicy] = useState<SubstitutionPolicy>(DEFAULT_SUBSTITUTION_POLICY);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [pending, setPending] = useState<PendingMarketplaceCheckout | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,6 +57,7 @@ export default function MarketplacePayment() {
         setRequestId(saved.requestId);
         setPaymentMethod(saved.paymentMethod);
         setNotes(saved.notes || '');
+        setSubstitutionPolicy(saved.substitutionPolicy);
       }
     } catch {
       removePendingMarketplaceCheckout(user.id);
@@ -112,6 +116,7 @@ export default function MarketplacePayment() {
         notes: notes.trim(),
         quoteToken: quote!.quote_token,
         total: quote!.total,
+        substitutionPolicy,
       };
       if (!pending) savePendingMarketplaceCheckout(user.id, candidate);
       setPending(candidate);
@@ -152,6 +157,7 @@ export default function MarketplacePayment() {
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><Store className="h-5 w-5 text-primary" />{quote?.merchant_name || items[0]?.merchant_name || 'المتجر'}</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p><strong>الفرع:</strong> {quote?.branch_name || items[0]?.marketplace_branch_name}</p><p><strong>منطقة التوصيل:</strong> {quote?.zone_name || 'جاري التحديد'}</p>{quote?.estimated_time && <p><strong>الوقت المتوقع:</strong> {quote.estimated_time}</p>}</CardContent></Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" />عنوان التوصيل</CardTitle></CardHeader><CardContent><p className="text-sm text-gray-700">{customerQuery.data?.address?.address || 'جاري تحميل العنوان...'}</p><Button variant="link" className="mt-2 px-0" onClick={() => navigate('/addresses?returnTo=%2Fmarketplace-payment')}>تغيير العنوان</Button></CardContent></Card>
         <Card><CardHeader><CardTitle>طريقة الدفع</CardTitle></CardHeader><CardContent><RadioGroup value={paymentMethod} onValueChange={value => !pending && setPaymentMethod(value as 'cash' | 'wallet')} className="grid gap-3 sm:grid-cols-2"><Label className="flex cursor-pointer items-center gap-3 rounded-2xl border p-4"><RadioGroupItem value="cash" /><CreditCard className="h-5 w-5 text-primary" /><span><strong className="block">كاش عند الاستلام</strong><small className="text-gray-500">ادفع للمندوب</small></span></Label><Label className="flex cursor-pointer items-center gap-3 rounded-2xl border p-4"><RadioGroupItem value="wallet" /><Wallet className="h-5 w-5 text-primary" /><span><strong className="block">محفظة إلكترونية</strong><small className="text-gray-500">{WALLET_PHONE_NUMBER}</small></span></Label></RadioGroup></CardContent></Card>
+        <SubstitutionPreferenceCard value={pending?.substitutionPolicy || substitutionPolicy} onChange={setSubstitutionPolicy} disabled={!!pending} />
         <Card><CardHeader><CardTitle>ملاحظات الطلب</CardTitle></CardHeader><CardContent><Textarea value={notes} onChange={event => !pending && setNotes(event.target.value)} maxLength={1000} placeholder="مثلاً: اتصل قبل الوصول" disabled={!!pending} /></CardContent></Card>
       </div>
       <aside><Card className="sticky top-4"><CardHeader><CardTitle>ملخص الطلب</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">{quoteQuery.isLoading ? <div className="flex justify-center py-8"><BrandLoader size="md" /></div> : quoteQuery.error ? <div className="rounded-xl bg-red-50 p-3 text-red-700">{marketplaceCheckoutError(quoteQuery.error)}</div> : <><div className="flex justify-between"><span>المنتجات</span><strong>{money(quote?.subtotal || pending?.total || 0)} ج.م</strong></div><div className="flex justify-between"><span>التوصيل</span><strong>{money(quote?.shipping_cost || 0)} ج.م</strong></div><div className="flex justify-between border-t pt-3 text-base"><span>الإجمالي</span><strong className="text-primary">{money(quote?.total || pending?.total || 0)} ج.م</strong></div>{quote && !quote.minimum_order_met && <p className="rounded-xl bg-amber-50 p-3 text-amber-800">الحد الأدنى {money(quote.min_order_amount)} ج.م</p>}</>}
