@@ -188,3 +188,6 @@ verify_jwt = false
 
 [functions.customer-store-route-distance]
 verify_jwt = false
+
+[functions.order-group-reprice]
+verify_jwt = false
