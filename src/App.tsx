@@ -3,6 +3,7 @@ import AuthGate from './components/AuthGate';
 import AddressGuard from './components/AddressGuard';
 import CheckoutAttemptRecovery from './components/CheckoutAttemptRecovery';
 import PushNotificationsBootstrap from './components/PushNotificationsBootstrap';
+import CustomerNotificationRealtimeBridge from './components/CustomerNotificationRealtimeBridge';
 import NetworkStatus from './components/NetworkStatus';
 import CartSourceConflictNotifier from './components/CartSourceConflictNotifier';
 import React, { Suspense, lazy } from 'react';
@@ -67,6 +68,7 @@ function App() {
             <BrowserRouter>
               <NetworkStatus />
               <PushNotificationsBootstrap />
+              <CustomerNotificationRealtimeBridge />
               <ProfileCompletionGate />
               <CheckoutAttemptRecovery />
               <CartSourceConflictNotifier />
