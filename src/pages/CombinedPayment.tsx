@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CreditCard, MapPin, Route, ShieldCheck, Store, Wallet } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
+import SubstitutionPreferenceCard from '@/components/checkout/SubstitutionPreferenceCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -25,6 +26,7 @@ import {
   savePendingCombinedCheckout,
   type PendingCombinedCheckout,
 } from '@/lib/combinedCheckout';
+import { DEFAULT_SUBSTITUTION_POLICY, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
 
 const WALLET_PHONE_NUMBER = '01005245096';
 const money = (value: number) => new Intl.NumberFormat('ar-EG', {
@@ -40,6 +42,7 @@ export default function CombinedPayment() {
   const submitting = useRef(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'wallet'>('cash');
   const [notes, setNotes] = useState('');
+  const [substitutionPolicy, setSubstitutionPolicy] = useState<SubstitutionPolicy>(DEFAULT_SUBSTITUTION_POLICY);
   const [groupId, setGroupId] = useState(() => crypto.randomUUID());
   const [pending, setPending] = useState<PendingCombinedCheckout | null>(null);
   const [loading, setLoading] = useState(false);
@@ -61,6 +64,7 @@ export default function CombinedPayment() {
         setGroupId(saved.groupId);
         setPaymentMethod(saved.paymentMethod);
         setNotes(saved.notes || '');
+        setSubstitutionPolicy(saved.substitutionPolicy);
       }
     } catch {
       removePendingCombinedCheckout(user.id);
@@ -146,6 +150,7 @@ export default function CombinedPayment() {
         notes: notes.trim(),
         quoteToken: quote!.quote_token,
         total: quote!.total,
+        substitutionPolicy,
       };
 
       if (!pending) savePendingCombinedCheckout(user.id, candidate);
@@ -335,6 +340,8 @@ export default function CombinedPayment() {
             </RadioGroup>
           </CardContent>
         </Card>
+
+        <SubstitutionPreferenceCard value={pending?.substitutionPolicy || substitutionPolicy} onChange={setSubstitutionPolicy} disabled={!!pending} />
 
         <Card>
           <CardHeader><CardTitle>ملاحظات الطلب</CardTitle></CardHeader>

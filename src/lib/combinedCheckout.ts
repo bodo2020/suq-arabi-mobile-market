@@ -3,6 +3,7 @@ import type { CartItem } from '@/contexts/cartTypes';
 import { checkoutLines } from '@/lib/checkout';
 import { marketplaceCheckoutLines } from '@/lib/marketplaceCheckout';
 import { getMultiStoreRoadQuote } from '@/lib/multistoreRoadRoute';
+import { normalizeSubstitutionPolicy, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
 
 export type CombinedCheckoutSource =
   | { source_kind: 'owned'; items: ReturnType<typeof checkoutLines> }
@@ -69,6 +70,7 @@ export type PendingCombinedCheckout = {
   notes: string;
   quoteToken: string;
   total: number;
+  substitutionPolicy: SubstitutionPolicy;
 };
 
 export type PlacedCombinedOrder = {
@@ -158,7 +160,7 @@ export async function placeCombinedOrder(order: PendingCombinedCheckout) {
   const freshQuote = await quoteCombinedOrder(order.sources, order.addressId);
   if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
 
-  const { data, error } = await rpc('place_combined_order_group_v2', {
+  const { data, error } = await rpc('place_combined_order_group_v3', {
     p_group_id: order.groupId,
     p_sources: order.sources,
     p_address_id: order.addressId,
@@ -166,6 +168,7 @@ export async function placeCombinedOrder(order: PendingCombinedCheckout) {
     p_notes: order.notes,
     p_quote_token: order.quoteToken,
     p_route_quote_id: freshQuote.route_quote_id,
+    p_substitution_policy: order.substitutionPolicy,
   });
   if (error) throw error;
   return data as PlacedCombinedOrder;
@@ -180,7 +183,7 @@ export function readPendingCombinedCheckout(userId: string): PendingCombinedChec
   if (!value.groupId || !value.addressId || !value.quoteToken || !Array.isArray(value.sources)) {
     throw new Error('PENDING_STORAGE_INVALID');
   }
-  return value;
+  return { ...value, substitutionPolicy: normalizeSubstitutionPolicy(value.substitutionPolicy) };
 }
 
 export function savePendingCombinedCheckout(userId: string, value: PendingCombinedCheckout) {

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
 import { getStoreRoadQuote } from '@/lib/storeRoadRoute';
+import { normalizeSubstitutionPolicy, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
 
 export type CheckoutLine = { product_id: string; quantity: number; is_bulk: boolean; unit_of_measure: 'weight' | 'piece' };
 export type QuoteLine = CheckoutLine & { name: string; price: number; total: number; bulk_quantity?: number };
@@ -32,6 +33,7 @@ export type PendingCheckout = {
   total: number;
   voucherCode?: string | null;
   voucherAmount?: number;
+  substitutionPolicy: SubstitutionPolicy;
 };
 export type PlacedOrder = {
   id: string;
@@ -95,7 +97,7 @@ export async function placeOrder(order: PendingCheckout) {
 
   if (!freshQuote.route_quote_id) throw new Error('ROAD_QUOTE_REQUIRED');
 
-  const { data, error } = await rpc('place_customer_order_with_voucher_v2', {
+  const { data, error } = await rpc('place_customer_order_with_voucher_v3', {
     p_request_id: order.requestId,
     p_items: order.items,
     p_address_id: order.addressId,
@@ -105,6 +107,7 @@ export async function placeOrder(order: PendingCheckout) {
     p_voucher_code: order.voucherCode || null,
     p_voucher_amount: Number(order.voucherAmount || 0) > 0 ? Number(order.voucherAmount) : null,
     p_route_quote_id: freshQuote.route_quote_id,
+    p_substitution_policy: order.substitutionPolicy,
   });
   if (error) throw error;
   return data as PlacedOrder;
@@ -122,7 +125,7 @@ export function readPendingCheckout(userId: string): PendingCheckout | null {
   if (!saved) return null;
   const value = JSON.parse(saved) as PendingCheckout;
   if (!value.requestId || !Array.isArray(value.items) || !value.addressId || !value.quoteToken) throw new Error('PENDING_STORAGE_INVALID');
-  return value;
+  return { ...value, substitutionPolicy: normalizeSubstitutionPolicy(value.substitutionPolicy) };
 }
 export function savePendingCheckout(userId: string, value: PendingCheckout) { localStorage.setItem(key(userId), JSON.stringify(value)); }
 export function removePendingCheckout(userId: string) { localStorage.removeItem(key(userId)); }

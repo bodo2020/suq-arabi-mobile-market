@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import OrderTimeline from '@/components/orders/OrderTimeline';
+import OrderSubstitutionPanel from '@/components/orders/OrderSubstitutionPanel';
 import OrderEtaPanel from '@/components/orders/OrderEtaPanel';
 import { getMyOrderEtas, type OrderEta } from '@/lib/orderEta';
 import {
@@ -745,6 +746,8 @@ const Orders = () => {
                               </div>
                             </section>
                           </div>
+
+                          <OrderSubstitutionPanel orderId={order.id} />
 
                           <section className="mt-5 rounded-2xl bg-white p-5">
                             <h3 className="font-bold">المنتجات ({items.length})</h3>
