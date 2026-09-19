@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
 import { getStoreRoadQuote } from '@/lib/storeRoadRoute';
+import { normalizeSubstitutionPolicy, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
 
 export type MarketplaceCheckoutLine = {
   listing_id: string;
@@ -56,6 +57,7 @@ export type PendingMarketplaceCheckout = {
   notes: string;
   quoteToken: string;
   total: number;
+  substitutionPolicy: SubstitutionPolicy;
 };
 
 export type PlacedMarketplaceOrder = {
@@ -122,7 +124,7 @@ export async function placeMarketplaceOrder(order: PendingMarketplaceCheckout) {
   if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
   if (!freshQuote.route_quote_id) throw new Error('ROAD_QUOTE_REQUIRED');
 
-  const { data, error } = await rpc('place_marketplace_order_v2', {
+  const { data, error } = await rpc('place_marketplace_order_v3', {
     p_request_id: order.requestId,
     p_branch_id: order.branchId,
     p_items: order.items,
@@ -131,6 +133,7 @@ export async function placeMarketplaceOrder(order: PendingMarketplaceCheckout) {
     p_notes: order.notes,
     p_quote_token: order.quoteToken,
     p_route_quote_id: freshQuote.route_quote_id,
+    p_substitution_policy: order.substitutionPolicy,
   });
   if (error) throw error;
   return data as PlacedMarketplaceOrder;
@@ -142,7 +145,7 @@ export function readPendingMarketplaceCheckout(userId: string): PendingMarketpla
   if (!raw) return null;
   const value = JSON.parse(raw) as PendingMarketplaceCheckout;
   if (!value.requestId || !value.branchId || !value.addressId || !value.quoteToken || !Array.isArray(value.items)) throw new Error('PENDING_STORAGE_INVALID');
-  return value;
+  return { ...value, substitutionPolicy: normalizeSubstitutionPolicy(value.substitutionPolicy) };
 }
 export function savePendingMarketplaceCheckout(userId: string, value: PendingMarketplaceCheckout) {
   localStorage.setItem(pendingKey(userId), JSON.stringify(value));
