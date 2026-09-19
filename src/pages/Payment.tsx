@@ -19,6 +19,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import SwipeButton from '@/components/ui/SwipeButton';
 import AddressDisplay from '@/components/ui/AddressDisplay';
 import OrderNotes from '@/components/ui/OrderNotes';
+import SubstitutionPreferenceCard from '@/components/checkout/SubstitutionPreferenceCard';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ import {
   removePendingCheckout,
   type PendingCheckout,
 } from '@/lib/checkout';
+import { DEFAULT_SUBSTITUTION_POLICY, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
 
 const WALLET_PHONE_NUMBER = '01005245096';
 const money = (value: number) => new Intl.NumberFormat('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0));
@@ -66,6 +68,7 @@ const Payment = () => {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
   const [notes, setNotes] = useState('');
+  const [substitutionPolicy, setSubstitutionPolicy] = useState<SubstitutionPolicy>(DEFAULT_SUBSTITUTION_POLICY);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [pendingCheckout, setPendingCheckout] = useState<PendingCheckout | null>(null);
   const [selectedVoucherId, setSelectedVoucherId] = useState('none');
@@ -87,6 +90,7 @@ const Payment = () => {
         setRequestId(pending.requestId);
         setPaymentMethod(pending.paymentMethod);
         setNotes(pending.notes || '');
+        setSubstitutionPolicy(pending.substitutionPolicy);
       }
     } catch {
       removePendingCheckout(user.id);
@@ -230,6 +234,7 @@ const Payment = () => {
         total: quote?.total ?? pendingCheckout?.total ?? 0,
         voucherCode: pendingCheckout?.voucherCode || selectedVoucher?.voucher_code || null,
         voucherAmount: pendingCheckout?.voucherAmount ?? voucherAmount,
+        substitutionPolicy: pendingCheckout?.substitutionPolicy || substitutionPolicy,
       };
 
       const pending = await preparePendingCheckout(user.id, candidate);
@@ -415,6 +420,12 @@ const Payment = () => {
                 )}
               </CardContent>
             </Card>
+
+            <SubstitutionPreferenceCard
+              value={pendingCheckout?.substitutionPolicy || substitutionPolicy}
+              onChange={setSubstitutionPolicy}
+              disabled={!!pendingCheckout}
+            />
 
             <Card>
               <CardHeader><CardTitle>ملاحظة للطلب <span className="text-sm font-normal text-muted-foreground">(اختياري)</span></CardTitle></CardHeader>
