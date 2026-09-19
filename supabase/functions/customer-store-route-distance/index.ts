@@ -192,13 +192,17 @@ Deno.serve(async (request: Request) => {
       longitude?: unknown;
     } | null;
 
-    const sourceKind = body?.source_kind === "marketplace" ? "marketplace" : "owned";
+    const sourceKind =
+      body?.source_kind === "owned" || body?.source_kind === "marketplace"
+        ? body.source_kind
+        : null;
     const requestedBranchId = typeof body?.branch_id === "string" ? body.branch_id : "";
     const latitude = Number(body?.latitude);
     const longitude = Number(body?.longitude);
 
     if (
-      !requestedBranchId
+      !sourceKind
+      || !requestedBranchId
       || !Number.isFinite(latitude)
       || !Number.isFinite(longitude)
       || latitude < -90 || latitude > 90
