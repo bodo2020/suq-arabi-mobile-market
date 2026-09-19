@@ -184,3 +184,7 @@ customer-auth-route = { verify_jwt = false }
 
 [functions.customer-multistore-route]
 verify_jwt = false
+
+
+[functions.customer-store-route-distance]
+verify_jwt = false

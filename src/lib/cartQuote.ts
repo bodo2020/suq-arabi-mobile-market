@@ -4,7 +4,7 @@ import { cartSourceIdentities, isSingleMarketplaceCart } from '@/contexts/cartTy
 import { loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
 import { checkoutLines } from '@/lib/checkout';
 import { marketplaceCheckoutLines, type MarketplaceQuote } from '@/lib/marketplaceCheckout';
-import { getRoadDistance } from '@/lib/roadDistance';
+import { getStoreRoadQuote } from '@/lib/storeRoadRoute';
 import { getMultiStoreRoadQuote } from '@/lib/multistoreRoadRoute';
 
 export type CartQuoteLine = {
@@ -217,11 +217,19 @@ export async function quoteCart(items: CartItem[]): Promise<CartQuote> {
   if (isSingleMarketplaceCart(items)) {
     const branchId = items[0]?.marketplace_branch_id;
     if (!branchId) throw new Error('INVALID_CART');
-    const { data, error } = await rpc('quote_marketplace_cart_v1', {
+
+    const road = await getStoreRoadQuote(
+      'marketplace',
+      branchId,
+      point.latitude,
+      point.longitude,
+    );
+    const { data, error } = await rpc('quote_marketplace_cart_v2', {
       p_branch_id: branchId,
       p_items: marketplaceCheckoutLines(items),
       p_latitude: point.latitude,
       p_longitude: point.longitude,
+      p_route_quote_id: road.route_quote_id,
     });
     if (error) throw error;
     const quote = data as MarketplaceQuote & { delivery_campaign?: DeliveryCampaign | null };
@@ -233,30 +241,46 @@ export async function quoteCart(items: CartItem[]): Promise<CartQuote> {
       inventory_branch_id: quote.branch_id,
       pricing_branch_id: quote.branch_id,
       branch_name: quote.branch_name,
-      distance_km: 0,
-      road_distance_km: 0,
-      road_duration_minutes: null,
+      distance_km: Number(quote.road_distance_km || road.road_distance_km),
+      road_distance_km: Number(quote.road_distance_km || road.road_distance_km),
+      road_duration_minutes: Number(quote.road_duration_minutes || road.road_duration_minutes) || null,
+      estimated_delivery_minutes: Number(quote.road_duration_minutes || road.road_duration_minutes) || null,
     };
   }
 
-  const { data, error } = await rpc('quote_customer_cart_v3', {
+  const initial = await rpc('quote_customer_cart_v3', {
     p_items: checkoutLines(items),
     p_latitude: point.latitude,
     p_longitude: point.longitude,
   });
+  if (initial.error) throw initial.error;
+
+  const initialQuote = initial.data as Omit<CartQuote, 'road_distance_km' | 'road_duration_minutes'>;
+  if (!initialQuote?.delivery_branch_id) throw new Error('DELIVERY_UNAVAILABLE');
+
+  const road = await getStoreRoadQuote(
+    'owned',
+    initialQuote.delivery_branch_id,
+    point.latitude,
+    point.longitude,
+  );
+
+  const { data, error } = await rpc('quote_customer_cart_v4', {
+    p_items: checkoutLines(items),
+    p_latitude: point.latitude,
+    p_longitude: point.longitude,
+    p_route_quote_id: road.route_quote_id,
+  });
   if (error) throw error;
 
-  const base = data as Omit<CartQuote, 'road_distance_km' | 'road_duration_minutes'>;
-  if (!base?.delivery_branch_id) throw new Error('DELIVERY_UNAVAILABLE');
-  const route = await getRoadDistance(base.delivery_branch_id, point.latitude, point.longitude);
-  if (!route.deliverable) throw new Error('DELIVERY_UNAVAILABLE');
-  if (route.road_distance_km == null) throw new Error('ROUTE_DISTANCE_UNAVAILABLE');
+  const quote = data as CartQuote;
   return {
-    ...base,
+    ...quote,
     source_kind: 'owned',
-    distance_km: Number(route.road_distance_km),
-    road_distance_km: Number(route.road_distance_km),
-    road_duration_minutes: route.duration_minutes,
+    distance_km: Number(quote.road_distance_km || road.road_distance_km),
+    road_distance_km: Number(quote.road_distance_km || road.road_distance_km),
+    road_duration_minutes: Number(quote.road_duration_minutes || road.road_duration_minutes) || null,
+    estimated_delivery_minutes: Number(quote.road_duration_minutes || road.road_duration_minutes) || null,
   };
 }
 
@@ -277,6 +301,8 @@ const messages: Record<string, string> = {
   ROAD_QUOTE_EXPIRED: 'مسار التوصيل انتهت صلاحيته وتم تحديثه. حاول مرة تانية.',
   ROAD_QUOTE_MISMATCH: 'العنوان أو المتاجر اتغيروا أثناء حساب الطريق. راجع السلة.',
   ROUTE_QUOTE_STORE_FAILED: 'تعذر تثبيت مسار التوصيل حاليًا. حاول مرة تانية.',
+  STORE_ROUTE_FAILED: 'تعذر حساب طريق التوصيل حاليًا. حاول مرة تانية.',
+  INVALID_LOCATION: 'عنوان التوصيل غير صالح. راجع العنوان على الخريطة.',
   MULTISTORE_ROUTE_FAILED: 'تعذر حساب مسار المتاجر المجمّع حاليًا.',
   ROUTE_DISTANCE_UNAVAILABLE: 'تعذر حساب مسافة الطريق حاليًا. حاول مرة تانية بعد لحظات.',
   ROUTE_PROVIDER_UNAVAILABLE: 'تعذر الاتصال بخدمة الطرق حاليًا. حاول مرة تانية بعد لحظات.',

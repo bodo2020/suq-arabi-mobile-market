@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
+import { getStoreRoadQuote } from '@/lib/storeRoadRoute';
 
 export type MarketplaceCheckoutLine = {
   listing_id: string;
@@ -37,6 +38,13 @@ export type MarketplaceQuote = {
   minimum_order_met: boolean;
   estimated_time: string | null;
   estimated_delivery_minutes: number | null;
+  road_distance_km?: number;
+  road_duration_minutes?: number | null;
+  distance_source?: 'estimated_haversine' | 'verified_road_route';
+  route_quote_id?: string;
+  route_provider?: 'google' | 'osrm' | 'straight_line_fallback';
+  route_degraded?: boolean;
+  road_verified?: boolean;
 };
 
 export type PendingMarketplaceCheckout = {
@@ -91,18 +99,30 @@ export async function quoteMarketplaceOrder(items: MarketplaceCheckoutLine[], ad
     .single();
   if (addressError || !address || address.latitude == null || address.longitude == null) throw new Error('ADDRESS_REQUIRED');
 
-  const { data, error } = await rpc('quote_marketplace_cart_v1', {
+  const road = await getStoreRoadQuote(
+    'marketplace',
+    branchId,
+    Number(address.latitude),
+    Number(address.longitude),
+  );
+
+  const { data, error } = await rpc('quote_marketplace_cart_v2', {
     p_branch_id: branchId,
     p_items: items,
     p_latitude: Number(address.latitude),
     p_longitude: Number(address.longitude),
+    p_route_quote_id: road.route_quote_id,
   });
   if (error) throw error;
   return data as MarketplaceQuote;
 }
 
 export async function placeMarketplaceOrder(order: PendingMarketplaceCheckout) {
-  const { data, error } = await rpc('place_marketplace_order_v1', {
+  const freshQuote = await quoteMarketplaceOrder(order.items, order.addressId, order.branchId);
+  if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
+  if (!freshQuote.route_quote_id) throw new Error('ROAD_QUOTE_REQUIRED');
+
+  const { data, error } = await rpc('place_marketplace_order_v2', {
     p_request_id: order.requestId,
     p_branch_id: order.branchId,
     p_items: order.items,
@@ -110,6 +130,7 @@ export async function placeMarketplaceOrder(order: PendingMarketplaceCheckout) {
     p_payment_method: order.paymentMethod,
     p_notes: order.notes,
     p_quote_token: order.quoteToken,
+    p_route_quote_id: freshQuote.route_quote_id,
   });
   if (error) throw error;
   return data as PlacedMarketplaceOrder;
@@ -149,6 +170,13 @@ const messages: Record<string, string> = {
   INVALID_CART: 'راجع محتويات السلة.',
   INVALID_ORDER: 'راجع بيانات الطلب.',
   REQUEST_CONFLICT: 'تعذر استكمال المحاولة السابقة. راجع طلباتك.',
+  ROAD_QUOTE_REQUIRED: 'تعذر تثبيت مسار التوصيل. حاول مرة تانية.',
+  ROAD_QUOTE_EXPIRED: 'مسار التوصيل انتهت صلاحيته. راجع الملخص وحاول تاني.',
+  ROAD_QUOTE_MISMATCH: 'العنوان أو المتجر اتغير أثناء حساب الطريق.',
+  ROUTE_QUOTE_STORE_FAILED: 'تعذر تثبيت مسار الطريق حاليًا.',
+  STORE_ROUTE_FAILED: 'تعذر حساب طريق المتجر حاليًا.',
+  ROUTE_DISTANCE_UNAVAILABLE: 'تعذر حساب مسافة الطريق حاليًا.',
+  INVALID_LOCATION: 'عنوان التوصيل غير صالح. راجع العنوان على الخريطة.',
   SAAS_APP_SUSPENDED: 'الخدمة متوقفة مؤقتًا بواسطة إدارة المنصة.',
   SAAS_CAPABILITY_DISABLED: 'الطلبات الأونلاين متوقفة مؤقتًا بواسطة إدارة المنصة.',
 };
@@ -160,5 +188,5 @@ export function marketplaceCheckoutError(error: unknown) {
 
 export function marketplaceDefinitelyRejected(error: unknown) {
   const message = (error as { message?: string })?.message || '';
-  return ['PROFILE_REQUIRED','ADDRESS_REQUIRED','DELIVERY_ADDRESS_REQUIRED','DELIVERY_UNAVAILABLE','MARKETPLACE_STORE_UNAVAILABLE','MIXED_MERCHANT_CART','INSUFFICIENT_STOCK','PRODUCT_UNAVAILABLE','PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','MIN_ORDER_NOT_MET','QUOTE_CHANGED','INVALID_QUANTITY','INVALID_CART','INVALID_ORDER','SAAS_APP_SUSPENDED','SAAS_CAPABILITY_DISABLED'].includes(message);
+  return ['PROFILE_REQUIRED','ADDRESS_REQUIRED','DELIVERY_ADDRESS_REQUIRED','DELIVERY_UNAVAILABLE','MARKETPLACE_STORE_UNAVAILABLE','MIXED_MERCHANT_CART','ROAD_QUOTE_REQUIRED','ROAD_QUOTE_EXPIRED','ROAD_QUOTE_MISMATCH','ROUTE_QUOTE_STORE_FAILED','STORE_ROUTE_FAILED','ROUTE_DISTANCE_UNAVAILABLE','INVALID_LOCATION','INSUFFICIENT_STOCK','PRODUCT_UNAVAILABLE','PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','MIN_ORDER_NOT_MET','QUOTE_CHANGED','INVALID_QUANTITY','INVALID_CART','INVALID_ORDER','SAAS_APP_SUSPENDED','SAAS_CAPABILITY_DISABLED'].includes(message);
 }
