@@ -14,6 +14,29 @@ export type OrderEtaComponents = {
   uncertainty_minutes?: number;
   remaining_minutes?: number;
   full_order_minutes?: number;
+  ready_remaining_minutes?: number;
+  ready_eta?: string | null;
+  queue_ahead?: number;
+  queue_remaining_lines?: number;
+  active_pickers?: number;
+  available_drivers?: number;
+  busy_drivers?: number;
+  item_lines?: number;
+  remaining_lines?: number;
+  weight_lines?: number;
+  bulk_lines?: number;
+  progress_ratio?: number;
+  complexity_multiplier?: number;
+  pending_substitutions?: number;
+  pending_customer_substitutions?: number;
+  distance_km?: number;
+  route_duration_minutes?: number | null;
+  route_provider?: string | null;
+  route_degraded?: boolean | null;
+  branch_prep_samples?: number;
+  branch_dispatch_samples?: number;
+  branch_road_samples?: number;
+  confidence_score?: number;
 };
 
 export type OrderEta = {
