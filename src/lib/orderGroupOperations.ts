@@ -15,6 +15,53 @@ export type OrderGroupStoreOperation = {
   updated_at: string | null;
 };
 
+export type OrderGroupRouteStop = {
+  stop_order: number;
+  stop_type: 'pickup' | 'customer';
+  display_name: string;
+  status: string;
+  eta: string | null;
+  arrived_at: string | null;
+  completed_at: string | null;
+  ready: boolean;
+  has_issue: boolean;
+};
+
+export type OrderGroupRouteProgress = {
+  pickups_total: number;
+  pickups_completed: number;
+  pickups_arrived: number;
+  pickup_issues_open: number;
+  all_pickups_completed: boolean;
+  delivery_phase:
+    | 'waiting_dispatch'
+    | 'driver_assigned'
+    | 'heading_to_pickups'
+    | 'collecting_pickups'
+    | 'all_pickups_collected'
+    | 'on_the_way'
+    | 'arrived_customer'
+    | 'delivered'
+    | 'delivery_issue'
+    | 'return_to_branch'
+    | string;
+  next_pickup: {
+    stop_order: number;
+    display_name: string;
+    status: string;
+    eta: string | null;
+    has_issue: boolean;
+  } | null;
+};
+
+export type OrderGroupRoute = {
+  status: string;
+  driver_name: string | null;
+  distance_km: number | null;
+  estimated_minutes: number | null;
+  updated_at: string | null;
+};
+
 export type OrderGroupOperations = {
   group_id: string;
   status: string;
@@ -38,6 +85,9 @@ export type OrderGroupOperations = {
     updated_at?: string;
   };
   stores: OrderGroupStoreOperation[];
+  route: OrderGroupRoute | null;
+  route_progress: OrderGroupRouteProgress;
+  route_stops: OrderGroupRouteStop[];
   updated_at: string;
 };
 
