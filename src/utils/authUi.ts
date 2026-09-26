@@ -11,7 +11,8 @@ export const localPhoneDigits = (value: string, dialCode: string, country: strin
   return country === 'EG' && digits.startsWith('0') ? digits.slice(1) : digits;
 };
 
-export function authErrorMessage(error: { code?: string; status?: number }, fallback: string) {
+export function authErrorMessage(error: { code?: string; status?: number; message?: string }, fallback: string) {
+  if (error?.message?.includes('5 طلبات')) return error.message;
   if (error?.status === 429 || error?.code?.includes('rate_limit')) return 'محاولات كثيرة في وقت قصير. انتظر دقيقة ثم حاول مرة أخرى.';
   if (error?.code === 'otp_expired') return 'الرمز غير صحيح أو انتهت صلاحيته. راجعه أو اطلب رمزًا جديدًا.';
   if (error?.code === 'invalid_credentials') return 'رقم الموبايل أو كلمة المرور غير صحيحة.';

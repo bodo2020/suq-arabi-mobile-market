@@ -1,5 +1,5 @@
 import BrandLoader from '@/components/ui/BrandLoader';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, Phone, ShieldCheck } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -12,6 +12,7 @@ import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelecto
 import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
 import { safeReturnTo } from '@/lib/onboarding';
 import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
+import { shouldRouteRegisteredPhone } from '@/utils/otpRequest';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -52,6 +53,8 @@ export default function PhoneVerify() {
   );
   const [errors, setErrors] = useState({ phone: '', code: '' });
   const [initialSendDone, setInitialSendDone] = useState(false);
+  const sendInFlight = useRef(false);
+  const initialStarted = useRef(false);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -77,7 +80,7 @@ export default function PhoneVerify() {
       setErrors(prev => ({ ...prev, phone: 'اكتب رقم الموبايل.' }));
       return false;
     }
-    if (countryCode.code === 'EG' && !(digits.startsWith('1') && digits.length === 10)) {
+    if (countryCode.code !== 'EG' || !/^1[0125]\d{8}$/.test(digits)) {
       setErrors(prev => ({ ...prev, phone: 'اكتب رقم موبايل مصري صحيح، مثل 01012345678.' }));
       return false;
     }
@@ -85,16 +88,21 @@ export default function PhoneVerify() {
   };
 
   const sendOtp = async (isResend = false) => {
-    if (loading || resendLoading || (isResend && resendSeconds > 0)) return;
+    if (sendInFlight.current || loading || resendLoading || (isResend && resendSeconds > 0)) return;
     if (!validatePhone()) return;
+    const fullPhone = formatInternationalPhone(phone, countryCode);
+    const cooldownKey = `otp-cooldown:${fullPhone}`;
+    try {
+      const remaining = Math.ceil((Number(sessionStorage.getItem(cooldownKey) || 0) - Date.now()) / 1000);
+      if (remaining > 0) { setResendSeconds(remaining); return; }
+    } catch { /* Browser storage may be unavailable; server remains authoritative. */ }
+    sendInFlight.current = true;
 
     const setBusy = isResend ? setResendLoading : setLoading;
     setBusy(true);
     setRateLimitError(false);
     try {
-      const fullPhone = formatInternationalPhone(phone, countryCode);
-
-      if (!isRecovery) {
+      if (shouldRouteRegisteredPhone(isRecovery, isResend)) {
         const registered = await customerPhoneIsRegistered(fullPhone);
         if (registered) {
           setInitialSendDone(true);
@@ -116,6 +124,7 @@ export default function PhoneVerify() {
       setStep('verification');
       setCode('');
       setResendSeconds(60);
+      try { sessionStorage.setItem(cooldownKey, String(Date.now() + 60_000)); } catch { /* server cooldown still applies */ }
       setInitialSendDone(true);
       toast({
         title: isResend ? 'تم إعادة إرسال الرمز' : 'تم إرسال رمز التحقق',
@@ -124,6 +133,7 @@ export default function PhoneVerify() {
     } catch (error: any) {
       const rateLimited = error?.status === 429 || error?.code === 'over_sms_send_rate_limit';
       if (rateLimited) setRateLimitError(true);
+      if (rateLimited) setResendSeconds(60);
       toast({
         title: rateLimited ? 'تم تجاوز الحد المسموح' : 'تعذر إرسال الرمز',
         description: rateLimited
@@ -134,12 +144,14 @@ export default function PhoneVerify() {
         variant: 'destructive',
       });
     } finally {
+      sendInFlight.current = false;
       setBusy(false);
     }
   };
 
   useEffect(() => {
-    if (!phoneFromQuery || initialSendDone) return;
+    if (!phoneFromQuery || initialSendDone || initialStarted.current) return;
+    initialStarted.current = true;
     void sendOtp(false);
     // Send exactly once when arriving from login with a prefilled phone.
     // eslint-disable-next-line react-hooks/exhaustive-deps

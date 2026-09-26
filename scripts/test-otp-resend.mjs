@@ -1,0 +1,18 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+const code = ts.transpileModule(fs.readFileSync(new URL('../src/utils/otpRequest.ts', import.meta.url), 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+const context={exports:{}};
+vm.runInNewContext(code,context);
+const route=context.exports.shouldRouteRegisteredPhone;
+assert.equal(route(false,false),true);
+assert.equal(route(false,true),false);
+assert.equal(route(true,false),false);
+assert.equal(route(true,true),false);
+const page=fs.readFileSync(new URL('../src/pages/PhoneVerify.tsx',import.meta.url),'utf8');
+assert.match(page,/shouldRouteRegisteredPhone\(isRecovery, isResend\)/);
+assert.match(page,/sendInFlight\.current = true/);
+assert.match(page,/finally\s*\{\s*sendInFlight\.current = false/);
+assert.match(page,/otp-cooldown:/);
+console.log('PASS: resend/recovery bypass account routing; initial request routing retained; click lock and persistent cooldown wired.');
