@@ -54,7 +54,7 @@ export default function MarketplacePayment() {
       const saved = readPendingMarketplaceCheckout(user.id);
       if (saved) {
         setPending(saved);
-        setRequestId(saved.requestId);
+        setRequestId(saved.requestId as `${string}-${string}-${string}-${string}-${string}`);
         setPaymentMethod(saved.paymentMethod);
         setNotes(saved.notes || '');
         setSubstitutionPolicy(saved.substitutionPolicy);

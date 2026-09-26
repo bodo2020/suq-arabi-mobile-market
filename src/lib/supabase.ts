@@ -249,7 +249,7 @@ export async function searchProductByBarcode(barcode: string) {
 }
 
 export async function submitOrder(order: Omit<Order, 'id' | 'created_at'>) {
-  const { data, error } = await supabase.from('online_orders').insert([order]);
+  const { data, error } = await supabase.from('online_orders').insert([order] as never[]);
   if (error) console.error(`Error submitting order:`, error);
   return data;
 }
