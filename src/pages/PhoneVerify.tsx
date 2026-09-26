@@ -13,6 +13,7 @@ import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/aut
 import { safeReturnTo } from '@/lib/onboarding';
 import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
 import { shouldRouteRegisteredPhone } from '@/utils/otpRequest';
+import { savePhoneRecoveryProof } from '@/utils/phoneRecovery';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -173,6 +174,7 @@ export default function PhoneVerify() {
       if (!verifiedUser?.id) throw new Error('تعذر إنشاء جلسة بعد التحقق');
 
       if (isRecovery) {
+        savePhoneRecoveryProof(verifiedUser.id, fullPhone);
         navigate('/update-password?source=phone', { replace: true });
         return;
       }

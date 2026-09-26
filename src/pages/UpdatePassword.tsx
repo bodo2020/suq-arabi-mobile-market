@@ -1,6 +1,6 @@
 import BrandLoader from '@/components/ui/BrandLoader';
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, KeyRound, Loader } from 'lucide-react';
 import MainLayout from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,13 @@ import PasswordInput from '@/components/auth/PasswordInput';
 import { authErrorMessage } from '@/utils/authUi';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { clearPhoneRecoveryProof, readPhoneRecoveryProof, recoveryProofMatches } from '@/utils/phoneRecovery';
 
 const UpdatePassword = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const phoneRecovery = new URLSearchParams(location.search).get('source') === 'phone';
+  const updateInFlight = useRef(false);
   const { toast } = useToast();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,18 +28,20 @@ const UpdatePassword = () => {
     let mounted = true;
 
     const checkSession = async () => {
-      const { data, error: sessionError } = await supabase.auth.getSession();
-      if (!mounted) return;
-      setSessionValid(Boolean(data.session) && !sessionError);
-      setCheckingSession(false);
+      try {
+        const { data, error: sessionError } = await supabase.auth.getUser();
+        if (!mounted) return;
+        setSessionValid(Boolean(data.user) && !sessionError && (!phoneRecovery || recoveryProofMatches(readPhoneRecoveryProof(), data.user!)));
+      } catch { if (mounted) setSessionValid(false); }
+      finally { if (mounted) setCheckingSession(false); }
     };
 
     void checkSession();
     return () => { mounted = false; };
-  }, []);
+  }, [phoneRecovery]);
 
   const handleUpdatePassword = async () => {
-    if (loading || !sessionValid) return;
+    if (updateInFlight.current || loading || !sessionValid) return;
     setError('');
 
     if (password.length < 8) {
@@ -49,7 +55,13 @@ const UpdatePassword = () => {
     }
 
     setLoading(true);
+    updateInFlight.current = true;
     try {
+      const { data: current, error: currentError } = await supabase.auth.getUser();
+      if (currentError || !current.user || (phoneRecovery && !recoveryProofMatches(readPhoneRecoveryProof(), current.user))) {
+        setSessionValid(false);
+        throw new Error('RECOVERY_SESSION_EXPIRED');
+      }
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
 
@@ -58,10 +70,15 @@ const UpdatePassword = () => {
         description: 'يمكنك تسجيل الدخول الآن باستخدام كلمة المرور الجديدة.',
       });
 
-      await supabase.auth.signOut();
+      clearPhoneRecoveryProof();
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' });
+      if (signOutError) {
+        await supabase.auth.signOut({ scope: 'local' });
+        toast({ title: 'تم تغيير كلمة المرور', description: 'تعذر إنهاء الجلسات الأخرى. راجع أمان الحساب.', variant: 'destructive' });
+      }
       navigate('/phone-login', { replace: true });
     } catch (updateError: any) {
-      const message = authErrorMessage(updateError, 'تعذر تغيير كلمة المرور. حاول مرة أخرى أو اطلب رابط استعادة جديدًا.');
+      const message = updateError?.message === 'RECOVERY_SESSION_EXPIRED' ? 'انتهت جلسة الاستعادة. اطلب رمزًا جديدًا.' : authErrorMessage(updateError, 'تعذر تغيير كلمة المرور. حاول مرة أخرى أو اطلب رمز استعادة جديدًا.');
       setError(message);
       toast({
         title: 'تعذر تغيير كلمة المرور',
@@ -69,6 +86,7 @@ const UpdatePassword = () => {
         variant: 'destructive',
       });
     } finally {
+      updateInFlight.current = false;
       setLoading(false);
     }
   };

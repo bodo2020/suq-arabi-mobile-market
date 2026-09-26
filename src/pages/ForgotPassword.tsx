@@ -26,7 +26,7 @@ export default function ForgotPassword() {
       setError('اكتب رقم الموبايل.');
       return;
     }
-    if (country.code === 'EG' && !(digits.startsWith('1') && digits.length === 10)) {
+    if (country.code !== 'EG' || !/^1[0125]\d{8}$/.test(digits)) {
       setError('اكتب رقم موبايل مصري صحيح، مثل 01012345678.');
       return;
     }
