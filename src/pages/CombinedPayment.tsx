@@ -61,7 +61,7 @@ export default function CombinedPayment() {
       const saved = readPendingCombinedCheckout(user.id);
       if (saved) {
         setPending(saved);
-        setGroupId(saved.groupId);
+        setGroupId(saved.groupId as `${string}-${string}-${string}-${string}-${string}`);
         setPaymentMethod(saved.paymentMethod);
         setNotes(saved.notes || '');
         setSubstitutionPolicy(saved.substitutionPolicy);
