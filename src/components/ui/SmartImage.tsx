@@ -2,12 +2,14 @@ import React, { ImgHTMLAttributes, useEffect, useRef, useState } from 'react';
 
 interface SmartImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src?: string | null;
+  originalSrc?: string;
   fallbackSrc?: string;
   preloadMargin?: string;
 }
 
 const SmartImage: React.FC<SmartImageProps> = ({
   src,
+  originalSrc,
   fallbackSrc = '/placeholder.svg',
   preloadMargin = '700px 0px',
   className = '',
@@ -19,12 +21,14 @@ const SmartImage: React.FC<SmartImageProps> = ({
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [useOriginal,setUseOriginal]=useState(false);
   const source = String(src || '').trim() || fallbackSrc;
 
   useEffect(() => {
     setLoaded(false);
     setFailed(false);
     setAttempt(0);
+    setUseOriginal(false);
   }, [source]);
 
   useEffect(() => {
@@ -44,6 +48,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
   }, [preloadMargin]);
 
   const retry = () => {
+    if(originalSrc && source!==originalSrc && !useOriginal){setUseOriginal(true);return;}
     if (attempt >= 2) {
       setFailed(true);
       setLoaded(true);
@@ -55,7 +60,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
     }, 900 * (attempt + 1));
   };
 
-  const finalSource = failed ? fallbackSrc : source;
+  const finalSource = failed ? fallbackSrc : useOriginal && originalSrc ? originalSrc : source;
 
   return (
     <span ref={hostRef} className="relative block h-full w-full overflow-hidden bg-white">

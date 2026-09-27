@@ -65,10 +65,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 'added';
   }, [isInitialized, items]);
 
-  const removeFromCart = useCallback((productId: string, is_bulk?: boolean) => {
+  const removeFromCart = useCallback((productId: string, is_bulk?: boolean, listingId?: string | null) => {
     if (!isInitialized) return;
     setItems(currentItems => currentItems.filter(item => {
       if (item.product.id !== productId) return true;
+      if (listingId !== undefined && (item.marketplace_listing_id || null) !== listingId) return true;
       if (is_bulk === undefined) return false;
       return item.is_bulk !== is_bulk;
     }));
@@ -81,14 +82,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getTotalItems = useCallback(() => items.length, [items]);
 
-  const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean) => {
+  const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean, listingId?: string | null) => {
     if (quantity <= 0) {
-      removeFromCart(productId, is_bulk);
+      removeFromCart(productId, is_bulk, listingId);
       return;
     }
     if (!isInitialized) return;
     setItems(currentItems => currentItems.map(item => (
-      item.product.id === productId && item.is_bulk === (is_bulk || false)
+      item.product.id === productId && item.is_bulk === (is_bulk || false) && (listingId === undefined || (item.marketplace_listing_id || null) === listingId)
         ? { ...item, quantity }
         : item
     )));

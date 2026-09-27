@@ -58,8 +58,8 @@ export type CartContextType = {
   items: CartItem[];
   cart: { items: CartItem[] };
   addToCart: (product: CommerceProductInput) => CartAddResult;
-  removeFromCart: (productId: string, is_bulk?: boolean) => void;
-  updateQuantity: (productId: string, quantity: number, is_bulk?: boolean) => void;
+  removeFromCart: (productId: string, is_bulk?: boolean, listingId?: string | null) => void;
+  updateQuantity: (productId: string, quantity: number, is_bulk?: boolean, listingId?: string | null) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;

@@ -116,7 +116,7 @@ export default function Cart() {
           const bulkVariantId = item.is_bulk ? item.product.bulk_variant_id || null : null;
           const productHref = item.is_bulk
             ? `/product/${item.product.id}?unit=bulk${bulkVariantId ? `&variant=${encodeURIComponent(bulkVariantId)}` : ''}`
-            : `/product/${item.product.id}`;
+            : `/product/${item.product.id}${item.commerce_source === 'marketplace' && item.marketplace_branch_id ? `?store=${encodeURIComponent(item.marketplace_branch_id)}` : ''}`;
           const weightStep = isWeight ? productWeightStepGrams(item.product) : 0;
           const maxQuantity = isWeight
             ? Math.floor(availableStock * 1000)
@@ -135,7 +135,7 @@ export default function Cart() {
             <div>
               <div className="cart-line-heading">
                 <div><Link to={productHref} className="cart-product-name">{item.product.name}</Link><div className="mt-1 text-[11px] font-bold text-primary">{item.commerce_source === 'marketplace' ? (item.merchant_name || item.marketplace_branch_name || 'متجر شريك') : 'ماركت المعداوي'}</div><div className="cart-kind">{item.is_bulk ? <><Package size={14} />{bulkUnitType} · {money(bulkQty)} قطعة</> : isWeight ? <><Scale size={14} />بالوزن · الخطوة {formatWeightAmount(weightStep)}</> : 'بالقطعة'}</div></div>
-                <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>
+                <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk, item.marketplace_listing_id || null)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>
               </div>
               <p className="cart-unit-price">{money(unitPrice)} ج.م {item.is_bulk ? `/ ${bulkUnitType}` : isWeight ? '/ كجم' : '/ قطعة'}{line && <span className="mr-2 text-[11px] text-primary">سعر الفرع</span>}</p>
               <div className="cart-line-bottom">
@@ -144,7 +144,7 @@ export default function Cart() {
                     <button
                       disabled={!weightCanIncrease}
                       aria-label={atLimit ? `وصلت للوزن المتاح من ${item.product.name}` : `زيادة الوزن بمقدار ${formatWeightAmount(weightStep)}`}
-                      onClick={() => updateQuantity(item.product.id, Math.min(maxQuantity, item.quantity + weightStep), false)}
+                      onClick={() => updateQuantity(item.product.id, Math.min(maxQuantity, item.quantity + weightStep), false, item.marketplace_listing_id || null)}
                     ><Plus size={17} /></button>
                     <button
                       type="button"
@@ -155,14 +155,14 @@ export default function Cart() {
                     <button
                       aria-label={item.quantity <= weightStep ? `حذف ${item.product.name}` : `تقليل الوزن بمقدار ${formatWeightAmount(weightStep)}`}
                       onClick={() => item.quantity <= weightStep
-                        ? removeFromCart(item.product.id, false)
-                        : updateQuantity(item.product.id, Math.max(1, item.quantity - weightStep), false)}
+                        ? removeFromCart(item.product.id, false, item.marketplace_listing_id || null)
+                        : updateQuantity(item.product.id, Math.max(1, item.quantity - weightStep), false, item.marketplace_listing_id || null)}
                     >{item.quantity <= weightStep ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                   </div>
                 ) : <div className="cart-counter">
-                  <button disabled={atLimit || !serverReady} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk)}><Plus size={17} /></button>
+                  <button disabled={atLimit || !serverReady} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk, item.marketplace_listing_id || null)}><Plus size={17} /></button>
                   <output aria-label={`كمية ${item.product.name}`} aria-live="polite">{money(item.quantity)}</output>
-                  <button aria-label={item.quantity === 1 ? `حذف ${item.product.name}` : `تقليل كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity - 1, !!item.is_bulk)}>{item.quantity === 1 ? <Trash2 size={16} /> : <Minus size={17} />}</button>
+                  <button aria-label={item.quantity === 1 ? `حذف ${item.product.name}` : `تقليل كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity - 1, !!item.is_bulk, item.marketplace_listing_id || null)}>{item.quantity === 1 ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                 </div>}
                 <strong className="cart-line-total">{money(lineTotal)} <small>ج.م</small></strong>
               </div>

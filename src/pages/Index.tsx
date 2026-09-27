@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import StoreStructuredData from '@/components/seo/StoreStructuredData';
 import DynamicHomeSections from '@/components/sections/DynamicHomeSections';
-import NearbyMarketplaceStores from '@/components/sections/NearbyMarketplaceStores';
+import UnifiedCatalogSection from '@/components/sections/UnifiedCatalogSection';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import { readGuestAddress } from '@/lib/deliveryAddress';
@@ -43,12 +42,6 @@ const Index = () => {
   });
 
   const address = user ? addressQuery.data?.address || '' : guestAddress?.address || '';
-  const latitude = user ? addressQuery.data?.latitude : guestAddress?.latitude;
-  const longitude = user ? addressQuery.data?.longitude : guestAddress?.longitude;
-  const marketplaceLocationKey =
-    latitude != null && longitude != null
-      ? `${Number(latitude).toFixed(5)}:${Number(longitude).toFixed(5)}`
-      : '';
 
   const openAddress = () => {
     if (!user && !guestAddress) {
@@ -65,26 +58,21 @@ const Index = () => {
       <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
         <button
           onClick={openAddress}
-          className="mb-5 flex min-h-16 w-full items-center gap-3 rounded-2xl border border-green-100 bg-white p-4 text-right shadow-sm transition hover:border-green-200"
+          className="mb-5 flex w-full items-center gap-2 px-1 py-1.5 text-right transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           aria-label={address ? 'تغيير عنوان التوصيل' : 'إضافة عنوان توصيل'}
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary"><MapPin size={20} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs text-gray-500">التوصيل إلى</span>
-            <strong className="block truncate text-sm text-gray-900">
+          <span className="shrink-0 text-xs text-gray-500">التوصيل إلى</span>
+            <strong className="min-w-0 truncate text-sm font-bold text-primary">
               {authLoading || (user && addressQuery.isLoading)
                 ? 'جاري تحميل عنوانك…'
                 : user && addressQuery.isError
                   ? 'تعذّر تحميل العنوان — اضغط للمراجعة'
                   : address || 'حدد عنوانك على الخريطة'}
             </strong>
-            {!user && guestAddress && <span className="mt-1 block text-[11px] text-primary">ضيف · {Number(guestAddress.distance_km).toFixed(1)} كم من الفرع</span>}
-          </span>
-          <ChevronLeft size={20} className="text-primary" />
         </button>
 
-        <NearbyMarketplaceStores locationKey={marketplaceLocationKey} />
-        <DynamicHomeSections />
+        <DynamicHomeSections hidePromotions showBanners />
+        <UnifiedCatalogSection />
       </div>
     </MainLayout>
   );

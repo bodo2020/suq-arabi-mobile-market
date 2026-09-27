@@ -17,7 +17,6 @@ type ProductSection = {
   subcategoryId?: string;
 };
 
-const PREVIEW_LIMIT = 6;
 const CHIP_BAR_HEIGHT = 58;
 
 const CategoryDetail = () => {
@@ -171,11 +170,6 @@ const CategoryDetail = () => {
     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const openSubcategory = (section: ProductSection) => {
-    if (section.subcategoryId && id) navigate(`/category/${id}/subcategory/${section.subcategoryId}`);
-    else if (id) navigate(`/category/${id}/products`);
-  };
-
   if (loading) {
     return (
       <MainLayout>
@@ -257,7 +251,7 @@ const CategoryDetail = () => {
 
         <div className="space-y-6 px-3 sm:space-y-7 sm:px-5">
           {sections.map(section => {
-            const preview = getProductListWithVariants(section.products).slice(0, PREVIEW_LIMIT);
+            const sectionProducts = getProductListWithVariants(section.products);
             return (
               <section
                 key={section.id}
@@ -270,13 +264,10 @@ const CategoryDetail = () => {
                     <h2 className="truncate text-base font-black text-slate-950 sm:text-lg">{section.name}</h2>
                     <p className="mt-0.5 text-[11px] font-medium text-slate-400 sm:text-xs">{section.products.length} منتج</p>
                   </div>
-                  <button type="button" onClick={() => openSubcategory(section)} className="flex shrink-0 items-center gap-0.5 rounded-full px-2 py-1 text-xs font-bold text-[#005931] sm:text-sm">
-                    عرض الكل <ChevronLeft size={15} />
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                  {preview.map(product => <ProductCard key={product.variantKey || product.id} product={product} />)}
+                  {sectionProducts.map(product => <ProductCard key={product.variantKey || product.id} product={product} />)}
                 </div>
               </section>
             );

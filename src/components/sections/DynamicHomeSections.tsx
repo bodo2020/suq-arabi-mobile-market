@@ -98,7 +98,7 @@ const TrackedSection = ({
   );
 };
 
-const DynamicHomeSections = () => {
+const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { hidePromotions?: boolean; showBanners?: boolean }) => {
   const navigate = useNavigate();
   const { user } = useUser();
   const guestSessionKey = React.useMemo(() => getHomeAnalyticsSessionKey(), []);
@@ -122,8 +122,9 @@ const DynamicHomeSections = () => {
 
   const sections = React.useMemo<HomeSectionConfig[]>(() => {
     const configured = homeQuery.data?.sections;
-    return configured?.length ? configured : defaultHomeSections;
-  }, [homeQuery.data]);
+    const available = configured?.length ? configured : defaultHomeSections;
+    return hidePromotions ? available.filter(section => section.section_type === 'hero_banners' ? showBanners : !/(عروض|خصومات|فلاش|offers|flash)/i.test(section.title || '')) : available;
+  }, [homeQuery.data, hidePromotions, showBanners]);
 
   const needsBanners = sections.some(section => section.section_type === 'hero_banners');
   const needsCategories = sections.some(section => section.section_type === 'categories');
@@ -212,15 +213,15 @@ const DynamicHomeSections = () => {
     if (section.section_type === 'categories') {
       const categories = categoriesQuery.data || [];
       return (
-        <section className="rounded-3xl bg-white p-4 shadow-sm sm:p-6">
+        <section className="rounded-3xl bg-white p-2 shadow-sm sm:p-4">
           <SectionHeading title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle || 'وصل للي محتاجه بسرعة'} href="/categories" />
           {categoriesQuery.isLoading ? (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-7">{Array.from({ length: 7 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
+            <div className="grid grid-cols-3 gap-3">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
           ) : categoriesQuery.isError ? (
             <div className="rounded-2xl bg-gray-50 p-6 text-center"><p className="mb-3 text-sm text-gray-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
           ) : (
-            <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 scrollbar-hide md:grid md:grid-cols-6 md:overflow-visible lg:grid-cols-8">
-              {categories.map((cat: MainCategory) => <div key={cat.id} className="w-24 shrink-0 snap-start md:w-auto"><CategoryItem category={cat} onClick={() => navigate(`/category/${cat.id}`)} /></div>)}
+            <div className="grid grid-cols-3 gap-2">
+              {categories.map((cat: MainCategory) => <div key={cat.id} className="min-w-0"><CategoryItem category={cat} hideTitle onClick={() => navigate(`/category/${cat.id}`)} /></div>)}
             </div>
           )}
         </section>

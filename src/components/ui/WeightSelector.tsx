@@ -19,7 +19,7 @@ interface WeightSelectorProps {
 
 export default function WeightSelector({ product, isOpen, onClose, initialWeight, onSelect }: WeightSelectorProps) {
   const { items, addToCart, updateQuantity, isInitialized } = useCart();
-  const existing = items.find(item => item.product.id === product.id && item.unit_of_measure === 'weight' && !item.is_bulk);
+  const existing = items.find(item => item.product.id === product.id && (item.marketplace_listing_id || null) === (product.marketplace_listing_id || null) && item.unit_of_measure === 'weight' && !item.is_bulk);
   const step = productWeightStepGrams(product);
   const stockGrams = Math.max(0, Math.floor(Number(product.quantity || 0) * 1000));
   const maxAllowed = Math.min(MAX_WEIGHT_GRAMS, stockGrams);
@@ -59,7 +59,7 @@ export default function WeightSelector({ product, isOpen, onClose, initialWeight
       onClose();
       return;
     }
-    if (existing) updateQuantity(product.id, amount, false);
+    if (existing) updateQuantity(product.id, amount, false, product.marketplace_listing_id || null);
     else addToCart({ ...product, quantity: amount, price: product.price, unit_of_measure: 'weight', is_bulk: false });
     onClose();
   };

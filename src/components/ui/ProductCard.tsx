@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/useCart';
 import FavoriteButton from './FavoriteButton';
 import WeightSelector from './WeightSelector';
 import SmartImage from './SmartImage';
+import { productCardImage } from '@/lib/productCardImage';
 
 interface ProductCardProps {
   product: Product & { displayType?: 'regular' | 'bulk'; variantKey?: string };
@@ -36,7 +37,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const wantsBulk = product.displayType === 'bulk' || showBulkQuantity;
   const bulk = wantsBulk && hasBulkPurchase(product);
   const bulkAlternative = !bulk && !weighted && hasBulkPurchase(product);
-  const item = items.find(i => i.product.id === product.id && !!i.is_bulk === bulk && (weighted ? i.unit_of_measure === 'weight' : true));
+  const listingId = product.marketplace_listing_id || null;
+  const item = items.find(i => i.product.id === product.id && (i.marketplace_listing_id || null) === listingId && !!i.is_bulk === bulk && (weighted ? i.unit_of_measure === 'weight' : true));
   const pack = bulk ? Number(product.bulk_quantity || 1) : 1;
   const stock = Math.max(0, Number(product.quantity || 0));
   const maxCartQuantity = weighted ? Math.floor(stock * 1000) : bulk ? Math.floor(stock / Math.max(pack, 1)) : Math.floor(stock);
@@ -54,7 +56,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const variantId = bulk ? product.bulk_variant_id || null : null;
   const detailHref = bulk
     ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}`
-    : `/product/${product.id}`;
+    : `/product/${product.id}${product.commerce_source === 'marketplace' && product.marketplace_branch_id ? `?store=${encodeURIComponent(product.marketplace_branch_id)}` : ''}`;
   const imageSrc = bulkImageUrl || product.image_urls?.[0] || '/placeholder.svg';
 
   const selectedWeight = weighted
@@ -68,7 +70,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const addRegularOrBulk = () => {
     if (!isInitialized || unavailable || reachedStockLimit || weighted) return;
     if (item) {
-      updateQuantity(product.id, Math.min(item.quantity + 1, maxCartQuantity), bulk);
+      updateQuantity(product.id, Math.min(item.quantity + 1, maxCartQuantity), bulk, listingId);
       return;
     }
     addToCart({
@@ -96,30 +98,30 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const decreaseRegularOrBulk = () => {
     if (!isInitialized || !item || weighted) return;
     if (item.quantity <= 1) {
-      removeFromCart(product.id, bulk);
+      removeFromCart(product.id, bulk, listingId);
       return;
     }
-    updateQuantity(product.id, item.quantity - 1, bulk);
+    updateQuantity(product.id, item.quantity - 1, bulk, listingId);
   };
 
   const applyWeight = (grams: number) => {
     if (!weighted || maxCartQuantity <= 0 || !item) return;
     const next = Math.min(maxCartQuantity, Math.max(1, Math.round(grams)));
-    updateQuantity(product.id, next, false);
+    updateQuantity(product.id, next, false, listingId);
   };
 
   const increaseWeight = () => {
     if (!weighted || !isInitialized || !item || !weightCanIncrease) return;
-    updateQuantity(product.id, Math.min(maxCartQuantity, selectedWeight + weightStep), false);
+    updateQuantity(product.id, Math.min(maxCartQuantity, selectedWeight + weightStep), false, listingId);
   };
 
   const decreaseWeight = () => {
     if (!weighted || !isInitialized || !item) return;
     if (selectedWeight <= weightStep) {
-      removeFromCart(product.id, false);
+      removeFromCart(product.id, false, listingId);
       return;
     }
-    updateQuantity(product.id, Math.max(1, selectedWeight - weightStep), false);
+    updateQuantity(product.id, Math.max(1, selectedWeight - weightStep), false, listingId);
   };
 
   const toggleRestockReminder = async () => {
@@ -149,7 +151,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <Link to={detailHref} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
           <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5">
             <SmartImage
-              src={imageSrc}
+              src={productCardImage(imageSrc)}
+              originalSrc={imageSrc}
               alt={displayName}
               preloadMargin="800px 0px"
               className="h-full w-full object-contain transition-transform duration-300 motion-safe:group-hover/card:scale-[1.04]"

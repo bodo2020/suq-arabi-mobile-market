@@ -184,6 +184,19 @@ html.native-platform [role="button"] {
   overscroll-behavior-y: auto;
 }
 
+/* Keep map credits readable without covering the delivery pin or controls. */
+.delivery-map-canvas .leaflet-control-attribution {
+  font-size: 10px;
+  line-height: 1.6;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.94);
+  direction: ltr;
+}
+
+.delivery-map-canvas .leaflet-control-attribution a {
+  color: #005931;
+}
+
 .delivery-map-shell:not(.is-interactive) .delivery-map-canvas {
   pointer-events: none;
   touch-action: pan-y !important;

@@ -23,6 +23,7 @@ const CategoryItem = ({ category, hideTitle = false, onClick, variant = 'default
         to={`/category/${category.id}`}
         className="group flex w-full flex-col items-center justify-center rounded-2xl p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         onClick={handleClick}
+        aria-label={`تصفح قسم ${category.name}`}
       >
         <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-green-50 ring-1 ring-green-100 transition-transform group-hover:-translate-y-0.5">
           {category.image_url ? (

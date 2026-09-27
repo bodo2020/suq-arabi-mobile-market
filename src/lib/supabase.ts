@@ -1,5 +1,5 @@
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
-import { loadBranchRuntimeContext } from '@/lib/branchRuntime';
+import { loadBranchRuntimeContext, loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
 
 export const supabase = configuredSupabase;
 
@@ -170,8 +170,12 @@ export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Pr
   const runtime = await loadBranchRuntimeContext();
   if (!runtime?.delivery_branch_id) throw new Error('DELIVERY_ADDRESS_REQUIRED');
 
-  const { data, error } = await catalogRpc('get_customer_branch_catalog', {
+  const point = await loadSelectedDeliveryPoint();
+  if (!point) throw new Error('DELIVERY_ADDRESS_REQUIRED');
+  const { data, error } = await catalogRpc('get_customer_discovery_catalog_v1', {
     p_branch_id: runtime.delivery_branch_id,
+    p_latitude: point.latitude,
+    p_longitude: point.longitude,
     p_product_id: filters.productId || null,
     p_main_category_id: filters.mainCategoryId || null,
     p_subcategory_id: filters.subcategoryId || null,
@@ -185,13 +189,13 @@ export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Pr
 }
 
 export async function getCategories() {
-  const { data, error } = await supabase.from('main_categories').select('*');
+  const { data, error } = await supabase.from('main_categories').select('*').order('position').order('name');
   if (error) console.error('Error fetching categories:', error);
   return data as MainCategory[] || [];
 }
 
 export async function getSubcategories(categoryId?: string) {
-  let query = supabase.from('subcategories').select('*');
+  let query = supabase.from('subcategories').select('*').order('position').order('name');
   if (categoryId) query = query.eq('category_id', categoryId);
   const { data, error } = await query;
   if (error) console.error('Error fetching subcategories:', error);

@@ -28,6 +28,7 @@ const CategoryProducts = lazy(() => import('./pages/CategoryProducts'));
 const SubcategoryDetail = lazy(() => import('./pages/SubcategoryDetail'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Search = lazy(() => import('./pages/Search'));
+const Offers = lazy(() => import('./pages/Offers'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Payment = lazy(() => import('./pages/Payment'));
 const MarketplacePayment = lazy(() => import('./pages/MarketplacePayment'));
@@ -86,6 +87,8 @@ function App() {
                       <Route path="/" element={<Index />} />
                       <Route path="/stores" element={<MarketplaceStores />} />
                       <Route path="/stores/:branchId" element={<MarketplaceStore />} />
+                      <Route path="/offers" element={<Offers />} />
+                      <Route path="/flash-sale" element={<Offers />} />
                       <Route path="/categories" element={<Categories />} />
                       <Route path="/category/:id" element={<CategoryDetail />} />
                       <Route path="/category/:id/products" element={<CategoryProducts />} />

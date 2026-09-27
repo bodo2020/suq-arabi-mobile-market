@@ -10,6 +10,7 @@ import BreadcrumbStructuredData from '@/components/seo/BreadcrumbStructuredData'
 import SEOHead from '@/components/seo/SEOHead';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import WeightSelector from '@/components/ui/WeightSelector';
+import { getMarketplaceStore, getMarketplaceStoreProduct } from '@/lib/marketplace';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +26,7 @@ const ProductDetail = () => {
   const [searchParams] = useSearchParams();
   const requestedBulk = searchParams.get('unit') === 'bulk';
   const requestedVariantId = searchParams.get('variant');
+  const requestedStoreId = searchParams.get('store');
 
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -61,9 +63,10 @@ const ProductDetail = () => {
   const maxBulkQuantity = Math.floor(stock / pack);
   const weightStep = product && weighted ? productWeightStepGrams(product) : 0;
   const maxWeight = weighted ? Math.floor(stock * 1000) : 0;
-  const regularCartItem = items.find(item => item.product.id === id && !item.is_bulk && item.unit_of_measure !== 'weight');
-  const weightedCartItem = items.find(item => item.product.id === id && !item.is_bulk && item.unit_of_measure === 'weight');
-  const bulkCartItem = items.find(item => item.product.id === id && item.is_bulk);
+  const listingId = product?.marketplace_listing_id || null;
+  const regularCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && !item.is_bulk && item.unit_of_measure !== 'weight');
+  const weightedCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && !item.is_bulk && item.unit_of_measure === 'weight');
+  const bulkCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && item.is_bulk);
   const activeCartItem = bulkMode ? bulkCartItem : weighted ? weightedCartItem : regularCartItem;
   const currentWeight = weighted && product
     ? Math.min(maxWeight || weightStep, Math.max(1, Math.round(Number(weightedCartItem?.quantity || detailWeight || weightStep))))
@@ -100,7 +103,10 @@ const ProductDetail = () => {
       setDetailWeight(0);
 
       try {
-        const data = await getProductById(id);
+        const store = requestedStoreId ? await getMarketplaceStore(requestedStoreId) : null;
+        const data = requestedStoreId
+          ? store ? await getMarketplaceStoreProduct(requestedStoreId, id) : null
+          : await getProductById(id);
         if (!data) throw new Error('PRODUCT_NOT_FOUND');
         if (active) {
           const typed = data as Product;
@@ -117,7 +123,7 @@ const ProductDetail = () => {
 
     void fetchProduct();
     return () => { active = false; };
-  }, [id, requestedBulk, requestedVariantId]);
+  }, [id, requestedBulk, requestedVariantId, requestedStoreId]);
 
   useEffect(() => {
     if (!product) return;
@@ -202,10 +208,10 @@ const ProductDetail = () => {
     const max = bulk ? maxBulkQuantity : maxRegularQuantity;
     const next = item.quantity + delta;
     if (next <= 0) {
-      removeFromCart(product.id, bulk);
+      removeFromCart(product.id, bulk, listingId);
       return;
     }
-    updateQuantity(product.id, Math.min(max, next), bulk);
+    updateQuantity(product.id, Math.min(max, next), bulk, listingId);
   };
 
   const applyWeight = (grams: number) => {
@@ -213,7 +219,7 @@ const ProductDetail = () => {
     const next = Math.min(maxWeight, Math.max(1, Math.round(grams)));
     setDetailWeight(next);
     if (weightedCartItem) {
-      updateQuantity(product.id, next, false);
+      updateQuantity(product.id, next, false, listingId);
     } else {
       const result = addToCart({
         ...product,
@@ -230,10 +236,10 @@ const ProductDetail = () => {
     if (!product || !weightedCartItem || !isInitialized) return;
     const next = currentWeight + delta * weightStep;
     if (next <= 0 || (delta < 0 && currentWeight <= weightStep)) {
-      removeFromCart(product.id, false);
+      removeFromCart(product.id, false, listingId);
       return;
     }
-    updateQuantity(product.id, Math.min(maxWeight, next), false);
+    updateQuantity(product.id, Math.min(maxWeight, next), false, listingId);
   };
 
   const handleShare = async () => {
@@ -459,6 +465,7 @@ const ProductDetail = () => {
             </div>
 
             <h1 className="mt-4 text-[25px] font-black leading-[1.45] text-slate-950 sm:text-3xl">{displayName}</h1>
+            {product.commerce_source === 'marketplace' && product.marketplace_branch_id && <button type="button" onClick={() => navigate(`/stores/${product.marketplace_branch_id}`)} className="mt-3 w-full rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-right"><span className="block text-xs text-slate-500">يباع بواسطة</span><strong className="text-primary">{product.merchant_name || 'متجر شريك'}</strong><span className="mt-1 block text-xs text-primary">عرض جميع منتجات المتجر ←</span></button>}
             <p className="mt-1.5 text-sm font-medium text-slate-500">{unitDescription}</p>
 
             {bulkAvailable && !weighted && (

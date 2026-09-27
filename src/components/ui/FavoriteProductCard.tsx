@@ -6,6 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import FavoriteButton from './FavoriteButton';
 import { Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SmartImage from './SmartImage';
+import { productCardImage } from '@/lib/productCardImage';
 
 interface FavoriteProductCardProps {
   product: Product;
@@ -64,13 +66,16 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
       </div>
 
       <div className="relative pt-[100%] mb-3">
-        <img
-          src={productImage}
+        <div className="absolute inset-0">
+        <SmartImage
+          src={productCardImage(productImage)}
+          originalSrc={productImage}
           alt={product.name}
-          className="absolute top-0 right-0 w-full h-full object-contain"
+          className="w-full h-full object-contain"
           loading="lazy"
           decoding="async"
         />
+        </div>
         {discount > 0 && (
           <div className="absolute left-2 top-2 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full shadow animate-fade-in">
             {discount}% خصم
