@@ -9,6 +9,6 @@ type CustomerFunctions = {
 };
 export function customerRpc<K extends keyof CustomerFunctions>(name: K, args: CustomerFunctions[K]) {
   const rpc = supabase.rpc.bind(supabase) as unknown as
-    (name: K, args: CustomerFunctions[K]) => ReturnType<typeof supabase.rpc>;
+    (name: K, args: CustomerFunctions[K]) => Promise<{ data: unknown; error: { message: string } | null }>;
   return rpc(name, args);
 }

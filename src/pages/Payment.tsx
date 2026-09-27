@@ -87,7 +87,7 @@ const Payment = () => {
       const pending = readPendingCheckout(user.id);
       if (pending) {
         setPendingCheckout(pending);
-        setRequestId(pending.requestId);
+        setRequestId(pending.requestId as `${string}-${string}-${string}-${string}-${string}`);
         setPaymentMethod(pending.paymentMethod);
         setNotes(pending.notes || '');
         setSubstitutionPolicy(pending.substitutionPolicy);
@@ -239,7 +239,7 @@ const Payment = () => {
 
       const pending = await preparePendingCheckout(user.id, candidate);
       setPendingCheckout(pending);
-      setRequestId(pending.requestId);
+      setRequestId(pending.requestId as `${string}-${string}-${string}-${string}-${string}`);
 
       const placed = await placeOrder(pending);
       const cartMatchesPlacedAttempt = JSON.stringify(pending.items) === serializedLines;

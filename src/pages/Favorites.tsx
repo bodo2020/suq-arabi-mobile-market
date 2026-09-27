@@ -106,7 +106,7 @@ const Favorites = () => {
           displayType: 'regular' as const,
           variantKey: `regular:${product.id}`,
         };
-      }).filter((product): product is DisplayProduct => Boolean(product));
+      }).filter(Boolean) as DisplayProduct[];
 
       if (currentCustomer.current === id && requestVersion.current === version) {
         setDeliveryBranchId(branchId);
