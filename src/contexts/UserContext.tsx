@@ -167,7 +167,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         phone: normalizedPhone,
         password,
         options: {
-          channel: 'sms',
+          channel: 'whatsapp',
           data: metadata,
         },
       });
@@ -246,7 +246,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       const { data, error } = await supabase.auth.signInWithOtp({
         phone: normalizedPhone,
         options: {
-          channel: 'sms',
+          channel: 'whatsapp',
           shouldCreateUser,
         },
       });

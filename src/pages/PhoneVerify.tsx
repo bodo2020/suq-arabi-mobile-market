@@ -129,7 +129,7 @@ export default function PhoneVerify() {
       setInitialSendDone(true);
       toast({
         title: isResend ? 'تم إعادة إرسال الرمز' : 'تم إرسال رمز التحقق',
-        description: testOtp ? 'استخدم رمز الاختبار المخصص لإكمال التحقق.' : 'أدخل الرمز المكون من 6 أرقام.',
+        description: testOtp ? 'استخدم رمز الاختبار المخصص لإكمال التحقق.' : 'أدخل الرمز المرسل عبر واتساب والمكون من 6 أرقام.',
       });
     } catch (error: any) {
       const rateLimited = error?.status === 429 || error?.code === 'over_sms_send_rate_limit';
@@ -212,7 +212,7 @@ export default function PhoneVerify() {
                 <Phone size={26} />
               </div>
               <p className="text-center text-sm leading-6 text-slate-500">
-                {isRecovery ? 'اكتب رقم حسابك وهنبعتلك رمز لاستعادة كلمة المرور.' : 'اكتب رقمك وهتبعتلك رسالة واحدة لتأكيد إنشاء الحساب.'}
+                {isRecovery ? 'اكتب رقم حسابك وهنبعتلك رمز واتساب لاستعادة كلمة المرور.' : 'اكتب رقمك وهنبعتلك رمز تأكيد عبر واتساب لإنشاء الحساب.'}
               </p>
 
               <div>
@@ -252,7 +252,7 @@ export default function PhoneVerify() {
                 <ShieldCheck size={27} />
               </div>
               <p className="text-center text-sm leading-6 text-slate-500">
-                {isTestOtp ? 'أدخل رمز الاختبار' : 'أدخل الرمز المرسل إلى'}
+                {isTestOtp ? 'أدخل رمز الاختبار' : 'أدخل رمز واتساب المرسل إلى'}
                 <br />
                 <bdi dir="ltr" className="font-black text-slate-800">{formatInternationalPhone(phone, countryCode)}</bdi>
               </p>
