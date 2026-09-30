@@ -14,13 +14,13 @@ interface SEOHeadProps {
 const SEOHead: React.FC<SEOHeadProps> = ({
   title = "سوبر ماركو | تسوق المنتجات أونلاين",
   description = "تسوق المنتجات والعروض من سوبر ماركو أونلاين",
-  image = "/super-marko-icon.png",
+  image,
   url,
   type = "website"
 }) => {
   const currentUrl = url || getCurrentUrl();
   const baseUrl = getBaseUrl();
-  const fullImageUrl = image.startsWith('http') ? image : `${baseUrl}${image}`;
+  const fullImageUrl = image ? (image.startsWith('http') ? image : `${baseUrl}${image}`) : undefined;
 
   return (
     <Helmet>
@@ -32,14 +32,14 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       <meta property="og:url" content={currentUrl} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={fullImageUrl} />
+      {fullImageUrl && <meta property="og:image" content={fullImageUrl} />}
       
       {/* Twitter */}
-      <meta property="twitter:card" content="summary_large_image" />
+      <meta property="twitter:card" content={fullImageUrl ? "summary_large_image" : "summary"} />
       <meta property="twitter:url" content={currentUrl} />
       <meta property="twitter:title" content={title} />
       <meta property="twitter:description" content={description} />
-      <meta property="twitter:image" content={fullImageUrl} />
+      {fullImageUrl && <meta property="twitter:image" content={fullImageUrl} />}
       
       {/* Additional SEO */}
       <meta name="robots" content="index, follow" />

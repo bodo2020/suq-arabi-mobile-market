@@ -88,7 +88,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
             >
               <img
                 src={banner.image_url || '/placeholder.svg'}
-                alt={banner.title || 'عرض من المعداوي'}
+                alt={banner.title || 'عرض من سوبر ماركو'}
                 className="h-full w-full object-cover"
                 loading="lazy"
                 decoding="async"
