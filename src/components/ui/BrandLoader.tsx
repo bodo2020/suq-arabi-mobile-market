@@ -5,7 +5,7 @@ export default function BrandLoader({ size = 'md', label = 'جاري التحم�
   size?: 'sm' | 'md' | 'lg'; label?: string; className?: string;
 }) {
   return <span role="status" className={`brand-loader brand-loader--${size} ${className}`}>
-    <img src="/elmadawy-logo.png" alt="" width="64" height="64" draggable={false} />
+    <span aria-hidden="true" className="brand-loader__name">سوبر <strong>ماركو</strong></span>
     <span className="sr-only">{label}</span>
   </span>;
 }

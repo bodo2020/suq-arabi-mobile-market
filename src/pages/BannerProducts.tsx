@@ -133,8 +133,8 @@ const BannerProducts = () => {
   return (
     <MainLayout>
       <SEOHead
-        title={`${title} - المعداوي ماركت`}
-        description={`تسوق ${sourceLabel} من المعداوي ماركت`}
+        title={`${title} - سوبر ماركو`}
+        description={`تسوق ${sourceLabel} من سوبر ماركو`}
         image={banner?.image_url || undefined}
         type="product.group"
       />

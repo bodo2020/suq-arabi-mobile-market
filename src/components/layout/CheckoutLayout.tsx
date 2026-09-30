@@ -8,7 +8,7 @@ export default function CheckoutLayout({ children, step = 1, backTo, backLabel, 
   return <div className="checkout" dir="rtl">
     <header className="checkout-header">
       <Link to={backTo || (step === 1 ? '/' : '/cart')} className="checkout-back"><ArrowRight size={20} /><span>{backLabel || (step === 1 ? 'كمّل تسوّقك' : 'رجوع للسلة')}</span></Link>
-      <Link to="/" aria-label="المعداوي ماركت — الرئيسية"><img src="/elmadawy-logo.png" alt="المعداوي ماركت" /></Link>
+      <Link to="/" aria-label="سوبر ماركو — الرئيسية" className="brand-name">سوبر <strong>ماركو</strong></Link>
     </header>
     <main className="checkout-main">
       {showSteps && <ol className="checkout-steps" aria-label="خطوات الطلب">

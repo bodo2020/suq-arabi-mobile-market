@@ -12,9 +12,9 @@ interface SEOHeadProps {
 }
 
 const SEOHead: React.FC<SEOHeadProps> = ({
-  title = "متجرك الإلكتروني - أفضل المنتجات بأفضل الأسعار",
-  description = "اكتشف مجموعة واسعة من المنتجات عالية الجودة مع خدمة توصيل سريعة وآمنة",
-  image = "/favicon.ico",
+  title = "سوبر ماركو | تسوق المنتجات أونلاين",
+  description = "تسوق المنتجات والعروض من سوبر ماركو أونلاين",
+  image = "/super-marko-icon.png",
   url,
   type = "website"
 }) => {
