@@ -98,7 +98,7 @@ const Account = () => {
         ) : !user ? (
           <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
             <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary"><User size={30} /></span>
-            <h1 className="text-2xl font-bold">أهلًا بيك في المعداوي</h1>
+            <h1 className="text-2xl font-bold">أهلًا بيك في سوبر ماركو</h1>
             <p className="mb-6 mt-3 text-sm leading-7 text-gray-500">سجّل برقم موبايلك عشان تتابع مشترياتك ونقاطك وتحفظ عناوينك ومنتجاتك المفضلة.</p>
             <Button className="min-h-12 w-full rounded-xl text-base" onClick={() => navigate('/phone-login')}>تسجيل الدخول أو إنشاء حساب</Button>
             <Link to="/" className="mt-3 flex min-h-12 items-center justify-center rounded-xl text-sm font-semibold text-primary">كمّل تصفح المنتجات</Link>
@@ -109,7 +109,7 @@ const Account = () => {
               <div className="flex items-center gap-4">
                 <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-primary"><User size={30} /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-xs text-gray-500">حسابك في المعداوي</p>
+                  <p className="mb-1 text-xs text-gray-500">حسابك في سوبر ماركو</p>
                   <h1 className="break-words text-xl font-bold sm:text-2xl">{profile.isLoading ? 'جاري تحميل بياناتك…' : name}</h1>
                   {user.phone && <p dir="ltr" className="mt-2 text-right text-sm text-gray-500">+{user.phone.replace(/^\+/, '')}</p>}
                 </div>

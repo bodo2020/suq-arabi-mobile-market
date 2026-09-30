@@ -41,7 +41,7 @@ export default function PushNotificationsBootstrap() {
 
               if (!item) return;
               toast({
-                title: item.title || 'إشعار جديد من المعداوي ماركت',
+                title: item.title || 'إشعار جديد من سوبر ماركو',
                 description: item.body || undefined,
               });
             } catch {
@@ -69,7 +69,7 @@ export default function PushNotificationsBootstrap() {
       onReceived: event => {
         if (disposed) return;
         toast({
-          title: event.title || 'المعداوي ماركت',
+          title: event.title || 'سوبر ماركو',
           description: event.body || undefined,
         });
       },
@@ -107,7 +107,7 @@ export default function PushNotificationsBootstrap() {
               if (result !== 'granted') return;
               toast({
                 title: 'تم تفعيل الإشعارات',
-                description: 'هيوصلك تحديث الطلب والعروض المهمة من المعداوي ماركت.',
+                description: 'هيوصلك تحديث الطلب والعروض المهمة من سوبر ماركو.',
               });
             }).catch(error => console.warn('Push permission request failed:', error));
           }, 2500);

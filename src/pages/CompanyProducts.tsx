@@ -76,8 +76,8 @@ const CompanyProducts = () => {
   return (
     <MainLayout>
       <SEOHead
-        title={company ? `${company.name} - المعداوي ماركت` : 'الشركة - المعداوي ماركت'}
-        description={company?.description || (company ? `تسوق منتجات ${company.name} من المعداوي ماركت` : 'تسوق منتجات الشركات من المعداوي ماركت')}
+        title={company ? `${company.name} - سوبر ماركو` : 'الشركة - سوبر ماركو'}
+        description={company?.description || (company ? `تسوق منتجات ${company.name} من سوبر ماركو` : 'تسوق منتجات الشركات من سوبر ماركو')}
         image={company?.logo_url || undefined}
         type="product.group"
       />

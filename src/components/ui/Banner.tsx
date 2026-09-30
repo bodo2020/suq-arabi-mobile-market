@@ -49,7 +49,7 @@ const Banner: React.FC<BannerProps> = ({ banner, hideTitle = true }) => {
     >
       <img
         src={banner.image_url}
-        alt={banner.title || 'عرض من المعداوي'}
+        alt={banner.title || 'عرض من سوبر ماركو'}
         className="h-full w-full object-cover"
         loading="lazy"
         decoding="async"

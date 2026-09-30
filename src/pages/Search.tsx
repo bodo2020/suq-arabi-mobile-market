@@ -308,8 +308,8 @@ const Search = () => {
     <MainLayout>
       {query && (
         <SEOHead
-          title={`البحث عن "${query}" - ماركت المعداوي`}
-          description={`نتائج البحث عن ${query} في ماركت المعداوي`}
+          title={`البحث عن "${query}" - سوبر ماركو`}
+          description={`نتائج البحث عن ${query} في سوبر ماركو`}
           type="search"
         />
       )}

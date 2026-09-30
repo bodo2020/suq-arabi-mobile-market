@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import './auth.css';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -8,15 +8,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <main className="auth-page" dir="rtl">
       <header className="auth-brand">
-        <Link to="/" className="auth-brand-link" aria-label="المعداوي ماركت — الرئيسية">
-          <img src="/elmadawy-logo.png" alt="" width="49" height="49" className="rounded-xl" />
-          <span>المعداوي <strong>ماركت</strong></span>
+        <Link to="/" className="auth-brand-link" aria-label="سوبر ماركو — الرئيسية">
+          <span className="brand-name" aria-label="سوبر ماركو">سوبر <strong>ماركو</strong></span>
         </Link>
         <Link to="/" className="auth-guest">تصفح كضيف</Link>
       </header>
       <div className="auth-surface">
         <div className="auth-eyebrow"><ShieldCheck size={18} aria-hidden="true" />
-          {pathname === '/register' ? 'رقمك اتأكد · كمّل حسابك' : 'حسابك في المعداوي'}
+          {pathname === '/register' ? 'رقمك اتأكد · كمّل حسابك' : 'حسابك في سوبر ماركو'}
         </div>
         {children}
       </div>

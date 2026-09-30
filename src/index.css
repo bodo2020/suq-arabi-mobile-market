@@ -75,8 +75,10 @@ html.native-android #root {
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
  
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
+    --primary: 153 100% 17.5%;
+    --brand-yellow: 45 100% 56.3%;
+    --brand-yellow-ink: 40 100% 34%;
+    --primary-foreground: 0 0% 100%;
  
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -92,7 +94,7 @@ html.native-android #root {
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 153 100% 17.5%;
  
     --radius: 0.5rem;
   }
@@ -107,7 +109,9 @@ html.native-android #root {
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
  
-    --primary: 142.1 70.6% 45.3%;
+    --primary: 153 100% 25%;
+    --brand-yellow: 45 100% 56.3%;
+    --brand-yellow-ink: 45 100% 56.3%;
     --primary-foreground: 144.9 80.4% 10%;
  
     --secondary: 217.2 32.6% 17.5%;
@@ -330,3 +334,8 @@ html.native-platform [role="button"] {
   word-break: break-word;
   height: auto;
 }
+
+/* Super Marko brand wordmark: text only until the official Figma asset is available. */
+.brand-name { display: inline-flex; align-items: center; gap: .25em; white-space: nowrap; font-family: Cairo, sans-serif; font-size: 1.4rem; line-height: 1.4; font-weight: 900; color: hsl(var(--primary)); }
+.brand-name strong { color: hsl(var(--brand-yellow-ink)); font-weight: 900; }
+.brand-name--header { font-size: clamp(1rem, 2vw, 1.35rem); }

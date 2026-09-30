@@ -104,7 +104,7 @@ async function createAndroidChannels() {
   const channels = [
     { id: 'orders', name: 'متابعة الطلبات', description: 'حالة الطلب والتجهيز والتوصيل', importance: 4 },
     { id: 'offers', name: 'العروض والتذكيرات', description: 'العروض وتذكير السلة', importance: 3 },
-    { id: 'general', name: 'إشعارات المعداوي ماركت', description: 'الإشعارات العامة', importance: 3 },
+    { id: 'general', name: 'إشعارات سوبر ماركو', description: 'الإشعارات العامة', importance: 3 },
   ];
   for (const channel of channels) {
     try {
