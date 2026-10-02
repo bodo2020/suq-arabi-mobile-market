@@ -98,8 +98,8 @@ const CreateReturnRequest = () => {
             <BrandLoader label="جاري تحميل بيانات الطلب" />
           </div>
         ) : !session || !user ? (
-          <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
-            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary">
+          <section className="mx-auto max-w-md rounded-3xl border border-[#d8ebdf] bg-white p-7 text-center shadow-sm">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-primary">
               <RotateCcw size={30} />
             </span>
             <h1 className="text-2xl font-bold">سجّل دخولك أولًا</h1>
@@ -136,7 +136,7 @@ const CreateReturnRequest = () => {
           </section>
         ) : (
           <div className="space-y-5">
-            <section className="rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-7">
+            <section className="rounded-3xl border border-[#d8ebdf] bg-gradient-to-l from-[#eaf6ee] via-white to-[#fff5d3] p-5 sm:p-7">
               <div className="flex items-center gap-2 text-primary">
                 <RotateCcw size={24} />
                 <h1 className="text-2xl font-bold">استرجاع من الطلب</h1>

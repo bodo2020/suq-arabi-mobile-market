@@ -188,11 +188,18 @@ const Notifications = () => {
       <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
         {authLoading ? (
           <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل الإشعارات" /></div>
-        ) : !session || !user ? null : (
+        ) : !session || !user ? (
+          <section className="mx-auto max-w-md rounded-3xl border border-[#d8ebdf] bg-white p-7 text-center shadow-sm">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]"><Bell size={30} /></span>
+            <h1 className="text-xl font-black">إشعاراتك محفوظة في حسابك</h1>
+            <p className="mt-2 text-sm leading-6 text-slate-500">سجّل دخولك عشان تتابع تحديثات طلباتك.</p>
+            <Button className="mt-5 min-h-12 w-full" onClick={() => navigate('/phone-login?returnTo=%2Fnotifications')}>تسجيل الدخول</Button>
+          </section>
+        ) : (
           <div className="space-y-4">
-            <section className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
+            <section className="flex items-center justify-between gap-3 rounded-2xl border border-[#d8ebdf] bg-white p-4 shadow-sm sm:p-5">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff5d3] text-primary">
                   <Bell size={22} />
                 </span>
                 <div className="min-w-0">
@@ -209,7 +216,7 @@ const Notifications = () => {
                   variant="outline"
                   onClick={() => void markAllRead()}
                   disabled={markingAll}
-                  className="min-h-10 shrink-0 rounded-xl border-green-200 px-3 text-xs font-bold text-primary"
+                  className="min-h-10 shrink-0 rounded-xl border-[#c8e0d2] px-3 text-xs font-bold text-primary"
                 >
                   {markingAll ? <BrandLoader size="sm" /> : <CheckCheck size={16} className="ml-1.5" />}
                   {markingAll ? 'جاري الحفظ' : 'قراءة الكل'}
@@ -218,7 +225,7 @@ const Notifications = () => {
             </section>
 
             {pushPermission !== 'unsupported' && pushPermission !== 'checking' && (
-              <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-green-100 bg-green-50/70 p-4 sm:p-5">
+              <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d8ebdf] bg-gradient-to-l from-[#eaf6ee] to-[#fff5d3] p-4 sm:p-5">
                 <div className="flex min-w-0 items-start gap-3">
                   <Bell size={21} className="mt-0.5 shrink-0 text-primary" />
                   <div>
@@ -240,9 +247,9 @@ const Notifications = () => {
               </section>
             )}
 
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5">
-              <button type="button" onClick={() => setFilter('all')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>الكل</button>
-              <button type="button" onClick={() => setFilter('unread')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'unread' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>غير مقروء ({unreadCount.toLocaleString('ar-EG')})</button>
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#eaf6ee] p-1.5">
+              <button type="button" aria-pressed={filter === 'all'} onClick={() => setFilter('all')} className={`min-h-11 rounded-xl px-3 text-sm font-bold ${filter === 'all' ? 'bg-[#005931] text-white shadow-sm' : 'text-[#005931] hover:bg-[#fff5d3]'}`}>الكل</button>
+              <button type="button" aria-pressed={filter === 'unread'} onClick={() => setFilter('unread')} className={`min-h-11 rounded-xl px-3 text-sm font-bold ${filter === 'unread' ? 'bg-[#005931] text-white shadow-sm' : 'text-[#005931] hover:bg-[#fff5d3]'}`}>غير مقروء ({unreadCount.toLocaleString('ar-EG')})</button>
             </div>
 
             {notifications.isLoading ? (
@@ -254,8 +261,8 @@ const Notifications = () => {
                 <Button className="mt-5 rounded-xl" onClick={() => void notifications.refetch()}>إعادة المحاولة</Button>
               </section>
             ) : items.length === 0 ? (
-              <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 text-gray-400"><Bell size={30} /></span>
+              <section className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white p-8 text-center shadow-sm">
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]"><Bell size={30} /></span>
                 <h2 className="mt-4 text-xl font-bold">{filter === 'unread' ? 'مفيش إشعارات جديدة' : 'مفيش إشعارات لسه'}</h2>
               </section>
             ) : (
@@ -267,7 +274,7 @@ const Notifications = () => {
                       key={item.id}
                       type="button"
                       onClick={() => void openNotification(item)}
-                      className={`w-full rounded-2xl border p-4 text-right shadow-sm transition active:scale-[0.995] sm:p-5 ${item.read_at ? 'border-gray-100 bg-white' : 'border-green-100 bg-green-50/40'}`}
+                      className={`w-full rounded-2xl border p-4 text-right shadow-sm transition active:scale-[0.995] sm:p-5 ${item.read_at ? 'border-[#d8ebdf] bg-white' : 'border-[#9acbb2] bg-[#eaf6ee]'}`}
                     >
                       <div className="flex items-start gap-3">
                         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${severityClasses(item.severity)}`}>
@@ -280,11 +287,11 @@ const Notifications = () => {
                           </span>
                           <span className="mt-1.5 block text-sm leading-6 text-gray-600">{item.body}</span>
                           <span className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">{categoryLabel(item.category)}</span>
+                            <span className="rounded-full bg-[#fff5d3] px-2 py-1 font-bold text-[#005931]">{categoryLabel(item.category)}</span>
                             {(item.action_url || item.metadata?.order_id) && <span className="font-semibold text-primary">{item.action_label || 'فتح التفاصيل'}</span>}
                           </span>
                         </span>
-                        {!item.read_at && <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label="غير مقروء" />}
+                        {!item.read_at && <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[#FFC120] ring-2 ring-[#005931]" aria-label="غير مقروء" />}
                       </div>
                     </button>
                   );

@@ -234,15 +234,15 @@ export default function PurchaseHistory() {
       <TopNavBar hideLogo hideSearch hideCart pageTitle="مشترياتي" />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         {!session ? (
-          <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
-            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary"><Package size={30} /></span>
+          <section className="mx-auto max-w-md rounded-3xl border border-[#d8ebdf] bg-white p-7 text-center shadow-sm">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-primary"><Package size={30} /></span>
             <h1 className="text-2xl font-bold">مشترياتك محفوظة في حسابك</h1>
             <p className="mb-6 mt-3 text-sm leading-7 text-gray-500">سجّل دخولك عشان تشوف طلبات التوصيل وفواتير الفرع المرتبطة ببطاقتك.</p>
             <Button className="min-h-12 w-full rounded-xl text-base" onClick={() => navigate('/phone-verify?returnTo=%2Faccount')}>تسجيل الدخول</Button>
           </section>
         ) : (
           <div className="space-y-5">
-            <section className="rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-7">
+            <section className="rounded-3xl border border-[#d8ebdf] bg-gradient-to-l from-[#eaf6ee] via-white to-[#fff5d3] p-5 sm:p-7">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="flex items-center gap-2 text-primary"><ReceiptText size={24} /><h1 className="text-2xl font-bold">مشترياتك كلها</h1></div>
@@ -255,16 +255,16 @@ export default function PurchaseHistory() {
               </div>
               {!isLoading && !isError && (
                 <div className="mt-5 grid grid-cols-3 gap-3 sm:max-w-lg">
-                  <div className="rounded-2xl bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">جارية</p><p className="mt-1 text-2xl font-bold text-primary">{current.length}</p></div>
-                  <div className="rounded-2xl bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">من الفرع</p><p className="mt-1 text-2xl font-bold">{storeCount}</p></div>
-                  <div className="rounded-2xl bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">أونلاين</p><p className="mt-1 text-2xl font-bold">{onlineCount}</p></div>
+                  <div className="rounded-2xl border border-[#d8ebdf] bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">جارية</p><p className="mt-1 text-2xl font-black text-primary">{current.length}</p></div>
+                  <div className="rounded-2xl border border-[#d8ebdf] bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">من الفرع</p><p className="mt-1 text-2xl font-black text-primary">{storeCount}</p></div>
+                  <div className="rounded-2xl border border-[#d8ebdf] bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">أونلاين</p><p className="mt-1 text-2xl font-black text-primary">{onlineCount}</p></div>
                 </div>
               )}
             </section>
 
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5">
-              <button type="button" onClick={() => setActiveTab('current')} className={`min-h-12 rounded-xl px-3 text-sm font-semibold transition ${activeTab === 'current' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>الجارية ({current.length})</button>
-              <button type="button" onClick={() => setActiveTab('previous')} className={`min-h-12 rounded-xl px-3 text-sm font-semibold transition ${activeTab === 'previous' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>السابقة ({previous.length})</button>
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#eaf6ee] p-1.5">
+              <button type="button" aria-pressed={activeTab === 'current'} onClick={() => setActiveTab('current')} className={`min-h-12 rounded-xl px-3 text-sm font-bold transition ${activeTab === 'current' ? 'bg-[#005931] text-white shadow-sm' : 'text-[#005931] hover:bg-[#fff5d3]'}`}>الجارية ({current.length})</button>
+              <button type="button" aria-pressed={activeTab === 'previous'} onClick={() => setActiveTab('previous')} className={`min-h-12 rounded-xl px-3 text-sm font-bold transition ${activeTab === 'previous' ? 'bg-[#005931] text-white shadow-sm' : 'text-[#005931] hover:bg-[#fff5d3]'}`}>السابقة ({previous.length})</button>
             </div>
 
             {isLoading ? (
@@ -272,7 +272,7 @@ export default function PurchaseHistory() {
             ) : isError ? (
               <section role="alert" className="rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm"><XCircle className="mx-auto text-red-500" size={36} /><h2 className="mt-4 text-xl font-bold">تعذّر تحميل المشتريات</h2><p className="my-3 text-sm text-gray-500">راجع اتصالك وحاول مرة تانية.</p><Button onClick={() => void refetch()}>إعادة المحاولة</Button></section>
             ) : active.length === 0 ? (
-              <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 text-gray-400"><ShoppingBag size={30} /></span><h2 className="mt-4 text-xl font-bold">{activeTab === 'current' ? 'مفيش طلبات جارية دلوقتي' : 'مفيش مشتريات سابقة'}</h2><Button className="mt-6 min-h-12 rounded-xl px-8" onClick={() => navigate('/')}>تسوق الآن</Button></section>
+              <section className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white p-8 text-center shadow-sm"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]"><ShoppingBag size={30} /></span><h2 className="mt-4 text-xl font-bold">{activeTab === 'current' ? 'مفيش طلبات جارية دلوقتي' : 'مفيش مشتريات سابقة'}</h2><Button className="mt-6 min-h-12 rounded-xl px-8" onClick={() => navigate('/')}>تسوق الآن</Button></section>
             ) : (
               <div className="space-y-4">
                 {active.map(purchase => {
@@ -291,12 +291,12 @@ export default function PurchaseHistory() {
                   const groupPhase = routePhaseMeta(groupRouteProgress?.delivery_phase);
 
                   return (
-                    <article id={`purchase-${purchase.id}`} key={`${purchase.source_channel}-${purchase.id}`} className="scroll-mt-28 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+                    <article id={`purchase-${purchase.id}`} key={`${purchase.source_channel}-${purchase.id}`} className="scroll-mt-28 overflow-hidden rounded-3xl border border-[#d8ebdf] bg-white shadow-[0_5px_18px_rgba(0,89,49,0.05)]">
                       <div className="p-5 sm:p-6">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${storePurchase ? 'bg-emerald-50 text-emerald-800' : 'bg-blue-50 text-blue-800'}`}>
+                              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${storePurchase ? 'bg-[#fff5d3] text-[#005931]' : 'bg-[#eaf6ee] text-[#005931]'}`}>
                                 {storePurchase ? <Store size={13} /> : <Truck size={13} />}
                                 {storePurchase ? 'شراء من الفرع' : purchase.is_multi_store ? `طلب مجمّع · ${Number(purchase.stores_count || 0).toLocaleString('ar-EG')} متاجر` : 'طلب أونلاين'}
                               </span>

@@ -165,14 +165,14 @@ const Favorites = () => {
     <MainLayout>
       <TopNavBar hideLogo hideSearch hideCart pageTitle="المفضلة" />
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
-        <div className="mb-6 rounded-3xl bg-green-50 p-5 sm:p-7">
+        <div className="mb-6 rounded-3xl border border-[#d8ebdf] bg-gradient-to-l from-[#eaf6ee] via-white to-[#fff5d3] p-5 sm:p-7">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-primary"><Heart size={25} />حاجات بتحبها</h1>
           <p className="mt-2 text-sm leading-6 text-gray-600">المفضلة بتفضل محفوظة حتى لو المنتج خلص. ولو مش متوفر تقدر تفعل «نبّهني عند التوفر» وهنبلغك أول ما يرجع في فرعك.</p>
         </div>
 
         {user && !loading && !error && favorites.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-3">
-            <input type="search" aria-label="البحث في المفضلة" placeholder="دور في المفضلة…" value={query} onChange={event => setQuery(event.target.value)} className="min-h-12 min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4" />
+            <input type="search" aria-label="البحث في المفضلة" placeholder="دور في المفضلة…" value={query} onChange={event => setQuery(event.target.value)} className="min-h-12 min-w-0 flex-1 rounded-xl border border-[#c8e0d2] bg-white px-4 outline-none focus:border-[#005931] focus:ring-2 focus:ring-[#fff5d3]" />
             <p role="status" className="w-full text-sm text-gray-500">{visible.length} من {favorites.length} اختيار في المفضلة</p>
           </div>
         )}
@@ -182,16 +182,16 @@ const Favorites = () => {
             {[...Array(8)].map((_, index) => <ProductCardSkeleton key={index} />)}
           </div>
         ) : !user ? (
-          <div className="mx-auto flex max-w-md flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100"><Heart size={32} className="text-gray-300" /></div>
+          <div className="mx-auto flex max-w-md flex-col items-center justify-center rounded-3xl border border-[#d8ebdf] bg-white px-5 py-12 text-center">
+            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#fff5d3]"><Heart size={32} className="text-[#005931]" /></div>
             <h3 className="mb-2 text-lg font-medium text-gray-900">تسجيل الدخول مطلوب</h3>
             <p className="mb-6 text-sm text-gray-500">سجّل دخولك لعرض منتجاتك المفضلة.</p>
             <Button onClick={() => navigate('/phone-login')} className="min-w-32">تسجيل الدخول</Button>
           </div>
         ) : error ? (
-          <div role="alert" className="rounded-3xl bg-white p-8 text-center"><h2 className="text-lg font-bold">تعذّر تحميل المفضلة</h2><p className="my-3 text-gray-500">راجع اتصالك وحاول تاني.</p><Button onClick={() => setRetry(value => value + 1)}>إعادة المحاولة</Button></div>
+          <div role="alert" className="rounded-3xl border border-red-100 bg-white p-8 text-center"><h2 className="text-lg font-bold">تعذّر تحميل المفضلة</h2><p className="my-3 text-gray-500">راجع اتصالك وحاول تاني.</p><Button onClick={() => setRetry(value => value + 1)}>إعادة المحاولة</Button></div>
         ) : favorites.length > 0 && visible.length === 0 ? (
-          <div className="rounded-3xl bg-white p-8 text-center"><h2 className="text-lg font-bold">مفيش منتجات مطابقة</h2><p className="my-3 text-gray-500">جرّب كلمة بحث مختلفة.</p><Button variant="outline" onClick={() => setQuery('')}>مسح البحث</Button></div>
+          <div className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white p-8 text-center"><h2 className="text-lg font-bold">مفيش منتجات مطابقة</h2><p className="my-3 text-gray-500">جرّب كلمة بحث مختلفة.</p><Button variant="outline" onClick={() => setQuery('')}>مسح البحث</Button></div>
         ) : favorites.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {visible.map(product => {
@@ -209,8 +209,8 @@ const Favorites = () => {
             })}
           </div>
         ) : (
-          <div className="mx-auto flex max-w-md flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100"><Heart size={32} className="text-gray-300" /></div>
+          <div className="mx-auto flex max-w-md flex-col items-center justify-center rounded-3xl border border-dashed border-[#c8e0d2] bg-white px-5 py-12 text-center">
+            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#fff5d3]"><Heart size={32} className="text-[#005931]" /></div>
             <h3 className="mb-2 text-lg font-medium text-gray-900">المفضلة فاضية</h3>
             <p className="mb-6 text-sm text-gray-500">ضيف المنتجات اللي بتحبها وهتفضل ظاهرة هنا حتى لو خلصت مؤقتًا.</p>
             <Button onClick={() => navigate('/')} className="min-w-32"><ShoppingBag size={16} className="ml-2" />تسوق الآن</Button>
