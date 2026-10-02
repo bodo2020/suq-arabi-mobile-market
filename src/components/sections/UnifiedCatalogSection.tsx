@@ -1,16 +1,58 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import { getProducts } from '@/lib/supabase';
 import { useBranch } from '@/contexts/BranchContext';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import { Button } from '@/components/ui/button';
-export default function UnifiedCatalogSection(){
- const {branch,branchLoading}=useBranch(),[limit,setLimit]=useState(24);
- const catalog=useQuery({queryKey:['unified-home-catalog',branch?.delivery_branch_id],queryFn:()=>getProducts(),enabled:!!branch?.delivery_branch_id,staleTime:15000,refetchOnWindowFocus:true});
- if(!branchLoading&&!branch)return null;
- return <section className="mt-6 rounded-[28px] border border-slate-100 bg-white p-4 shadow-[0_4px_20px_rgba(0,50,28,0.04)] sm:p-6"><div className="mb-5 flex items-center justify-between"><div><h2 className="text-xl font-black">اختياراتك اليومية</h2><p className="mt-1 text-xs text-slate-500">منتجات متنوعة جاهزة لطلبك</p></div><Link to="/search" className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-primary">بحث ←</Link></div>
- {catalog.isLoading||branchLoading?<div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">{Array.from({length:6}).map((_,i)=><ProductCardSkeleton key={i}/>)}</div>:catalog.isError?<div className="text-center"><p className="text-sm text-slate-500">تعذر تحميل المنتجات</p><Button variant="outline" onClick={()=>catalog.refetch()}>إعادة المحاولة</Button></div>:<><div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">{catalog.data?.slice(0,limit).map(p=><ProductCard key={p.id} product={p}/>)}</div>{(catalog.data?.length||0)>limit&&<Button variant="outline" className="mx-auto mt-5 block" onClick={()=>setLimit(v=>v+24)}>عرض منتجات أكثر</Button>}</>}
- </section>;
+import { getProductListWithVariants } from '@/utils/productUtils';
+
+export default function UnifiedCatalogSection() {
+  const { branch, branchLoading } = useBranch();
+  const [limit, setLimit] = useState(12);
+  const catalog = useQuery({
+    queryKey: ['home-catalog-products', branch?.delivery_branch_id],
+    queryFn: () => getProducts(),
+    enabled: Boolean(branch?.delivery_branch_id),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const products = useMemo(() => getProductListWithVariants(catalog.data || []), [catalog.data]);
+
+  if (!branchLoading && !branch) return null;
+
+  return (
+    <section className="rounded-[28px] border border-[#d8ebdf] bg-white p-4 shadow-[0_8px_28px_rgba(0,89,49,0.05)] sm:p-6">
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff5d3] text-[#005931]"><ShoppingBag size={20} /></span>
+          <div className="min-w-0">
+            <h2 className="text-xl font-black text-[#005931]">اختياراتك اليومية</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-500">منتجات الفرع المتاحة لعنوانك في مكان واحد</p>
+          </div>
+        </div>
+        <Link to="/search" className="flex min-h-10 shrink-0 items-center gap-1 rounded-xl bg-[#fff5d3] px-3 text-xs font-bold text-[#005931] hover:bg-[#ffe78d]">بحث <ArrowLeft size={15} /></Link>
+      </div>
+
+      {catalog.isLoading || branchLoading ? (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, index) => <ProductCardSkeleton key={index} />)}</div>
+      ) : catalog.isError ? (
+        <div className="rounded-2xl bg-[#f3f8f4] p-6 text-center">
+          <p className="text-sm text-slate-600">تعذّر تحميل المنتجات</p>
+          <Button variant="outline" className="mt-3 border-[#c8e0d2] text-[#005931]" onClick={() => void catalog.refetch()}>إعادة المحاولة</Button>
+        </div>
+      ) : products.length ? (
+        <>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-6">
+            {products.slice(0, limit).map(product => <ProductCard key={product.variantKey} product={product} hideIfUnavailable={false} />)}
+          </div>
+          {products.length > limit && <Button variant="outline" className="mx-auto mt-5 flex min-h-11 rounded-xl border-[#c8e0d2] px-5 text-[#005931] hover:bg-[#fff5d3]" onClick={() => setLimit(value => value + 12)}>عرض منتجات أكثر</Button>}
+        </>
+      ) : (
+        <p className="rounded-2xl bg-[#f3f8f4] p-6 text-center text-sm text-slate-600">مفيش منتجات متاحة لعنوانك حاليًا.</p>
+      )}
+    </section>
+  );
 }

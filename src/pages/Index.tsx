@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
@@ -55,20 +56,24 @@ const Index = () => {
     <MainLayout>
       <StoreStructuredData />
       <TopNavBar onSearchFocus={() => navigate('/search')} />
-      <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
+      <div className="mx-auto max-w-7xl space-y-5 px-3 pb-10 pt-4 sm:px-4 md:pt-6">
         <button
           onClick={openAddress}
-          className="mb-5 flex w-full items-center gap-2 px-1 py-1.5 text-right transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-[#d8ebdf] bg-white px-3 py-2.5 text-right shadow-[0_6px_20px_rgba(0,89,49,0.04)] transition hover:border-[#9acbb2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-4"
           aria-label={address ? 'تغيير عنوان التوصيل' : 'إضافة عنوان توصيل'}
         >
-          <span className="shrink-0 text-xs text-gray-500">التوصيل إلى</span>
-            <strong className="min-w-0 truncate text-sm font-bold text-primary">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff5d3] text-[#005931]"><MapPin size={20} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] font-semibold text-slate-500">التوصيل إلى</span>
+            <strong className="mt-0.5 block truncate text-sm font-bold text-[#005931]">
               {authLoading || (user && addressQuery.isLoading)
                 ? 'جاري تحميل عنوانك…'
                 : user && addressQuery.isError
                   ? 'تعذّر تحميل العنوان — اضغط للمراجعة'
                   : address || 'حدد عنوانك على الخريطة'}
             </strong>
+          </span>
+          <ChevronLeft size={18} className="shrink-0 text-[#005931]" />
         </button>
 
         <DynamicHomeSections hidePromotions showBanners />
