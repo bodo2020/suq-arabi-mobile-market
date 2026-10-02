@@ -102,7 +102,7 @@ const ReturnRequests = () => {
                     disabled={isFetching}
                     onClick={() => void refetch()}
                   >
-                    <RefreshCw size={16} className={`ml-2 ${isFetching ? 'animate-spin' : ''}`} />
+                    <RefreshCw size={16} className={`ml-2 ${isFetching ? 'brand-pulse-icon' : ''}`} />
                     تحديث
                   </Button>
                   <Button variant="outline" className="min-h-11 rounded-xl bg-white" onClick={() => navigate('/orders')}>

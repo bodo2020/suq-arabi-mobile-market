@@ -11,8 +11,8 @@ export default {
   prefix: "",
   theme: {
     fontFamily: {
-      sans: ['Cairo', 'sans-serif'],
-      cairo: ['Cairo', 'sans-serif'],
+      sans: ['Thmanyah', 'system-ui', 'sans-serif'],
+      cairo: ['Thmanyah', 'system-ui', 'sans-serif'],
     },
     container: {
       center: true,
@@ -23,6 +23,10 @@ export default {
     },
     extend: {
       colors: {
+        brandYellow: {
+          DEFAULT: '#FFC120',
+          soft: '#FFF5D3',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

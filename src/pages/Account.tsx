@@ -98,7 +98,7 @@ const Account = () => {
         ) : !user ? (
           <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
             <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary"><User size={30} /></span>
-            <h1 className="text-2xl font-bold">أهلًا بيك في المعداوي</h1>
+            <h1 className="text-2xl font-bold">أهلًا بيك في ســــــوبـرمــــاركو</h1>
             <p className="mb-6 mt-3 text-sm leading-7 text-gray-500">سجّل برقم موبايلك عشان تتابع مشترياتك ونقاطك وتحفظ عناوينك ومنتجاتك المفضلة.</p>
             <Button className="min-h-12 w-full rounded-xl text-base" onClick={() => navigate('/phone-login')}>تسجيل الدخول أو إنشاء حساب</Button>
             <Link to="/" className="mt-3 flex min-h-12 items-center justify-center rounded-xl text-sm font-semibold text-primary">كمّل تصفح المنتجات</Link>
@@ -109,7 +109,7 @@ const Account = () => {
               <div className="flex items-center gap-4">
                 <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-primary"><User size={30} /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-xs text-gray-500">حسابك في المعداوي</p>
+                  <p className="mb-1 text-xs text-gray-500">حسابك في ســــــوبـرمــــاركو</p>
                   <h1 className="break-words text-xl font-bold sm:text-2xl">{profile.isLoading ? 'جاري تحميل بياناتك…' : name}</h1>
                   {user.phone && <p dir="ltr" className="mt-2 text-right text-sm text-gray-500">+{user.phone.replace(/^\+/, '')}</p>}
                 </div>
@@ -118,14 +118,14 @@ const Account = () => {
               <Link to="/edit-account" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold transition hover:bg-gray-50"><Pencil size={17} />تعديل بياناتي</Link>
             </section>
 
-            <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-[#005931] text-white shadow-[0_18px_50px_rgba(0,89,49,0.18)]" aria-label="بطاقة ولاء المعداوي">
+            <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-[#005931] text-white shadow-[0_18px_50px_rgba(0,89,49,0.18)]" aria-label="بطاقة ولاء ســــــوبـرمــــاركو">
               <div className="p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-emerald-100"><Gift size={18} />بطاقة المعداوي</div>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-[#FFF5D3]"><Gift size={18} className="text-[#FFC120]" />بطاقة ســــــوبـرمــــاركو</div>
                     <h2 className="mt-1 text-xl font-black">نقاطك ومشترياتك في مكان واحد</h2>
                   </div>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10"><Sparkles size={22} /></span>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#FFC120]"><Sparkles size={22} /></span>
                 </div>
 
                 {loyalty.isLoading ? (
@@ -150,7 +150,7 @@ const Account = () => {
                       </div>
                     </div>
 
-                    <Link to="/vouchers" className="mt-4 flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-[#005931] shadow-sm transition hover:bg-emerald-50">
+                    <Link to="/vouchers" className="mt-4 flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-[#FFC120] px-4 py-3 text-sm font-black text-[#005931] shadow-sm transition hover:bg-[#FFD257]">
                       <Ticket size={19} />
                       تحويل النقاط إلى كوبون خصم / عرض كوبوناتي
                     </Link>

@@ -389,8 +389,8 @@ const ProductDetail = () => {
   return (
     <MainLayout>
       <SEOHead
-        title={`${displayName} - المعداوي`}
-        description={product.description || `اشتري ${displayName} من المعداوي`}
+        title={`${displayName} - ســــــوبـرمــــاركو`}
+        description={product.description || `اشتري ${displayName} من ســــــوبـرمــــاركو`}
         image={images[0]}
         type="product"
       />

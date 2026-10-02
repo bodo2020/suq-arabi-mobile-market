@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Clock3, Gift, Package, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,11 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
+import {
+  getNativePushPermission,
+  requestCustomerPushPermissionAndRegister,
+  type CustomerPushPermissionResult,
+} from '@/services/pushNotifications';
 import {
   fetchCustomerNotificationCenterV2,
   markAllCustomerNotificationsReadV2,
@@ -69,6 +74,42 @@ const Notifications = () => {
   const { toast } = useToast();
   const [filter, setFilter] = useState<Filter>('all');
   const [markingAll, setMarkingAll] = useState(false);
+  const [pushPermission, setPushPermission] = useState<CustomerPushPermissionResult | 'prompt' | 'checking'>('checking');
+  const [requestingPush, setRequestingPush] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    const refreshPermission = () => {
+      void getNativePushPermission()
+        .then(permission => { if (active) setPushPermission(permission); })
+        .catch(() => { if (active) setPushPermission('unsupported'); });
+    };
+    refreshPermission();
+    document.addEventListener('visibilitychange', refreshPermission);
+    return () => {
+      active = false;
+      document.removeEventListener('visibilitychange', refreshPermission);
+    };
+  }, [user?.id]);
+
+  const enablePush = async () => {
+    if (requestingPush) return;
+    setRequestingPush(true);
+    try {
+      const permission = await requestCustomerPushPermissionAndRegister();
+      setPushPermission(permission);
+      if (permission === 'granted') {
+        toast({ title: 'تم تفعيل إشعارات الجهاز', description: 'هيوصلك تحديث طلباتك حتى لو التطبيق مقفول.' });
+      } else if (permission === 'denied') {
+        toast({ title: 'إشعارات الجهاز غير مفعلة', description: 'لو مظهرش طلب الإذن، فعّل الإشعارات من إعدادات التطبيق في الهاتف.' });
+      }
+    } catch {
+      toast({ title: 'تعذر تفعيل الإشعارات', description: 'حاول مرة تانية بعد التأكد من الاتصال بالإنترنت.', variant: 'destructive' });
+    } finally {
+      setRequestingPush(false);
+    }
+  };
 
   const notifications = useQuery({
     queryKey: ['customer-notification-center-v2', user?.id, filter],
@@ -175,6 +216,29 @@ const Notifications = () => {
                 </Button>
               )}
             </section>
+
+            {pushPermission !== 'unsupported' && pushPermission !== 'checking' && (
+              <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-green-100 bg-green-50/70 p-4 sm:p-5">
+                <div className="flex min-w-0 items-start gap-3">
+                  <Bell size={21} className="mt-0.5 shrink-0 text-primary" />
+                  <div>
+                    <h2 className="text-sm font-bold text-gray-950">إشعارات الهاتف</h2>
+                    <p className="mt-1 text-xs leading-5 text-gray-600">
+                      {pushPermission === 'granted'
+                        ? 'مفعّلة. هيوصلك تنبيه بتحديثات طلباتك المهمة.'
+                        : pushPermission === 'denied'
+                          ? 'غير مفعّلة. لو الهاتف منع طلب الإذن، فعّلها من إعدادات التطبيق.'
+                          : 'فعّلها علشان يوصلك تحديث الطلب حتى لو التطبيق مقفول.'}
+                    </p>
+                  </div>
+                </div>
+                {pushPermission !== 'granted' && (
+                  <Button type="button" onClick={() => void enablePush()} disabled={requestingPush} className="min-h-10 rounded-xl text-xs font-bold">
+                    {requestingPush ? 'جاري التفعيل...' : 'تفعيل الإشعارات'}
+                  </Button>
+                )}
+              </section>
+            )}
 
             <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5">
               <button type="button" onClick={() => setFilter('all')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>الكل</button>

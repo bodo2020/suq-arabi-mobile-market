@@ -94,7 +94,7 @@ export default function Vouchers() {
         <section className="overflow-hidden rounded-3xl bg-[#005931] p-5 text-white shadow-lg sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} /><span className="text-sm font-bold">نقاط المعداوي</span></div>
+              <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} /><span className="text-sm font-bold">نقاط ســــــوبـرمــــاركو</span></div>
               <div className="mt-2 text-4xl font-black">{Number(card?.points_balance || 0).toLocaleString('ar-EG')} <span className="text-lg font-semibold">نقطة</span></div>
               <p className="mt-2 text-sm text-emerald-50/90">كل {redemptionPoints.toLocaleString('ar-EG')} نقطة = كوبون خصم بقيمة {money(redemptionValue)}.</p>
             </div>
@@ -146,7 +146,7 @@ export default function Vouchers() {
                 <Card key={voucher.id} className="overflow-hidden rounded-3xl border-emerald-100 shadow-sm">
                   <div className="bg-gradient-to-l from-emerald-50 to-white p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <div><p className="text-xs font-bold text-primary">كوبون خصم المعداوي</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
+                      <div><p className="text-xs font-bold text-primary">كوبون خصم ســــــوبـرمــــاركو</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
                       <Badge className={statusMeta[voucher.status].className}>{statusMeta[voucher.status].label}</Badge>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-3">

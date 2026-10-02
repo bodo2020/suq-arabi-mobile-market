@@ -17,7 +17,7 @@ export default function CartSourceConflictNotifier() {
       if (detail.reason === 'partner_limit') {
         toast({
           title: 'وصلت للحد الأقصى للمحلات الشريكة',
-          description: 'تقدر تجمع فرع المعداوي مع محلين شركاء بحد أقصى. احذف محل شريك من السلة قبل إضافة ' + (detail.incomingMerchant || 'المتجر الجديد') + '.',
+          description: 'تقدر تجمع فرع ســــــوبـرمــــاركو مع محلين شركاء بحد أقصى. احذف محل شريك من السلة قبل إضافة ' + (detail.incomingMerchant || 'المتجر الجديد') + '.',
           variant: 'destructive',
         });
         return;
@@ -25,7 +25,7 @@ export default function CartSourceConflictNotifier() {
       if (detail.reason === 'hub_mismatch') {
         toast({
           title: 'المتجر مش على نفس رحلة التوصيل',
-          description: 'المحلات المجمعة لازم تكون تابعة لنفس فرع المعداوي المسؤول عن عنوانك.',
+          description: 'المحلات المجمعة لازم تكون تابعة لنفس فرع ســــــوبـرمــــاركو المسؤول عن عنوانك.',
           variant: 'destructive',
         });
         return;

@@ -1,4 +1,5 @@
 import { getBranchCatalog, getCurrentDeliveryBranchId, supabase, type Product } from '@/lib/supabase';
+import { buildProductSearchQueries, rankProductSearchResults } from '@/lib/smartProductSearch';
 
 const rpc = supabase.rpc.bind(supabase) as unknown as (
   name: string,
@@ -13,17 +14,40 @@ async function requireDeliveryBranchId() {
 
 export async function searchBranchProductsIncludingUnavailable(query: string): Promise<Product[]> {
   const branchId = await requireDeliveryBranchId();
-  const [owned, discovery] = await Promise.all([rpc('search_customer_branch_catalog_v1', {
-    p_branch_id: branchId,
-    p_search: query.trim() || null,
-    p_barcode: null,
-    p_limit: 300,
-  }), getBranchCatalog({search: query, limit: 300})]);
-  if (owned.error) throw owned.error;
+  const variants = buildProductSearchQueries(query);
+  if (!variants.length) return [];
+
+  // The catalog RPCs still use literal matching. Search a small set of Arabic
+  // spelling variants and familiar product aliases, then merge and rank once.
+  const searches = await Promise.all(variants.map(async variant => {
+    const [owned, discovery] = await Promise.allSettled([
+      rpc('search_customer_branch_catalog_v1', {
+        p_branch_id: branchId,
+        p_search: variant,
+        p_barcode: null,
+        p_limit: 300,
+      }),
+      getBranchCatalog({ search: variant, limit: 300 }),
+    ]);
+    return {
+      owned: owned.status === 'fulfilled' && !owned.value.error
+        ? (Array.isArray(owned.value.data) ? owned.value.data : []) as Product[]
+        : null,
+      discovery: discovery.status === 'fulfilled' ? discovery.value : null,
+      error: owned.status === 'fulfilled' ? owned.value.error : owned.reason,
+    };
+  }));
+
+  if (searches.every(result => result.owned === null && result.discovery === null)) {
+    throw searches[0].error || new Error('SEARCH_UNAVAILABLE');
+  }
+
   const merged = new Map<string, Product>();
-  for (const row of (Array.isArray(owned.data) ? owned.data : []) as Product[]) merged.set(row.id, row);
-  for (const row of discovery) merged.set(row.id, row);
-  return [...merged.values()];
+  for (const result of searches) {
+    for (const row of result.owned || []) if (!merged.has(row.id)) merged.set(row.id, row);
+    for (const row of result.discovery || []) merged.set(row.id, row);
+  }
+  return rankProductSearchResults([...merged.values()], query, variants);
 }
 
 export async function searchBranchProductByBarcodeIncludingUnavailable(barcode: string): Promise<Product | null> {

@@ -68,7 +68,7 @@ export const getHomeAnalyticsSessionKey = () => {
 export const defaultHomeSections: HomeSectionConfig[] = [
   { id: 'fallback-banners', section_key: 'fallback-banners', section_type: 'hero_banners', title: 'العروض', sort_order: 10, is_active: true },
   { id: 'fallback-categories', section_key: 'fallback-categories', section_type: 'categories', title: 'تسوق حسب القسم', subtitle: 'وصل للي محتاجه بسرعة', sort_order: 20, is_active: true },
-  { id: 'fallback-collections', section_key: 'fallback-collections', section_type: 'product_collection', title: 'مختارات المعداوي', sort_order: 30, is_active: true, data_source: { all: true } },
+  { id: 'fallback-collections', section_key: 'fallback-collections', section_type: 'product_collection', title: 'مختارات ســــــوبـرمــــاركو', sort_order: 30, is_active: true, data_source: { all: true } },
 ];
 
 export const getPublicHomePage = async (

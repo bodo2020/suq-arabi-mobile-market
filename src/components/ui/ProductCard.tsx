@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, BellRing, Loader2, Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
+import { Bell, BellRing, Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
+import BrandLoader from './BrandLoader';
 import { Product } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 import { useCart } from '@/contexts/useCart';
@@ -254,7 +255,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               className={`mt-1.5 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-xl border px-2 text-[9px] font-black transition sm:mt-2 sm:min-h-10 sm:text-xs ${restockReminderActive ? 'border-emerald-200 bg-emerald-50 text-[#005931]' : 'border-slate-200 bg-slate-50 text-slate-700'} disabled:opacity-60`}
               aria-pressed={restockReminderActive}
             >
-              {reminderPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : restockReminderActive ? <BellRing className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+              {reminderPending ? <BrandLoader size="xs" /> : restockReminderActive ? <BellRing className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
               <span>{restockReminderActive ? 'التذكير مفعّل' : 'نبّهني عند التوفر'}</span>
             </button>
           ) : (

@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import './checkout.css';
 import './checkout-native.css';
+import { BRAND_NAME, BRAND_WORDMARK } from '@/lib/brand';
 
 export default function CheckoutLayout({ children, step = 1, backTo, backLabel, showSteps = true }: { children: ReactNode; step?: 1 | 2; backTo?: string; backLabel?: string; showSteps?: boolean }) {
   return <div className="checkout" dir="rtl">
     <header className="checkout-header">
       <Link to={backTo || (step === 1 ? '/' : '/cart')} className="checkout-back"><ArrowRight size={20} /><span>{backLabel || (step === 1 ? 'كمّل تسوّقك' : 'رجوع للسلة')}</span></Link>
-      <Link to="/" aria-label="المعداوي ماركت — الرئيسية"><img src="/elmadawy-logo.png" alt="المعداوي ماركت" /></Link>
+      <Link to="/" aria-label={`${BRAND_NAME} — الرئيسية`}><img src={BRAND_WORDMARK} alt={BRAND_NAME} /></Link>
     </header>
     <main className="checkout-main">
       {showSteps && <ol className="checkout-steps" aria-label="خطوات الطلب">

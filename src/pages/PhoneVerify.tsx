@@ -14,6 +14,7 @@ import { safeReturnTo } from '@/lib/onboarding';
 import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
 import { shouldRouteRegisteredPhone } from '@/utils/otpRequest';
 import { savePhoneRecoveryProof } from '@/utils/phoneRecovery';
+import OtpWhatsAppHelp from '@/components/auth/OtpWhatsAppHelp';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -47,6 +48,7 @@ export default function PhoneVerify() {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [rateLimitError, setRateLimitError] = useState(false);
+  const [sendFailed, setSendFailed] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [isTestOtp, setIsTestOtp] = useState(false);
   const [countryCode, setCountryCode] = useState<Country>(
@@ -102,6 +104,7 @@ export default function PhoneVerify() {
     const setBusy = isResend ? setResendLoading : setLoading;
     setBusy(true);
     setRateLimitError(false);
+    setSendFailed(false);
     try {
       if (shouldRouteRegisteredPhone(isRecovery, isResend)) {
         const registered = await customerPhoneIsRegistered(fullPhone);
@@ -132,6 +135,7 @@ export default function PhoneVerify() {
         description: testOtp ? 'استخدم رمز الاختبار المخصص لإكمال التحقق.' : 'أدخل الرمز المكون من 6 أرقام.',
       });
     } catch (error: any) {
+      setSendFailed(true);
       const rateLimited = error?.status === 429 || error?.code === 'over_sms_send_rate_limit';
       if (rateLimited) setRateLimitError(true);
       if (rateLimited) setResendSeconds(60);
@@ -231,7 +235,7 @@ export default function PhoneVerify() {
                     autoComplete="tel-national"
                     value={phone}
                     disabled={loading}
-                    onChange={event => { setPhone(event.target.value); setErrors(prev => ({ ...prev, phone: '' })); }}
+                    onChange={event => { setPhone(event.target.value); setSendFailed(false); setErrors(prev => ({ ...prev, phone: '' })); }}
                     onKeyDown={event => { if (event.key === 'Enter') void sendOtp(false); }}
                     placeholder={countryCode.code === 'EG' ? '010 1234 5678' : 'رقم الموبايل'}
                     className="h-auto flex-1 border-0 bg-transparent px-2 text-left text-base font-semibold shadow-none focus-visible:ring-0"
@@ -245,6 +249,7 @@ export default function PhoneVerify() {
               <Button onClick={() => void sendOtp(false)} disabled={loading} className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black">
                 {loading ? <><BrandLoader size="sm" className="ml-2" />جاري إرسال الرمز</> : 'إرسال رمز التحقق'}
               </Button>
+              {sendFailed && <OtpWhatsAppHelp />}
             </div>
           ) : (
             <div className="space-y-5">
@@ -289,6 +294,7 @@ export default function PhoneVerify() {
                   <button type="button" onClick={() => { setStep('phone'); setCode(''); setInitialSendDone(true); }} className="min-h-10 text-slate-500">تغيير رقم الموبايل</button>
                 </div>
               </div>
+              {(sendFailed || (initialSendDone && resendSeconds === 0)) && <OtpWhatsAppHelp />}
             </div>
           )}
         </div>

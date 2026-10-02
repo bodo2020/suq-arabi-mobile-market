@@ -11,6 +11,7 @@ import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelecto
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { normalizeDigits } from '@/utils/authUi';
+import OtpWhatsAppHelp from '@/components/auth/OtpWhatsAppHelp';
 
 const DEFAULT_COUNTRY: Country = {
   name: 'مصر',
@@ -32,6 +33,7 @@ const ChangePhone = () => {
   const [resendSeconds, setResendSeconds] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [sendFailed, setSendFailed] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -101,6 +103,7 @@ const ChangePhone = () => {
 
     setLoading(true);
     setError('');
+    setSendFailed(false);
     try {
       const fullPhone = formatInternationalPhone(newPhone, countryCode);
       const { error: updateError } = await supabase.auth.updateUser({ phone: fullPhone });
@@ -113,6 +116,7 @@ const ChangePhone = () => {
         description: 'أدخل الرمز المرسل لتأكيد رقم الهاتف الجديد.',
       });
     } catch (requestError: any) {
+      setSendFailed(true);
       const message = requestError?.message || 'تعذر إرسال رمز التحقق للرقم الجديد';
       setError(message);
       toast({ title: 'تعذر تغيير الرقم', description: message, variant: 'destructive' });
@@ -126,6 +130,7 @@ const ChangePhone = () => {
 
     setResendLoading(true);
     setError('');
+    setSendFailed(false);
     try {
       const fullPhone = formatInternationalPhone(newPhone, countryCode);
       const { error: resendError } = await supabase.auth.resend({
@@ -137,6 +142,7 @@ const ChangePhone = () => {
       setResendSeconds(60);
       toast({ title: 'تم إعادة إرسال الرمز' });
     } catch (resendError: any) {
+      setSendFailed(true);
       const message = resendError?.message || 'تعذر إعادة إرسال الرمز';
       setError(message);
       toast({ title: 'تعذر إعادة الإرسال', description: message, variant: 'destructive' });
@@ -235,6 +241,7 @@ const ChangePhone = () => {
               {loading && <BrandLoader size="sm" className="ml-2" />}
               {loading ? 'جاري إرسال الرمز…' : 'إرسال رمز التحقق'}
             </Button>
+            {sendFailed && <OtpWhatsAppHelp />}
           </div> : <div className="space-y-5">
             <div className="rounded-2xl bg-green-50 p-4 text-center">
               <p className="text-sm text-gray-600">أدخل الرمز المرسل إلى</p>
@@ -296,6 +303,7 @@ const ChangePhone = () => {
                 </button>
               </div>
             </div>
+            {(resendSeconds === 0 || sendFailed) && <OtpWhatsAppHelp />}
           </div>}
         </section>
       </div>

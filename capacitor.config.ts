@@ -4,9 +4,9 @@ const liveReloadUrl = process.env.CAPACITOR_SERVER_URL?.trim();
 
 const config: CapacitorConfig = {
   appId: 'com.elmadawy.market.customer',
-  appName: 'المعداوي ماركت',
+  appName: 'ســــــوبـرمــــاركو',
   webDir: 'dist',
-  appendUserAgent: 'ElmadawyCustomer/1.2.156',
+  appendUserAgent: 'ElmadawyCustomer/1.2.166',
   server: liveReloadUrl
     ? {
         url: liveReloadUrl,

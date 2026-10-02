@@ -1,9 +1,10 @@
 .auth-page { min-height: 100dvh; background: #f3f7f5; color: #16382b; padding: 24px 20px 40px; }
 .auth-brand { max-width: 1040px; margin: 0 auto 40px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .auth-brand-link { display: flex; align-items: center; gap: 10px; font-size: 18px; }
+.auth-brand-link img { width: clamp(132px, 42vw, 170px); height: auto; aspect-ratio: 671 / 320; object-fit: contain; border-radius: 12px; }
 .auth-brand-icon { background: #005931; color: white; border-radius: 15px; padding: 12px; }
 .auth-guest { color: #005931; font-size: 14px; text-decoration: underline; text-underline-offset: 5px; padding: 10px 0; }
-.auth-surface { max-width: 520px; margin: auto; background: white; border: 1px solid #dce8e1; border-top: 5px solid #005931; border-radius: 24px; padding: 26px 22px; box-shadow: 0 16px 48px #003c2110; }
+.auth-surface { max-width: 520px; margin: auto; background: white; border: 1px solid #dce8e1; border-top: 5px solid #FFC120; border-radius: 24px; padding: 26px 22px; box-shadow: 0 16px 48px #003c2110; }
 .auth-eyebrow { display: flex; align-items: center; justify-content: center; gap: 8px; color: #00683c; font-size: 14px; margin-bottom: 12px; }
 .auth-surface > div:not(.auth-eyebrow) { padding: 0; max-width: none; }
 .auth-surface h1 { font-size: 26px; line-height: 1.6; }

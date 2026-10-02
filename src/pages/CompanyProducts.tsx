@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Building2, Mail, MapPin, Package, Phone, Search, SlidersHorizontal } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
-import ProductCard from '@/components/ui/ProductCard';
+import MainCategoryProductSections from '@/components/sections/MainCategoryProductSections';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { Button } from '@/components/ui/button';
 import SEOHead from '@/components/seo/SEOHead';
@@ -14,7 +14,6 @@ import {
   displayProductName,
   displayProductPrice,
   expandProductSaleUnits,
-  productCardKey,
 } from '@/lib/productPurchase';
 
 type SortType = 'newest' | 'price_asc' | 'price_desc' | 'name_asc';
@@ -76,8 +75,8 @@ const CompanyProducts = () => {
   return (
     <MainLayout>
       <SEOHead
-        title={company ? `${company.name} - المعداوي ماركت` : 'الشركة - المعداوي ماركت'}
-        description={company?.description || (company ? `تسوق منتجات ${company.name} من المعداوي ماركت` : 'تسوق منتجات الشركات من المعداوي ماركت')}
+        title={company ? `${company.name} - ســــــوبـرمــــاركو` : 'الشركة - ســــــوبـرمــــاركو'}
+        description={company?.description || (company ? `تسوق منتجات ${company.name} من ســــــوبـرمــــاركو` : 'تسوق منتجات الشركات من ســــــوبـرمــــاركو')}
         image={company?.logo_url || undefined}
         type="product.group"
       />
@@ -166,9 +165,7 @@ const CompanyProducts = () => {
                   <div><p className="text-xs text-gray-500">القطعة والجملة المتاحة</p><h2 className="mt-1 text-xl font-bold">منتجات {company.name}</h2></div>
                   <span className="text-sm font-semibold text-gray-500">{products.length.toLocaleString('ar-EG')}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
-                  {products.map(product => <ProductCard key={productCardKey(product)} product={product} />)}
-                </div>
+                <MainCategoryProductSections products={products} level="sub"/>
               </section>
             ) : (
               <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">

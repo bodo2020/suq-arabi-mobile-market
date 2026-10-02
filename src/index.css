@@ -2,7 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Thmanyah';
+  src: url('/fonts/thmanyahsans-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah';
+  src: url('/fonts/thmanyahsans-Medium.otf') format('opentype');
+  font-weight: 500 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah';
+  src: url('/fonts/thmanyahsans-Bold.otf') format('opentype');
+  font-weight: 700 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah';
+  src: url('/fonts/thmanyahsans-Black.otf') format('opentype');
+  font-weight: 900;
+  font-display: swap;
+}
+
 :root {
+  --brand-green: #005931;
+  --brand-yellow: #FFC120;
+  --brand-yellow-soft: #FFF5D3;
+  --brand-load-duration: 1.1s;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -25,7 +54,8 @@ html {
 
 body,
 #root {
-  overflow-x: hidden;
+  /* Clip sideways content without creating a scroll ancestor that breaks sticky chips. */
+  overflow-x: clip;
   overflow-y: visible;
 }
 
@@ -75,8 +105,8 @@ html.native-android #root {
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
  
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
+    --primary: 153 100% 17.5%;
+    --primary-foreground: 0 0% 100%;
  
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -92,7 +122,7 @@ html.native-android #root {
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 153 100% 17.5%;
  
     --radius: 0.5rem;
   }
@@ -131,6 +161,7 @@ html.native-android #root {
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Thmanyah', system-ui, sans-serif;
   }
 
   html, body, #root {
@@ -170,6 +201,11 @@ html.native-android #root {
 /* Smooth interaction defaults */
 a, button {
   @apply transition-colors duration-200;
+}
+
+html.native-platform,
+html.native-platform body {
+  touch-action: pan-x pan-y;
 }
 
 html.native-platform a,
@@ -229,7 +265,7 @@ html.native-platform [role="button"] {
 }
 .bottom-nav-item { @apply flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-gray-500 transition-all; }
 .bottom-nav-item.active { @apply text-primary; }
-.bottom-nav-item.active > span:first-child { @apply bg-green-50; }
+.bottom-nav-item.active > span:first-child { background: var(--brand-yellow-soft); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 /* App-wide connection state. It floats above the bottom nav / checkout action instead of shifting page layouts. */

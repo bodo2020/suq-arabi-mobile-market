@@ -31,6 +31,8 @@ subscribeOfflineCatalog(queryClient)
 if (Capacitor.isNativePlatform()) {
   const platform = Capacitor.getPlatform();
   document.documentElement.classList.add('native-platform', `native-${platform}`);
+  // Lock page scale in the installed app; website zoom and system font sizing remain available.
+  document.querySelector<HTMLMetaElement>('meta[name="viewport"]')?.setAttribute('content', 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
 }
 
 // Add hide-scrollbar class to main elements to hide scrollbars while allowing scrolling
@@ -94,4 +96,12 @@ if (root) {
       <App />
     </QueryClientProvider>
   );
+  const splash = document.getElementById('brand-splash');
+  if (splash) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.setTimeout(() => {
+      splash.classList.add('is-exiting');
+      window.setTimeout(() => splash.remove(), reducedMotion ? 0 : 240);
+    }, reducedMotion ? 0 : 850);
+  }
 }

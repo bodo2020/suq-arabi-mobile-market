@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+const source=ts.transpileModule(fs.readFileSync(new URL('../src/lib/storeProductSections.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2020}}).outputText;
+const {storeProductSections}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const categories=[{id:'b',name:'B'},{id:'a',name:'A'}];
+const subs=[{id:'s2',category_id:'a',name:'Second'},{id:'s1',category_id:'a',name:'First'}];
+const products=[{id:'1',main_category_id:'a',subcategory_id:'s1'},{id:'2',main_category_id:'b'}, {id:'3',main_category_id:'a',subcategory_id:'s2'}, {id:'4',main_category_id:'a',subcategory_id:'missing'}, {id:'1',main_category_id:'a',subcategory_id:'s1',marketplace_listing_id:'other-listing'}, {id:'5',main_category_id:'a',subcategory_id:'wrong-parent'}];
+const result=storeProductSections(products,categories,[...subs,{id:'wrong-parent',category_id:'b',name:'Other parent'}]);
+assert.deepEqual(result.map(g=>g.id),['b','a']);
+assert.deepEqual(result[1].sections.map(s=>s.id),['a:s2','a:s1','a:other']);
+assert.equal(result.flatMap(g=>g.sections.flatMap(s=>s.products)).length,products.length);
+assert.equal(result[1].sections[1].products.length,2);
+assert.equal(storeProductSections([],categories,subs).length,0);
+assert.equal(storeProductSections(products,[],[]).flatMap(g=>g.sections.flatMap(s=>s.products)).length,products.length);
+console.log('PASS: category order, subgroup order, missing taxonomy, wrong-parent guard, distinct listings, no product loss');

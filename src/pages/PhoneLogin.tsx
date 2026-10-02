@@ -134,7 +134,7 @@ export default function PhoneLogin() {
             {step === 'phone' ? <Phone size={30} strokeWidth={2.2} /> : <KeyRound size={30} strokeWidth={2.2} />}
           </div>
           <h1 className="text-2xl font-black text-slate-950">
-            {step === 'phone' ? 'أهلًا بيك في المعداوي' : 'اكتب كلمة المرور'}
+            {step === 'phone' ? 'أهلًا بيك في ســــــوبـرمــــاركو' : 'اكتب كلمة المرور'}
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {step === 'phone'

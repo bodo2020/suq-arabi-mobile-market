@@ -249,7 +249,7 @@ export default function PurchaseHistory() {
                   <p className="mt-2 text-sm leading-6 text-gray-600">طلبات التوصيل وفواتير الفرع المرتبطة بباركود العضوية في سجل واحد.</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="min-h-11 rounded-xl bg-white" disabled={isFetching} onClick={() => void refetch()}><RefreshCw size={16} className={`ml-2 ${isFetching ? 'animate-spin' : ''}`} />تحديث</Button>
+                  <Button variant="outline" className="min-h-11 rounded-xl bg-white" disabled={isFetching} onClick={() => void refetch()}><RefreshCw size={16} className={`ml-2 ${isFetching ? 'brand-pulse-icon' : ''}`} />تحديث</Button>
                   <Button variant="outline" className="min-h-11 rounded-xl bg-white" onClick={() => navigate('/return-requests')}>طلبات الاسترجاع</Button>
                 </div>
               </div>
@@ -329,7 +329,7 @@ export default function PurchaseHistory() {
                                     <div key={store.order_id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2.5">
                                       <div className="min-w-0">
                                         <p className="truncate text-xs font-bold">{store.branch_name || store.merchant_name}</p>
-                                        <p className="mt-0.5 text-[10px] text-gray-500">{store.source_kind === 'owned' ? 'ماركت المعداوي' : 'متجر شريك'}</p>
+                                        <p className="mt-0.5 text-[10px] text-gray-500">{store.source_kind === 'owned' ? 'ســــــوبـرمــــاركو' : 'متجر شريك'}</p>
                                       </div>
                                       <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${storeStatus.className}`}>{storeStatus.label}</span>
                                     </div>

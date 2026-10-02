@@ -148,7 +148,7 @@ export default function MarketplacePayment() {
 
   return <CheckoutLayout step={2}>
     <h1 className="checkout-title">تأكيد طلب المتجر</h1>
-    <p className="checkout-intro">السعر والمخزون ومنطقة التوصيل بيتراجعوا من السيرفر قبل إنشاء الطلب. كوبونات المعداوي غير مطبقة على متاجر الشركاء في المرحلة الحالية.</p>
+    <p className="checkout-intro">السعر والمخزون ومنطقة التوصيل بيتراجعوا من السيرفر قبل إنشاء الطلب. كوبونات ســــــوبـرمــــاركو غير مطبقة على متاجر الشركاء في المرحلة الحالية.</p>
 
     {pending && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>محاولة الطلب محفوظة بأمان.</strong><p className="mt-1">لو الاتصال انقطع، إعادة التأكيد هتكمل نفس الطلب بدون إنشاء نسخة مكررة.</p></div>}
 
