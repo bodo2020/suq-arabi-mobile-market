@@ -1243,6 +1243,45 @@ export type Database = {
           },
         ]
       }
+      catalog_campaigns: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          ends_at: string
+          id: string
+          kind: string
+          product_ids: string[]
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          ends_at: string
+          id?: string
+          kind: string
+          product_ids?: string[]
+          starts_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          ends_at?: string
+          id?: string
+          kind?: string
+          product_ids?: string[]
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cities: {
         Row: {
           active: boolean | null
@@ -4866,6 +4905,59 @@ export type Database = {
             columns: ["source_net_ledger_entry_id"]
             isOneToOne: false
             referencedRelation: "payment_ledger"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_branch_receipt_branding_v1: {
+        Row: {
+          branch_id: string
+          display_name: string
+          footer: string
+          logo_mode: string
+          logo_path: string | null
+          print_address: string
+          print_phone: string
+          show_logo: boolean
+          show_name: boolean
+          slogan: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          branch_id: string
+          display_name: string
+          footer?: string
+          logo_mode?: string
+          logo_path?: string | null
+          print_address?: string
+          print_phone?: string
+          show_logo?: boolean
+          show_name?: boolean
+          slogan?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          branch_id?: string
+          display_name?: string
+          footer?: string
+          logo_mode?: string
+          logo_path?: string | null
+          print_address?: string
+          print_phone?: string
+          show_logo?: boolean
+          show_name?: boolean
+          slogan?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_branch_receipt_branding_v1_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: true
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
         ]
@@ -9218,6 +9310,21 @@ export type Database = {
         Args: { p_branch_id?: string; p_days?: number; p_limit?: number }
         Returns: Json
       }
+      get_customer_discovery_catalog_v1: {
+        Args: {
+          p_barcode?: string
+          p_branch_id: string
+          p_company_id?: string
+          p_latitude: number
+          p_limit?: number
+          p_longitude: number
+          p_main_category_id?: string
+          p_product_id?: string
+          p_search?: string
+          p_subcategory_id?: string
+        }
+        Returns: Json[]
+      }
       get_customer_followup_assignees: {
         Args: { p_branch_id?: string }
         Returns: Json
@@ -9460,6 +9567,16 @@ export type Database = {
         Returns: Json
       }
       get_growth_it_super_admin_v1: { Args: never; Returns: Json }
+      get_growth_product_images_v1: {
+        Args: {
+          p_category_id?: string
+          p_mode?: string
+          p_page?: number
+          p_search?: string
+          p_source?: string
+        }
+        Returns: Json
+      }
       get_home_recommendation_ids: {
         Args: { p_branch_id?: string; p_limit?: number }
         Returns: string[]
@@ -10341,6 +10458,31 @@ export type Database = {
         Args: { p_subdomain: string }
         Returns: Json
       }
+      growth_add_product_image_v1: {
+        Args: {
+          p_expected_images: string[]
+          p_product_id: string
+          p_url: string
+        }
+        Returns: string[]
+      }
+      growth_assign_product_categories_v1: {
+        Args: {
+          p_category_id: string
+          p_product_ids: string[]
+          p_subcategory_id?: string
+        }
+        Returns: number
+      }
+      growth_reorder_categories_v1: {
+        Args: {
+          p_expected: Json
+          p_ids: string[]
+          p_level: string
+          p_parent: string
+        }
+        Returns: number
+      }
       has_branch_access: {
         Args: { _branch: string; _user: string }
         Returns: boolean
@@ -11082,6 +11224,15 @@ export type Database = {
           p_pairing_code: string
           p_pairing_token: string
           p_platform?: string
+        }
+        Returns: Json
+      }
+      register_operational_push_device_v1: {
+        Args: {
+          p_app_kind: string
+          p_device_key?: string
+          p_locale?: string
+          p_token: string
         }
         Returns: Json
       }
