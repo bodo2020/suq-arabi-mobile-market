@@ -27,5 +27,27 @@ export default function MainCategoryProductSections({products,level='main'}:{pro
  useEffect(()=>{const chip=chips.current[active];if(strip.current&&chip)centerSectionChip(strip.current,chip)},[active]);
  const scroll=(id:string)=>{const node=refs.current[id];if(node){setActive(id);window.scrollTo({top:Math.max(0,window.scrollY+node.getBoundingClientRect().top-offset()),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}};
  if(!groups.length)return null;
- return <><div ref={bar} style={{top:'var(--top-nav-height, 68px)'}} className="sticky z-40 mb-5 border-y border-emerald-100 bg-white/95 py-2.5 shadow-sm backdrop-blur-xl"><nav ref={strip} aria-label={level==='sub'?'الأقسام الفرعية':'الأقسام الرئيسية'} className="hide-scrollbar flex flex-nowrap gap-1.5 overflow-x-auto px-1" dir="rtl">{groups.map(g=><button ref={node=>{chips.current[g.id]=node}} key={g.id} type="button" aria-pressed={active===g.id} onClick={()=>scroll(g.id)} className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-bold sm:h-10 sm:text-sm '+(active===g.id?'border-primary bg-primary text-white shadow-md':'border-emerald-100 bg-white text-slate-700')}>{g.image&&<span className="h-5 w-5 overflow-hidden rounded-full bg-white"><SmartImage src={g.image} alt="" className="h-full w-full object-cover"/></span>}<span>{g.name}</span><span className="text-[9px] opacity-70">{g.products.length}</span></button>)}</nav></div><div className="space-y-7">{groups.map(g=><section key={g.id} ref={node=>{refs.current[g.id]=node}} data-main-category={level==='main'?g.id:undefined} data-subcategory={level==='sub'?g.id:undefined} style={{scrollMarginTop:'calc(var(--top-nav-height, 68px) + 74px)'}}><div className="mb-3 flex items-baseline justify-between gap-2"><h2 className="text-base font-black text-slate-950 sm:text-lg">{g.name}</h2><span className="text-xs text-slate-400">{g.products.length} منتج</span></div><div className="grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">{g.products.map(p=><ProductCard key={(p.marketplace_listing_id||'owned')+':'+productCardKey(p)} product={p}/>)}</div></section>)}</div></>;
+ return <>
+  <div ref={bar} style={{top:'var(--top-nav-height, 68px)'}} className="sticky z-40 mb-5 border-y border-[#d8ebdf] bg-white/95 py-2.5 shadow-[0_8px_20px_rgba(0,89,49,0.05)] backdrop-blur-xl">
+   <nav ref={strip} aria-label={level==='sub'?'الأقسام الفرعية':'الأقسام الرئيسية'} className="hide-scrollbar flex flex-nowrap gap-1.5 overflow-x-auto px-1" dir="rtl">
+    {groups.map(g=><button
+     ref={node=>{chips.current[g.id]=node}}
+     key={g.id}
+     type="button"
+     aria-pressed={active===g.id}
+     onClick={()=>scroll(g.id)}
+     className={'flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-bold sm:h-10 sm:text-sm '+(active===g.id?'border-[#005931] bg-[#005931] text-white shadow-[0_5px_14px_rgba(0,89,49,0.16)]':'border-[#c8e0d2] bg-white text-[#005931] hover:bg-[#fff5d3]')}
+    >
+     {g.image&&<span className="h-5 w-5 overflow-hidden rounded-full bg-white"><SmartImage src={g.image} alt="" className="h-full w-full object-cover"/></span>}
+     <span>{g.name}</span><span className={'text-[9px] '+(active===g.id?'text-[#FFC120]':'text-slate-500')}>{g.products.length}</span>
+    </button>)}
+   </nav>
+  </div>
+  <div className="space-y-7">
+   {groups.map(g=><section key={g.id} ref={node=>{refs.current[g.id]=node}} data-main-category={level==='main'?g.id:undefined} data-subcategory={level==='sub'?g.id:undefined} style={{scrollMarginTop:'calc(var(--top-nav-height, 68px) + 74px)'}}>
+    <div className="mb-3 flex items-baseline justify-between gap-2"><h2 className="text-base font-black text-slate-950 sm:text-lg">{g.name}</h2><span className="rounded-full bg-[#fff5d3] px-2 py-1 text-xs font-bold text-[#005931]">{g.products.length} منتج</span></div>
+    <div className="grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">{g.products.map(p=><ProductCard key={(p.marketplace_listing_id||'owned')+':'+productCardKey(p)} product={p}/>)}</div>
+   </section>)}
+  </div>
+ </>;
 }

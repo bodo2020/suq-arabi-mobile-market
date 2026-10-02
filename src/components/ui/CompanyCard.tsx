@@ -12,10 +12,10 @@ const CompanyCard: React.FC<CompanyCardProps> = ({ company }) => {
   return (
     <Link 
       to={`/company/${company.id}`} 
-      className="flex items-center bg-gray-100 rounded-md p-2 hover:bg-gray-200 transition-colors w-1/2"
+      className="flex min-h-12 items-center gap-2 rounded-2xl border border-[#d8ebdf] bg-white p-3 text-[#005931] shadow-sm transition-colors hover:border-[#9acbb2] hover:bg-[#fff5d3]"
     >
-      <Building className="w-4 h-4 text-gray-500 ml-2" />
-      <span className="text-sm font-medium">{company.name}</span>
+      <Building className="h-4 w-4 shrink-0 text-[#005931]" />
+      <span className="min-w-0 truncate text-sm font-bold">{company.name}</span>
     </Link>
   );
 };

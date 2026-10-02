@@ -129,7 +129,7 @@ const SubcategoryDetail = () => {
           <div className="w-full px-3 sm:px-4">
             <div className="mx-auto max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
               <div className="sticky top-0 z-10 mb-4 bg-white">
-                <div className="h-12 animate-pulse rounded-lg bg-gray-100" />
+                <div className="h-12 animate-pulse rounded-2xl bg-[#fff5d3]" />
               </div>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
                 {[...Array(12)].map((_, index) => <ProductCardSkeleton key={index} />)}
@@ -167,10 +167,10 @@ const SubcategoryDetail = () => {
               </div>
 
               {products.length === 0 && !loading && (
-                <div className="py-8 text-center text-gray-500">
-                  {selectedCompany !== "all"
-                    ? "لا توجد منتجات متوفرة لهذه الشركة في هذا القسم الفرعي"
-                    : "لا توجد منتجات متوفرة في هذا القسم الفرعي"}
+                <div className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white px-4 py-10 text-center text-slate-600">
+                  <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5d3] text-xl font-black text-[#005931]">0</span>
+                  {selectedCompany !== "all" ? "لا توجد منتجات متوفرة لهذه الشركة في هذا القسم الفرعي" : "لا توجد منتجات متوفرة في هذا القسم الفرعي"}
+                  {selectedCompany !== 'all' && <button type="button" onClick={() => setSelectedCompany('all')} className="mx-auto mt-3 block rounded-xl bg-[#005931] px-4 py-2 text-sm font-bold text-white">عرض جميع الشركات</button>}
                 </div>
               )}
             </div>
