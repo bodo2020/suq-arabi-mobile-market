@@ -5,12 +5,12 @@ const ProductCardSkeleton = () => {
   return (
     <div
       data-product-card-skeleton="compact"
-      className="flex h-full flex-col rounded-[18px] bg-white p-1.5 ring-1 ring-black/[0.03] sm:rounded-[22px] sm:p-2.5"
+      className="flex h-full flex-col rounded-[18px] border border-[#e1eee7] bg-white p-1.5 shadow-[0_3px_14px_rgba(0,89,49,0.05)] sm:rounded-[22px] sm:p-2.5"
     >
       <div className="relative mb-5 aspect-square sm:mb-7">
-        <Skeleton className="absolute inset-0 rounded-[14px] sm:rounded-[18px]" />
+        <Skeleton className="absolute inset-0 rounded-[14px] bg-[#f3f8f4] sm:rounded-[18px]" />
         <Skeleton className="absolute left-1 top-1 h-7 w-7 rounded-full sm:left-2 sm:top-2 sm:h-9 sm:w-9" />
-        <Skeleton className="absolute -bottom-4 left-1 h-9 w-9 rounded-full sm:-bottom-5 sm:left-2 sm:h-12 sm:w-12" />
+        <Skeleton className="absolute -bottom-4 left-1 h-9 w-9 rounded-full bg-[#fff5d3] sm:-bottom-5 sm:left-2 sm:h-12 sm:w-12" />
       </div>
 
       <div className="space-y-1 sm:space-y-1.5">

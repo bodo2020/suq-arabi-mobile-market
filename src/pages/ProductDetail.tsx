@@ -314,7 +314,7 @@ const ProductDetail = () => {
   const piecePurchaseControl = (
     <div className="space-y-3">
       {activeCartItem ? (
-        <div className="flex h-14 items-center justify-between overflow-hidden rounded-2xl bg-[#eef9f3] text-[#005931]">
+        <div className="flex h-14 items-center justify-between overflow-hidden rounded-2xl border border-[#e5c767] bg-[#fff5d3] text-[#005931]">
           <button
             type="button"
             onClick={() => changePieceQuantity(bulkMode, -1)}
@@ -331,7 +331,7 @@ const ProductDetail = () => {
             type="button"
             onClick={() => changePieceQuantity(bulkMode, 1)}
             disabled={currentCartQuantity >= (bulkMode ? maxBulkQuantity : maxRegularQuantity)}
-            className="flex h-14 w-14 items-center justify-center bg-[#005931] text-white disabled:opacity-30"
+            className="flex h-14 w-14 items-center justify-center bg-[#005931] text-[#FFC120] disabled:opacity-30"
             aria-label="زيادة الكمية"
           >
             <Plus size={21} />
@@ -340,7 +340,7 @@ const ProductDetail = () => {
       ) : (
         <>
           {!bulkMode && (
-            <div className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-white">
+            <div className="flex h-12 items-center justify-between rounded-2xl border border-[#b8d8c8] bg-white text-[#005931]">
               <button type="button" onClick={() => setQuantity(value => Math.max(1, value - 1))} className="flex h-12 w-12 items-center justify-center" aria-label="تقليل الكمية"><Minus size={18} /></button>
               <strong className="text-base font-black">{money(quantity)}</strong>
               <button type="button" onClick={() => setQuantity(value => Math.min(maxRegularQuantity, value + 1))} disabled={quantity >= maxRegularQuantity} className="flex h-12 w-12 items-center justify-center disabled:opacity-30" aria-label="زيادة الكمية"><Plus size={18} /></button>
@@ -365,7 +365,7 @@ const ProductDetail = () => {
   const weightedPurchaseControl = (
     <div className="space-y-3">
       {weightedCartItem ? (
-        <div className="flex h-14 items-center justify-between overflow-hidden rounded-2xl bg-[#eef9f3] text-[#005931]">
+        <div className="flex h-14 items-center justify-between overflow-hidden rounded-2xl border border-[#e5c767] bg-[#fff5d3] text-[#005931]">
           <button type="button" onClick={() => changeWeight(-1)} className="flex h-14 w-14 items-center justify-center" aria-label={currentWeight <= weightStep ? 'حذف من السلة' : 'تقليل الوزن'}>
             {currentWeight <= weightStep ? <Trash2 size={20} /> : <Minus size={20} />}
           </button>
@@ -373,7 +373,7 @@ const ProductDetail = () => {
             <strong className="block text-base font-black text-slate-950">{formatWeightAmount(currentWeight)}</strong>
             <span className="text-[11px] font-semibold text-slate-500">{money(displayPrice)} ج.م</span>
           </button>
-          <button type="button" onClick={() => changeWeight(1)} disabled={currentWeight >= maxWeight} className="flex h-14 w-14 items-center justify-center bg-[#005931] text-white disabled:opacity-30" aria-label="زيادة الوزن"><Plus size={21} /></button>
+          <button type="button" onClick={() => changeWeight(1)} disabled={currentWeight >= maxWeight} className="flex h-14 w-14 items-center justify-center bg-[#005931] text-[#FFC120] disabled:opacity-30" aria-label="زيادة الوزن"><Plus size={21} /></button>
         </div>
       ) : (
         <Button type="button" disabled={!isInitialized || unavailable} onClick={() => setWeightOpen(true)} className="h-14 w-full rounded-2xl bg-[#005931] text-base font-black shadow-[0_10px_24px_rgba(0,89,49,0.16)]">
@@ -434,7 +434,7 @@ const ProductDetail = () => {
               </div>
 
               <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
-                {discount > 0 && <span className="rounded-xl bg-[#ff6767] px-2.5 py-1.5 text-xs font-black text-white shadow-sm">خصم {discount}%</span>}
+                {discount > 0 && <span className="rounded-xl bg-[#FFC120] px-2.5 py-1.5 text-xs font-black text-[#005931] shadow-sm">خصم {discount}%</span>}
                 {bulkMode && <span className="rounded-xl bg-[#005931] px-2.5 py-1.5 text-xs font-black text-white">{bulkUnitType}</span>}
               </div>
 
@@ -459,7 +459,7 @@ const ProductDetail = () => {
           <section className="rounded-[28px] bg-white p-5 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] sm:p-7 lg:sticky lg:top-[calc(var(--top-nav-height,68px)+16px)]">
             <div className="flex flex-wrap items-center gap-2">
               {weighted && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-[#005931]"><Scale size={13} />بالوزن</span>}
-              {limitedStock && <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">كمية محدودة</span>}
+              {limitedStock && <span className="rounded-full bg-[#fff5d3] px-3 py-1.5 text-xs font-bold text-[#005931]">كمية محدودة</span>}
               {!unavailable && <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600"><Check size={13} />متوفر</span>}
               {unavailable && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500">غير متوفر</span>}
             </div>
@@ -482,7 +482,7 @@ const ProductDetail = () => {
             )}
 
             <div className="mt-5 border-y border-slate-100 py-5">
-              {discount > 0 && <div className="mb-1.5 flex items-center gap-2"><del className="text-sm font-medium text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del><span className="rounded-md bg-[#d8ff36] px-2 py-1 text-xs font-black text-[#294500]">وفر {discount}%</span></div>}
+              {discount > 0 && <div className="mb-1.5 flex items-center gap-2"><del className="text-sm font-medium text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del><span className="rounded-md bg-[#FFC120] px-2 py-1 text-xs font-black text-[#005931]">وفر {discount}%</span></div>}
               <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
                 <strong className="text-4xl font-black tracking-tight text-slate-950">{money(displayPrice)}</strong>
                 <span className="pb-1 text-sm font-black text-[#005931]">ج.م</span>
