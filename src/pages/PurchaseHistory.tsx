@@ -161,6 +161,10 @@ const paymentMethodLabel = (method: string | null) => {
 };
 
 const purchaseNumber = (purchase: PurchaseRow) => purchase.tracking_number || purchase.id.slice(0, 8).toUpperCase();
+const purchaseDisplayNumber = (purchase: PurchaseRow) => {
+  const number = purchaseNumber(purchase);
+  return number.length > 16 ? `${number.slice(0, 8)}…${number.slice(-4)}` : number;
+};
 
 export default function PurchaseHistory() {
   const navigate = useNavigate();
@@ -303,7 +307,7 @@ export default function PurchaseHistory() {
                               {purchase.branch_name && <span className="text-xs text-gray-500">{purchase.branch_name}</span>}
                             </div>
                             <p className="mt-3 text-xs text-gray-500">{storePurchase ? 'رقم الفاتورة' : 'رقم الطلب'}</p>
-                            <h2 dir="ltr" className="mt-1 break-all text-right text-lg font-bold">#{purchaseNumber(purchase)}</h2>
+                            <h2 dir="ltr" title={`#${purchaseNumber(purchase)}`} className="mt-1 text-right text-lg font-bold">#{purchaseDisplayNumber(purchase)}</h2>
                             <p className="mt-1 text-xs text-gray-500">{formatDate(purchase.created_at)}</p>
                           </div>
                           <span className={`inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-xs font-bold ${status.className}`}>{storePurchase && <Store size={14} className="ml-1.5" />}{purchase.status === 'shipped' && <Truck size={14} className="ml-1.5" />}{purchase.status === 'delivered' && <CheckCircle2 size={14} className="ml-1.5" />}{purchase.status === 'cancelled' && <XCircle size={14} className="ml-1.5" />}{status.label}</span>
@@ -386,6 +390,12 @@ export default function PurchaseHistory() {
 
                       {expanded && (
                         <div className="border-t border-gray-100 bg-gray-50/50 p-5 sm:p-6">
+                          {purchaseNumber(purchase).length > 16 && (
+                            <p className="mb-4 rounded-xl bg-white p-3 text-xs text-gray-600">
+                              {storePurchase ? 'رقم الفاتورة الكامل' : 'رقم الطلب الكامل'}:
+                              <span dir="ltr" className="mt-1 block break-all text-right font-semibold text-gray-900">#{purchaseNumber(purchase)}</span>
+                            </p>
+                          )}
                           <div className="grid gap-5 lg:grid-cols-2">
                             <section className="rounded-2xl bg-white p-5">
                               <h3 className="flex items-center gap-2 font-bold">{storePurchase ? <Store size={19} className="text-primary" /> : <Package size={19} className="text-primary" />}{storePurchase ? 'بيانات الشراء' : 'تتبع الطلب'}</h3>

@@ -1,6 +1,6 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Barcode, Search as SearchIcon, X } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -64,6 +64,10 @@ const Search = () => {
   const [retry, setRetry] = useState(0);
   const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerStartTimerRef = useRef<number | null>(null);
+  const scannerMountedRef = useRef(false);
+  const scanBusyRef = useRef(false);
+  const autoScanStartedRef = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -141,7 +145,13 @@ const Search = () => {
   }, [query]);
 
   useEffect(() => {
+    scannerMountedRef.current = true;
     return () => {
+      scannerMountedRef.current = false;
+      if (scannerStartTimerRef.current !== null) {
+        window.clearTimeout(scannerStartTimerRef.current);
+        scannerStartTimerRef.current = null;
+      }
       if (!scannerRef.current) return;
       try {
         if (scannerRef.current.isScanning) {
@@ -196,7 +206,9 @@ const Search = () => {
     try { localStorage.removeItem('recentSearches'); } catch { /* Optional history. */ }
   };
 
-  const handleBarcodeDetected = async (barcode: string) => {
+  const handleBarcodeDetected = useCallback(async (barcode: string) => {
+    if (scanBusyRef.current) return;
+    scanBusyRef.current = true;
     try {
       const product = await searchBranchProductByBarcodeIncludingUnavailable(barcode);
 
@@ -230,13 +242,19 @@ const Search = () => {
         description: 'حدث خطأ أثناء البحث عن المنتج',
         variant: 'destructive',
       });
+    } finally {
+      scanBusyRef.current = false;
     }
-  };
+  }, [navigate, toast]);
 
-  const startBarcodeScanner = () => {
+  const startBarcodeScanner = useCallback(() => {
+    if (scannerRef.current || scannerStartTimerRef.current !== null) return;
+    scanBusyRef.current = false;
     setShowScanner(true);
 
-    window.setTimeout(() => {
+    scannerStartTimerRef.current = window.setTimeout(() => {
+      scannerStartTimerRef.current = null;
+      if (!scannerMountedRef.current) return;
       try {
         const barcodeScanner = new Html5Qrcode('barcode-reader');
         scannerRef.current = barcodeScanner;
@@ -250,7 +268,11 @@ const Search = () => {
           },
           decodedText => { void handleBarcodeDetected(decodedText); },
           () => undefined,
-        ).catch(error => {
+        ).then(() => {
+          if ((!scannerMountedRef.current || scannerRef.current !== barcodeScanner) && barcodeScanner.isScanning) {
+            void barcodeScanner.stop();
+          }
+        }).catch(error => {
           console.error('Failed to start scanner:', error);
           toast({
             title: 'فشل تشغيل ماسح الباركود',
@@ -271,9 +293,13 @@ const Search = () => {
         scannerRef.current = null;
       }
     }, 120);
-  };
+  }, [handleBarcodeDetected, toast]);
 
   const stopBarcodeScanner = () => {
+    if (scannerStartTimerRef.current !== null) {
+      window.clearTimeout(scannerStartTimerRef.current);
+      scannerStartTimerRef.current = null;
+    }
     const scanner = scannerRef.current;
     if (!scanner) {
       setShowScanner(false);
@@ -296,6 +322,12 @@ const Search = () => {
       scannerRef.current = null;
     }
   };
+
+  useEffect(() => {
+    if (searchParams.get('scan') !== '1' || autoScanStartedRef.current) return;
+    autoScanStartedRef.current = true;
+    startBarcodeScanner();
+  }, [searchParams, startBarcodeScanner]);
 
   const availabilityButtonClass = (value: AvailabilityFilter) =>
     `min-h-10 rounded-full border px-3.5 text-xs font-bold transition sm:text-sm ${
