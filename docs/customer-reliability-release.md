@@ -42,3 +42,9 @@ For repeatable debug APK updates, optionally provide `ANDROID_DEBUG_KEYSTORE_BAS
 ## Still outside this change
 
 Customer checkout RPCs currently support cash and wallet only. Dynamic POS payment methods have staff-only contracts, fees and settlement accounts and cannot safely be exposed by adding frontend options. Marketplace/combined voucher support likewise needs backend redemption, allocation, refund and settlement rules. This change does not claim to implement those financial features.
+
+## Dependency audit remaining before production
+
+On 2026-10-03, `npm audit --omit=dev` reported 28 vulnerable dependency nodes (2 critical, 20 high, 3 moderate, 3 low) in the existing lockfile. This is a dependency report, not proof of exploitability in the bundled application. The critical nodes were `protobufjs` (via Transformers/ONNX) and `tar` (via Capacitor CLI and ONNX tooling). Some recommended fixes require major-version migrations, including Transformers and Tailwind. No forced dependency upgrades were applied in this reliability change. Review these separately and rerun the audit before production release.
+
+References: [protobufjs advisory](https://github.com/advisories/GHSA-xq3m-2v4x-88gg), [tar advisory](https://github.com/advisories/GHSA-23hp-3jrh-7fpw).
