@@ -32,7 +32,7 @@ const shortcuts = [
 ];
 
 const Account = () => {
-  const { user, authLoading } = useUser();
+  const { user, authLoading, signOut } = useUser();
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState(false);
@@ -79,8 +79,7 @@ const Account = () => {
     setSigningOut(true);
     setLogoutError(false);
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await signOut();
       navigate('/', { replace: true });
     } catch {
       setLogoutError(true);
@@ -225,3 +224,4 @@ const Account = () => {
 };
 
 export default Account;
+

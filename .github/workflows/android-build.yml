@@ -6,11 +6,13 @@ on:
     branches:
       - main
       - work/customer-android-capacitor
+      - codex/super-marko-capacitor
     paths:
       - 'src/**'
       - 'public/**'
       - 'scripts/**'
       - 'config/firebase/**'
+      - 'resources/**'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.ts'
@@ -25,6 +27,7 @@ on:
       - 'public/**'
       - 'scripts/**'
       - 'config/firebase/**'
+      - 'resources/**'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.ts'
@@ -44,6 +47,9 @@ jobs:
       APP_VERSION_BASE: '1.2'
       APP_VERSION_CODE_BASE: '120165'
       CUSTOMER_FIREBASE_FALLBACK: 'config/firebase/google-services.customer.json'
+      ANDROID_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEYSTORE_PASSWORD }}
+      ANDROID_DEBUG_KEY_ALIAS: ${{ secrets.ANDROID_DEBUG_KEY_ALIAS }}
+      ANDROID_DEBUG_KEY_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -75,6 +81,21 @@ jobs:
             echo "VITE_NATIVE_PUSH_CONFIGURED=false" >> "$GITHUB_ENV"
             echo "Firebase native push is disabled because no client config is available."
           fi
+
+      - name: Restore stable debug signing when configured
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+            printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/customer-debug.keystore"
+            echo "ANDROID_DEBUG_KEYSTORE_PATH=$RUNNER_TEMP/customer-debug.keystore" >> "$GITHUB_ENV"
+          fi
+
+      - name: Test customer flows
+        run: npm run test:customer
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Build React app
         run: npm run build
@@ -129,3 +150,8 @@ jobs:
           path: android/app/build/outputs/apk/debug/elmadawy-customer-build-${{ github.run_number }}.apk
           if-no-files-found: error
           retention-days: 14
+
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/customer-debug.keystore"

@@ -1,3 +1,4 @@
+import { readOfflineQuery } from '@/lib/offlineCatalogCache';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 import { loadBranchRuntimeContext, loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
 
@@ -170,6 +171,19 @@ export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Pr
   const runtime = await loadBranchRuntimeContext();
   if (!runtime?.delivery_branch_id) throw new Error('DELIVERY_ADDRESS_REQUIRED');
 
+  if (!navigator.onLine) {
+    const cached = readOfflineQuery<Product[]>(['home-catalog-products', runtime.delivery_branch_id])
+      || readOfflineQuery<Product[]>(['active-products', runtime.delivery_branch_id]);
+    if (!cached) throw new Error('OFFLINE_CATALOG_UNAVAILABLE');
+    const search = filters.search?.trim().toLocaleLowerCase('ar');
+    return cached.filter(product => (!filters.productId || product.id === filters.productId)
+      && (!filters.mainCategoryId || product.main_category_id === filters.mainCategoryId)
+      && (!filters.subcategoryId || product.subcategory_id === filters.subcategoryId)
+      && (!filters.companyId || product.company_id === filters.companyId)
+      && (!filters.barcode || product.barcode === filters.barcode || product.bulk_barcode === filters.barcode)
+      && (!search || product.name.toLocaleLowerCase('ar').includes(search))).slice(0, filters.limit || 1000);
+  }
+
   const point = await loadSelectedDeliveryPoint();
   if (!point) throw new Error('DELIVERY_ADDRESS_REQUIRED');
   const { data, error } = await catalogRpc('get_customer_discovery_catalog_v1', {
@@ -189,8 +203,9 @@ export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Pr
 }
 
 export async function getCategories() {
+  if (!navigator.onLine) return readOfflineQuery<MainCategory[]>(['categories']) || [];
   const { data, error } = await supabase.from('main_categories').select('*').order('position').order('name');
-  if (error) console.error('Error fetching categories:', error);
+  if (error) throw error;
   return data as MainCategory[] || [];
 }
 
@@ -344,3 +359,4 @@ export async function uploadReturnImages(files: File[]) {
   }
   return uploadedUrls;
 }
+

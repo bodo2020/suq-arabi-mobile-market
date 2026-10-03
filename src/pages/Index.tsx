@@ -45,7 +45,7 @@ const Index = () => {
   const address = user ? addressQuery.data?.address || '' : guestAddress?.address || '';
 
   const openAddress = () => {
-    if (!user && !guestAddress) {
+    if (!user) {
       navigate('/add-address?returnTo=%2F');
       return;
     }
@@ -84,3 +84,4 @@ const Index = () => {
 };
 
 export default Index;
+

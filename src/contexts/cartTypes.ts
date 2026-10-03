@@ -61,6 +61,7 @@ export type CartContextType = {
   removeFromCart: (productId: string, is_bulk?: boolean, listingId?: string | null) => void;
   updateQuantity: (productId: string, quantity: number, is_bulk?: boolean, listingId?: string | null) => void;
   clearCart: () => void;
+  clearCartIfUnchanged: (matches: (current: CartItem[]) => boolean) => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
   getCartTotal: () => number;
@@ -69,3 +70,4 @@ export type CartContextType = {
   isSaving: boolean;
   retrySync: () => void;
 };
+

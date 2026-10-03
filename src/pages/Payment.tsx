@@ -57,7 +57,7 @@ const money = (value: number) => new Intl.NumberFormat('ar-EG', { minimumFractio
 const Payment = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { items, clearCart, isInitialized, syncError, isSaving } = useCart();
+  const { items, clearCartIfUnchanged, isInitialized, syncError, isSaving } = useCart();
   const { toast } = useToast();
   const { user, authLoading } = useUser();
   const submitting = useRef(false);
@@ -188,6 +188,7 @@ const Payment = () => {
 
   const handleSubmitOrder = async () => {
     if (submitting.current || authLoading || !isInitialized || isSaving) return;
+    if (!navigator.onLine) return toast({ title: 'تأكيد الطلب يحتاج إنترنت', description: 'سلتك محفوظة. اتصل بالإنترنت ثم حاول مرة تانية.', variant: 'destructive' });
     if (!user) {
       navigate('/phone-verify?returnTo=%2Fpayment');
       return;
@@ -242,13 +243,12 @@ const Payment = () => {
       setRequestId(pending.requestId as `${string}-${string}-${string}-${string}-${string}`);
 
       const placed = await placeOrder(pending);
-      const cartMatchesPlacedAttempt = JSON.stringify(pending.items) === serializedLines;
 
       removePendingCheckout(user.id);
       setPendingCheckout(null);
       setWalletDialogOpen(false);
       setSelectedVoucherId('none');
-      if (cartMatchesPlacedAttempt) clearCart();
+      clearCartIfUnchanged(current => current.every(item => item.commerce_source !== 'marketplace') && JSON.stringify(checkoutLines(current)) === JSON.stringify(pending.items));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['loyalty-vouchers', user.id] }),
         queryClient.invalidateQueries({ queryKey: ['loyalty-card', user.id] }),

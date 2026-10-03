@@ -1,0 +1,88 @@
+name: Customer Android Release
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'Android versionCode greater than every distributed build'
+        required: true
+        type: string
+      version_name:
+        description: 'Customer version, for example 1.3.0'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      APP_VERSION_CODE: ${{ inputs.version_code }}
+      APP_VERSION_NAME: ${{ inputs.version_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Validate and restore the existing signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo 'Missing ANDROID_KEYSTORE_BASE64'; exit 1; }
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo 'Missing ANDROID_KEYSTORE_PASSWORD'; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo 'Missing ANDROID_KEY_ALIAS'; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo 'Missing ANDROID_KEY_PASSWORD'; exit 1; }
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/customer-release.keystore"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/customer-release.keystore" >> "$GITHUB_ENV"
+      - run: npm ci
+      - name: Configure push build
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ] || [ -f config/firebase/google-services.customer.json ]; then
+            echo 'VITE_NATIVE_PUSH_CONFIGURED=true' >> "$GITHUB_ENV"
+          else
+            echo 'Firebase client config is required for a customer release.'
+            exit 1
+          fi
+      - run: npm run test:customer
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npx cap add android
+      - name: Restore Firebase config
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          else
+            cp config/firebase/google-services.customer.json android/app/google-services.json
+          fi
+      - run: npx cap sync android
+      - run: node scripts/set-android-version.mjs
+      - run: node scripts/prepare-play-release.mjs
+      - run: node scripts/prepare-android.mjs
+      - run: node scripts/prepare-android-back.mjs
+      - name: Build signed APK and AAB
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: super-marko-release-${{ github.run_number }}
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/customer-release.keystore"

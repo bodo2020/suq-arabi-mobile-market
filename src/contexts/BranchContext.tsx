@@ -47,10 +47,12 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const refresh = () => { void refreshBranch(); };
+    window.addEventListener('online', refresh);
     window.addEventListener('guest-address-changed', refresh);
     window.addEventListener('delivery-address-changed', refresh);
     window.addEventListener('customer-profile-ready', refresh);
     return () => {
+      window.removeEventListener('online', refresh);
       window.removeEventListener('guest-address-changed', refresh);
       window.removeEventListener('delivery-address-changed', refresh);
       window.removeEventListener('customer-profile-ready', refresh);
@@ -69,3 +71,4 @@ export function useBranch() {
   if (!value) throw new Error('useBranch must be used within BranchProvider');
   return value;
 }
+

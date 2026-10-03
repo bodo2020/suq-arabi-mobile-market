@@ -247,6 +247,7 @@ export default function PhoneLogin() {
           )}
         </div>
 
+        <Button type="button" variant="ghost" className="mt-4 min-h-12 w-full" onClick={() => navigate('/')}>تصفح المنتجات كضيف</Button>
         <div className="mt-5 flex items-start gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">
           <ShieldCheck size={17} className="mt-0.5 shrink-0 text-[#005931]" />
           <span>{step === 'phone' ? 'لو الرقم جديد هنبعت OTP لتأكيده مرة واحدة.' : 'نسيت الباسورد؟ هنأكد رقمك بـ OTP وتختار باسورد جديد.'}</span>
@@ -255,3 +256,4 @@ export default function PhoneLogin() {
     </AuthLayout>
   );
 }
+

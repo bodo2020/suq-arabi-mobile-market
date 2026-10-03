@@ -38,6 +38,8 @@ export default function UnifiedCatalogSection() {
 
       {catalog.isLoading || branchLoading ? (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, index) => <ProductCardSkeleton key={index} />)}</div>
+      ) : !catalog.data && catalog.fetchStatus === 'paused' ? (
+        <p role="status" className="rounded-2xl bg-amber-50 p-6 text-sm">لسه مفيش منتجات محفوظة للعنوان ده. افتح المتجر بالإنترنت أول مرة.</p>
       ) : catalog.isError ? (
         <div className="rounded-2xl bg-[#f3f8f4] p-6 text-center">
           <p className="text-sm text-slate-600">تعذّر تحميل المنتجات</p>
@@ -56,3 +58,4 @@ export default function UnifiedCatalogSection() {
     </section>
   );
 }
+

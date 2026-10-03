@@ -18,10 +18,11 @@ export default function ProfileCompletionGate() {
     staleTime: 0,
   });
   useEffect(() => {
-    if (skip || !state.isSuccess || state.isFetching || !state.data) return;
+    if (!navigator.onLine || skip || !state.isSuccess || state.isFetching || !state.data) return;
     if (state.data.hasName && state.data.hasDefaultAddress) return;
     const returnTo = RETURN_PATHS.includes(location.pathname) ? location.pathname : '/';
     navigate(nextOnboardingPath(state.data, returnTo), { replace: true });
   }, [skip, state.isSuccess, state.isFetching, state.data, location.pathname, navigate]);
   return null;
 }
+

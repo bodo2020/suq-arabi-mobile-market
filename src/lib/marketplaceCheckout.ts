@@ -1,3 +1,4 @@
+import { recoverOrPlace } from '@/lib/checkoutRecovery';
 import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
 import { getStoreRoadQuote } from '@/lib/storeRoadRoute';
@@ -120,23 +121,25 @@ export async function quoteMarketplaceOrder(items: MarketplaceCheckoutLine[], ad
 }
 
 export async function placeMarketplaceOrder(order: PendingMarketplaceCheckout) {
-  const freshQuote = await quoteMarketplaceOrder(order.items, order.addressId, order.branchId);
-  if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
-  if (!freshQuote.route_quote_id) throw new Error('ROAD_QUOTE_REQUIRED');
+  return recoverOrPlace('marketplace', order.requestId, async () => {
+    const freshQuote = await quoteMarketplaceOrder(order.items, order.addressId, order.branchId);
+    if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
+    if (!freshQuote.route_quote_id) throw new Error('ROAD_QUOTE_REQUIRED');
 
-  const { data, error } = await rpc('place_marketplace_order_v3', {
-    p_request_id: order.requestId,
-    p_branch_id: order.branchId,
-    p_items: order.items,
-    p_address_id: order.addressId,
-    p_payment_method: order.paymentMethod,
-    p_notes: order.notes,
-    p_quote_token: order.quoteToken,
-    p_route_quote_id: freshQuote.route_quote_id,
-    p_substitution_policy: order.substitutionPolicy,
+    const { data, error } = await rpc('place_marketplace_order_v3', {
+      p_request_id: order.requestId,
+      p_branch_id: order.branchId,
+      p_items: order.items,
+      p_address_id: order.addressId,
+      p_payment_method: order.paymentMethod,
+      p_notes: order.notes,
+      p_quote_token: order.quoteToken,
+      p_route_quote_id: freshQuote.route_quote_id,
+      p_substitution_policy: order.substitutionPolicy,
   });
   if (error) throw error;
   return data as PlacedMarketplaceOrder;
+  });
 }
 
 const pendingKey = (userId: string) => `pending-marketplace-checkout:${userId}`;
@@ -193,3 +196,4 @@ export function marketplaceDefinitelyRejected(error: unknown) {
   const message = (error as { message?: string })?.message || '';
   return ['PROFILE_REQUIRED','ADDRESS_REQUIRED','DELIVERY_ADDRESS_REQUIRED','DELIVERY_UNAVAILABLE','MARKETPLACE_STORE_UNAVAILABLE','MIXED_MERCHANT_CART','ROAD_QUOTE_REQUIRED','ROAD_QUOTE_EXPIRED','ROAD_QUOTE_MISMATCH','ROUTE_QUOTE_STORE_FAILED','STORE_ROUTE_FAILED','ROUTE_DISTANCE_UNAVAILABLE','INVALID_LOCATION','INSUFFICIENT_STOCK','PRODUCT_UNAVAILABLE','PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','MIN_ORDER_NOT_MET','QUOTE_CHANGED','INVALID_QUANTITY','INVALID_CART','INVALID_ORDER','SAAS_APP_SUSPENDED','SAAS_CAPABILITY_DISABLED'].includes(message);
 }
+

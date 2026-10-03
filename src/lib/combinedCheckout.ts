@@ -1,3 +1,4 @@
+import { recoverOrPlace } from '@/lib/checkoutRecovery';
 import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
 import { checkoutLines } from '@/lib/checkout';
@@ -157,21 +158,23 @@ export async function quoteCombinedOrder(sources: CombinedCheckoutSource[], addr
 }
 
 export async function placeCombinedOrder(order: PendingCombinedCheckout) {
-  const freshQuote = await quoteCombinedOrder(order.sources, order.addressId);
-  if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
+  return recoverOrPlace('combined', order.groupId, async () => {
+    const freshQuote = await quoteCombinedOrder(order.sources, order.addressId);
+    if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
 
-  const { data, error } = await rpc('place_combined_order_group_v3', {
-    p_group_id: order.groupId,
-    p_sources: order.sources,
-    p_address_id: order.addressId,
-    p_payment_method: order.paymentMethod,
-    p_notes: order.notes,
-    p_quote_token: order.quoteToken,
-    p_route_quote_id: freshQuote.route_quote_id,
-    p_substitution_policy: order.substitutionPolicy,
+    const { data, error } = await rpc('place_combined_order_group_v3', {
+      p_group_id: order.groupId,
+      p_sources: order.sources,
+      p_address_id: order.addressId,
+      p_payment_method: order.paymentMethod,
+      p_notes: order.notes,
+      p_quote_token: order.quoteToken,
+      p_route_quote_id: freshQuote.route_quote_id,
+      p_substitution_policy: order.substitutionPolicy,
   });
   if (error) throw error;
   return data as PlacedCombinedOrder;
+  });
 }
 
 const pendingKey = (userId: string) => `pending-combined-checkout:${userId}`;
@@ -250,3 +253,4 @@ export function combinedDefinitelyRejected(error: unknown) {
     'SAAS_APP_SUSPENDED','SAAS_CAPABILITY_DISABLED',
   ].includes(message);
 }
+

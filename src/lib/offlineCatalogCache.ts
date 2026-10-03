@@ -6,6 +6,7 @@ const MAX_BYTES = 4_000_000;
 
 const SAFE_QUERY_ROOTS = new Set([
   'categories',
+  'home-catalog-products',
   'active-banners',
   'productCollections',
   'active-products',
@@ -35,6 +36,8 @@ type CatalogSnapshot = {
   queries: CachedQuery[];
 };
 
+let activeClient: QueryClient | null = null;
+
 const safeRoot = (queryKey: QueryKey) => {
   const root = Array.isArray(queryKey) ? queryKey[0] : null;
   return typeof root === 'string' && SAFE_QUERY_ROOTS.has(root);
@@ -52,6 +55,7 @@ export function hasOfflineCatalogCache() {
 }
 
 export function hydrateOfflineCatalog(queryClient: QueryClient) {
+  activeClient = queryClient;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
@@ -87,12 +91,12 @@ function buildSnapshot(queryClient: QueryClient): CatalogSnapshot {
   // localStorage when the customer changes delivery branches repeatedly.
   let seenProducts = false;
   const compact = queries.filter(item => {
-    if (item.queryKey[0] !== 'active-products') return true;
+    if (!['active-products', 'home-catalog-products'].includes(String(item.queryKey[0]))) return true;
     if (seenProducts) return false;
     seenProducts = true;
     return true;
   }).map(item => {
-    if (item.queryKey[0] === 'active-products' && Array.isArray(item.data) && item.data.length > 600) {
+    if (['active-products', 'home-catalog-products'].includes(String(item.queryKey[0])) && Array.isArray(item.data) && item.data.length > 600) {
       return { ...item, data: item.data.slice(0, 600) };
     }
     return item;
@@ -114,7 +118,7 @@ export function subscribeOfflineCatalog(queryClient: QueryClient) {
       // If the full product cache exceeds browser storage limits, keep the
       // lightweight categories/banners/collections so offline mode stays useful.
       if (serialized.length > MAX_BYTES) {
-        snapshot.queries = snapshot.queries.filter(item => item.queryKey[0] !== 'active-products');
+        snapshot.queries = snapshot.queries.filter(item => !['active-products', 'home-catalog-products'].includes(String(item.queryKey[0])));
         serialized = JSON.stringify(snapshot);
       }
 
@@ -128,4 +132,9 @@ export function subscribeOfflineCatalog(queryClient: QueryClient) {
     if (timer) clearTimeout(timer);
     timer = setTimeout(persist, 700);
   });
+}
+
+
+export function readOfflineQuery<T>(key: QueryKey): T | undefined {
+  return activeClient?.getQueryData<T>(key);
 }
