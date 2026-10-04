@@ -7,22 +7,22 @@ The home renderer uses `get_public_home_page` and the existing five section type
 | Section | `data_source` | `display_config` |
 | --- | --- | --- |
 | `hero_banners` | `banner_ids` optional; `limit` | Slider; duplicate banners appear once |
-| `categories` | `category_ids` optional; `limit` (default 8, max 16) | `layout`: `grid` (four mobile columns) or `horizontal` |
+| `categories` | `category_ids` optional; `limit` (default 6, max 16) | `layout`: `grid` (three mobile columns) or `horizontal` |
 | `featured_products` | `mode`: `catalog`, `offers`, `buy_again`, `nearby_stores`; `limit` (max 24); optional `product_ids`, `category_ids` | `layout`: `horizontal` or `grid`; `dedupe`: defaults true |
-| `smart_recommendations` | `limit`; optional explicit `product_ids`, `category_ids` | Horizontal or two-column mobile grid; dedupe |
-| `product_collection` | Exact `collection_id` or explicit `all: true`; `limit` per collection | Horizontal or two-column mobile grid; dedupe |
+| `smart_recommendations` | `limit`; optional explicit `product_ids`, `category_ids` | Horizontal or three-column mobile grid; dedupe |
+| `product_collection` | Exact `collection_id` or explicit `all: true`; `limit` per collection | Horizontal or three-column mobile grid; dedupe |
 
 Product sections default to currently available stock. `include_unavailable: true` displays unavailable states. `offers` requires an actual positive offer price below the current regular price. Deduplication follows Growth order, using product plus listing identity; regular and bulk sale units remain distinct inside one module. Set `dedupe: false` for an intentional repeated campaign.
 
-`buy_again` reads the existing owner-scoped purchase-history RPC, considers completed purchases only, and matches exact product/listing IDs against the current address catalogue. It never reuses historical prices or guesses identity from names. Legacy store receipts lacking product IDs cannot appear in this module. The home queries up to 100 recent purchases; the orders screen remains the complete tracking destination.
+`buy_again` reads the existing owner-scoped purchase-history RPC, considers completed purchases only, and matches exact product/listing IDs against the current address catalogue. It never reuses historical prices or guesses identity from names. The history RPC now returns stable product IDs from nested store-receipt snapshots or explicit product_id fields. Receipts with no stored ID still cannot appear; identity is never guessed from a name. The home queries up to 100 recent purchases; the orders screen remains the complete tracking destination.
 
 Nearby stores use the existing location-scoped marketplace RPC and cache by coordinates. Catalogue source priority stays in the existing discovery RPC. The selected address follows the same deliverable/default ordering as branch resolution. Address changes refresh location, catalogue and home configuration.
 
 ## Growth and AI
 
-Growth Home Builder exposes source, layout, item count, deduplication and unavailable-product controls. Saving merges known fields into existing `data_source` and `display_config`, preserving extra IDs/metadata from AI, experiments and future clients. No database schema change is needed. Growth AI still analyzes and proposes actions through the existing gateway and human-confirmation flow; this release does not enable automatic publishing.
+Growth Home Builder exposes source, layout, item count, deduplication and unavailable-product controls. Saving merges known fields into existing `data_source` and `display_config`, preserving extra IDs/metadata from AI, experiments and future clients. The existing purchase-history RPC adds product_id without changing its owner filter or permissions. No table schema changes are required. Growth AI still analyzes and proposes actions through the existing gateway and human-confirmation flow; this release does not enable automatic publishing.
 
-For the recommended home order, arrange categories → one hero → buy again → offers → use-case collections → nearby stores → catalogue in the Growth draft. Use collections for breakfast, weekly shopping, cleaning and snacks, with actual selected product IDs. Publish through the existing Growth workflow. Existing live campaigns/drafts are not silently overwritten by a frontend release.
+For the recommended home order, arrange categories → one hero → buy again → offers → use-case collections → nearby stores → catalogue in the Growth draft. Use collections for breakfast, weekly shopping, cleaning and snacks, with actual selected product IDs. Publish through the existing Growth workflow. On 2026-10-04, at the user's request, buy again was added to the existing published page and draft with the same section_key at sort_order 25 (after categories). Categories were set to grid/6 items on both. Other campaigns, draft ordering, targeting and AI metadata were preserved. These remain configurable from Growth.
 
 The delivery summary uses branch-provided estimates, base fees and Cairo opening hours, with overnight support. It labels estimates as approximate and does not invent a live courier ETA. The current-order shortcut opens `/orders?order_id=…`, including grouped purchases.
 
