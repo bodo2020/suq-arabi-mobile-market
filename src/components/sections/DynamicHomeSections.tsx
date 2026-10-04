@@ -1,15 +1,18 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Sparkles } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, Store } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import BannersContainer from '@/components/ui/BannersContainer';
 import BannerSkeleton from '@/components/ui/BannerSkeleton';
 import CategoryItem from '@/components/ui/CategoryItem';
 import CategorySkeleton from '@/components/ui/CategorySkeleton';
-import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
-import ProductCard from '@/components/ui/ProductCard';
 import { Button } from '@/components/ui/button';
-import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
+import HomeProductSection from './HomeProductSection';
+import { useBranch } from '@/contexts/BranchContext';
+import { buildHomeProductGroups, homeIds, homeLimit, homeProductMode, visibleHomeSections, HomeCollection } from '@/lib/homeMerchandising';
+import { getHomePurchases } from '@/lib/homePurchases';
+import { getNearbyMarketplaceStores } from '@/lib/marketplace';
+import { loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
 import {
   defaultHomeSections,
   getHomeAnalyticsSessionKey,
@@ -18,8 +21,7 @@ import {
   HomeSectionConfig,
   trackHomeEvent,
 } from '@/lib/homePage';
-import { getCategories, getCurrentDeliveryBranchId, getProducts, MainCategory, Product, supabase } from '@/lib/supabase';
-import { getProductListWithVariants } from '@/utils/productUtils';
+import { getCategories, getProducts, supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 
 const SectionHeading = ({ title, subtitle, href }: { title?: string | null; subtitle?: string | null; href?: string }) => (
@@ -54,7 +56,8 @@ const TrackedSection = ({
 
   React.useEffect(() => {
     const node = ref.current;
-    if (!node || !pageId || section.id.startsWith('fallback-')) return;
+    if (!node || !pageId || section.id.startsWith('fallback-') || typeof IntersectionObserver === 'undefined') return;
+    impressionSent.current = false;
     const observer = new IntersectionObserver(entries => {
       const visible = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.25);
       if (visible && !impressionSent.current) {
@@ -98,182 +101,99 @@ const TrackedSection = ({
   );
 };
 
-const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { hidePromotions?: boolean; showBanners?: boolean }) => {
+const DynamicHomeSections = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const queryClient = useQueryClient();
+  const { user, authLoading } = useUser();
+  const { branch, branchLoading } = useBranch();
+  const branchId = branch?.delivery_branch_id || null;
   const guestSessionKey = React.useMemo(() => getHomeAnalyticsSessionKey(), []);
   const experimentSeed = user?.id || guestSessionKey;
   const cacheScope = user?.id || `guest:${guestSessionKey}`;
-
-  const branchQuery = useQuery({
-    queryKey: ['delivery-branch-id'],
-    queryFn: getCurrentDeliveryBranchId,
-    staleTime: 30_000,
-    refetchOnWindowFocus: true,
-  });
-
   const homeQuery = useQuery({
-    queryKey: ['public-home-page', branchQuery.data || 'global', cacheScope, experimentSeed],
-    queryFn: () => getPublicHomePage(branchQuery.data || null, cacheScope, experimentSeed),
-    enabled: !branchQuery.isLoading,
-    staleTime: 60_000,
-    refetchOnWindowFocus: true,
+    queryKey: ['public-home-page', branchId || 'global', cacheScope, experimentSeed],
+    queryFn: () => getPublicHomePage(branchId, cacheScope, experimentSeed),
+    enabled: !branchLoading && !authLoading,
+    networkMode: 'always', staleTime: 30_000, refetchInterval: 60_000, refetchOnWindowFocus: true,
   });
-
-  const sections = React.useMemo<HomeSectionConfig[]>(() => {
-    const configured = homeQuery.data?.sections;
-    const available = configured?.length ? configured : defaultHomeSections;
-    return hidePromotions ? available.filter(section => section.section_type === 'hero_banners' ? showBanners : !/(عروض|خصومات|فلاش|offers|flash)/i.test(section.title || '')) : available;
-  }, [homeQuery.data, hidePromotions, showBanners]);
-
-  const needsBanners = sections.some(section => section.section_type === 'hero_banners');
-  const needsCategories = sections.some(section => section.section_type === 'categories');
-  const needsFeatured = sections.some(section => section.section_type === 'featured_products');
-  const needsSmart = sections.some(section => section.section_type === 'smart_recommendations');
-  const needsCatalog = needsFeatured || needsSmart;
-  const recommendationLimit = React.useMemo(() => Math.max(12, ...sections
-    .filter(section => section.section_type === 'smart_recommendations')
-    .map(section => Math.max(3, Math.min(24, Number(section.data_source?.limit || 12))))), [sections]);
-
+  const sections = visibleHomeSections(homeQuery.data, defaultHomeSections, branchId);
+  const needsBanners = sections.some(s => s.section_type === 'hero_banners');
+  const needsCategories = sections.some(s => s.section_type === 'categories');
+  const needsCollections = sections.some(s => s.section_type === 'product_collection');
+  const needsSmart = sections.some(s => s.section_type === 'smart_recommendations');
+  const needsStores = sections.some(s => s.section_type === 'featured_products' && homeProductMode(s) === 'nearby_stores');
+  const needsPurchases = sections.some(s => s.section_type === 'featured_products' && homeProductMode(s) === 'buy_again');
+  const needsCatalog = needsCollections || needsSmart || sections.some(s => s.section_type === 'featured_products' && homeProductMode(s) !== 'nearby_stores');
+  const recommendationLimit = Math.max(12, ...sections.filter(s => s.section_type === 'smart_recommendations').map(s => homeLimit(s.data_source?.limit)));
+  const pointQuery = useQuery({ queryKey: ['home-delivery-point', user?.id || 'guest'], queryFn: loadSelectedDeliveryPoint, enabled: needsStores && !authLoading, staleTime: 30_000 });
+  React.useEffect(() => {
+    const refresh = () => { void queryClient.invalidateQueries({ queryKey: ['home-catalog-products'] }); void queryClient.invalidateQueries({ queryKey: ['home-delivery-point'] }); void queryClient.invalidateQueries({ queryKey: ['public-home-page'] }); };
+    window.addEventListener('guest-address-changed', refresh);
+    window.addEventListener('delivery-address-changed', refresh);
+    return () => { window.removeEventListener('guest-address-changed', refresh); window.removeEventListener('delivery-address-changed', refresh); };
+  }, [queryClient]);
   const bannersQuery = useQuery({
-    queryKey: ['active-banners'],
-    enabled: needsBanners,
+    queryKey: ['active-banners'], enabled: needsBanners,
     queryFn: async () => {
       const { data, error } = await supabase.from('banners').select('*').eq('active', true).order('position');
       if (error) throw error;
-      const now = Date.now();
-      return (data || []).filter(banner => {
-        const starts = banner.start_date ? new Date(banner.start_date).getTime() : null;
-        const ends = banner.end_date ? new Date(banner.end_date).getTime() : null;
-        return (!starts || starts <= now) && (!ends || ends > now);
-      });
-    },
-    staleTime: 300_000,
-    refetchOnWindowFocus: false,
+      return data || [];
+    }, staleTime: 60_000, refetchInterval: 60_000,
   });
-
-  const categoriesQuery = useQuery({
-    queryKey: ['categories'],
-    queryFn: getCategories,
-    enabled: needsCategories,
-    staleTime: 300_000,
-    refetchOnWindowFocus: false,
+  const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: getCategories, enabled: needsCategories, staleTime: 300_000 });
+  const catalogQuery = useQuery({ queryKey: ['home-catalog-products', branchId], queryFn: () => getProducts(), enabled: needsCatalog && Boolean(branchId), staleTime: 30_000, refetchOnWindowFocus: true });
+  const collectionsQuery = useQuery({
+    queryKey: ['productCollections'], enabled: needsCollections,
+    queryFn: async () => { const { data, error } = await supabase.from('product_collections').select('*').eq('active', true).order('position'); if (error) throw error; return (data || []) as HomeCollection[]; },
+    staleTime: 30_000, refetchInterval: 60_000,
   });
-
-  const catalogQuery = useQuery({
-    queryKey: ['home-catalog-products', branchQuery.data],
-    queryFn: () => getProducts(),
-    enabled: needsCatalog && Boolean(branchQuery.data),
-    staleTime: 30_000,
-    refetchOnWindowFocus: true,
+  const recommendationQuery = useQuery({ queryKey: ['home-recommendations', branchId, user?.id || 'guest', recommendationLimit], queryFn: () => getHomeRecommendationIds(branchId, recommendationLimit), enabled: needsSmart && Boolean(branchId), staleTime: 60_000 });
+  const purchasesQuery = useQuery({ queryKey: ['home-purchases', user?.id], queryFn: getHomePurchases, enabled: needsPurchases && Boolean(user) && !authLoading, staleTime: 30_000 });
+  const storesQuery = useQuery({
+    queryKey: ['home-nearby-stores', pointQuery.data?.latitude, pointQuery.data?.longitude, user?.id || 'guest'],
+    queryFn: () => getNearbyMarketplaceStores(24), enabled: needsStores && Boolean(pointQuery.data), staleTime: 30_000,
   });
-
-  const recommendationQuery = useQuery({
-    queryKey: ['home-recommendations', branchQuery.data, user?.id || 'guest', recommendationLimit],
-    queryFn: () => getHomeRecommendationIds(branchQuery.data || null, recommendationLimit),
-    enabled: needsSmart && Boolean(branchQuery.data),
-    staleTime: 60_000,
-    refetchOnWindowFocus: true,
-  });
-
-  if (branchQuery.isLoading || homeQuery.isLoading) {
-    return <div className="space-y-7"><BannerSkeleton /><div className="rounded-3xl bg-white p-4"><div className="grid grid-cols-3 gap-3 sm:grid-cols-5">{Array.from({ length: 5 }).map((_, i) => <CategorySkeleton key={i} />)}</div></div></div>;
-  }
-
-  const renderProductRail = (products: Product[], loading: boolean, title: string, subtitle?: string | null, smart = false) => !loading && !products.length ? null : (
-    <section className="rounded-[28px] border border-[#d8ebdf] bg-white p-4 shadow-[0_8px_28px_rgba(0,89,49,0.05)] sm:p-5">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            {smart && <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-[#005931]"><Sparkles size={16} /></span>}
-            <h2 className="text-xl font-black text-[#005931]">{title}</h2>
-          </div>
-          {subtitle && <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>}
-        </div>
-      </div>
-      {loading ? (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}</div>
-      ) : products.length ? (
-        <div className="hide-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2" dir="rtl">{getProductListWithVariants(products).map(product => <div key={product.variantKey} className="w-[124px] shrink-0 snap-start sm:w-[158px]"><ProductCard product={product} hideIfUnavailable={false} /></div>)}</div>
-      ) : null}
-    </section>
-  );
-
+  const groups = React.useMemo(() => buildHomeProductGroups(sections, catalogQuery.data || [], collectionsQuery.data || [], recommendationQuery.data || [], purchasesQuery.data || []), [sections, catalogQuery.data, collectionsQuery.data, recommendationQuery.data, purchasesQuery.data]);
+  if (branchLoading || authLoading || homeQuery.isLoading) return <div className="space-y-5"><div className="grid grid-cols-4 gap-2">{Array.from({ length: 8 }, (_, i) => <CategorySkeleton key={i} />)}</div><BannerSkeleton /></div>;
+  const usedBanners = new Set<string>();
   const renderSection = (section: HomeSectionConfig) => {
     const source = section.data_source || {};
-    const sectionTitle = section.title || undefined;
-    const sectionSubtitle = section.subtitle || undefined;
-
     if (section.section_type === 'hero_banners') {
       if (bannersQuery.isLoading) return <BannerSkeleton />;
-      if (!bannersQuery.data?.length) return null;
-      return <div className="overflow-hidden rounded-3xl shadow-sm"><BannersContainer banners={bannersQuery.data} /></div>;
+      const ids = homeIds(source.banner_ids);
+      const now = Date.now();
+      const banners = (bannersQuery.data || []).filter(b => (!ids.length || ids.includes(b.id)) && !usedBanners.has(b.id)
+        && (!b.start_date || Date.parse(b.start_date) <= now) && (!b.end_date || Date.parse(b.end_date) > now)).slice(0, homeLimit(source.limit, 5));
+      banners.forEach(b => usedBanners.add(b.id));
+      if (!banners.length) return null;
+      return <BannersContainer banners={banners} />;
     }
-
     if (section.section_type === 'categories') {
-      const categories = categoriesQuery.data || [];
+      const ids = homeIds(source.category_ids);
+      const categories = (categoriesQuery.data || []).filter(c => !ids.length || ids.includes(c.id)).slice(0, homeLimit(source.limit, 8, 16));
       if (!categoriesQuery.isLoading && !categoriesQuery.isError && !categories.length) return null;
-      return (
-        <section className="rounded-[28px] border border-[#d8ebdf] bg-white p-4 shadow-[0_8px_28px_rgba(0,89,49,0.05)] sm:p-5">
-          <SectionHeading title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle || 'وصل للي محتاجه بسرعة'} href="/categories" />
-          {categoriesQuery.isLoading ? (
-            <div className="grid grid-cols-3 gap-3">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
-          ) : categoriesQuery.isError ? (
-            <div className="rounded-2xl bg-gray-50 p-6 text-center"><p className="mb-3 text-sm text-gray-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
-              {categories.slice(0, 6).map((cat: MainCategory) => <CategoryItem key={cat.id} category={cat} variant="modern" onClick={() => navigate(`/category/${cat.id}`)} />)}
-            </div>
-          )}
-        </section>
-      );
+      return <section>
+        <SectionHeading title={section.title || 'تسوق حسب القسم'} subtitle={section.subtitle} href="/categories" />
+        {categoriesQuery.isLoading ? <div className="grid grid-cols-4 gap-2">{Array.from({ length: 8 }, (_, i) => <CategorySkeleton key={i} />)}</div>
+          : categoriesQuery.isError ? <div className="rounded-2xl bg-white p-4 text-center"><p className="mb-2 text-sm text-slate-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => void categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
+          : <div className={section.display_config?.layout==='horizontal'?'hide-scrollbar flex gap-3 overflow-x-auto pb-1':'grid grid-cols-4 gap-x-2 gap-y-3 sm:grid-cols-8'}>{categories.map(c => <div key={c.id} className={section.display_config?.layout==='horizontal'?'w-20 shrink-0 sm:w-24':'min-w-0'}><CategoryItem category={c} onClick={() => navigate(`/category/${c.id}`)} /></div>)}</div>}
+      </section>;
     }
-
-    if (section.section_type === 'featured_products') {
-      const limit = Math.max(3, Math.min(24, Number(source.limit || 12)));
-      const products = (catalogQuery.data || []).slice(0, limit);
-      if (!branchQuery.data) return null;
-      return renderProductRail(products, catalogQuery.isLoading, sectionTitle || 'منتجات مميزة', sectionSubtitle);
+    if (section.section_type === 'featured_products' && homeProductMode(section) === 'nearby_stores') {
+      const stores = (storesQuery.data || []).filter(s => s.available_products > 0).slice(0, homeLimit(source.limit, 6));
+      if (!stores.length) return null;
+      return <section><SectionHeading title={section.title || 'متاجر قريبة منك'} subtitle={section.subtitle} href="/stores" /><div className={section.display_config?.layout==='grid'?'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3':'hide-scrollbar flex gap-3 overflow-x-auto pb-1'}>{stores.map(s => <Link to={`/stores/${s.branch_id}`} key={s.branch_id} className={`flex min-h-24 shrink-0 items-center gap-3 rounded-2xl border border-[#d8ebdf] bg-white p-3 ${section.display_config?.layout==='grid'?'min-w-0':'w-64'}`}><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff5d3] text-[#005931]"><Store size={22} /></span><div className="min-w-0"><h3 className="truncate text-sm font-bold text-[#005931]">{s.merchant_name}</h3><p className="mt-1 truncate text-xs text-slate-500">{s.branch_name}</p><p className="mt-1 text-xs text-slate-500">توصيل {s.delivery_fee.toLocaleString('ar-EG')} ج.م</p></div></Link>)}</div></section>;
     }
-
-    if (section.section_type === 'smart_recommendations') {
-      if (!branchQuery.data) return null;
-      const limit = Math.max(3, Math.min(24, Number(source.limit || 12)));
-      const catalog = catalogQuery.data || [];
-      const productMap = new Map(catalog.map(product => [product.id, product]));
-      const recommended = (recommendationQuery.data || []).map(id => productMap.get(id)).filter((product): product is Product => Boolean(product)).slice(0, limit);
-      const fallback = recommended.length ? recommended : catalog.slice(0, limit);
-      return renderProductRail(
-        fallback,
-        catalogQuery.isLoading || recommendationQuery.isLoading,
-        sectionTitle || 'مقترحة ليك',
-        sectionSubtitle || (user ? 'اختيارات مبنية على تسوقك السابق' : 'الأكثر طلبًا عند عملائنا'),
-        true,
-      );
-    }
-
-    if (section.section_type === 'product_collection') {
-      const collectionId = typeof source.collection_id === 'string' ? source.collection_id : undefined;
-      const all = source.all === true;
-      return <ProductCollectionsSection collectionId={all ? undefined : collectionId} titleOverride={collectionId ? sectionTitle : undefined} subtitleOverride={collectionId ? sectionSubtitle : undefined} />;
-    }
-
-    return null;
+    if (!branchId) return null;
+    if (homeProductMode(section) === 'buy_again' && !user) return null;
+    const loading = catalogQuery.isLoading || (section.section_type === 'product_collection' && collectionsQuery.isLoading) || (section.section_type === 'smart_recommendations' && recommendationQuery.isLoading) || (homeProductMode(section) === 'buy_again' && Boolean(user) && purchasesQuery.isLoading);
+    const error = catalogQuery.isError || (section.section_type === 'product_collection' && collectionsQuery.isError) || (homeProductMode(section) === 'buy_again' && purchasesQuery.isError);
+    const productGroups = groups.get(section.id) || [];
+    if (!productGroups.length && (loading || error)) return <HomeProductSection section={section} products={[]} title={section.title || 'منتجات'} loading={loading} error={error} onRetry={() => { void catalogQuery.refetch(); void collectionsQuery.refetch(); }} />;
+    if (!productGroups.some(g => g.products.length) && !loading && !error && catalogQuery.fetchStatus !== 'paused') return null;
+    return <div className="space-y-5">{productGroups.map(g => <HomeProductSection key={g.key} section={section} products={g.products} title={g.title} subtitle={g.subtitle} smart={g.personalized} loading={loading} error={error} paused={!catalogQuery.data && catalogQuery.fetchStatus === 'paused'} onRetry={() => { void catalogQuery.refetch(); if (section.section_type === 'product_collection') void collectionsQuery.refetch(); if (homeProductMode(section) === 'buy_again') void purchasesQuery.refetch(); }} />)}</div>;
   };
-
-  return (
-    <div className="space-y-7">
-      {sections.filter(section => section.is_active !== false).map(section => {
-        const content = renderSection(section);
-        if (!content) return null;
-        return (
-          <TrackedSection key={section.section_key || section.id} pageId={homeQuery.data?.id} branchId={branchQuery.data} section={section}>
-            {content}
-          </TrackedSection>
-        );
-      })}
-    </div>
-  );
+  return <div className="space-y-6">{sections.map(section => { const content = renderSection(section); return content ? <TrackedSection key={section.id} pageId={homeQuery.data?.id} branchId={branchId} section={section}>{content}</TrackedSection> : null; })}</div>;
 };
 
 export default React.memo(DynamicHomeSections);

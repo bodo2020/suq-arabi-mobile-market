@@ -16,7 +16,7 @@
     "android:open": "npx cap open android",
     "android:run": "npm run android:sync && npx cap run android",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "test:customer": "node scripts/test-phone-recovery.mjs && node scripts/test-otp-resend.mjs && node scripts/test-smart-product-search.mjs && node scripts/test-store-sections.mjs && node scripts/test-section-chip-scroll.mjs && node --test scripts/test-customer-reliability.mjs"
+    "test:customer": "node scripts/test-phone-recovery.mjs && node scripts/test-otp-resend.mjs && node scripts/test-smart-product-search.mjs && node scripts/test-store-sections.mjs && node scripts/test-section-chip-scroll.mjs && node --test scripts/test-customer-reliability.mjs && node --test scripts/test-home-merchandising.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",

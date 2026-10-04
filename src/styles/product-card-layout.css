@@ -40,4 +40,19 @@
     flex: 0 0 min(124px, calc((100vw - 3rem) / 3)) !important;
     margin-inline: 0 !important;
   }
+
+  /* Home modules have wider cards, independently of existing catalogue pages. */
+  .home-product-grid.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+  .home-product-rail.flex {
+    gap: 0.75rem !important;
+  }
+  .home-product-rail.flex > *:has(> [data-product-card="v3-compact"]) {
+    width: min(176px, calc((100vw - 2.25rem) / 2)) !important;
+    min-width: min(176px, calc((100vw - 2.25rem) / 2)) !important;
+    max-width: min(176px, calc((100vw - 2.25rem) / 2)) !important;
+    flex: 0 0 min(176px, calc((100vw - 2.25rem) / 2)) !important;
+  }
 }
