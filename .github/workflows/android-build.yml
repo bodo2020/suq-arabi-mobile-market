@@ -43,6 +43,9 @@ jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: write
     env:
       APP_VERSION_BASE: '1.2'
       APP_VERSION_CODE_BASE: '120165'
@@ -54,6 +57,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Remove old customer APK artifacts requested on 2026-10-04
+        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/super-marko-capacitor'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifactIds = [11293864653,11293799457,11283635044,11282393387,10940222496,10913739811,10914527470,10913465849,10913049062,10841242759];
+            let freed = 0;
+            for (const artifact_id of artifactIds) {
+              try {
+                const { data: artifact } = await github.rest.actions.getArtifact({ ...context.repo, artifact_id });
+                if (!artifact.name.startsWith('elmadawy-customer-')) throw new Error('Unexpected artifact name');
+                await github.rest.actions.deleteArtifact({ ...context.repo, artifact_id });
+                freed += artifact.size_in_bytes;
+                core.info('Deleted ' + artifact.name + ' (' + artifact.size_in_bytes + ' bytes)');
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                core.info('Artifact ' + artifact_id + ' already removed');
+              }
+            }
+            core.summary.addHeading('Requested APK cleanup').addRaw('Removed up to ' + artifactIds.length + ' old customer builds; freed ' + freed + ' bytes.').write();
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
