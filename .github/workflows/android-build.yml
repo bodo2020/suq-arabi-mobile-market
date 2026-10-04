@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
-      contents: read
+      contents: write
       actions: write
     env:
       APP_VERSION_BASE: '1.2'
@@ -168,6 +168,8 @@ jobs:
         run: cp android/app/build/outputs/apk/debug/app-debug.apk "android/app/build/outputs/apk/debug/elmadawy-customer-build-${{ github.run_number }}.apk"
 
       - name: Upload debug APK
+        id: apk_artifact
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: elmadawy-customer-build-${{ github.run_number }}
@@ -175,6 +177,38 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+
+      - name: Export APK when Actions artifact quota is unavailable
+        if: steps.apk_artifact.outcome == 'failure' && github.event_name == 'push' && github.ref == 'refs/heads/codex/super-marko-capacitor'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const crypto = require('crypto');
+            const path = 'android/app/build/outputs/apk/debug/elmadawy-customer-build-' + context.runNumber + '.apk';
+            const apk = fs.readFileSync(path);
+            const gradle = fs.readFileSync('android/app/build.gradle', 'utf8');
+            const versionName = gradle.match(/versionName\\s+["']([^"']+)["']/)[1];
+            const versionCode = Number(gradle.match(/versionCode\\s+(\\d+)/)[1]);
+            const manifest = { filename: 'SuperMarko-' + versionName + '.apk', versionName, versionCode, size: apk.length, sha256: crypto.createHash('sha256').update(apk).digest('hex'), sourceCommit: context.sha, parts: [] };
+            const tree = [];
+            const partBytes = 262144;
+            for (let offset = 0, index = 0; offset < apk.length; offset += partBytes, index++) {
+              const file = 'apk-parts/part-' + String(index).padStart(3, '0') + '.b64';
+              const data = apk.subarray(offset, offset + partBytes).toString('base64');
+              const { data: blob } = await github.rest.git.createBlob({ ...context.repo, content: data, encoding: 'utf-8' });
+              tree.push({ path: file, mode: '100644', type: 'blob', sha: blob.sha });
+              manifest.parts.push(file);
+            }
+            const { data: manifestBlob } = await github.rest.git.createBlob({ ...context.repo, content: JSON.stringify(manifest, null, 2), encoding: 'utf-8' });
+            tree.push({ path: 'apk-manifest.json', mode: '100644', type: 'blob', sha: manifestBlob.sha });
+            const { data: exportTree } = await github.rest.git.createTree({ ...context.repo, tree });
+            const { data: exportCommit } = await github.rest.git.createCommit({ ...context.repo, message: 'Private APK download export ' + versionName, tree: exportTree.sha, parents: [] });
+            const branch = 'build/customer-apk-' + context.runId;
+            await github.rest.git.createRef({ ...context.repo, ref: 'refs/heads/' + branch, sha: exportCommit.sha });
+            core.info('APK_EXPORT_BRANCH=' + branch);
+            core.info('APK_EXPORT_SHA256=' + manifest.sha256);
+            await core.summary.addHeading('APK download export').addRaw(manifest.filename + ' (' + manifest.size + ' bytes) is available on private branch ' + branch + '.').write();
 
       - name: Remove signing material
         if: always()
