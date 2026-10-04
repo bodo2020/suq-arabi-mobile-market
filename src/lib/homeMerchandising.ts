@@ -89,7 +89,7 @@ export function buildHomeProductGroups(sections: HomeSectionConfig[], catalog: P
     if (section.section_type === 'featured_products' && mode !== 'nearby_stores') {
       if (mode === 'offers') candidates = candidates.filter(hasRealHomeOffer);
       if (mode === 'buy_again') candidates = configuredIds.length ? purchased.filter(p => configuredIds.includes(p.id)) : purchased;
-      groups.set(section.id, [{ key: section.id, title: section.title || (mode === 'offers' ? 'عروض تستاهل' : mode === 'buy_again' ? 'اشتري تاني' : 'تصفح المنتجات'), subtitle: section.subtitle, products: take(candidates), personalized: false }]);
+      groups.set(section.id, [{ key: section.id, title: section.title || (mode === 'offers' ? 'عروض تستاهل' : mode === 'buy_again' ? 'اشتريها تاني' : 'تصفح المنتجات'), subtitle: section.subtitle, products: take(candidates), personalized: false }]);
     } else if (section.section_type === 'smart_recommendations') {
       const recommended = recommendations.flatMap(id => catalog.filter(p => p.id === id));
       candidates = configuredIds.length ? candidates : recommended.length ? recommended : candidates;

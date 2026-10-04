@@ -24,7 +24,7 @@ export default function HomeProductSection({ section, products, title, subtitle,
         <h2 className="flex items-center gap-2 text-lg font-black text-[#005931] sm:text-xl">{smart && <Sparkles size={18} />}{title}</h2>
         {subtitle && <p className="mt-1 text-xs leading-5 text-slate-500">{subtitle}</p>}
       </div>
-      <Link to={section.data_source?.mode === 'offers' ? '/offers' : '/search'} className="flex min-h-11 shrink-0 items-center gap-1 px-1 text-xs font-bold text-[#005931]">عرض الكل<ChevronLeft size={16} /></Link>
+      <Link to={section.data_source?.mode === 'offers' ? '/offers' : section.data_source?.mode === 'buy_again' ? '/orders' : '/search'} className="flex min-h-11 shrink-0 items-center gap-1 px-1 text-xs font-bold text-[#005931]">عرض الكل<ChevronLeft size={16} /></Link>
     </div>
     {paused ? <p role="status" className="rounded-2xl bg-amber-50 p-4 text-sm">افتح المتجر بالإنترنت أول مرة لتحميل منتجات العنوان ده.</p>
       : error ? <div className="rounded-2xl bg-white p-4 text-center"><p className="text-sm text-slate-600">تعذّر تحميل المنتجات</p><button type="button" onClick={onRetry} className="mt-2 min-h-11 rounded-xl bg-[#fff5d3] px-4 text-sm font-bold text-[#005931]">إعادة المحاولة</button></div>

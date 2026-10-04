@@ -154,7 +154,7 @@ const DynamicHomeSections = () => {
     queryFn: () => getNearbyMarketplaceStores(24), enabled: needsStores && Boolean(pointQuery.data), staleTime: 30_000,
   });
   const groups = React.useMemo(() => buildHomeProductGroups(sections, catalogQuery.data || [], collectionsQuery.data || [], recommendationQuery.data || [], purchasesQuery.data || []), [sections, catalogQuery.data, collectionsQuery.data, recommendationQuery.data, purchasesQuery.data]);
-  if (branchLoading || authLoading || homeQuery.isLoading) return <div className="space-y-5"><div className="grid grid-cols-4 gap-2">{Array.from({ length: 8 }, (_, i) => <CategorySkeleton key={i} />)}</div><BannerSkeleton /></div>;
+  if (branchLoading || authLoading || homeQuery.isLoading) return <div className="space-y-5"><div className="rounded-3xl bg-white p-4"><div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">{Array.from({ length: 6 }, (_, i) => <CategorySkeleton key={i} />)}</div></div><BannerSkeleton /></div>;
   const usedBanners = new Set<string>();
   const renderSection = (section: HomeSectionConfig) => {
     const source = section.data_source || {};
@@ -170,13 +170,13 @@ const DynamicHomeSections = () => {
     }
     if (section.section_type === 'categories') {
       const ids = homeIds(source.category_ids);
-      const categories = (categoriesQuery.data || []).filter(c => !ids.length || ids.includes(c.id)).slice(0, homeLimit(source.limit, 8, 16));
+      const categories = (categoriesQuery.data || []).filter(c => !ids.length || ids.includes(c.id)).slice(0, homeLimit(source.limit, 6, 16));
       if (!categoriesQuery.isLoading && !categoriesQuery.isError && !categories.length) return null;
-      return <section>
+      return <section className="rounded-[28px] border border-[#d8ebdf] bg-white p-4 shadow-[0_8px_28px_rgba(0,89,49,0.05)] sm:p-5">
         <SectionHeading title={section.title || 'تسوق حسب القسم'} subtitle={section.subtitle} href="/categories" />
-        {categoriesQuery.isLoading ? <div className="grid grid-cols-4 gap-2">{Array.from({ length: 8 }, (_, i) => <CategorySkeleton key={i} />)}</div>
+        {categoriesQuery.isLoading ? <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">{Array.from({ length: 6 }, (_, i) => <CategorySkeleton key={i} />)}</div>
           : categoriesQuery.isError ? <div className="rounded-2xl bg-white p-4 text-center"><p className="mb-2 text-sm text-slate-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => void categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
-          : <div className={section.display_config?.layout==='horizontal'?'hide-scrollbar flex gap-3 overflow-x-auto pb-1':'grid grid-cols-4 gap-x-2 gap-y-3 sm:grid-cols-8'}>{categories.map(c => <div key={c.id} className={section.display_config?.layout==='horizontal'?'w-20 shrink-0 sm:w-24':'min-w-0'}><CategoryItem category={c} onClick={() => navigate(`/category/${c.id}`)} /></div>)}</div>}
+          : <div className={section.display_config?.layout==='horizontal'?'hide-scrollbar flex gap-3 overflow-x-auto pb-1':'grid grid-cols-3 gap-2.5 sm:grid-cols-6'}>{categories.map(c => <div key={c.id} className={section.display_config?.layout==='horizontal'?'w-[124px] shrink-0 sm:w-[158px]':'min-w-0'}><CategoryItem category={c} variant="modern" onClick={() => navigate(`/category/${c.id}`)} /></div>)}</div>}
       </section>;
     }
     if (section.section_type === 'featured_products' && homeProductMode(section) === 'nearby_stores') {
