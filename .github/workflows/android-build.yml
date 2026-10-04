@@ -188,8 +188,8 @@ jobs:
             const path = 'android/app/build/outputs/apk/debug/elmadawy-customer-build-' + context.runNumber + '.apk';
             const apk = fs.readFileSync(path);
             const gradle = fs.readFileSync('android/app/build.gradle', 'utf8');
-            const versionName = gradle.match(/versionName\\s+["']([^"']+)["']/)[1];
-            const versionCode = Number(gradle.match(/versionCode\\s+(\\d+)/)[1]);
+            const versionName = gradle.match(/versionName[ ]+["']([^"']+)["']/)[1];
+            const versionCode = Number(gradle.match(/versionCode[ ]+([0-9]+)/)[1]);
             const manifest = { filename: 'SuperMarko-' + versionName + '.apk', versionName, versionCode, size: apk.length, sha256: crypto.createHash('sha256').update(apk).digest('hex'), sourceCommit: context.sha, parts: [] };
             const tree = [];
             const partBytes = 262144;
