@@ -24,13 +24,13 @@ export default function UnifiedCatalogSection() {
   if (!branchLoading && !branch) return null;
 
   return (
-    <section className="rounded-[28px] border border-[#d8ebdf] bg-white p-4 shadow-[0_8px_28px_rgba(0,89,49,0.05)] sm:p-6">
+    <section className="rounded-3xl border border-[#d8ebdf] bg-white p-3 sm:p-5">
       <div className="mb-5 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 items-start gap-2">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff5d3] text-[#005931]"><ShoppingBag size={20} /></span>
           <div className="min-w-0">
-            <h2 className="text-xl font-black text-[#005931]">اختياراتك اليومية</h2>
-            <p className="mt-1 text-xs leading-5 text-slate-500">منتجات الفرع المتاحة لعنوانك في مكان واحد</p>
+            <h2 className="text-lg font-black text-[#005931] sm:text-xl">اختياراتك اليومية</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-500">تسوّق المنتجات المتاحة لعنوانك</p>
           </div>
         </div>
         <Link to="/search" className="flex min-h-10 shrink-0 items-center gap-1 rounded-xl bg-[#fff5d3] px-3 text-xs font-bold text-[#005931] hover:bg-[#ffe78d]">بحث <ArrowLeft size={15} /></Link>

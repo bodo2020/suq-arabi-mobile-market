@@ -24,10 +24,10 @@ const CollectionCard = ({ collection, products }: { collection: CollectionData; 
   if (!variants.length) return null;
 
   return (
-    <section className="overflow-hidden rounded-[28px] border border-[#d8ebdf] bg-white p-4 shadow-[0_8px_28px_rgba(0,89,49,0.05)] sm:p-5" aria-label={collection.title}>
-      <div className="mb-4 flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]">
-          <Layers3 size={22} />
+    <section className="overflow-hidden rounded-3xl border border-[#d8ebdf] bg-white p-3 sm:p-5" aria-label={collection.title}>
+      <div className="mb-4 flex items-start gap-2">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff5d3] text-[#005931]">
+          <Layers3 size={20} />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-black leading-7 text-[#005931] sm:text-xl">{collection.title}</h2>

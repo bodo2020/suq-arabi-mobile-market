@@ -68,11 +68,12 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
       onBlurCapture={startRotation}
     >
       <div
-        className="flex transition-transform duration-500 ease-in-out"
+        dir="ltr"
+        className="flex transition-transform duration-500 ease-in-out motion-reduce:transition-none"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         {banners.map(banner => (
-          <div key={banner.id} className="w-full flex-shrink-0">
+          <div key={banner.id} dir="rtl" className="w-full flex-shrink-0">
             <div
               className="relative h-44 w-full cursor-pointer sm:h-60 lg:h-72"
               onClick={() => handleBannerClick(banner)}

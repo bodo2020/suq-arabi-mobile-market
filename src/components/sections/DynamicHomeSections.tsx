@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Sparkles } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Grid3X3, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import BannersContainer from '@/components/ui/BannersContainer';
 import BannerSkeleton from '@/components/ui/BannerSkeleton';
 import CategoryItem from '@/components/ui/CategoryItem';
@@ -21,16 +21,6 @@ import {
 import { getCategories, getCurrentDeliveryBranchId, getProducts, MainCategory, Product, supabase } from '@/lib/supabase';
 import { getProductListWithVariants } from '@/utils/productUtils';
 import { useUser } from '@/contexts/UserContext';
-
-const SectionHeading = ({ title, subtitle, href }: { title?: string | null; subtitle?: string | null; href?: string }) => (
-  <div className="mb-4 flex items-end justify-between gap-3">
-    <div className="min-w-0">
-      {title && <h2 className="text-xl font-black text-[#005931]">{title}</h2>}
-      {subtitle && <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>}
-    </div>
-    {href && <Link to={href} className="flex min-h-10 shrink-0 items-center gap-1 rounded-xl px-3 text-sm font-bold text-[#005931] hover:bg-emerald-50">عرض الكل<ChevronLeft size={17} /></Link>}
-  </div>
-);
 
 const eventMetadata = (section: HomeSectionConfig) => ({
   section_type: section.section_type,
@@ -126,10 +116,10 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
     return hidePromotions ? available.filter(section => section.section_type === 'hero_banners' ? showBanners : !/(عروض|خصومات|فلاش|offers|flash)/i.test(section.title || '')) : available;
   }, [homeQuery.data, hidePromotions, showBanners]);
 
-  const needsBanners = sections.some(section => section.section_type === 'hero_banners');
-  const needsCategories = sections.some(section => section.section_type === 'categories');
-  const needsFeatured = sections.some(section => section.section_type === 'featured_products');
-  const needsSmart = sections.some(section => section.section_type === 'smart_recommendations');
+  const needsBanners = sections.some(section => section.is_active !== false && section.section_type === 'hero_banners');
+  const needsCategories = sections.some(section => section.is_active !== false && section.section_type === 'categories');
+  const needsFeatured = sections.some(section => section.is_active !== false && section.section_type === 'featured_products');
+  const needsSmart = sections.some(section => section.is_active !== false && section.section_type === 'smart_recommendations');
   const needsCatalog = needsFeatured || needsSmart;
   const recommendationLimit = React.useMemo(() => Math.max(12, ...sections
     .filter(section => section.section_type === 'smart_recommendations')
@@ -177,7 +167,7 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
   });
 
   if (branchQuery.isLoading || homeQuery.isLoading) {
-    return <div className="space-y-7"><BannerSkeleton /><div className="rounded-3xl bg-white p-4"><div className="grid grid-cols-3 gap-3 sm:grid-cols-5">{Array.from({ length: 5 }).map((_, i) => <CategorySkeleton key={i} />)}</div></div></div>;
+    return <div className="space-y-5" aria-label="جاري تحميل الرئيسية" aria-busy="true"><BannerSkeleton /><div className="rounded-3xl bg-white p-3 sm:p-5"><div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div></div></div>;
   }
 
   const renderProductRail = (products: Product[], loading: boolean, title: string, subtitle?: string | null, smart = false) => !loading && !products.length ? null : (
@@ -214,15 +204,22 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
       const categories = categoriesQuery.data || [];
       if (!categoriesQuery.isLoading && !categoriesQuery.isError && !categories.length) return null;
       return (
-        <section className="rounded-[28px] border border-[#d8ebdf] bg-white p-4 shadow-[0_8px_28px_rgba(0,89,49,0.05)] sm:p-5">
-          <SectionHeading title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle || 'وصل للي محتاجه بسرعة'} href="/categories" />
+        <section aria-label="كل الأقسام" className="rounded-3xl border border-[#d8ebdf] bg-white p-3 sm:p-5">
+          <div className="mb-4 flex items-center gap-2.5 px-1">
+            <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff5d3] text-[#005931] sm:flex"><Grid3X3 size={20} /></span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-black text-[#005931] sm:text-xl">{sectionTitle || 'تسوق حسب القسم'}</h2>
+              <p className="mt-0.5 text-xs leading-5 text-slate-500">اختار القسم اللي تحتاجه</p>
+            </div>
+            {!categoriesQuery.isLoading && categories.length > 0 && <span className="shrink-0 rounded-full bg-[#eaf6ee] px-2.5 py-1 text-xs font-bold tabular-nums text-[#005931]">{categories.length} قسم</span>}
+          </div>
           {categoriesQuery.isLoading ? (
-            <div className="grid grid-cols-3 gap-3">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
           ) : categoriesQuery.isError ? (
             <div className="rounded-2xl bg-gray-50 p-6 text-center"><p className="mb-3 text-sm text-gray-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
           ) : (
-            <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
-              {categories.slice(0, 6).map((cat: MainCategory) => <CategoryItem key={cat.id} category={cat} variant="modern" onClick={() => navigate(`/category/${cat.id}`)} />)}
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-6">
+              {categories.map((cat: MainCategory) => <CategoryItem key={cat.id} category={cat} variant="home" onClick={() => navigate(`/category/${cat.id}`)} />)}
             </div>
           )}
         </section>
@@ -262,7 +259,7 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
   };
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-6">
       {sections.filter(section => section.is_active !== false).map(section => {
         const content = renderSection(section);
         if (!content) return null;

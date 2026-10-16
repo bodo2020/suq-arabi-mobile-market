@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 const gradlePath = 'android/app/build.gradle';
 const runNumber = Number(process.env.GITHUB_RUN_NUMBER || process.env.APP_BUILD_NUMBER || 1);
 const versionBase = String(process.env.APP_VERSION_BASE || '1.2').trim();
-const baseCode = Number(process.env.APP_VERSION_CODE_BASE || 120172);
+const baseCode = Number(process.env.APP_VERSION_CODE_BASE || 120173);
 const versionCode = Number(process.env.APP_VERSION_CODE || baseCode + runNumber);
 const versionName = String(process.env.APP_VERSION_NAME || `${versionBase}.${versionCode - 120000}`).trim();
 

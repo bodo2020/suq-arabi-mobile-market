@@ -7,7 +7,7 @@ interface CategoryItemProps {
   category: MainCategory;
   hideTitle?: boolean;
   onClick?: (category: MainCategory) => void;
-  variant?: 'default' | 'modern';
+  variant?: 'default' | 'modern' | 'home';
 }
 
 const CategoryItem = ({ category, hideTitle = false, onClick, variant = 'default' }: CategoryItemProps) => {
@@ -16,6 +16,26 @@ const CategoryItem = ({ category, hideTitle = false, onClick, variant = 'default
     event.preventDefault();
     onClick(category);
   };
+
+  if (variant === 'home') {
+    return (
+      <Link
+        to={`/category/${category.id}`}
+        onClick={handleClick}
+        className="group flex min-w-0 flex-col items-center rounded-2xl border border-transparent bg-[#f6f8f7] p-2 transition-colors hover:border-[#c8e0d2] hover:bg-[#fff5d3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        aria-label={`تصفح قسم ${category.name}`}
+      >
+        <div className="flex aspect-square w-full max-w-[104px] items-center justify-center overflow-hidden rounded-xl bg-white">
+          {category.image_url ? (
+            <img src={category.image_url} alt="" className="h-full w-full object-contain motion-safe:transition-transform motion-safe:group-hover:scale-105" loading="lazy" decoding="async" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }} />
+          ) : (
+            <span aria-hidden="true" className="text-3xl font-black text-[#005931]">{category.name.charAt(0)}</span>
+          )}
+        </div>
+        {!hideTitle && <span className="mt-2 w-full break-words text-center text-xs font-bold leading-5 text-[#005931] sm:text-sm">{category.name}</span>}
+      </Link>
+    );
+  }
 
   if (variant === 'default') {
     return (
