@@ -1,5 +1,5 @@
-import { memo, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Layers3 } from 'lucide-react';
+import { memo, useId, useMemo, useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
 import type { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { getProductListWithVariants } from '@/utils/productUtils';
@@ -19,29 +19,39 @@ interface CollectionsListProps {
 const CollectionCard = ({ collection, products }: { collection: CollectionData; products: Product[] }) => {
   const [expanded, setExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
+  const productsId = useId();
   const variants = useMemo(() => getProductListWithVariants(products), [products]);
 
   if (!variants.length) return null;
 
   return (
     <section className="overflow-hidden rounded-3xl border border-[#d8ebdf] bg-white p-3 sm:p-5" aria-label={collection.title}>
-      <div className="mb-4 flex items-start gap-2">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff5d3] text-[#005931]">
-          <Layers3 size={20} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-black leading-7 text-[#005931] sm:text-xl">{collection.title}</h2>
-          {collection.description && <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">{collection.description}</p>}
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 border-r-[3px] border-[#FFC120] pr-2.5">
+          <h2 className="text-base font-black leading-6 text-[#005931] sm:text-xl">{collection.title}</h2>
+          <p className="mt-1 text-[11px] font-medium tabular-nums text-slate-500">{variants.length} منتج</p>
         </div>
-        <span className="shrink-0 rounded-full bg-[#eaf6ee] px-2.5 py-1 text-[11px] font-bold text-[#005931]">{variants.length} منتج</span>
+        {variants.length > 3 && (
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={productsId}
+            aria-label={expanded ? `اختصار مجموعة ${collection.title}` : `عرض كل منتجات ${collection.title}`}
+            onClick={() => { setExpanded(value => !value); setVisibleCount(12); }}
+            className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl px-2 text-xs font-bold text-[#005931] hover:bg-[#fff5d3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:text-sm"
+          >
+            {expanded ? <>عرض أقل <ChevronUp size={16} /></> : <>عرض الكل <ChevronLeft size={16} /></>}
+          </button>
+        )}
       </div>
+      {collection.description && <p className="-mt-2 mb-4 text-xs leading-5 text-slate-500 sm:text-sm">{collection.description}</p>}
 
       {expanded ? (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-6">
+        <div id={productsId} className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-6">
           {variants.slice(0, visibleCount).map(product => <ProductCard key={product.variantKey} product={product} hideIfUnavailable={false} showBulkQuantity={false} />)}
         </div>
       ) : (
-        <div className="hide-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2" dir="rtl" aria-label={`منتجات ${collection.title}`}>
+        <div id={productsId} className="hide-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2" dir="rtl" aria-label={`منتجات ${collection.title}`}>
           {variants.slice(0, 6).map(product => (
             <div key={product.variantKey} className="w-[124px] shrink-0 snap-start sm:w-[158px]">
               <ProductCard product={product} hideIfUnavailable={false} showBulkQuantity={false} />
@@ -51,13 +61,8 @@ const CollectionCard = ({ collection, products }: { collection: CollectionData; 
       )}
 
       {expanded && visibleCount < variants.length && (
-        <button type="button" onClick={() => setVisibleCount(count => count + 12)} className="mt-4 min-h-11 w-full rounded-xl border border-[#c8e0d2] bg-white px-4 text-sm font-bold text-[#005931] hover:bg-[#fff5d3]">
-          عرض منتجات أكثر
-        </button>
-      )}
-      {variants.length > 3 && (
-        <button type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)} className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#fff5d3] px-4 text-sm font-bold text-[#005931] hover:bg-[#ffe78d]">
-          {expanded ? <><ChevronUp size={17} /> عرض مختصر</> : <><ChevronDown size={17} /> عرض كل المجموعة</>}
+        <button type="button" onClick={() => setVisibleCount(count => count + 12)} className="mx-auto mt-4 flex min-h-11 items-center justify-center gap-1 rounded-xl px-4 text-xs font-bold text-[#005931] hover:bg-[#fff5d3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+          عرض {Math.min(12, variants.length - visibleCount)} منتج إضافي <ChevronDown size={16} />
         </button>
       )}
     </section>
