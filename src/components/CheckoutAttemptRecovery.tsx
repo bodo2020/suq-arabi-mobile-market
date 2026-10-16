@@ -1,70 +1,93 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
-import { checkoutLines, readPendingCheckout, removePendingCheckout, type PlacedOrder } from '@/lib/checkout';
-import { marketplaceCheckoutLines, readPendingMarketplaceCheckout, removePendingMarketplaceCheckout } from '@/lib/marketplaceCheckout';
-import { combinedCheckoutSources, readPendingCombinedCheckout, removePendingCombinedCheckout, type PlacedCombinedOrder } from '@/lib/combinedCheckout';
-import { recoverCheckout, type CheckoutKind } from '@/lib/checkoutRecovery';
+import { useToast } from '@/hooks/use-toast';
+import {
+  checkoutLines,
+  readPendingCheckout,
+  reconcilePendingCheckoutAttempt,
+  removePendingCheckout,
+} from '@/lib/checkout';
+
+const RECOVERED_FLAG = 'checkout-attempt-recovered';
 
 export default function CheckoutAttemptRecovery() {
-  const { pathname } = useLocation();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user, authLoading } = useUser();
-  const { isInitialized, clearCartIfUnchanged } = useCart();
+  const { items, isInitialized, clearCart } = useCart();
+  const { toast } = useToast();
+  const resolvingRequestId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (authLoading || !isInitialized || !user?.id || !navigator.onLine) return;
-    const kind: CheckoutKind | null = pathname === '/payment' ? 'owned'
-      : pathname === '/marketplace-payment' ? 'marketplace'
-      : pathname === '/combined-payment' ? 'combined' : null;
-    if (!kind) return;
-    const userId = user.id;
+    if (location.pathname !== '/payment') return;
+    const recovered = sessionStorage.getItem(RECOVERED_FLAG);
+    if (!recovered) return;
+    sessionStorage.removeItem(RECOVERED_FLAG);
+    toast({
+      title: 'المحاولة السابقة اتقفلت بأمان',
+      description: 'مفيش طلب اتنشأ منها، وتقدر دلوقتي تغيّر العنوان أو كوبون الخصم وتأكد الطلب من جديد.',
+    });
+  }, [location.pathname, toast]);
+
+  useEffect(() => {
+    if (location.pathname !== '/payment' || authLoading || !isInitialized || !user?.id) return;
+
+    let pending;
+    try {
+      pending = readPendingCheckout(user.id);
+    } catch {
+      removePendingCheckout(user.id);
+      sessionStorage.setItem(RECOVERED_FLAG, '1');
+      window.location.reload();
+      return;
+    }
+
+    if (!pending || resolvingRequestId.current === pending.requestId) return;
+    resolvingRequestId.current = pending.requestId;
     let cancelled = false;
 
     void (async () => {
       try {
-        const owned = kind === 'owned' ? readPendingCheckout(userId) : null;
-        const market = kind === 'marketplace' ? readPendingMarketplaceCheckout(userId) : null;
-        const combined = kind === 'combined' ? readPendingCombinedCheckout(userId) : null;
-        const requestId = owned?.requestId || market?.requestId || combined?.groupId;
-        if (!requestId) return;
-        const order = await recoverCheckout<PlacedOrder & Partial<PlacedCombinedOrder>>(kind, requestId);
-        // Absence is not cancellation: a concurrent submit may still be in flight.
-        // Preserve its ID and let the checkout retry the same attempt.
-        if (cancelled || !order) return;
-        if (owned) removePendingCheckout(userId);
-        if (market) removePendingMarketplaceCheckout(userId);
-        if (combined) removePendingCombinedCheckout(userId);
-        clearCartIfUnchanged(current => {
-          try {
-            if (owned) return current.every(item => item.commerce_source !== 'marketplace')
-              && JSON.stringify(checkoutLines(current)) === JSON.stringify(owned.items);
-            if (market) return JSON.stringify(marketplaceCheckoutLines(current)) === JSON.stringify(market.items);
-            return JSON.stringify(combinedCheckoutSources(current)) === JSON.stringify(combined!.sources);
-          } catch { return false; }
-        });
-        const leadOrderId = order.orders?.find(child => child.source_kind === 'owned')?.order_id || order.orders?.[0]?.order_id;
-        navigate('/order-success', {
-          replace: true,
-          state: {
-            orderId: combined ? leadOrderId : order.id,
-            orderGroupId: order.order_group_id,
-            orderNumber: order.tracking_number || order.id,
-            voucherAmount: Number(order.loyalty_voucher_amount || 0),
-            amountDue: Number(order.amount_due ?? order.total),
-            combined: Boolean(combined),
-            storesCount: order.stores_count,
-            recovered: true,
-          },
-        });
+        const result = await reconcilePendingCheckoutAttempt(pending.requestId);
+        if (cancelled) return;
+
+        removePendingCheckout(user.id);
+
+        if (result.exists && result.id) {
+          const currentLines = checkoutLines(items);
+          if (JSON.stringify(currentLines) === JSON.stringify(pending.items)) clearCart();
+          navigate('/order-success', {
+            replace: true,
+            state: {
+              orderId: result.id,
+              orderNumber: result.tracking_number || result.id,
+              voucherAmount: Number(result.loyalty_voucher_amount || 0),
+              amountDue: Number(result.amount_due ?? Math.max(0, Number(result.total || 0) - Number(result.loyalty_voucher_amount || 0))),
+              recovered: true,
+            },
+          });
+          return;
+        }
+
+        sessionStorage.setItem(RECOVERED_FLAG, '1');
+        window.location.reload();
       } catch (error) {
-        // Keep unknown outcomes intact; the payment screen provides an explicit retry.
-        if (!cancelled) console.error('Checkout recovery unavailable:', error);
+        resolvingRequestId.current = null;
+        console.error('Checkout attempt reconciliation failed:', error);
+        toast({
+          title: 'تعذر مراجعة المحاولة السابقة',
+          description: 'المحاولة ما زالت محمية مؤقتًا. جرّب تحديث الصفحة بعد لحظات.',
+          variant: 'destructive',
+        });
       }
     })();
-    return () => { cancelled = true; };
-  }, [pathname, authLoading, isInitialized, user?.id, clearCartIfUnchanged, navigate]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, authLoading, isInitialized, user?.id, items, clearCart, navigate, toast]);
 
   return null;
 }

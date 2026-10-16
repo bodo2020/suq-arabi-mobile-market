@@ -181,11 +181,17 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Detach the server token while this session still authorizes the operation.
-    // Keep the session if detaching fails so the customer can safely retry.
-    await deactivateCurrentPushDevice();
-    const { error } = await supabase.auth.signOut({ scope: 'local' });
-    if (error) throw error;
+    try {
+      try {
+        await deactivateCurrentPushDevice();
+      } catch (pushError) {
+        console.warn('Unable to detach push device before sign out:', pushError);
+      }
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const updateUser = async (data: any) => {
@@ -317,4 +323,3 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     </UserContext.Provider>
   );
 };
-

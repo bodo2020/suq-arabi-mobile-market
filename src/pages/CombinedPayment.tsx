@@ -36,7 +36,7 @@ const money = (value: number) => new Intl.NumberFormat('ar-EG', {
 
 export default function CombinedPayment() {
   const navigate = useNavigate();
-  const { items, clearCartIfUnchanged, isInitialized, syncError, isSaving } = useCart();
+  const { items, clearCart, isInitialized, syncError, isSaving } = useCart();
   const { user, authLoading } = useUser();
   const { toast } = useToast();
   const submitting = useRef(false);
@@ -84,7 +84,7 @@ export default function CombinedPayment() {
   }, [pending, isInitialized, items, navigate]);
 
   const customerQuery = useQuery({
-    queryKey: ['combined-payment-customer', user?.id, pending?.addressId],
+    queryKey: ['combined-payment-customer', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const [{ data: customer, error: customerError }, { data: address, error: addressError }] = await Promise.all([
@@ -92,7 +92,7 @@ export default function CombinedPayment() {
         supabase.from('customer_addresses')
           .select('id,address,latitude,longitude')
           .eq('user_id', user!.id)
-          .eq(pending?.addressId ? 'id' : 'is_default', pending?.addressId || true)
+          .eq('is_default', true)
           .maybeSingle(),
       ]);
       if (customerError) throw customerError;
@@ -117,7 +117,6 @@ export default function CombinedPayment() {
 
   const handleSubmit = async () => {
     if (submitting.current || loading || isSaving) return;
-    if (!navigator.onLine) return toast({ title: 'تأكيد الطلب يحتاج إنترنت', description: 'سلتك محفوظة. اتصل بالإنترنت ثم حاول مرة تانية.', variant: 'destructive' });
     if (!user) return navigate('/phone-verify?returnTo=%2Fcombined-payment');
     if (!customerQuery.data?.customer?.id || !customerQuery.data.customer.name?.trim()) {
       return navigate('/register?returnTo=%2Fcombined-payment');
@@ -160,10 +159,7 @@ export default function CombinedPayment() {
       const placed = await placeCombinedOrder(candidate);
       removePendingCombinedCheckout(user.id);
       setPending(null);
-      clearCartIfUnchanged(current => {
-        try { return JSON.stringify(combinedCheckoutSources(current)) === JSON.stringify(candidate.sources); }
-        catch { return false; }
-      });
+      clearCart();
 
       const leadOrderId = placed.orders?.find(order => order.source_kind === 'owned')?.order_id
         || placed.orders?.[0]?.order_id;
@@ -391,7 +387,7 @@ export default function CombinedPayment() {
             <Button
               className="mt-3 h-12 w-full"
               onClick={() => void handleSubmit()}
-              disabled={loading || isSaving || (!pending && quoteQuery.isFetching) || (!pending && !quote)}
+              disabled={loading || isSaving || quoteQuery.isFetching || (!pending && !quote)}
             >
               {loading ? <BrandLoader size="sm" /> : <ShieldCheck size={18} />}
               تأكيد الطلب المجمّع
@@ -405,4 +401,3 @@ export default function CombinedPayment() {
     </div>
   </CheckoutLayout>;
 }
-

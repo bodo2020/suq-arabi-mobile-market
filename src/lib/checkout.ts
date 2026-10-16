@@ -1,4 +1,3 @@
-import { recoverOrPlace } from '@/lib/checkoutRecovery';
 import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
 import { getStoreRoadQuote } from '@/lib/storeRoadRoute';
@@ -93,27 +92,25 @@ export async function quoteOrder(items: CheckoutLine[], addressId: string) {
 }
 
 export async function placeOrder(order: PendingCheckout) {
-  return recoverOrPlace('owned', order.requestId, async () => {
-    const freshQuote = await quoteOrder(order.items, order.addressId);
-    if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
+  const freshQuote = await quoteOrder(order.items, order.addressId);
+  if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
 
-    if (!freshQuote.route_quote_id) throw new Error('ROAD_QUOTE_REQUIRED');
+  if (!freshQuote.route_quote_id) throw new Error('ROAD_QUOTE_REQUIRED');
 
-    const { data, error } = await rpc('place_customer_order_with_voucher_v3', {
-      p_request_id: order.requestId,
-      p_items: order.items,
-      p_address_id: order.addressId,
-      p_payment_method: order.paymentMethod,
-      p_notes: order.notes,
-      p_quote_token: order.quoteToken,
-      p_voucher_code: order.voucherCode || null,
-      p_voucher_amount: Number(order.voucherAmount || 0) > 0 ? Number(order.voucherAmount) : null,
-      p_route_quote_id: freshQuote.route_quote_id,
-      p_substitution_policy: order.substitutionPolicy,
+  const { data, error } = await rpc('place_customer_order_with_voucher_v3', {
+    p_request_id: order.requestId,
+    p_items: order.items,
+    p_address_id: order.addressId,
+    p_payment_method: order.paymentMethod,
+    p_notes: order.notes,
+    p_quote_token: order.quoteToken,
+    p_voucher_code: order.voucherCode || null,
+    p_voucher_amount: Number(order.voucherAmount || 0) > 0 ? Number(order.voucherAmount) : null,
+    p_route_quote_id: freshQuote.route_quote_id,
+    p_substitution_policy: order.substitutionPolicy,
   });
   if (error) throw error;
   return data as PlacedOrder;
-  });
 }
 
 export async function reconcilePendingCheckoutAttempt(requestId: string) {
@@ -168,4 +165,3 @@ const messages: Record<string,string> = {
 };
 export function checkoutError(error: unknown): string { return messages[(error as { message?: string })?.message || ''] || 'لم نقدر نتأكد من نتيجة الطلب. أعد المحاولة بنفس الطلب لتجنّب التكرار.'; }
 export const definitelyRejected = (error: unknown) => ['QUOTE_CHANGED','ROAD_QUOTE_REQUIRED','ROAD_QUOTE_EXPIRED','ROAD_QUOTE_MISMATCH','ROUTE_QUOTE_STORE_FAILED','STORE_ROUTE_FAILED','INVALID_LOCATION','INSUFFICIENT_STOCK','PRODUCT_UNAVAILABLE','PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','INVALID_QUANTITY','INVALID_CART','CHECKOUT_NOT_READY','ADDRESS_REQUIRED','PROFILE_REQUIRED','DELIVERY_UNAVAILABLE','VOUCHER_NOT_FOUND','VOUCHER_UNAVAILABLE','VOUCHER_CUSTOMER_MISMATCH','INVALID_VOUCHER_AMOUNT','VOUCHER_BALANCE_CHANGED'].includes((error as { message?: string })?.message || '');
-

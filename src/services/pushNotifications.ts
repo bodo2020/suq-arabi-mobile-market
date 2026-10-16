@@ -3,8 +3,6 @@ import { supabase } from '@/lib/supabase';
 
 const TOKEN_KEY = 'elmadawy.push.token';
 const DEVICE_KEY = 'elmadawy.push.device-key';
-let registrationEnabled = true;
-let registrationQueue: Promise<void> = Promise.resolve();
 const NATIVE_PUSH_CONFIGURED = String(import.meta.env.VITE_NATIVE_PUSH_CONFIGURED || '').toLowerCase() === 'true';
 
 type PermissionState = 'prompt' | 'prompt-with-rationale' | 'granted' | 'denied';
@@ -76,11 +74,9 @@ function getActionUrl(data?: Record<string, unknown>) {
 }
 
 async function registerTokenOnServer(token: string, retry = 0): Promise<void> {
-  if (!registrationEnabled) return;
   const platform = Capacitor.getPlatform();
   if (!['android', 'ios'].includes(platform)) return;
 
-  localStorage.setItem(TOKEN_KEY, token);
   const { error } = await (supabase as any).rpc('register_push_device_v2', {
     p_token: token,
     p_platform: platform,
@@ -129,13 +125,9 @@ export async function initializeCustomerPushNotifications(callbacks?: {
     return () => undefined;
   }
 
-  registrationEnabled = true;
-  let disposed = false;
   const handles: ListenerHandle[] = [];
   handles.push(await PushNotifications.addListener('registration', token => {
-    if (disposed || !registrationEnabled) return;
-    registrationQueue = registrationQueue.catch(() => undefined).then(() => registerTokenOnServer(token.value));
-    void registrationQueue.catch(error => callbacks?.onError?.(error));
+    void registerTokenOnServer(token.value).catch(error => callbacks?.onError?.(error));
   }));
   handles.push(await PushNotifications.addListener('registrationError', error => {
     callbacks?.onError?.(error.error || 'PUSH_REGISTRATION_FAILED');
@@ -167,7 +159,6 @@ export async function initializeCustomerPushNotifications(callbacks?: {
   }
 
   return async () => {
-    disposed = true;
     await Promise.all(handles.map(handle => handle.remove().catch(() => undefined)));
   };
 }
@@ -196,18 +187,12 @@ export async function getNativePushPermission(): Promise<CustomerPushPermissionR
 }
 
 export async function deactivateCurrentPushDevice() {
-  registrationEnabled = false;
-  // Wait for an in-flight registration so it cannot reattach after logout.
-  await registrationQueue.catch(() => undefined);
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) return;
   try {
-    const { error } = await (supabase as any).rpc('unregister_push_device_v2', { p_token: token });
-    if (error) throw error;
+    await (supabase as any).rpc('unregister_push_device_v2', { p_token: token });
+  } finally {
     localStorage.removeItem(TOKEN_KEY);
-  } catch (error) {
-    registrationEnabled = true;
-    throw error;
   }
 }
 
@@ -221,4 +206,3 @@ export async function getMyPushDeviceStatus() {
     providers?: string[];
   };
 }
-

@@ -80,11 +80,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems([]);
   }, [isInitialized]);
 
-  const clearCartIfUnchanged = useCallback((matches: (current: CartItem[]) => boolean) => {
-    if (!isInitialized) return;
-    setItems(current => matches(current) ? [] : current);
-  }, [isInitialized]);
-
   const getTotalItems = useCallback(() => items.length, [items]);
 
   const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean, listingId?: string | null) => {
@@ -118,7 +113,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       removeFromCart,
       updateQuantity,
       clearCart,
-      clearCartIfUnchanged,
       getTotalPrice,
       getTotalItems,
       getCartTotal: getTotalPrice,
@@ -129,4 +123,3 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </CartContext.Provider>
   );
 };
-

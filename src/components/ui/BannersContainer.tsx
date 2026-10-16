@@ -69,13 +69,12 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
     >
       <div
         className="flex transition-transform duration-500 ease-in-out"
-        dir="ltr"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         {banners.map(banner => (
-          <div key={banner.id} className="w-full flex-shrink-0" dir="rtl">
+          <div key={banner.id} className="w-full flex-shrink-0">
             <div
-              className="relative aspect-[2.5/1] w-full cursor-pointer sm:aspect-[3/1]"
+              className="relative h-44 w-full cursor-pointer sm:h-60 lg:h-72"
               onClick={() => handleBannerClick(banner)}
               tabIndex={0}
               role="button"

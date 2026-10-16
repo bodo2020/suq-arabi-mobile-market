@@ -55,7 +55,7 @@ const CollectionCard = ({ collection, products }: { collection: CollectionData; 
           عرض منتجات أكثر
         </button>
       )}
-      {variants.length > 6 && (
+      {variants.length > 3 && (
         <button type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)} className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#fff5d3] px-4 text-sm font-bold text-[#005931] hover:bg-[#ffe78d]">
           {expanded ? <><ChevronUp size={17} /> عرض مختصر</> : <><ChevronDown size={17} /> عرض كل المجموعة</>}
         </button>

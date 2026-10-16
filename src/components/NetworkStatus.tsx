@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, WifiOff } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function NetworkStatus() {
@@ -40,13 +40,7 @@ export default function NetworkStatus() {
     };
   }, [queryClient]);
 
-  if (!online) return (
-    <div className="network-status" role="status" dir="rtl">
-      <WifiOff size={18} />
-      <span><strong>أنت بدون إنترنت.</strong> تقدر تراجع المنتجات المحفوظة وتعدّل سلتك. الأسعار والتوفر هيتراجعوا قبل تأكيد الطلب بعد رجوع الاتصال.</span>
-    </div>
-  );
-  if (!restored) return null;
+  if (!online || !restored) return null;
 
   return (
     <div className="network-status network-status--restored" role="status" dir="rtl">
@@ -55,4 +49,3 @@ export default function NetworkStatus() {
     </div>
   );
 }
-

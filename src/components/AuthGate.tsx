@@ -3,12 +3,20 @@ import { Navigate, useLocation } from 'react-router-dom';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { useUser } from '@/contexts/UserContext';
 
-import { isPublicCustomerPath } from '@/lib/customerRoutes';
+const publicAuthPaths = [
+  '/phone-login',
+  '/phone-verify',
+  '/register',
+  '/forgot-password',
+  '/update-password',
+];
+
+const isPublicAuthPath = (pathname: string) => publicAuthPaths.includes(pathname);
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { user, session, authLoading } = useUser();
-  const publicPath = useMemo(() => isPublicCustomerPath(location.pathname), [location.pathname]);
+  const publicPath = useMemo(() => isPublicAuthPath(location.pathname), [location.pathname]);
 
   if (authLoading) {
     return (
@@ -27,4 +35,3 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-

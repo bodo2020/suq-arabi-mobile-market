@@ -22,7 +22,7 @@ type DeliveryVerificationStatus = 'idle' | 'checking' | 'valid' | 'outside' | 'e
 export default function Address() {
   const { id } = useParams();
   const [params] = useSearchParams();
-  const checkout = ['/payment', '/marketplace-payment', '/combined-payment'].includes(params.get('returnTo') || '');
+  const checkout = params.get('returnTo') === '/payment';
   const onboarding = params.get('onboarding') === '1' && !id;
   const required = params.get('required') === '1' && !id;
   const returnTo = safeReturnTo(params.get('returnTo'));
@@ -39,7 +39,7 @@ export default function Address() {
   const [verificationStatus, setVerificationStatus] = useState<DeliveryVerificationStatus>('idle');
   const [verifiedMatch, setVerifiedMatch] = useState<DeliveryMatch | null>(null);
   const [verificationRetry, setVerificationRetry] = useState(0);
-  const back = required || onboarding ? returnTo : checkout ? `/addresses?returnTo=${encodeURIComponent(returnTo)}` : user ? '/addresses' : returnTo;
+  const back = required || onboarding ? returnTo : checkout ? '/addresses?returnTo=%2Fpayment' : user ? '/addresses' : returnTo;
   const saveLabel = user
     ? (required ? 'حفظ العنوان وابدأ التسوق' : onboarding ? 'حفظ العنوان والمتابعة' : 'حفظ العنوان')
     : required ? 'استخدام العنوان وابدأ التسوق' : 'استخدام العنوان كضيف';
@@ -213,7 +213,7 @@ export default function Address() {
         }
       }
 
-      await Promise.all(['customerData', 'marketplace-payment-customer', 'combined-payment-customer'].map(key => client.invalidateQueries({ queryKey: [key] })));
+      await client.invalidateQueries({ queryKey: ['customerData'] });
       await client.invalidateQueries({ queryKey: ['onboarding-state', user.id] });
       await client.invalidateQueries({ queryKey: ['addresses', user.id] });
       await client.invalidateQueries({ queryKey: ['home-default-address', user.id] });
@@ -336,4 +336,3 @@ export default function Address() {
       </form>}
   </CheckoutLayout>;
 }
-

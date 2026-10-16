@@ -40,5 +40,4 @@
     flex: 0 0 min(124px, calc((100vw - 3rem) / 3)) !important;
     margin-inline: 0 !important;
   }
-
 }

@@ -66,13 +66,9 @@ export const getHomeAnalyticsSessionKey = () => {
 };
 
 export const defaultHomeSections: HomeSectionConfig[] = [
-  { id: 'fallback-categories', section_type: 'categories', title: 'تسوق حسب القسم', sort_order: 10, is_active: true, data_source: { limit: 6 }, display_config: { layout: 'grid' } },
-  { id: 'fallback-banners', section_type: 'hero_banners', title: 'العروض', sort_order: 20, is_active: true },
-  { id: 'fallback-buy-again', section_type: 'featured_products', title: 'اشتريها تاني', subtitle: 'منتجات اشتريتها ومتاحة لعنوانك دلوقتي', sort_order: 30, is_active: true, data_source: { mode: 'buy_again' } },
-  { id: 'fallback-offers', section_type: 'featured_products', title: 'عروض تستاهل', sort_order: 40, is_active: true, data_source: { mode: 'offers' } },
-  { id: 'fallback-collections', section_type: 'product_collection', title: 'مختارات ســــــوبـرمــــاركو', sort_order: 50, is_active: true, data_source: { all: true } },
-  { id: 'fallback-stores', section_type: 'featured_products', title: 'متاجر قريبة منك', sort_order: 60, is_active: true, data_source: { mode: 'nearby_stores', limit: 6 } },
-  { id: 'fallback-catalog', section_type: 'featured_products', title: 'تصفح المنتجات', sort_order: 70, is_active: true, data_source: { mode: 'catalog', limit: 24 }, display_config: { layout: 'grid' } },
+  { id: 'fallback-banners', section_key: 'fallback-banners', section_type: 'hero_banners', title: 'العروض', sort_order: 10, is_active: true },
+  { id: 'fallback-categories', section_key: 'fallback-categories', section_type: 'categories', title: 'تسوق حسب القسم', subtitle: 'وصل للي محتاجه بسرعة', sort_order: 20, is_active: true },
+  { id: 'fallback-collections', section_key: 'fallback-collections', section_type: 'product_collection', title: 'مختارات ســــــوبـرمــــاركو', sort_order: 30, is_active: true, data_source: { all: true } },
 ];
 
 export const getPublicHomePage = async (
@@ -80,7 +76,6 @@ export const getPublicHomePage = async (
   cacheScope = 'guest',
   experimentSeed = getHomeAnalyticsSessionKey(),
 ): Promise<PublicHomePageConfig | null> => {
-  if (typeof navigator !== 'undefined' && !navigator.onLine) return readCachedHome(branchId, cacheScope);
   try {
     const client = supabase as any;
     const { data, error } = await client.rpc('get_public_home_page', {

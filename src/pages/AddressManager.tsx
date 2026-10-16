@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { customerRpc } from '@/lib/customerPersistence';
-import { safeReturnTo } from '@/lib/onboarding';
 import { readGuestAddress } from '@/lib/deliveryAddress';
 
 type MapAddress = {
@@ -27,8 +26,7 @@ type MapAddress = {
 const AddressManager = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const returnTo = safeReturnTo(params.get('returnTo'));
-  const returnToPayment = ['/payment', '/marketplace-payment', '/combined-payment'].includes(returnTo);
+  const returnToPayment = params.get('returnTo') === '/payment';
   const queryClient = useQueryClient();
   const { user, authLoading } = useUser();
   const currentUser = useRef(user?.id);
@@ -74,7 +72,7 @@ const AddressManager = () => {
   const handleSetDefault = async (addressId: string) => {
     try {
       const selected = addresses.find(item => item.id === addressId);
-      if (selected?.latitude == null || selected?.longitude == null || !selected?.is_deliverable) {
+      if (!selected?.latitude || !selected?.longitude || !selected?.is_deliverable) {
         toast({ variant: 'destructive', title: 'حدد الموقع الأول', description: 'لازم العنوان يكون محدد على الخريطة وداخل نطاق التوصيل.' });
         return;
       }
@@ -83,8 +81,7 @@ const AddressManager = () => {
       localStorage.setItem('userAddress', selected.address || '');
       localStorage.setItem('userArea', 'عنوان على الخريطة');
       localStorage.removeItem('userNeighborhood');
-      await Promise.all(['customerData', 'marketplace-payment-customer', 'combined-payment-customer', 'home-default-address', 'onboarding-state', 'addresses', 'delivery-branch-id'].map(key => queryClient.invalidateQueries({ queryKey: [key] })));
-      window.dispatchEvent(new Event('delivery-address-changed'));
+      await queryClient.invalidateQueries({ queryKey: ['customerData'] });
       await fetchAddresses();
       toast({ title: 'تم تحديث العنوان الافتراضي', description: 'هنستخدم العنوان ده في الطلبات الجاية.' });
     } catch (error) {
@@ -103,13 +100,9 @@ const AddressManager = () => {
       const remaining = addresses.filter(item => item.id !== addressId);
       if (target?.is_default) {
         const next = remaining.find(item => item.latitude != null && item.longitude != null && item.is_deliverable);
-        if (next) {
-          const { error: defaultError } = await customerRpc('set_default_customer_address', { p_address_id: next.id });
-          if (defaultError) throw defaultError;
-        }
+        if (next) await customerRpc('set_default_customer_address', { p_address_id: next.id });
       }
-      await Promise.all(['customerData', 'marketplace-payment-customer', 'combined-payment-customer', 'home-default-address', 'onboarding-state', 'addresses', 'delivery-branch-id'].map(key => queryClient.invalidateQueries({ queryKey: [key] })));
-      window.dispatchEvent(new Event('delivery-address-changed'));
+      await queryClient.invalidateQueries({ queryKey: ['customerData'] });
       await fetchAddresses();
       toast({ title: 'تم حذف العنوان' });
     } catch (error) {
@@ -118,12 +111,12 @@ const AddressManager = () => {
     }
   };
 
-  const addAddress = () => navigate(returnToPayment ? `/add-address?returnTo=${encodeURIComponent(returnTo)}` : '/add-address');
-  const editAddress = (addressId: string) => navigate(`/edit-address/${addressId}${returnToPayment ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`);
+  const addAddress = () => navigate(returnToPayment ? '/add-address?returnTo=%2Fpayment' : '/add-address');
+  const editAddress = (addressId: string) => navigate(`/edit-address/${addressId}${returnToPayment ? '?returnTo=%2Fpayment' : ''}`);
   const defaultAddress = addresses.find(item => item.is_default);
   const defaultReady = Boolean(defaultAddress?.latitude != null && defaultAddress?.longitude != null && defaultAddress?.is_deliverable);
 
-  return <CheckoutLayout step={2} showSteps={returnToPayment && Boolean(user)} backTo={returnToPayment ? returnTo : '/account'} backLabel={returnToPayment ? 'رجوع للدفع' : 'رجوع'}>
+  return <CheckoutLayout step={2} showSteps={returnToPayment && Boolean(user)} backTo={returnToPayment ? '/payment' : '/account'} backLabel={returnToPayment ? 'رجوع للدفع' : 'رجوع'}>
     <div className="mb-6 flex items-start justify-between gap-4">
       <div><h1 className="checkout-title">{user ? 'عناوينك' : 'عنوان التوصيل'}</h1><p className="checkout-intro">كل عنوان لازم يكون محدد على الخريطة وداخل نطاق التوصيل.</p></div>
     </div>
@@ -142,7 +135,7 @@ const AddressManager = () => {
         {returnToPayment && <div className="mb-5 rounded-2xl border border-[#d8ebdf] bg-gradient-to-l from-[#eaf6ee] to-[#fff5d3] p-4">
           <h2 className="text-lg font-bold">عنوان طلبك</h2>
           <p className="mt-1 text-sm text-gray-600">اختار عنوان محدد على الخريطة وداخل نطاق الـ10 كم.</p>
-          {defaultReady ? <Button className="mt-4 h-12 w-full rounded-xl" onClick={() => navigate(returnTo)}>متابعة للدفع</Button> : defaultAddress ? <Button className="mt-4 h-12 w-full rounded-xl" variant="outline" onClick={() => editAddress(defaultAddress.id)}>حدد موقع العنوان على الخريطة</Button> : null}
+          {defaultReady ? <Button className="mt-4 h-12 w-full rounded-xl" onClick={() => navigate('/payment')}>متابعة للدفع</Button> : defaultAddress ? <Button className="mt-4 h-12 w-full rounded-xl" variant="outline" onClick={() => editAddress(defaultAddress.id)}>حدد موقع العنوان على الخريطة</Button> : null}
         </div>}
 
         {addresses.length > 0 ? <div className="space-y-4">{addresses.map(item => {
@@ -167,4 +160,3 @@ const AddressManager = () => {
 };
 
 export default AddressManager;
-

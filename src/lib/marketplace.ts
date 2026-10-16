@@ -145,15 +145,3 @@ export async function findMarketplaceProductForCurrentAddress(
   }
   return null;
 }
-
-
-/** Resolve saved products directly; catalogue pagination must never delete a cart line. */
-export async function getMarketplaceProductsByIds(branchId: string, productIds: string[]): Promise<MarketplaceProduct[]> {
-  const ids = [...new Set(productIds.filter(Boolean))];
-  const products: MarketplaceProduct[] = [];
-  for (let index = 0; index < ids.length; index += 6) {
-    const batch = await Promise.all(ids.slice(index, index + 6).map(id => getMarketplaceStoreProduct(branchId, id)));
-    products.push(...batch.filter((product): product is MarketplaceProduct => product !== null));
-  }
-  return products;
-}

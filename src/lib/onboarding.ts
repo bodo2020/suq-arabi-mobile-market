@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export const RETURN_PATHS = ['/', '/cart', '/payment', '/marketplace-payment', '/combined-payment', '/addresses', '/add-address', '/account'];
+export const RETURN_PATHS = ['/', '/cart', '/payment', '/addresses', '/add-address', '/account'];
 
 export function safeReturnTo(value: string | null | undefined) {
   return value && RETURN_PATHS.includes(value) ? value : '/';
@@ -27,4 +27,3 @@ export function nextOnboardingPath(state: OnboardingState, returnTo: string) {
   if (!state.hasDefaultAddress) return `/add-address?onboarding=1&returnTo=${encodeURIComponent(target)}`;
   return target;
 }
-

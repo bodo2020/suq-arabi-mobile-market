@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, BadgePercent, Check, Package, Plus, Minus, Trash2, ShoppingBag, Scale, AlertCircle, RefreshCw, Clock3 } from 'lucide-react';
@@ -24,13 +24,6 @@ export default function Cart() {
   const { user, authLoading } = useUser();
   const { branch, branchLoading, branchError, refreshBranch } = useBranch();
   const navigate = useNavigate();
-  const [online, setOnline] = useState(() => navigator.onLine);
-  useEffect(() => {
-    const update = () => setOnline(navigator.onLine);
-    window.addEventListener('online', update);
-    window.addEventListener('offline', update);
-    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
-  }, []);
   const [weightItem, setWeightItem] = useState<CartItem | null>(null);
 
   const quoteSignature = useMemo(
@@ -56,13 +49,13 @@ export default function Cart() {
   const quoteError = quoteQuery.error ? cartQuoteError(quoteQuery.error) : null;
   const quotePending = quoteQuery.isLoading || quoteQuery.isFetching;
   const serverReady = Boolean(quote) && !quotePending && !quoteError;
-  const blocked = !online || !isInitialized || authLoading || !!syncError || isSaving || branchLoading || !!branchError || !branch || !serverReady;
+  const blocked = !isInitialized || authLoading || !!syncError || isSaving || branchLoading || !!branchError || !branch || !serverReady;
 
   const combinedCart = isCombinedCart(items);
   const marketplaceCart = isSingleMarketplaceCart(items);
 
   const proceed = () => {
-    if (blocked || !navigator.onLine) return;
+    if (blocked) return;
     const target = combinedCart ? '/combined-payment' : marketplaceCart ? '/marketplace-payment' : '/payment';
     navigate(user ? target : `/phone-login?returnTo=${encodeURIComponent(target)}`);
   };
@@ -73,7 +66,7 @@ export default function Cart() {
   };
 
   const cta = <Button className="cart-primary" onClick={proceed} disabled={blocked}>
-    {!online ? 'اتصل بالإنترنت لمتابعة الطلب' : isSaving ? <><BrandLoader size="sm" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
+    {isSaving ? <><BrandLoader size="sm" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
   </Button>;
 
   const subtotal = Number(quote?.subtotal ?? getTotalPrice());
@@ -93,7 +86,7 @@ export default function Cart() {
       <section className="cart-empty"><div className="cart-empty-mark"><ShoppingBag size={38} /></div><h1>سلتك مستنية اختياراتك</h1><p>ضيف احتياجاتك، وهتلاقيها كلها هنا.<br />تقدر تتسوّق وتختار براحتك قبل تسجيل الدخول.</p><Button asChild className="cart-primary"><Link to="/">ابدأ التسوّق<ArrowLeft size={18} /></Link></Button></section> : <>
       <div className="cart-heading">
         <div><h1>سلتك، على ذوقك.</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
-        <div className="cart-status" role="status">{!online ? 'اتصل بالإنترنت لمتابعة الطلب' : isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />سلتك محفوظة</> : 'سلة الضيف جاهزة'}</div>
+        <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />سلتك محفوظة</> : 'سلة الضيف جاهزة'}</div>
       </div>
 
       {branch && <div className="cart-alert" role="status">
@@ -130,8 +123,8 @@ export default function Cart() {
             : item.is_bulk
               ? Math.floor(availableStock / Math.max(1, bulkQty))
               : Math.floor(availableStock);
-          const atLimit = (serverReady || !online) && item.quantity >= maxQuantity;
-          const weightCanIncrease = isWeight && (serverReady || !online) && item.quantity < maxQuantity;
+          const atLimit = serverReady && item.quantity >= maxQuantity;
+          const weightCanIncrease = isWeight && serverReady && item.quantity < maxQuantity;
           const openWeightEditor = () => setWeightItem({
             ...item,
             product: { ...item.product, quantity: availableStock },
@@ -167,7 +160,7 @@ export default function Cart() {
                     >{item.quantity <= weightStep ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                   </div>
                 ) : <div className="cart-counter">
-                  <button disabled={atLimit || (online && !serverReady)} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk, item.marketplace_listing_id || null)}><Plus size={17} /></button>
+                  <button disabled={atLimit || !serverReady} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk, item.marketplace_listing_id || null)}><Plus size={17} /></button>
                   <output aria-label={`كمية ${item.product.name}`} aria-live="polite">{money(item.quantity)}</output>
                   <button aria-label={item.quantity === 1 ? `حذف ${item.product.name}` : `تقليل كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity - 1, !!item.is_bulk, item.marketplace_listing_id || null)}>{item.quantity === 1 ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                 </div>}
@@ -194,4 +187,3 @@ export default function Cart() {
     {weightItem && <WeightSelector product={weightItem.product} isOpen onClose={() => setWeightItem(null)} />}
   </CheckoutLayout>;
 }
-

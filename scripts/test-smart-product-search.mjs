@@ -1,14 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import fs from 'node:fs';
-import ts from 'typescript';
-const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/smartProductSearch.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 } }).outputText;
-const {
+import {
   PRODUCT_SEARCH_SYNONYMS,
   buildProductSearchQueries,
   normalizeProductSearchText,
   rankProductSearchResults,
-} = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
+} from '../src/lib/smartProductSearch.ts';
 
 test('Arabic spelling variants include haa and taa marbuta', () => {
   assert.ok(buildProductSearchQueries('جبنه').includes('جبنة'));
@@ -54,4 +51,3 @@ test('direct matches outrank alias-only matches without dropping either', () => 
   ], query, variants);
   assert.deepEqual(results.map(result => result.id), ['indomie', 'noodles']);
 });
-

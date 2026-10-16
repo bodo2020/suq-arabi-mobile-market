@@ -11,12 +11,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "mobile:sync": "npm run build && npx cap sync",
-    "android:add": "npm run build && npx cap add android && node scripts/prepare-play-release.mjs && node scripts/prepare-android.mjs && node scripts/prepare-android-back.mjs",
-    "android:sync": "npm run build && npx cap sync android && node scripts/prepare-play-release.mjs && node scripts/prepare-android.mjs && node scripts/prepare-android-back.mjs",
+    "android:add": "npm run build && npx cap add android && node scripts/prepare-android.mjs && node scripts/prepare-android-back.mjs",
+    "android:sync": "npm run build && npx cap sync android && node scripts/prepare-android.mjs && node scripts/prepare-android-back.mjs",
     "android:open": "npx cap open android",
-    "android:run": "npm run android:sync && npx cap run android",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "test:customer": "node scripts/test-phone-recovery.mjs && node scripts/test-otp-resend.mjs && node scripts/test-smart-product-search.mjs && node scripts/test-store-sections.mjs && node scripts/test-section-chip-scroll.mjs && node --test scripts/test-customer-reliability.mjs && node --test scripts/test-home-merchandising.mjs"
+    "android:run": "npm run android:sync && npx cap run android"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",

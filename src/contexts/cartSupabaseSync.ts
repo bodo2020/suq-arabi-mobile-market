@@ -5,7 +5,7 @@ import { useUser } from './UserContext';
 import { customerRpc } from '@/lib/customerPersistence';
 import { getCurrentDeliveryBranchId } from '@/lib/supabase';
 import { getProductsByIds } from '@/lib/branchProductIds';
-import { getMarketplaceProductsByIds } from '@/lib/marketplace';
+import { getMarketplaceStoreCatalog } from '@/lib/marketplace';
 
 const offlineCartKey = (userId: string) => `offline_cart:${userId}`;
 const pendingCartKey = (userId: string) => `pending_cart:${userId}`;
@@ -72,7 +72,7 @@ async function reconcileWithCommerce(items: CartItem[]): Promise<CartItem[]> {
   const marketplaceItems = candidate.filter(item => item.commerce_source === 'marketplace');
   const branchIds = [...new Set(marketplaceItems.map(item => item.marketplace_branch_id).filter((value): value is string => Boolean(value)))].slice(0, 2);
   for (const branchId of branchIds) {
-    const catalog = await getMarketplaceProductsByIds(branchId, marketplaceItems.filter(item => item.marketplace_branch_id === branchId).map(item => item.product.id));
+    const catalog = await getMarketplaceStoreCatalog(branchId, null, 500);
     const byListing = new Map(catalog.map(product => [product.marketplace_listing_id, product]));
     for (const item of marketplaceItems.filter(value => value.marketplace_branch_id === branchId)) {
       const product = item.marketplace_listing_id ? byListing.get(item.marketplace_listing_id) : null;
@@ -139,7 +139,7 @@ async function hydrateRows(rows: Array<{ product_id: string; quantity: number; m
   )].slice(0, 2);
 
   for (const branchId of branchIds) {
-    const catalog = await getMarketplaceProductsByIds(branchId, marketRows.filter(row => (row.metadata as SavedMetadata)?.branch_id === branchId).map(row => row.product_id));
+    const catalog = await getMarketplaceStoreCatalog(branchId, null, 500);
     const byListing = new Map(catalog.map(product => [product.marketplace_listing_id, product]));
     for (const row of marketRows) {
       const meta = row.metadata as SavedMetadata;
@@ -362,4 +362,3 @@ export function useCartSync(
 
   return { syncError, isSaving, retrySync: () => setReload(value => value + 1) };
 }
-
