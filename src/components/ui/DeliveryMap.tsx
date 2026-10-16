@@ -19,30 +19,40 @@ export default function DeliveryMap({ value, onChange, autoLocate = true }: Prop
   const map = useRef<L.Map | null>(null);
   const callback = useRef(onChange);
   callback.current = onChange;
+  const currentValue = useRef(value);
+  currentValue.current = value;
   const initialValue = useRef(value);
   const selected = useRef(false);
   const alive = useRef(false);
   const locateRequest = useRef(0);
   const autoStarted = useRef(false);
+  const autoRetriedAfterPermission = useRef(false);
+  const locating = useRef(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [error, setError] = useState('');
   const [tileError, setTileError] = useState(false);
 
-  const locate = () => {
+  const locate = (force = false) => {
     if (!navigator.geolocation) { setError('تحديد الموقع غير متاح. اختار المكان يدويًا.'); return; }
     const request = ++locateRequest.current;
-    setBusy(true); setError('');
+    locating.current = true;
+    setBusy(true); setError(''); setPermissionDenied(false);
     navigator.geolocation.getCurrentPosition(position => {
       if (!alive.current || request !== locateRequest.current) return;
+      locating.current = false;
       setBusy(false);
+      if (!force && selected.current) return;
       selected.current = true;
       const point = {lat:position.coords.latitude,lng:position.coords.longitude};
       callback.current(point);
       map.current?.setView([point.lat,point.lng],17);
     }, reason => {
       if (!alive.current || request !== locateRequest.current) return;
+      locating.current = false;
       setBusy(false);
+      setPermissionDenied(reason.code === reason.PERMISSION_DENIED);
       setError(reason.code === reason.PERMISSION_DENIED ? 'إذن الموقع مرفوض. تقدر تحدد المكان يدويًا.' : 'تعذر تحديد موقعك. حرّك الخريطة وحدد باب البيت.');
     }, {enableHighAccuracy:true,timeout:15000,maximumAge:30000});
   };
@@ -79,7 +89,7 @@ export default function DeliveryMap({ value, onChange, autoLocate = true }: Prop
     observer.observe(element.current);
     setReady(true);
     return () => {
-      alive.current = false; locateRequest.current++;
+      alive.current = false; locateRequest.current++; locating.current = false;
       observer.disconnect(); instance.remove(); map.current = null;
     };
   }, []);
@@ -87,6 +97,32 @@ export default function DeliveryMap({ value, onChange, autoLocate = true }: Prop
     if (!ready || value || !autoLocate || autoStarted.current) return;
     autoStarted.current = true; locate();
   }, [ready,value,autoLocate]);
+  useEffect(() => {
+    if (!ready || !autoLocate || !navigator.permissions?.query) return;
+    let active = true;
+    let permission: PermissionStatus | null = null;
+    const retryWhenGranted = () => {
+      if (!active || permission?.state !== 'granted' || !autoStarted.current ||
+          autoRetriedAfterPermission.current || locating.current || selected.current || currentValue.current) return;
+      autoRetriedAfterPermission.current = true;
+      locate();
+    };
+    void navigator.permissions.query({ name: 'geolocation' }).then(status => {
+      if (!active) return;
+      permission = status;
+      status.addEventListener('change', retryWhenGranted);
+      retryWhenGranted();
+    }).catch(() => { /* The first geolocation request still works without the Permissions API. */ });
+    const onReturn = () => { if (!document.hidden) retryWhenGranted(); };
+    window.addEventListener('focus', onReturn);
+    document.addEventListener('visibilitychange', onReturn);
+    return () => {
+      active = false;
+      permission?.removeEventListener('change', retryWhenGranted);
+      window.removeEventListener('focus', onReturn);
+      document.removeEventListener('visibilitychange', onReturn);
+    };
+  }, [ready, autoLocate, permissionDenied]);
   return <section className="space-y-3" aria-label="تحديد موقع التوصيل">
     <p className="text-sm text-muted-foreground">حدد باب البيت تحت الدبوس، ثم اكتب تفاصيل العنوان بالأسفل.</p>
     <div className="delivery-map-shell is-interactive relative isolate overflow-hidden rounded-3xl border bg-slate-50 shadow-sm">
@@ -95,7 +131,7 @@ export default function DeliveryMap({ value, onChange, autoLocate = true }: Prop
         <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
           <MapPin className="-translate-y-1/2 fill-white text-[#005931] drop-shadow-lg" size={46} strokeWidth={2.3} aria-hidden="true" />
         </div>
-        <Button type="button" variant="secondary" onClick={locate} disabled={busy} className="absolute left-3 top-3 z-20 min-h-11 rounded-full bg-white px-4 text-[#005931] shadow-lg">
+        <Button type="button" variant="secondary" onClick={() => locate(true)} disabled={busy} className="absolute left-3 top-3 z-20 min-h-11 rounded-full bg-white px-4 text-[#005931] shadow-lg">
           <LocateFixed size={17} className="ml-2" />{busy ? 'جارٍ التحديد' : 'موقعي الحالي'}
         </Button>
         <div className="absolute right-3 top-3 z-20 flex flex-col gap-1">

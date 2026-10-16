@@ -2,12 +2,12 @@
 .checkout *{box-sizing:border-box}
 .checkout :is(button,a,input,textarea):focus-visible{outline:3px solid #00834a;outline-offset:4px}
 .checkout-header{height:92px;max-width:1160px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid #e0e8e3}
-.checkout-header img{width:106px;height:60px;object-fit:contain;mix-blend-mode:multiply}
+.checkout-header img{width:140px;height:67px;object-fit:contain;border-radius:10px}
 .checkout-back{display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600;min-height:44px}
 .checkout-main{max-width:1104px;margin:auto;padding:30px 24px 60px}
 .checkout-steps{display:flex;gap:32px;margin-bottom:34px;font-size:14px;font-weight:600}
 .checkout-steps li{display:flex;align-items:center;gap:10px;color:var(--checkout-green)}
-.checkout-steps li span{width:28px;height:28px;border-radius:50%;background:var(--checkout-green);color:white;display:grid;place-items:center}
+.checkout-steps li span{width:28px;height:28px;border-radius:50%;background:var(--brand-yellow);color:var(--checkout-green);display:grid;place-items:center}
 .checkout-steps .upcoming{color:#64756c}.checkout-steps .upcoming span{background:#e4ebe7;color:#64756c}
 .cart-heading{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px;gap:16px}
 .cart-heading h1,.checkout-title{font-size:clamp(28px,4vw,38px);font-weight:800;letter-spacing:-.035em;line-height:1.5;margin:0}

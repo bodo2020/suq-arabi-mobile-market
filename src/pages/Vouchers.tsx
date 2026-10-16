@@ -23,7 +23,7 @@ import {
 const money = (value: number) => `${Number(value || 0).toFixed(2)} ج.م`;
 
 const statusMeta: Record<LoyaltyVoucher['status'], { label: string; className: string }> = {
-  active: { label: 'متاح', className: 'bg-emerald-50 text-emerald-800 border-emerald-100' },
+  active: { label: 'متاح', className: 'bg-[#fff5d3] text-[#005931] border-[#e5c767]' },
   redeemed: { label: 'تم استخدامه', className: 'bg-gray-100 text-gray-700 border-gray-200' },
   cancelled: { label: 'ملغي', className: 'bg-red-50 text-red-700 border-red-100' },
 };
@@ -87,25 +87,31 @@ export default function Vouchers() {
     return <MainLayout><TopNavBar hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" /><div className="flex min-h-[60vh] items-center justify-center"><BrandLoader label="جاري تحميل كوبونات الخصم" /></div></MainLayout>;
   }
 
+  if (cardQuery.isError || vouchersQuery.isError) {
+    return <MainLayout><TopNavBar hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" />
+      <div className="mx-auto max-w-md px-4 py-16 text-center"><div role="alert" className="rounded-3xl border border-red-100 bg-white p-8 shadow-sm"><Gift className="mx-auto text-[#005931]" size={32} /><h1 className="mt-4 text-xl font-black">تعذّر تحميل الكوبونات</h1><p className="mt-2 text-sm text-slate-500">راجع اتصالك وحاول مرة تانية.</p><Button className="mt-5" onClick={() => { void cardQuery.refetch(); void vouchersQuery.refetch(); }}>إعادة المحاولة</Button></div></div>
+    </MainLayout>;
+  }
+
   return (
     <MainLayout>
       <TopNavBar hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" />
       <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6" dir="rtl">
-        <section className="overflow-hidden rounded-3xl bg-[#005931] p-5 text-white shadow-lg sm:p-7">
+        <section className="overflow-hidden rounded-3xl border border-[#005931] bg-[#005931] p-5 text-white shadow-[0_18px_50px_rgba(0,89,49,0.18)] sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} /><span className="text-sm font-bold">نقاط المعداوي</span></div>
+              <div className="flex items-center gap-2 text-[#fff5d3]"><Sparkles size={18} className="text-[#FFC120]" /><span className="text-sm font-bold">نقاط ســــــوبـرمــــاركو</span></div>
               <div className="mt-2 text-4xl font-black">{Number(card?.points_balance || 0).toLocaleString('ar-EG')} <span className="text-lg font-semibold">نقطة</span></div>
               <p className="mt-2 text-sm text-emerald-50/90">كل {redemptionPoints.toLocaleString('ar-EG')} نقطة = كوبون خصم بقيمة {money(redemptionValue)}.</p>
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur">
-              <div className="text-xs text-emerald-100">المتاح للتحويل الآن</div>
-              <div className="mt-1 text-2xl font-black">{money(redemptionPoints > 0 ? (maxConvertiblePoints / redemptionPoints) * redemptionValue : 0)}</div>
+              <div className="text-xs text-[#fff5d3]">المتاح للتحويل الآن</div>
+              <div className="mt-1 text-2xl font-black text-[#FFC120]">{money(redemptionPoints > 0 ? (maxConvertiblePoints / redemptionPoints) * redemptionValue : 0)}</div>
             </div>
           </div>
         </section>
 
-        <Card className="rounded-3xl border-gray-100 shadow-sm">
+        <Card className="rounded-3xl border-[#d8ebdf] shadow-sm">
           <CardHeader><CardTitle className="flex items-center gap-2"><Gift className="text-primary" size={21} />حوّل نقاطك لكوبون خصم</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-gray-500">اختار عدد نقاط بمضاعفات {redemptionPoints.toLocaleString('ar-EG')}. النقاط هتتخصم فور إنشاء كوبون الخصم، وبعدها تقدر تستخدمه في نقطة البيع أو داخل التطبيق.</p>
@@ -120,7 +126,7 @@ export default function Vouchers() {
                   step={redemptionPoints}
                   value={pointsInput}
                   onChange={event => setPointsInput(event.target.value)}
-                  className="min-h-12 rounded-xl text-lg font-bold"
+                  className="min-h-12 rounded-xl border-[#c8e0d2] text-lg font-bold focus-visible:ring-[#005931]"
                 />
               </div>
               <Button
@@ -139,14 +145,14 @@ export default function Vouchers() {
         <section className="space-y-3">
           <div className="flex items-center justify-between"><h2 className="text-xl font-black">كوبونات الخصم المتاحة</h2><Badge variant="secondary">{activeVouchers.length}</Badge></div>
           {activeVouchers.length === 0 ? (
-            <div className="rounded-3xl border border-dashed bg-white p-8 text-center text-gray-500"><Ticket className="mx-auto mb-3 text-gray-300" size={34} /><p className="font-semibold">مفيش كوبونات خصم متاحة حاليًا</p><p className="mt-1 text-sm">حوّل نقاطك من الجزء اللي فوق، وكوبون الخصم هيظهر هنا فورًا.</p></div>
+            <div className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white p-8 text-center text-gray-500"><span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]"><Ticket size={28} /></span><p className="font-bold">مفيش كوبونات خصم متاحة حاليًا</p><p className="mt-1 text-sm">حوّل نقاطك من الجزء اللي فوق، وكوبون الخصم هيظهر هنا فورًا.</p></div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {activeVouchers.map(voucher => (
-                <Card key={voucher.id} className="overflow-hidden rounded-3xl border-emerald-100 shadow-sm">
-                  <div className="bg-gradient-to-l from-emerald-50 to-white p-5">
+                <Card key={voucher.id} className="overflow-hidden rounded-3xl border-[#d8ebdf] shadow-sm">
+                  <div className="bg-gradient-to-l from-[#eaf6ee] via-white to-[#fff5d3] p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <div><p className="text-xs font-bold text-primary">كوبون خصم المعداوي</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
+                      <div><p className="text-xs font-bold text-primary">كوبون خصم ســــــوبـرمــــاركو</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
                       <Badge className={statusMeta[voucher.status].className}>{statusMeta[voucher.status].label}</Badge>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-3">
@@ -167,7 +173,7 @@ export default function Vouchers() {
             <h2 className="text-lg font-bold text-gray-700">كوبونات خصم سابقة</h2>
             <div className="space-y-2">
               {oldVouchers.map(voucher => (
-                <div key={voucher.id} className="flex items-center justify-between gap-3 rounded-2xl border bg-white p-4 text-sm">
+                <div key={voucher.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#d8ebdf] bg-white p-4 text-sm">
                   <div><div dir="ltr" className="text-right font-mono font-semibold">{voucher.voucher_code}</div><div className="mt-1 text-xs text-gray-500">القيمة الأصلية {money(voucher.initial_value_egp)}</div></div>
                   <div className="text-left"><Badge className={statusMeta[voucher.status].className}>{statusMeta[voucher.status].label}</Badge><div className="mt-1 text-xs text-gray-500">متبقي {money(voucher.remaining_value_egp)}</div></div>
                 </div>

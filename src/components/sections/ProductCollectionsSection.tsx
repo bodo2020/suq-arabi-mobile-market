@@ -33,8 +33,8 @@ const ProductCollectionsSection: React.FC<ProductCollectionsSectionProps> = ({ c
     refetchOnWindowFocus: false,
   });
 
-  const { data: products = [], isLoading: productsLoading, isError: productsError } = useQuery({
-    queryKey: ['active-products', branchId],
+  const { data: products = [], isLoading: productsLoading, isError: productsError, refetch: refetchProducts } = useQuery({
+    queryKey: ['home-catalog-products', branchId],
     queryFn: () => getProducts(),
     enabled: Boolean(branchId),
     staleTime: 30_000,
@@ -53,9 +53,10 @@ const ProductCollectionsSection: React.FC<ProductCollectionsSectionProps> = ({ c
       description: subtitleOverride ?? collection.description,
     } : collection);
 
-  if (!selectedCollections.length || !branchId || productsError) return null;
+  if (!selectedCollections.length || !branchId) return null;
+  if (productsError) return <div className="rounded-3xl border border-[#d8ebdf] bg-white p-5 text-center"><p className="text-sm text-slate-600">تعذّر تحميل مجموعات المنتجات</p><button type="button" onClick={() => void refetchProducts()} className="mt-3 min-h-10 rounded-xl bg-[#fff5d3] px-4 text-sm font-bold text-[#005931]">إعادة المحاولة</button></div>;
 
-  return <div className="space-y-6"><CollectionsList collections={selectedCollections} products={products} /></div>;
+  return <CollectionsList collections={selectedCollections} products={products} />;
 };
 
 export default ProductCollectionsSection;

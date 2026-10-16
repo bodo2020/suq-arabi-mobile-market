@@ -139,7 +139,7 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
   });
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+    <article className="overflow-hidden rounded-3xl border border-[#d8ebdf] bg-white shadow-[0_5px_18px_rgba(0,89,49,0.05)]">
       <div className="p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -162,13 +162,13 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
           </div>
         </div>
 
-        <div className="mt-5 rounded-2xl bg-gray-50 p-4">
+        <div className="mt-5 rounded-2xl bg-[#f3f8f4] p-4">
           <p className="text-xs font-semibold text-gray-500">سبب الاسترجاع</p>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-800">{request.reason}</p>
         </div>
 
         {request.admin_notes && (
-          <div className={`mt-3 rounded-2xl border p-4 ${request.status === 'rejected' ? 'border-red-100 bg-red-50/60' : 'border-green-100 bg-green-50/60'}`}>
+          <div className={`mt-3 rounded-2xl border p-4 ${request.status === 'rejected' ? 'border-red-100 bg-red-50/60' : 'border-[#d8ebdf] bg-[#eaf6ee]'}`}>
             <p className="text-xs font-semibold text-gray-600">ملاحظات الإدارة</p>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-800">{request.admin_notes}</p>
           </div>
@@ -177,7 +177,7 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
         <button
           type="button"
           onClick={() => setExpanded(value => !value)}
-          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold transition hover:bg-gray-50"
+          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#c8e0d2] text-sm font-bold text-[#005931] transition hover:bg-[#fff5d3]"
           aria-expanded={expanded}
         >
           {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -186,7 +186,7 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-100 bg-gray-50/50 p-5 sm:p-6">
+        <div className="border-t border-[#d8ebdf] bg-[#f3f8f4] p-5 sm:p-6">
           <div>
             <div className="flex items-center gap-2">
               <PackageOpen size={19} className="text-primary" />
@@ -209,7 +209,7 @@ const ReturnRequestDetails: React.FC<ReturnRequestDetailsProps> = ({ request }) 
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {items.map(item => (
-                  <div key={item.id} className="rounded-2xl border border-gray-100 bg-white p-3">
+                  <div key={item.id} className="rounded-2xl border border-[#d8ebdf] bg-white p-3">
                     <div className="flex items-center gap-3">
                       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-100">
                         {item.products?.image_urls?.[0] ? (

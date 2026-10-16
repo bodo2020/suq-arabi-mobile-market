@@ -175,9 +175,9 @@ const CategoryDetail = () => {
       <MainLayout>
         <TopNavBar hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} />
         <div className="mx-auto w-full max-w-7xl px-3 pb-8 pt-2 sm:px-4">
-          <div className="mb-4 h-36 animate-pulse rounded-[28px] bg-emerald-50" />
+          <div className="mb-4 h-36 animate-pulse rounded-[28px] bg-[#eaf6ee]" />
           <div className="mb-5 flex gap-2 overflow-hidden">
-            {Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-gray-100" />)}
+            {Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-[#fff5d3]" />)}
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => <ProductCardSkeleton key={index} />)}
@@ -193,19 +193,19 @@ const CategoryDetail = () => {
 
       <div className="mx-auto w-full max-w-7xl pb-10 pt-1">
         <div className="px-3 sm:px-5">
-          <section className="relative mb-4 min-h-[135px] overflow-hidden rounded-[24px] border border-emerald-100 bg-[#ecf8f2] sm:mb-5 sm:min-h-[145px] sm:rounded-[28px]">
+          <section className="relative mb-4 min-h-[135px] overflow-hidden rounded-[24px] border border-[#d8ebdf] bg-[#eaf6ee] sm:mb-5 sm:min-h-[145px] sm:rounded-[28px]">
             {categoryInfo?.image_url && (
               <div className="absolute inset-y-0 left-0 h-full w-[46%] bg-white">
                 <SmartImage src={categoryInfo.image_url} alt="" preloadMargin="1000px 0px" className="h-full w-full object-cover opacity-95" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-l from-[#eefaf4] via-[#eefaf4]/95 to-[#eefaf4]/30" />
+            <div className="absolute inset-0 bg-gradient-to-l from-[#eaf6ee] via-[#eaf6ee]/95 to-[#eaf6ee]/30" />
             <div className="relative z-10 flex min-h-[135px] max-w-[74%] flex-col justify-center p-4 sm:min-h-[145px] sm:p-6">
-              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white/90 text-[#005931] shadow-sm sm:h-9 sm:w-9"><Layers3 size={18} /></div>
+              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-[#005931] text-[#FFC120] shadow-sm sm:h-9 sm:w-9"><Layers3 size={18} /></div>
               <h1 className="text-xl font-black leading-tight text-slate-950 sm:text-2xl">{categoryInfo?.name || 'القسم'}</h1>
               <p className="mt-1.5 text-xs font-medium text-slate-600 sm:text-sm">{products.length ? `${products.length} منتج متاح` : 'اكتشف منتجات القسم'}</p>
               {products.length > 0 && id && (
-                <button type="button" onClick={() => navigate(`/category/${id}/products`)} className="mt-2.5 flex w-fit items-center gap-1 text-xs font-bold text-[#005931] sm:mt-3 sm:text-sm">
+                <button type="button" onClick={() => navigate(`/category/${id}/products`)} className="mt-2.5 flex w-fit items-center gap-1 rounded-full bg-[#fff5d3] px-3 py-1.5 text-xs font-bold text-[#005931] sm:mt-3 sm:text-sm">
                   كل المنتجات <ChevronLeft size={16} />
                 </button>
               )}
@@ -216,7 +216,7 @@ const CategoryDetail = () => {
         {visibleSubcategories.length > 0 && (
           <div ref={chipAnchorRef} className="relative mb-5 h-[58px]">
             <div
-              className={`${chipsPinned ? 'fixed inset-x-0 z-[45]' : 'absolute inset-x-0 top-0 z-40'} border-y border-emerald-100/70 bg-white/96 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur-xl`}
+              className={`${chipsPinned ? 'fixed inset-x-0 z-[45]' : 'absolute inset-x-0 top-0 z-40'} border-y border-[#d8ebdf] bg-white/96 py-2.5 shadow-[0_8px_20px_rgba(0,89,49,0.05)] backdrop-blur-xl`}
               style={chipsPinned ? { top: 'var(--top-nav-height, 68px)' } : undefined}
             >
               <div className="mx-auto w-full max-w-7xl">
@@ -230,7 +230,7 @@ const CategoryDetail = () => {
                         ref={node => { chipRefs.current[subcategory.id] = node; }}
                         type="button"
                         onClick={() => scrollToSection(subcategory.id)}
-                        className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white text-slate-700'}`}
+                        className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-[#c8e0d2] bg-white text-[#005931] hover:bg-[#fff5d3]'}`}
                         aria-pressed={selected}
                       >
                         {subcategory.image_url && (
@@ -239,7 +239,7 @@ const CategoryDetail = () => {
                           </span>
                         )}
                         <span>{subcategory.name}</span>
-                        {count > 0 && <span className={`text-[9px] sm:text-[10px] ${selected ? 'text-emerald-100' : 'text-slate-400'}`}>{count}</span>}
+                        {count > 0 && <span className={`text-[9px] sm:text-[10px] ${selected ? 'text-[#FFC120]' : 'text-slate-500'}`}>{count}</span>}
                       </button>
                     );
                   })}
@@ -282,9 +282,9 @@ const CategoryDetail = () => {
                     key={subcategory.id}
                     type="button"
                     onClick={() => id && navigate(`/category/${id}/subcategory/${subcategory.id}`)}
-                    className="w-[112px] shrink-0 overflow-hidden rounded-2xl border border-emerald-100 bg-white p-2 text-right shadow-sm sm:w-[140px]"
+                    className="w-[112px] shrink-0 overflow-hidden rounded-2xl border border-[#d8ebdf] bg-white p-2 text-right shadow-sm transition hover:border-[#9acbb2] sm:w-[140px]"
                   >
-                    <div className="aspect-[4/3] overflow-hidden rounded-xl bg-white">
+                    <div className="aspect-[4/3] overflow-hidden rounded-xl bg-[#f3f8f4]">
                       {subcategory.image_url ? <SmartImage src={subcategory.image_url} alt={subcategory.name} className="h-full w-full object-contain" /> : <div className="flex h-full items-center justify-center text-2xl font-black text-[#005931]">{subcategory.name.charAt(0)}</div>}
                     </div>
                     <div className="flex items-center justify-between gap-2 px-1 pb-1 pt-2.5"><span className="line-clamp-1 text-xs font-bold sm:text-sm">{subcategory.name}</span><ChevronLeft size={15} className="text-[#005931]" /></div>
@@ -295,10 +295,10 @@ const CategoryDetail = () => {
           )}
 
           {subcategories.length === 0 && products.length === 0 && (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-white px-5 py-14 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-[#005931]"><PackageSearch size={22} /></div>
+            <div className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white px-5 py-14 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]"><PackageSearch size={22} /></div>
               <p className="font-bold text-slate-800">مفيش منتجات متاحة في القسم حاليًا</p>
-              <button type="button" onClick={() => navigate('/categories')} className="mt-2 text-sm font-semibold text-[#005931]">اختار قسم تاني</button>
+              <button type="button" onClick={() => navigate('/categories')} className="mt-3 rounded-xl bg-[#005931] px-4 py-2 text-sm font-bold text-white">اختار قسم تاني</button>
             </div>
           )}
         </div>

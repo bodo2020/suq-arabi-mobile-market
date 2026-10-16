@@ -7,7 +7,7 @@ import CustomerNotificationRealtimeBridge from './components/CustomerNotificatio
 import NetworkStatus from './components/NetworkStatus';
 import CartSourceConflictNotifier from './components/CartSourceConflictNotifier';
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { UserProvider } from './contexts/UserContext';
 import { BranchProvider } from './contexts/BranchContext';
@@ -45,7 +45,6 @@ const Favorites = lazy(() => import('./pages/Favorites'));
 const Address = lazy(() => import('./pages/Address'));
 const AddressManager = lazy(() => import('./pages/AddressManager'));
 const AddressRegistration = lazy(() => import('./pages/AddressRegistration'));
-const BarcodeScanner = lazy(() => import('./pages/BarcodeScanner'));
 const BulkProducts = lazy(() => import('./pages/BulkProducts'));
 const CompanyProducts = lazy(() => import('./pages/CompanyProducts'));
 const BannerProducts = lazy(() => import('./pages/BannerProducts'));
@@ -110,8 +109,8 @@ function App() {
                       <Route path="/add-address" element={<Address />} />
                       <Route path="/edit-address/:id" element={<Address />} />
                       <Route path="/address-manager" element={<AddressManager />} />
-                      <Route path="/barcode-scanner" element={<BarcodeScanner />} />
-                      <Route path="/barcode-scan" element={<BarcodeScanner />} />
+                      <Route path="/barcode-scanner" element={<Navigate to="/search?scan=1" replace />} />
+                      <Route path="/barcode-scan" element={<Navigate to="/search?scan=1" replace />} />
                       <Route path="/bulk-products" element={<BulkProducts />} />
                       <Route path="/company/:id" element={<CompanyProducts />} />
                       <Route path="/banner/:id" element={<BannerProducts />} />

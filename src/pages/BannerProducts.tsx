@@ -115,7 +115,7 @@ const BannerProducts = () => {
     void load();
   }, [id]);
 
-  const title = banner && hasUsefulTitle(banner.title) ? banner.title.trim() : 'اختيارات سوبر ماركو';
+  const title = banner && hasUsefulTitle(banner.title) ? banner.title.trim() : 'اختيارات ســــــوبـرمــــاركو';
   const available = banner ? isCurrentBanner(banner) : false;
 
   const products = useMemo(() => {
@@ -133,8 +133,8 @@ const BannerProducts = () => {
   return (
     <MainLayout>
       <SEOHead
-        title={`${title} - سوبر ماركو`}
-        description={`تسوق ${sourceLabel} من سوبر ماركو`}
+        title={`${title} - ســــــوبـرمــــاركو`}
+        description={`تسوق ${sourceLabel} من ســــــوبـرمــــاركو`}
         image={banner?.image_url || undefined}
         type="product.group"
       />
@@ -171,7 +171,7 @@ const BannerProducts = () => {
                   onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent px-5 pb-5 pt-16 text-white sm:px-7 sm:pb-7">
-                  <p className="text-xs font-semibold text-white/80">عرض من سوبر ماركو</p>
+                  <p className="text-xs font-semibold text-white/80">عرض من ســــــوبـرمــــاركو</p>
                   <h1 className="mt-1 text-2xl font-bold leading-relaxed sm:text-3xl">{title}</h1>
                 </div>
               </div>

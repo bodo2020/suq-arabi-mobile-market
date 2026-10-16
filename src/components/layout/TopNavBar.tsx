@@ -5,6 +5,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import CustomerNotificationBell from '@/components/CustomerNotificationBell';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
+import { BRAND_ICON, BRAND_NAME } from '@/lib/brand';
 
 interface TopNavBarProps { searchPlaceholder?: string; onSearchFocus?: () => void; searchProps?: any; hideLogo?: boolean; hideSearch?: boolean; hideCart?: boolean; pageTitle?: string; showBackButton?: boolean; onBack?: () => void; }
 const desktopLinks = [
@@ -39,11 +40,11 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ searchPlaceholder='دور على 
     };
   }, [hideLogo, hideSearch, pageTitle, showBackButton, user]);
 
-  return <header ref={headerRef} className="native-safe-top fixed inset-x-0 top-0 z-50 border-b border-gray-100 bg-white/95 text-primary shadow-sm backdrop-blur-xl">
+  return <header ref={headerRef} className="native-safe-top fixed inset-x-0 top-0 z-50 border-b border-gray-100 bg-white/95 text-[#005931] shadow-sm backdrop-blur-xl">
     <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-4">
       <div className="flex min-h-11 items-center gap-2.5">
         {showBackButton && <button onClick={onBack||(()=>navigate(-1))} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 active:scale-95"><ArrowRight size={21}/></button>}
-        {!hideLogo && <Link to="/" aria-label="الرئيسية" className="shrink-0 rounded-xl active:scale-95"><span className="brand-name brand-name--header">سوبر <strong>ماركو</strong></span></Link>}
+        {!hideLogo && <Link to="/" aria-label="الرئيسية" className="shrink-0 rounded-xl active:scale-95"><img src={BRAND_ICON} alt={BRAND_NAME} className="h-10 w-10 rounded-xl object-contain md:h-11 md:w-11" width="44" height="44" /></Link>}
         {pageTitle && hideSearch ? <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold">{pageTitle}</h1> : !hideSearch && <div className="min-w-0 flex-1 md:max-w-2xl"><SearchBar placeholder={searchPlaceholder} onFocus={focus} readOnly={!searchPage} {...searchProps}/></div>}
         {user && <CustomerNotificationBell />}
         <div className="mr-auto hidden items-center gap-1 md:flex">

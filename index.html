@@ -7,19 +7,28 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>سوبر ماركو</title>
-    <meta name="description" content="سوبر ماركو - تسوق المنتجات والعروض أونلاين" />
-    <meta name="author" content="سوبر ماركو" />
+    <title>ســــــوبـرمــــاركو</title>
+    <meta name="description" content="تسوق واطلب احتياجاتك من ســــــوبـرمــــاركو والمتاجر الشريكة" />
+    <meta name="author" content="ســــــوبـرمــــاركو" />
 
-    <meta property="og:title" content="سوبر ماركو" />
-    <meta property="og:description" content="سوبر ماركو - تسوق المنتجات والعروض أونلاين" />
+    <meta property="og:title" content="ســــــوبـرمــــاركو" />
+    <meta property="og:description" content="تسوق واطلب احتياجاتك من ســــــوبـرمــــاركو والمتاجر الشريكة" />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/brand/super-marko-wordmark.png" />
 
-    <meta name="twitter:card" content="summary" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="icon" href="/super-marko-icon.svg" type="image/svg+xml">
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@elmadawymarket" />
+    <meta name="twitter:image" content="/brand/super-marko-wordmark.png" />
+    <link rel="icon" href="/brand/super-marko-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/brand/super-marko-icon.png">
+
+    <style>
+      #brand-splash { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 16px; background: #005931; }
+      #brand-splash img { display: block; width: min(100%, 520px); height: auto; object-fit: contain; animation: brand-enter .8s cubic-bezier(.18,.8,.25,1) both; }
+      #brand-splash.is-exiting { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .22s ease, visibility .22s; }
+      @keyframes brand-enter { from { opacity: 0; transform: translateY(18px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+      @media (prefers-reduced-motion: reduce) { #brand-splash img { animation: none; } #brand-splash.is-exiting { transition: none; } }
+    </style>
 
     <!-- Immediately hide Lovable badge as early as possible -->
     <style>
@@ -93,6 +102,9 @@
   </head>
 
   <body>
+    <div id="brand-splash" role="status" aria-label="جاري فتح ســــــوبـرمــــاركو">
+      <img src="/brand/super-marko-wordmark.svg" alt="ســــــوبـرمــــاركو" />
+    </div>
     <div id="root"></div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>

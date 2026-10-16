@@ -1,49 +1,102 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Clock3, MapPin, Search, ShoppingCart, Store } from 'lucide-react';
+import { Search, Store, X } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
-import ProductCard from '@/components/ui/ProductCard';
+import MainCategoryProductSections from '@/components/sections/MainCategoryProductSections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useCart } from '@/contexts/useCart';
 import { getMarketplaceStore, getMarketplaceStoreCatalog } from '@/lib/marketplace';
-
-const money = (value: number) => new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(value);
 
 export default function MarketplaceStore() {
   const { branchId = '' } = useParams();
   const navigate = useNavigate();
-  const { items } = useCart();
   const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
 
-  const storeQuery = useQuery({ queryKey: ['marketplace-store', branchId], queryFn: () => getMarketplaceStore(branchId), enabled: !!branchId, staleTime: 15_000, retry: 1 });
-  const productsQuery = useQuery({ queryKey: ['marketplace-store-products', branchId, search.trim()], queryFn: () => getMarketplaceStoreCatalog(branchId, search, 500), enabled: !!branchId && !!storeQuery.data, staleTime: 10_000, retry: 1 });
-  const marketplaceItems = useMemo(() => items.filter(item => item.commerce_source === 'marketplace'), [items]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setQuery(search.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+  useEffect(() => { setSearch(''); setQuery(''); }, [branchId]);
 
+  const storeQuery = useQuery({
+    queryKey: ['marketplace-store', branchId],
+    queryFn: () => getMarketplaceStore(branchId),
+    enabled: Boolean(branchId),
+    staleTime: 15_000,
+    retry: 1,
+  });
+  const productsQuery = useQuery({
+    queryKey: ['marketplace-store-products', branchId, query],
+    queryFn: () => getMarketplaceStoreCatalog(branchId, query, 500),
+    enabled: Boolean(branchId && storeQuery.data),
+    staleTime: 10_000,
+    retry: 1,
+  });
 
-  if (storeQuery.isLoading) return <MainLayout><div className="flex min-h-[70vh] items-center justify-center"><BrandLoader size="lg" /></div></MainLayout>;
   const store = storeQuery.data;
-  if (!store) return <MainLayout><main className="mx-auto max-w-xl px-4 py-16 text-center" dir="rtl"><Store className="mx-auto h-12 w-12 text-primary" /><h1 className="mt-4 text-xl font-black">المتجر غير متاح لعنوانك الحالي</h1><p className="mt-2 text-sm text-gray-500">ممكن يكون خارج نطاق التوصيل أو متوقف مؤقتًا.</p><Button className="mt-5" onClick={() => navigate('/stores')}>عرض المتاجر المتاحة</Button></main></MainLayout>;
+  if (storeQuery.isLoading) return (
+    <MainLayout><TopNavBar hideLogo hideSearch hideCart pageTitle="المتجر" showBackButton onBack={() => navigate(-1)} />
+      <div className="flex min-h-[70vh] items-center justify-center"><BrandLoader size="lg" /></div>
+    </MainLayout>
+  );
 
-  return <MainLayout>
-    <main className="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:px-4" dir="rtl">
-      <div className="mb-5 flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowRight /></Button><div className="min-w-0 flex-1"><p className="text-xs font-bold text-primary">متجر شريك</p><h1 className="truncate text-2xl font-black">{store.merchant_name}</h1><p className="truncate text-sm text-gray-500">{store.branch_name}</p></div><Button variant="outline" onClick={() => navigate('/cart')}><ShoppingCart size={17} />السلة{marketplaceItems.length ? ` (${marketplaceItems.length})` : ''}</Button></div>
-
-      <section className="mb-6 rounded-3xl border border-green-100 bg-gradient-to-l from-green-50 to-white p-5">
-        <div className="grid gap-3 text-sm sm:grid-cols-4"><span className="flex items-center gap-2"><MapPin size={17} className="text-primary" />{store.zone_name}</span><span className="flex items-center gap-2"><Clock3 size={17} className="text-primary" />{store.estimated_time || (store.estimated_delivery_minutes ? `${store.estimated_delivery_minutes} دقيقة` : 'حسب المنطقة')}</span><span>التوصيل: <strong>{store.delivery_fee > 0 ? `${money(store.delivery_fee)} ج.م` : 'مجاني'}</strong></span><span>الحد الأدنى: <strong>{money(store.min_order_amount)} ج.م</strong></span></div>
-      </section>
-
-      <div className="relative mb-5"><Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="ابحث داخل المتجر" className="h-12 rounded-2xl pr-12" /></div>
-
-      {productsQuery.isLoading ? <div className="flex justify-center py-16"><BrandLoader size="lg" /></div> : productsQuery.isError ? <div className="rounded-2xl bg-red-50 p-5 text-center text-red-700">تعذر تحميل منتجات المتجر.</div> : !productsQuery.data?.length ? <div className="rounded-2xl border border-dashed p-8 text-center text-gray-500">مفيش منتجات مطابقة للبحث حاليًا.</div> : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {productsQuery.data.map(product => {
-            return <ProductCard key={product.marketplace_listing_id} product={product} />;
-          })}
+  if (storeQuery.isError || !store) return (
+    <MainLayout><TopNavBar hideLogo hideSearch hideCart pageTitle="المتجر" showBackButton onBack={() => navigate(-1)} />
+      <main className="mx-auto max-w-xl px-4 py-16 text-center" dir="rtl">
+        <div className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white p-8">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]"><Store size={30} /></span>
+          <h1 className="mt-4 text-xl font-black">{storeQuery.isError ? 'تعذّر تحميل المتجر' : 'المتجر غير متاح لعنوانك الحالي'}</h1>
+          <p className="mt-2 text-sm text-slate-500">{storeQuery.isError ? 'راجع اتصالك وحاول مرة تانية.' : 'ممكن يكون خارج نطاق التوصيل أو متوقف مؤقتًا.'}</p>
+          <Button className="mt-5" onClick={() => storeQuery.isError ? void storeQuery.refetch() : navigate('/stores')}>
+            {storeQuery.isError ? 'إعادة المحاولة' : 'عرض المتاجر المتاحة'}
+          </Button>
         </div>
-      )}
-    </main>
-  </MainLayout>;
+      </main>
+    </MainLayout>
+  );
+
+  return (
+    <MainLayout>
+      <TopNavBar hideLogo hideSearch hideCart pageTitle={store.merchant_name} showBackButton onBack={() => navigate(-1)} />
+      <main className="mx-auto max-w-7xl pb-24 pt-1" dir="rtl">
+        <div className="px-3 sm:px-5">
+          <section className="relative mb-4 overflow-hidden rounded-[24px] border border-[#d8ebdf] bg-gradient-to-l from-[#eaf6ee] via-white to-[#fff5d3] sm:rounded-[28px]">
+            <div className="flex min-h-[135px] flex-col justify-center p-4 sm:min-h-[145px] sm:p-6">
+              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[#005931] text-[#FFC120] shadow-sm"><Store size={19} /></div>
+              <h1 className="break-words text-xl font-black leading-tight text-slate-950 sm:text-2xl">{store.merchant_name}</h1>
+              <p className="mt-1.5 text-xs font-medium text-slate-600 sm:text-sm">{store.branch_name}</p>
+              <p className="mt-2 w-fit rounded-full bg-[#fff5d3] px-3 py-1.5 text-xs font-bold text-[#005931]">{productsQuery.data?.length || 0} منتج · تسوق حسب الأقسام</p>
+            </div>
+          </section>
+
+          <div className="relative mb-4">
+            <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#005931]" />
+            <Input aria-label="ابحث داخل المتجر" value={search} onChange={event => setSearch(event.target.value)} placeholder="ابحث داخل المتجر" className="h-12 rounded-2xl border-[#c8e0d2] bg-white pr-12 pl-11 focus-visible:ring-[#005931]" />
+            {search && <button type="button" onClick={() => setSearch('')} aria-label="مسح بحث المتجر" className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#fff5d3] text-[#005931]"><X size={16} /></button>}
+          </div>
+        </div>
+
+        <div className="px-3 sm:px-5">
+          {productsQuery.isLoading ? (
+            <div className="flex justify-center py-16"><BrandLoader size="lg" /></div>
+          ) : productsQuery.isError ? (
+            <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 p-5 text-center text-red-700">
+              تعذّر تحميل منتجات المتجر.
+              <Button variant="outline" className="mx-auto mt-3 block" onClick={() => void productsQuery.refetch()}>إعادة المحاولة</Button>
+            </div>
+          ) : !productsQuery.data?.length ? (
+            <div className="rounded-2xl border border-dashed border-[#c8e0d2] bg-white p-8 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]"><Search size={22} /></span>
+              <p className="mt-3 font-bold text-slate-700">{query ? 'مفيش منتجات مطابقة للبحث حاليًا' : 'مفيش منتجات متاحة في المتجر حاليًا'}</p>
+              {query && <Button variant="outline" className="mt-4" onClick={() => setSearch('')}>عرض كل المنتجات</Button>}
+            </div>
+          ) : <MainCategoryProductSections key={branchId} products={productsQuery.data} />}
+        </div>
+      </main>
+    </MainLayout>
+  );
 }

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { getBaseUrl, getCurrentUrl } from '@/utils/urlUtils';
+import { BRAND_NAME } from '@/lib/brand';
 
 interface SEOHeadProps {
   title?: string;
@@ -12,9 +13,9 @@ interface SEOHeadProps {
 }
 
 const SEOHead: React.FC<SEOHeadProps> = ({
-  title = "سوبر ماركو | تسوق المنتجات أونلاين",
-  description = "تسوق المنتجات والعروض من سوبر ماركو أونلاين",
-  image,
+  title = `${BRAND_NAME} | تسوق المنتجات أونلاين`,
+  description = `تسوق المنتجات والعروض من ${BRAND_NAME} أونلاين`,
+  image = '/brand/super-marko-wordmark.png',
   url,
   type = "website"
 }) => {

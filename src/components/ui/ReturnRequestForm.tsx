@@ -224,13 +224,13 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-3xl border border-[#d8ebdf] bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold">اختار المنتجات</h2>
             <p className="mt-1 text-sm leading-6 text-gray-500">حدد المنتج والكمية اللي محتاج ترجعها.</p>
           </div>
-          <span className="shrink-0 rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-primary">
+          <span className="shrink-0 rounded-full bg-[#fff5d3] px-3 py-1.5 text-xs font-bold text-primary">
             {selectedCount} مختار
           </span>
         </div>
@@ -248,13 +248,13 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
             return (
               <div
                 key={`${key}-${index}`}
-                className={`rounded-2xl border p-4 transition ${selected ? 'border-green-200 bg-green-50/40' : 'border-gray-100 bg-white'}`}
+                className={`rounded-2xl border p-4 transition ${selected ? 'border-[#9acbb2] bg-[#eaf6ee]' : 'border-[#d8ebdf] bg-white'}`}
               >
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
                     onClick={() => handleItemSelect(item)}
-                    className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${selected ? 'border-primary bg-primary text-white' : 'border-gray-300 bg-white'}`}
+                    className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${selected ? 'border-primary bg-primary text-[#FFC120]' : 'border-[#c8e0d2] bg-white'}`}
                     aria-label={selected ? `إلغاء اختيار ${name}` : `اختيار ${name}`}
                     aria-pressed={selected}
                   >
@@ -272,10 +272,10 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
                 </div>
 
                 {selected && (
-                  <div className="mt-4 space-y-3 border-t border-green-100 pt-4">
+                  <div className="mt-4 space-y-3 border-t border-[#d8ebdf] pt-4">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-medium">كمية الاسترجاع</span>
-                      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1">
+                      <div className="flex items-center gap-2 rounded-xl border border-[#c8e0d2] bg-white p-1 text-[#005931]">
                         <button
                           type="button"
                           onClick={() => handleQuantityChange(item, quantity - 1)}
@@ -314,7 +314,7 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
         </div>
       </section>
 
-      <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-3xl border border-[#d8ebdf] bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-bold">سبب الاسترجاع</h2>
         <p className="mt-1 text-sm leading-6 text-gray-500">اشرح المشكلة باختصار عشان نقدر نراجع طلبك بسرعة.</p>
         <Textarea
@@ -328,7 +328,7 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
         <p className="mt-2 text-left text-xs text-gray-400" dir="ltr">{reason.length}/1000</p>
       </section>
 
-      <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-3xl border border-[#d8ebdf] bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -359,7 +359,7 @@ const ReturnRequestForm: React.FC<ReturnRequestFormProps> = ({ orderId, orderIte
         )}
 
         {images.length < MAX_IMAGES && (
-          <label className="mt-4 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-green-200 bg-green-50/50 px-4 text-sm font-semibold text-primary hover:bg-green-50">
+          <label className="mt-4 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#9acbb2] bg-[#fff5d3] px-4 text-sm font-bold text-primary hover:bg-[#FFC120]">
             <ImagePlus size={19} />
             إضافة صور
             <input

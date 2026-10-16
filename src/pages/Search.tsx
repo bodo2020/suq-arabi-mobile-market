@@ -1,6 +1,6 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Barcode, Search as SearchIcon, X } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -64,6 +64,10 @@ const Search = () => {
   const [retry, setRetry] = useState(0);
   const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerStartTimerRef = useRef<number | null>(null);
+  const scannerMountedRef = useRef(false);
+  const scanBusyRef = useRef(false);
+  const autoScanStartedRef = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -141,7 +145,13 @@ const Search = () => {
   }, [query]);
 
   useEffect(() => {
+    scannerMountedRef.current = true;
     return () => {
+      scannerMountedRef.current = false;
+      if (scannerStartTimerRef.current !== null) {
+        window.clearTimeout(scannerStartTimerRef.current);
+        scannerStartTimerRef.current = null;
+      }
       if (!scannerRef.current) return;
       try {
         if (scannerRef.current.isScanning) {
@@ -196,7 +206,9 @@ const Search = () => {
     try { localStorage.removeItem('recentSearches'); } catch { /* Optional history. */ }
   };
 
-  const handleBarcodeDetected = async (barcode: string) => {
+  const handleBarcodeDetected = useCallback(async (barcode: string) => {
+    if (scanBusyRef.current) return;
+    scanBusyRef.current = true;
     try {
       const product = await searchBranchProductByBarcodeIncludingUnavailable(barcode);
 
@@ -230,13 +242,19 @@ const Search = () => {
         description: 'حدث خطأ أثناء البحث عن المنتج',
         variant: 'destructive',
       });
+    } finally {
+      scanBusyRef.current = false;
     }
-  };
+  }, [navigate, toast]);
 
-  const startBarcodeScanner = () => {
+  const startBarcodeScanner = useCallback(() => {
+    if (scannerRef.current || scannerStartTimerRef.current !== null) return;
+    scanBusyRef.current = false;
     setShowScanner(true);
 
-    window.setTimeout(() => {
+    scannerStartTimerRef.current = window.setTimeout(() => {
+      scannerStartTimerRef.current = null;
+      if (!scannerMountedRef.current) return;
       try {
         const barcodeScanner = new Html5Qrcode('barcode-reader');
         scannerRef.current = barcodeScanner;
@@ -250,7 +268,11 @@ const Search = () => {
           },
           decodedText => { void handleBarcodeDetected(decodedText); },
           () => undefined,
-        ).catch(error => {
+        ).then(() => {
+          if ((!scannerMountedRef.current || scannerRef.current !== barcodeScanner) && barcodeScanner.isScanning) {
+            void barcodeScanner.stop();
+          }
+        }).catch(error => {
           console.error('Failed to start scanner:', error);
           toast({
             title: 'فشل تشغيل ماسح الباركود',
@@ -271,9 +293,13 @@ const Search = () => {
         scannerRef.current = null;
       }
     }, 120);
-  };
+  }, [handleBarcodeDetected, toast]);
 
   const stopBarcodeScanner = () => {
+    if (scannerStartTimerRef.current !== null) {
+      window.clearTimeout(scannerStartTimerRef.current);
+      scannerStartTimerRef.current = null;
+    }
     const scanner = scannerRef.current;
     if (!scanner) {
       setShowScanner(false);
@@ -297,19 +323,25 @@ const Search = () => {
     }
   };
 
+  useEffect(() => {
+    if (searchParams.get('scan') !== '1' || autoScanStartedRef.current) return;
+    autoScanStartedRef.current = true;
+    startBarcodeScanner();
+  }, [searchParams, startBarcodeScanner]);
+
   const availabilityButtonClass = (value: AvailabilityFilter) =>
     `min-h-10 rounded-full border px-3.5 text-xs font-bold transition sm:text-sm ${
       availabilityFilter === value
-        ? 'border-[#005931] bg-[#005931] text-white shadow-sm'
-        : 'border-emerald-100 bg-white text-slate-700 hover:bg-emerald-50'
+        ? 'border-[#005931] bg-[#005931] text-white shadow-[0_5px_14px_rgba(0,89,49,0.15)]'
+        : 'border-[#c8e0d2] bg-white text-[#005931] hover:bg-[#fff5d3]'
     }`;
 
   return (
     <MainLayout>
       {query && (
         <SEOHead
-          title={`البحث عن "${query}" - سوبر ماركو`}
-          description={`نتائج البحث عن ${query} في سوبر ماركو`}
+          title={`البحث عن "${query}" - ســــــوبـرمــــاركو`}
+          description={`نتائج البحث عن ${query} في ســــــوبـرمــــاركو`}
           type="search"
         />
       )}
@@ -340,7 +372,7 @@ const Search = () => {
                 <div className="mb-5 flex items-center">
                   <button
                     onClick={handleBack}
-                    className="rounded-full p-2 transition-colors hover:bg-gray-100"
+                    className="rounded-full p-2 text-[#005931] transition-colors hover:bg-[#fff5d3]"
                     aria-label="الرجوع"
                   >
                     <ArrowRight size={24} className="text-[#005931]" />
@@ -356,7 +388,7 @@ const Search = () => {
                     <CardContent className="p-0">
                       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-[#005931]">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff5d3] text-[#005931]">
                             <Barcode size={24} strokeWidth={2.3} />
                           </div>
                           <div>
@@ -367,7 +399,7 @@ const Search = () => {
                         <button
                           type="button"
                           onClick={stopBarcodeScanner}
-                          className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-500"
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff5d3] text-[#005931]"
                           aria-label="إغلاق ماسح الباركود"
                         >
                           <X size={20} />
@@ -398,9 +430,9 @@ const Search = () => {
               )}
 
               {!query && (
-                <section className="mb-6 rounded-[26px] border border-emerald-100 bg-gradient-to-l from-[#edf8f2] to-white p-5 shadow-sm sm:p-6">
+                  <section className="mb-6 rounded-[26px] border border-[#d8ebdf] bg-gradient-to-l from-[#eaf6ee] via-white to-[#fff5d3] p-5 shadow-sm sm:p-6">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#005931] text-white">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#005931] text-[#FFC120]">
                       <SearchIcon size={22} />
                     </div>
                     <div>
@@ -418,7 +450,7 @@ const Search = () => {
                     <button
                       type="button"
                       onClick={handleClearHistory}
-                      className="rounded-full px-3 py-1.5 text-xs font-bold text-[#005931] hover:bg-emerald-50"
+                      className="rounded-full px-3 py-1.5 text-xs font-bold text-[#005931] hover:bg-[#fff5d3]"
                     >
                       مسح الكل
                     </button>
@@ -429,7 +461,7 @@ const Search = () => {
                         key={search}
                         type="button"
                         onClick={() => handleSearchClick(search)}
-                        className="flex min-h-10 items-center gap-1.5 rounded-full border border-emerald-100 bg-white px-3.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-emerald-50"
+                        className="flex min-h-10 items-center gap-1.5 rounded-full border border-[#c8e0d2] bg-white px-3.5 text-sm font-bold text-[#005931] shadow-sm transition hover:bg-[#fff5d3]"
                       >
                         <SearchIcon size={14} className="text-[#005931]" />
                         {search}
@@ -455,14 +487,14 @@ const Search = () => {
 
               {query && (
                 <>
-                  <section className="mb-4 rounded-[22px] border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
+                  <section className="mb-4 rounded-[22px] border border-[#d8ebdf] bg-white p-4 shadow-sm sm:p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-[#005931]">نتائج البحث</p>
                         <h2 className="mt-1 break-words text-lg font-black text-slate-950 sm:text-xl">«{query}»</h2>
                       </div>
                       {!loading && !searchError && (
-                        <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-center">
+                        <div className="rounded-2xl bg-[#fff5d3] px-3 py-2 text-center">
                           <strong className="block text-lg font-black text-[#005931]">{availabilityCounts.total}</strong>
                           <span className="text-[10px] font-bold text-slate-500">نتيجة</span>
                         </div>
@@ -471,7 +503,7 @@ const Search = () => {
 
                     {!loading && !searchError && availabilityCounts.total > 0 && (
                       <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:flex sm:flex-wrap sm:text-right">
-                        <div className="rounded-xl bg-emerald-50 px-3 py-2">
+                        <div className="rounded-xl bg-[#eaf6ee] px-3 py-2">
                           <span className="text-xs text-slate-500">متوفر</span>
                           <strong className="mr-1 text-sm font-black text-[#005931]">{availabilityCounts.available}</strong>
                         </div>
@@ -483,7 +515,7 @@ const Search = () => {
                     )}
                   </section>
 
-                  <section className="mb-5 rounded-[22px] border border-slate-100 bg-white p-3 shadow-sm sm:p-4">
+                  <section className="mb-5 rounded-[22px] border border-[#d8ebdf] bg-white p-3 shadow-sm sm:p-4">
                     <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1" dir="rtl">
                       <button type="button" onClick={() => setAvailabilityFilter('all')} className={availabilityButtonClass('all')}>الكل</button>
                       <button type="button" onClick={() => setAvailabilityFilter('available')} className={availabilityButtonClass('available')}>متوفر الآن</button>
@@ -492,7 +524,7 @@ const Search = () => {
                         type="button"
                         onClick={() => setOnlyOffers(value => !value)}
                         aria-pressed={onlyOffers}
-                        className={`min-h-10 shrink-0 rounded-full border px-3.5 text-xs font-bold transition sm:text-sm ${onlyOffers ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-700'}`}
+                        className={`min-h-10 shrink-0 rounded-full border px-3.5 text-xs font-bold transition sm:text-sm ${onlyOffers ? 'border-[#FFC120] bg-[#FFC120] text-[#005931]' : 'border-[#c8e0d2] bg-white text-[#005931] hover:bg-[#fff5d3]'}`}
                       >
                         العروض
                       </button>
@@ -504,7 +536,7 @@ const Search = () => {
                         aria-label="ترتيب نتائج البحث"
                         value={sortOrder}
                         onChange={event => setSortOrder(event.target.value as 'relevance' | 'low' | 'high')}
-                        className="min-h-10 max-w-[170px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#005931]"
+                        className="min-h-10 max-w-[170px] rounded-xl border border-[#c8e0d2] bg-white px-2.5 text-xs font-bold text-[#005931] outline-none focus:border-[#005931] focus:ring-2 focus:ring-[#fff5d3]"
                       >
                         <option value="relevance">الأكثر صلة</option>
                         <option value="low">السعر: الأقل</option>
@@ -520,7 +552,7 @@ const Search = () => {
                       <Button onClick={() => setRetry(value => value + 1)}>إعادة المحاولة</Button>
                     </div>
                   ) : loading ? (
-                    <div className="flex h-44 items-center justify-center rounded-[24px] bg-white">
+                    <div className="flex h-44 items-center justify-center rounded-[24px] border border-[#d8ebdf] bg-white">
                       <BrandLoader size="md" className="" />
                     </div>
                   ) : visibleProducts.length > 0 ? (
@@ -530,8 +562,8 @@ const Search = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-white px-5 py-12 text-center">
-                      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-[#005931]">
+                    <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-[#c8e0d2] bg-white px-5 py-12 text-center">
+                      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]">
                         <SearchIcon size={27} />
                       </div>
                       <h3 className="text-lg font-black text-slate-900">مفيش نتائج بالفلاتر دي</h3>

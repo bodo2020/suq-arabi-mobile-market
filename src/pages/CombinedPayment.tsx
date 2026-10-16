@@ -235,12 +235,12 @@ export default function CombinedPayment() {
           <CardContent className="space-y-3">
             {(quote?.sources || []).map((source, index) => {
               const name = source.source_kind === 'owned'
-                ? quote?.hub_branch_name || 'ماركت المعداوي'
+                ? quote?.hub_branch_name || 'ســــــوبـرمــــاركو'
                 : source.plan.merchant_name || source.plan.branch_name || 'متجر شريك';
               return <div key={source.branch_id + source.source_kind} className="flex items-center justify-between rounded-2xl border p-4">
                 <div>
                   <p className="text-xs font-bold text-primary">
-                    {source.source_kind === 'owned' ? 'فرع المعداوي' : 'متجر شريك'}
+                    {source.source_kind === 'owned' ? 'فرع ســــــوبـرمــــاركو' : 'متجر شريك'}
                   </p>
                   <strong className="mt-1 block">{index + 1}. {name}</strong>
                 </div>
@@ -375,7 +375,7 @@ export default function CombinedPayment() {
                   <strong>{money(quote!.merchant_delivery_subsidy)} ج.م</strong>
                 </div>}
                 {Number(quote?.elmadawy_delivery_subsidy || 0) > 0 && <div className="flex justify-between text-green-700">
-                  <span>دعم المعداوي للتوصيل</span>
+                  <span>دعم ســــــوبـرمــــاركو للتوصيل</span>
                   <strong>{money(quote!.elmadawy_delivery_subsidy)} ج.م</strong>
                 </div>}
                 <div className="flex justify-between border-t pt-3 text-base">

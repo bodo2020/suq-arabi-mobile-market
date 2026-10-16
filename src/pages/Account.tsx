@@ -96,36 +96,36 @@ const Account = () => {
         {authLoading ? (
           <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل حسابك" /></div>
         ) : !user ? (
-          <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
-            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary"><User size={30} /></span>
-            <h1 className="text-2xl font-bold">أهلًا بيك في سوبر ماركو</h1>
+          <section className="mx-auto max-w-md rounded-3xl border border-[#d8ebdf] bg-white p-7 text-center shadow-sm">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-primary"><User size={30} /></span>
+            <h1 className="text-2xl font-bold">أهلًا بيك في ســــــوبـرمــــاركو</h1>
             <p className="mb-6 mt-3 text-sm leading-7 text-gray-500">سجّل برقم موبايلك عشان تتابع مشترياتك ونقاطك وتحفظ عناوينك ومنتجاتك المفضلة.</p>
             <Button className="min-h-12 w-full rounded-xl text-base" onClick={() => navigate('/phone-login')}>تسجيل الدخول أو إنشاء حساب</Button>
             <Link to="/" className="mt-3 flex min-h-12 items-center justify-center rounded-xl text-sm font-semibold text-primary">كمّل تصفح المنتجات</Link>
           </section>
         ) : (
           <div className="space-y-6">
-            <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
+            <section className="rounded-3xl border border-[#d8ebdf] bg-white p-5 shadow-sm sm:p-7">
               <div className="flex items-center gap-4">
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-primary"><User size={30} /></span>
+                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#fff5d3] text-primary"><User size={30} /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-xs text-gray-500">حسابك في سوبر ماركو</p>
+                  <p className="mb-1 text-xs text-gray-500">حسابك في ســــــوبـرمــــاركو</p>
                   <h1 className="break-words text-xl font-bold sm:text-2xl">{profile.isLoading ? 'جاري تحميل بياناتك…' : name}</h1>
                   {user.phone && <p dir="ltr" className="mt-2 text-right text-sm text-gray-500">+{user.phone.replace(/^\+/, '')}</p>}
                 </div>
               </div>
               {profile.isError && <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">تعذّر تحميل بياناتك.<button onClick={() => profile.refetch()} className="mr-2 min-h-11 underline">إعادة المحاولة</button></div>}
-              <Link to="/edit-account" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold transition hover:bg-gray-50"><Pencil size={17} />تعديل بياناتي</Link>
+              <Link to="/edit-account" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#c8e0d2] text-sm font-bold text-[#005931] transition hover:bg-[#fff5d3]"><Pencil size={17} />تعديل بياناتي</Link>
             </section>
 
-            <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-[#005931] text-white shadow-[0_18px_50px_rgba(0,89,49,0.18)]" aria-label="بطاقة ولاء المعداوي">
+            <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-[#005931] text-white shadow-[0_18px_50px_rgba(0,89,49,0.18)]" aria-label="بطاقة ولاء ســــــوبـرمــــاركو">
               <div className="p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-emerald-100"><Gift size={18} />بطاقة المعداوي</div>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-[#FFF5D3]"><Gift size={18} className="text-[#FFC120]" />بطاقة ســــــوبـرمــــاركو</div>
                     <h2 className="mt-1 text-xl font-black">نقاطك ومشترياتك في مكان واحد</h2>
                   </div>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10"><Sparkles size={22} /></span>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#FFC120]"><Sparkles size={22} /></span>
                 </div>
 
                 {loyalty.isLoading ? (
@@ -150,7 +150,7 @@ const Account = () => {
                       </div>
                     </div>
 
-                    <Link to="/vouchers" className="mt-4 flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-[#005931] shadow-sm transition hover:bg-emerald-50">
+                    <Link to="/vouchers" className="mt-4 flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-[#FFC120] px-4 py-3 text-sm font-black text-[#005931] shadow-sm transition hover:bg-[#FFD257]">
                       <Ticket size={19} />
                       تحويل النقاط إلى كوبون خصم / عرض كوبوناتي
                     </Link>
@@ -167,9 +167,9 @@ const Account = () => {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-green-100 bg-gradient-to-b from-green-50/80 to-white p-5 shadow-sm sm:p-6" aria-label="العنوان الأساسي">
+            <section className="rounded-3xl border border-[#d8ebdf] bg-gradient-to-b from-[#eaf6ee] via-white to-[#fff5d3] p-5 shadow-sm sm:p-6" aria-label="العنوان الأساسي">
               <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-primary shadow-sm"><MapPin size={22} /></span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#005931] text-[#FFC120] shadow-sm"><MapPin size={22} /></span>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-primary">العنوان الأساسي</p>
                   {defaultAddress.isLoading ? <p className="mt-2 text-sm text-gray-500">جاري تحميل عنوانك…</p> : address ? <>
@@ -182,7 +182,7 @@ const Account = () => {
                   {defaultAddress.isError && <p className="mt-2 text-sm text-amber-800">تعذّر تحميل العنوان حاليًا.</p>}
                 </div>
               </div>
-              <Link to={address ? '/address-manager' : '/add-address'} className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white">
+              <Link to={address ? '/address-manager' : '/add-address'} className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_5px_14px_rgba(0,89,49,0.14)]">
                 {address ? <MapPin size={17} /> : <Plus size={17} />}
                 {address ? 'إدارة أو تغيير العنوان' : 'إضافة عنوان'}
               </Link>
@@ -190,22 +190,22 @@ const Account = () => {
 
             <section aria-label="التسوق والطلبات" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
               {shortcuts.map(({ to, label, description, icon: Icon }) => (
-                <Link key={to} to={to} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-green-200 sm:p-5">
-                  <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-primary"><Icon size={23} /></span>
+                <Link key={to} to={to} className="rounded-2xl border border-[#d8ebdf] bg-white p-4 shadow-sm transition hover:border-[#9acbb2] sm:p-5">
+                  <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff5d3] text-primary"><Icon size={23} /></span>
                   <h2 className="font-bold">{label}</h2>
                   <p className="mt-2 text-xs leading-6 text-gray-500">{description}</p>
                 </Link>
               ))}
             </section>
 
-            <section aria-label="إدارة الحساب" className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+            <section aria-label="إدارة الحساب" className="overflow-hidden rounded-3xl border border-[#d8ebdf] bg-white shadow-sm">
               {[
                 { to: '/notifications', label: 'الإشعارات', description: 'تابع تحديثات الطلب والدفع أول بأول', icon: Bell },
                 { to: '/address-manager', label: 'عناوين التوصيل', description: 'ضيف عنوان أو اختار عنوانك الافتراضي', icon: MapPin },
                 { to: '/return-requests', label: 'طلبات الاسترجاع', description: 'راجع طلبات الاسترجاع وتابع حالتها', icon: RotateCcw },
               ].map(({ to, label, description, icon: Icon }) => (
-                <Link key={to} to={to} className="flex min-h-24 items-center gap-3 border-b border-gray-100 p-5 last:border-0 hover:bg-gray-50">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-primary"><Icon size={21} /></span>
+                <Link key={to} to={to} className="flex min-h-24 items-center gap-3 border-b border-[#d8ebdf] p-5 last:border-0 hover:bg-[#fff5d3]">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf6ee] text-primary"><Icon size={21} /></span>
                   <span className="min-w-0 flex-1"><strong className="block text-sm">{label}</strong><span className="mt-1 block text-xs leading-5 text-gray-500">{description}</span></span>
                   <ChevronLeft size={19} className="shrink-0 text-gray-400" />
                 </Link>

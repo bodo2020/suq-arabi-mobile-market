@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const manifestPath = 'android/app/src/main/AndroidManifest.xml';
 const stylesPath = 'android/app/src/main/res/values/styles.xml';
-const brandLogoPath = 'resources/android-brand/elmadawy-logo.png';
+const brandLogoPath = 'resources/android-brand/super-marko-icon.png';
 const resRoot = 'android/app/src/main/res';
 
 const requiredPermissions = [
@@ -45,6 +45,8 @@ if (!manifest.includes('android:windowSoftInputMode=')) {
   );
 }
 
+manifest = manifest.replace(/android:label="[^"]*"/, 'android:label="@string/app_name"');
+
 await writeFile(manifestPath, manifest, 'utf8');
 
 let styles;
@@ -72,7 +74,8 @@ function upsertItemInStyle(source, styleName, itemName, value) {
 }
 
 const appThemeName = styles.includes('name="AppTheme.NoActionBar"') ? 'AppTheme.NoActionBar' : 'AppTheme';
-styles = upsertItemInStyle(styles, appThemeName, 'android:windowOptOutEdgeToEdgeEnforcement', 'true');
+// Android 16 ignores the edge-to-edge opt-out for target SDK 36.
+styles = styles.replace(/\s*<item name="android:windowOptOutEdgeToEdgeEnforcement">[^<]*<\/item>/g, '');
 styles = upsertItemInStyle(styles, appThemeName, 'android:statusBarColor', '#005931');
 styles = upsertItemInStyle(styles, appThemeName, 'android:navigationBarColor', '#F6F8F7');
 styles = upsertItemInStyle(styles, appThemeName, 'android:windowLightStatusBar', 'false');
@@ -82,9 +85,10 @@ styles = upsertItemInStyle(styles, appThemeName, 'android:enforceNavigationBarCo
 
 // Configure both legacy and Android 12+ splash APIs on Capacitor's launch theme.
 if (styles.includes('name="AppTheme.NoActionBarLaunch"')) {
-  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:background', '@drawable/elmadawy_splash');
-  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', '@color/elmadawy_splash_background');
-  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenAnimatedIcon', '@drawable/elmadawy_splash_icon');
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:background', '@drawable/super_marko_splash');
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:windowBackground', '@drawable/super_marko_splash');
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', '@color/super_marko_splash_background');
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenAnimatedIcon', '@drawable/super_marko_splash_icon');
   styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'postSplashScreenTheme', '@style/AppTheme.NoActionBar');
 }
 await writeFile(stylesPath, styles, 'utf8');
@@ -106,9 +110,18 @@ const upsertColor = (name, value) => {
     colors = colors.replace('</resources>', `    ${replacement}\n</resources>`);
   }
 };
-upsertColor('elmadawy_icon_background', '#005931');
-upsertColor('elmadawy_splash_background', '#F6F8F7');
+upsertColor('super_marko_icon_background', '#005931');
+upsertColor('super_marko_splash_background', '#005931');
 await writeFile(colorsPath, colors, 'utf8');
+
+const stringsPath = path.join(resRoot, 'values', 'strings.xml');
+let strings = await readFile(stringsPath, 'utf8');
+const appName = '<string name="app_name">ســــــوبـرمــــاركو</string>';
+strings = /<string\s+name="app_name"[^>]*>[^<]*<\/string>/.test(strings)
+  ? strings.replace(/<string\s+name="app_name"[^>]*>[^<]*<\/string>/, appName)
+  : strings.replace('</resources>', `    ${appName}\n</resources>`);
+strings = strings.replace(/<string\s+name="title_activity_main"[^>]*>[^<]*<\/string>/, '<string name="title_activity_main">ســــــوبـرمــــاركو</string>');
+await writeFile(stringsPath, strings, 'utf8');
 
 // Remove every default Capacitor launcher bitmap so Android cannot select a stale density asset.
 const densities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi'];
@@ -135,13 +148,13 @@ await mkdir(drawableDir, { recursive: true });
 
 await copyFile(brandLogoPath, path.join(mipmapNodpiDir, 'ic_launcher.png'));
 await copyFile(brandLogoPath, path.join(mipmapNodpiDir, 'ic_launcher_round.png'));
-await copyFile(brandLogoPath, path.join(drawableNodpiDir, 'elmadawy_logo_source.png'));
+await copyFile(brandLogoPath, path.join(drawableNodpiDir, 'super_marko_logo_source.png'));
 
 // Give adaptive launchers a little breathing room so the supplied rounded artwork is never clipped.
-const launcherForegroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="10%">\n    <bitmap android:src="@drawable/elmadawy_logo_source" android:gravity="fill" />\n</inset>\n`;
-await writeFile(path.join(drawableDir, 'elmadawy_launcher_foreground.xml'), launcherForegroundXml, 'utf8');
+const launcherForegroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="10%">\n    <bitmap android:src="@drawable/super_marko_logo_source" android:gravity="fill" />\n</inset>\n`;
+await writeFile(path.join(drawableDir, 'super_marko_launcher_foreground.xml'), launcherForegroundXml, 'utf8');
 
-const adaptiveIcon = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/elmadawy_icon_background" />\n    <foreground android:drawable="@drawable/elmadawy_launcher_foreground" />\n</adaptive-icon>\n`;
+const adaptiveIcon = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/super_marko_icon_background" />\n    <foreground android:drawable="@drawable/super_marko_launcher_foreground" />\n</adaptive-icon>\n`;
 await writeFile(path.join(adaptiveDir, 'ic_launcher.xml'), adaptiveIcon, 'utf8');
 await writeFile(path.join(adaptiveDir, 'ic_launcher_round.xml'), adaptiveIcon, 'utf8');
 
@@ -157,10 +170,10 @@ await rm(path.join(drawableDir, 'splash.png'), { force: true });
 await rm(path.join(drawableDir, 'splash.xml'), { force: true });
 
 // Shared splash icon and legacy launch background.
-const splashIconXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="22%">\n    <bitmap android:src="@drawable/elmadawy_logo_source" android:gravity="fill" />\n</inset>\n`;
-await writeFile(path.join(drawableDir, 'elmadawy_splash_icon.xml'), splashIconXml, 'utf8');
+const splashIconXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="16%">\n    <bitmap android:src="@drawable/super_marko_logo_source" android:gravity="fill" />\n</inset>\n`;
+await writeFile(path.join(drawableDir, 'super_marko_splash_icon.xml'), splashIconXml, 'utf8');
 
-const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:drawable="@drawable/elmadawy_splash_icon" />\n</layer-list>\n`;
-await writeFile(path.join(drawableDir, 'elmadawy_splash.xml'), splashBackgroundXml, 'utf8');
+const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/super_marko_splash_background" />\n    <item android:drawable="@drawable/super_marko_splash_icon" />\n</layer-list>\n`;
+await writeFile(path.join(drawableDir, 'super_marko_splash.xml'), splashBackgroundXml, 'utf8');
 
-console.log('Android brand assets verified and applied: Elmadawy launcher icon, adaptive icon, splash screen and notification permission are active.');
+console.log('Android Super Marko launcher, splash and notification permission are active.');

@@ -32,11 +32,12 @@ const ProductFilters = ({
   return (
     <div className="mb-4 space-y-3 px-0">
       {companies.length > 0 && onCompanyChange && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1" dir="rtl" aria-label="فلترة حسب الشركة">
           <button
             type="button"
             onClick={() => onCompanyChange('all')}
-            className={`min-h-10 whitespace-nowrap rounded-full px-4 text-xs font-semibold transition-colors ${selectedCompany === 'all' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            aria-pressed={selectedCompany === 'all'}
+            className={`min-h-10 whitespace-nowrap rounded-full border px-4 text-xs font-bold transition-colors ${selectedCompany === 'all' ? 'border-[#005931] bg-[#005931] text-white' : 'border-[#c8e0d2] bg-white text-[#005931] hover:bg-[#fff5d3]'}`}
           >
             جميع الشركات
           </button>
@@ -45,7 +46,8 @@ const ProductFilters = ({
               type="button"
               key={company.id}
               onClick={() => onCompanyChange(company.id)}
-              className={`min-h-10 whitespace-nowrap rounded-full px-4 text-xs font-semibold transition-colors ${selectedCompany === company.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              aria-pressed={selectedCompany === company.id}
+              className={`min-h-10 whitespace-nowrap rounded-full border px-4 text-xs font-bold transition-colors ${selectedCompany === company.id ? 'border-[#005931] bg-[#005931] text-white' : 'border-[#c8e0d2] bg-white text-[#005931] hover:bg-[#fff5d3]'}`}
             >
               {company.name}
             </button>
@@ -54,13 +56,13 @@ const ProductFilters = ({
       )}
 
       {sortOptions.length > 0 && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-2.5">
-          <div className="flex items-center gap-2 px-1 text-sm font-semibold text-gray-600">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#d8ebdf] bg-white p-2.5">
+          <div className="flex items-center gap-2 px-1 text-sm font-bold text-[#005931]">
             <SlidersHorizontal size={17} className="text-primary" />
             ترتيب المنتجات
           </div>
           <Select value={currentSort} onValueChange={onSortChange}>
-            <SelectTrigger className="h-10 w-[190px] rounded-xl border-gray-200 bg-gray-50 text-sm">
+            <SelectTrigger className="h-10 w-[min(48vw,190px)] rounded-xl border-[#c8e0d2] bg-[#fff5d3] text-sm text-[#005931]">
               <SelectValue placeholder="ترتيب" />
             </SelectTrigger>
             <SelectContent align="end">

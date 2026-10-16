@@ -69,8 +69,8 @@ const ReturnRequests = () => {
             <BrandLoader label="جاري تحميل طلبات الاسترجاع" />
           </div>
         ) : !session || !user ? (
-          <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
-            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-primary">
+          <section className="mx-auto max-w-md rounded-3xl border border-[#d8ebdf] bg-white p-7 text-center shadow-sm">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-primary">
               <RotateCcw size={30} />
             </span>
             <h1 className="text-2xl font-bold">طلبات الاسترجاع محفوظة في حسابك</h1>
@@ -83,7 +83,7 @@ const ReturnRequests = () => {
           </section>
         ) : (
           <div className="space-y-5">
-            <section className="rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-7">
+            <section className="rounded-3xl border border-[#d8ebdf] bg-gradient-to-l from-[#eaf6ee] via-white to-[#fff5d3] p-5 sm:p-7">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="flex items-center gap-2 text-primary">
@@ -102,7 +102,7 @@ const ReturnRequests = () => {
                     disabled={isFetching}
                     onClick={() => void refetch()}
                   >
-                    <RefreshCw size={16} className={`ml-2 ${isFetching ? 'animate-spin' : ''}`} />
+                    <RefreshCw size={16} className={`ml-2 ${isFetching ? 'brand-pulse-icon' : ''}`} />
                     تحديث
                   </Button>
                   <Button variant="outline" className="min-h-11 rounded-xl bg-white" onClick={() => navigate('/orders')}>
@@ -132,13 +132,14 @@ const ReturnRequests = () => {
               )}
             </section>
 
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#eaf6ee] p-1.5 sm:grid-cols-4">
               {FILTERS.map(item => (
                 <button
                   key={item.key}
                   type="button"
                   onClick={() => setFilter(item.key)}
-                  className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition ${filter === item.key ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}
+                  aria-pressed={filter === item.key}
+                  className={`min-h-11 rounded-xl px-3 text-sm font-bold transition ${filter === item.key ? 'bg-[#005931] text-white shadow-sm' : 'text-[#005931] hover:bg-[#fff5d3]'}`}
                 >
                   {item.label}
                 </button>
@@ -157,8 +158,8 @@ const ReturnRequests = () => {
                 <Button className="mt-2 rounded-xl" onClick={() => void refetch()}>إعادة المحاولة</Button>
               </section>
             ) : requests.length === 0 ? (
-              <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 text-gray-400">
+              <section className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white p-8 text-center shadow-sm">
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d3] text-[#005931]">
                   <PackageOpen size={30} />
                 </span>
                 <h2 className="mt-4 text-xl font-bold">مفيش طلبات استرجاع لسه</h2>
@@ -170,7 +171,7 @@ const ReturnRequests = () => {
                 </Button>
               </section>
             ) : visibleRequests.length === 0 ? (
-              <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+              <section className="rounded-3xl border border-dashed border-[#c8e0d2] bg-white p-8 text-center shadow-sm">
                 <h2 className="text-lg font-bold">مفيش طلبات بالحالة دي</h2>
                 <p className="mt-2 text-sm text-gray-500">اختار «الكل» لعرض كل طلبات الاسترجاع.</p>
                 <Button variant="outline" className="mt-5 rounded-xl" onClick={() => setFilter('all')}>عرض الكل</Button>

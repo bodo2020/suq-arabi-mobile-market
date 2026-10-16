@@ -38,7 +38,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ onAddressSelect, chil
     try {
       const match = await resolveDeliveryLocation(coordinates.lat, coordinates.lng);
       if (!match) {
-        toast({ title: 'العنوان خارج نطاق التوصيل', description: 'التوصيل متاح حاليًا داخل 10 كم من فرع المعداوي.', variant: 'destructive' });
+        toast({ title: 'العنوان خارج نطاق التوصيل', description: 'التوصيل متاح حاليًا داخل 10 كم من فرع ســــــوبـرمــــاركو.', variant: 'destructive' });
         return;
       }
 
