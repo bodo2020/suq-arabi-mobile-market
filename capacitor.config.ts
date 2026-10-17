@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appId: 'com.elmadawy.market.customer',
   appName: 'ســــــوبـرمــــاركو',
   webDir: 'dist',
-  appendUserAgent: 'ElmadawyCustomer/1.2.175',
+  appendUserAgent: 'ElmadawyCustomer/1.2.177',
   server: liveReloadUrl
     ? {
         url: liveReloadUrl,
