@@ -60,7 +60,11 @@ export function subtractPurchasedItems(items: CartItem[], sources: PurchasedCart
   }
   return items.flatMap(item => {
     const key = `${storeKey(item)}:${itemQuoteIdentity(item)}`;
-    const quantity = Math.max(0, item.quantity - (purchased.get(key) || 0));
-    return quantity ? [{ ...item, quantity }] : [];
+    // Consume each purchased quantity once, even if a legacy/synced cart
+    // contains duplicate lines with the same identity.
+    const deduction = Math.min(item.quantity, purchased.get(key) || 0);
+    if (deduction > 0) purchased.set(key, (purchased.get(key) || 0) - deduction);
+    const quantity = item.quantity - deduction;
+    return quantity > 0 ? [{ ...item, quantity }] : [];
   });
 }
