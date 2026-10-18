@@ -153,11 +153,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     </div>
     <div className="flex w-[104px] shrink-0 flex-col items-center gap-2">
       <Link to={detailHref} className="block h-24 w-full overflow-hidden rounded-2xl bg-[#fff9e4]"><SmartImage src={productCardImage(imageSrc)} originalSrc={imageSrc} alt={displayName} className="h-full w-full object-cover" /></Link>
-      {unavailable ? <span className="text-xs text-slate-500">غير متاح</span> : item ? <div className="flex w-full items-center justify-between rounded-xl border border-[#c8e0d2] bg-[#f4faf6]">
-        <button className="flex h-10 w-9 items-center justify-center text-primary" disabled={!isInitialized || reachedStockLimit} onClick={addRegularOrBulk} aria-label={`زيادة ${displayName}`}><Plus size={16}/></button>
-        <output className="text-sm font-black" aria-live="polite">{money(item.quantity)}</output>
-        <button className="flex h-10 w-9 items-center justify-center text-primary" disabled={!isInitialized} onClick={decreaseRegularOrBulk} aria-label={`تقليل ${displayName}`}>{item.quantity === 1 ? <Trash2 size={14}/> : <Minus size={16}/>}</button>
-      </div> : <button className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-[#FFC120] text-xs font-black text-primary disabled:opacity-50" disabled={!isInitialized} onClick={addRegularOrBulk}><Plus size={16}/>أضف للوجبة</button>}
+      <Link to={detailHref} className="flex min-h-10 w-full items-center justify-center gap-1 rounded-xl bg-[#FFC120] px-2 text-center text-xs font-black text-primary">
+        {unavailable ? 'عرض الصنف' : 'التفاصيل والإضافات'}
+      </Link>
+      {item && <span className="text-[10px] font-bold text-emerald-700">في السلة: {money(item.quantity)} من الصنف الأساسي</span>}
     </div>
   </article>;
 

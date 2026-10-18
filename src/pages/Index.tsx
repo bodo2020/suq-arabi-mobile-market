@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, MapPin, Store, Tag } from 'lucide-react';
+import { ChevronLeft, MapPin, Store, Tag, UtensilsCrossed } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
@@ -85,7 +85,7 @@ const Index = () => {
         </button>
         </section>
 
-        <nav className="grid grid-cols-2 gap-2.5 sm:gap-4" aria-label="اختصارات التسوق">
+        <nav className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4" aria-label="اختصارات التسوق">
           <Link to="/offers" className="group flex min-h-20 items-center gap-2.5 rounded-2xl bg-[#fff5d3] p-3 text-[#005931] transition hover:bg-[#ffe78d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-4">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFC120]"><Tag size={21} /></span>
             <span className="min-w-0 flex-1"><strong className="block text-sm font-extrabold">العروض</strong><span className="mt-1 block text-[11px] leading-4 text-[#526442]">اكتشف المتاح</span></span>
@@ -95,6 +95,11 @@ const Index = () => {
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf6ee]"><Store size={21} /></span>
             <span className="min-w-0 flex-1"><strong className="block text-sm font-extrabold">المحلات</strong><span className="mt-1 block text-[11px] leading-4 text-slate-500">تسوّق من محلك</span></span>
             <ChevronLeft size={16} className="hidden shrink-0 sm:block" />
+          </Link>
+          <Link to="/restaurants/demo" className="group col-span-2 flex min-h-20 items-center gap-3 rounded-2xl border border-[#d8ebdf] bg-[#edf8f1] p-3 text-[#005931] transition hover:bg-[#dff3e7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:col-span-1 sm:px-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#005931] text-[#FFC120]"><UtensilsCrossed size={21}/></span>
+            <span className="min-w-0 flex-1"><strong className="block text-sm font-extrabold">المطاعم والإضافات</strong><span className="mt-1 block text-[11px] leading-4">جرّب منيو مطعم التجربة بالصور</span></span>
+            <ChevronLeft size={16} className="hidden shrink-0 sm:block"/>
           </Link>
         </nav>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, MapPin, RefreshCw, Store } from 'lucide-react';
+import { ArrowRight, MapPin, RefreshCw, Store, UtensilsCrossed } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -36,6 +36,12 @@ export default function MarketplaceStores() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="رجوع"><ArrowRight /></Button>
         <div><p className="text-xs font-bold text-primary">محلات شركاء ســــــوبـرمــــاركو</p><h1 className="text-2xl font-black">متاجر قريبة منك</h1><p className="mt-1 text-sm text-slate-600">النتائج حسب عنوان التوصيل الحالي، وكل طلب من متجر واحد.</p></div>
       </div>
+
+      <button type="button" onClick={() => navigate('/restaurants/demo')}
+        className="mb-5 flex w-full items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-right">
+        <span className="flex items-center gap-3"><span className="rounded-xl bg-[#005931] p-2 text-[#FFC120]"><UtensilsCrossed size={22}/></span><span><strong className="block font-black text-[#005931]">مطعم التجربة · صور ومنيو وإضافات</strong><span className="mt-1 block text-xs text-slate-600">معاينة مستقلة عن عنوان التوصيل، من غير طلبات حقيقية</span></span></span>
+        <ArrowRight size={18} className="rotate-180 text-primary"/>
+      </button>
 
       {query.isLoading ? <div className="flex justify-center py-20"><BrandLoader size="lg" /></div> : query.isError ? (
         <div className="rounded-2xl border border-red-100 bg-red-50 p-5 text-center"><p className="font-bold text-red-700">تعذر تحميل المتاجر القريبة.</p><Button className="mt-4" variant="outline" onClick={() => void query.refetch()}><RefreshCw size={16} />إعادة المحاولة</Button></div>
