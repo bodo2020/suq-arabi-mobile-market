@@ -90,7 +90,7 @@ export default function RestaurantModifierPreview({ branchId, productId, basePri
             <div className="flex shrink-0 items-center gap-2">
               {group.max_choices === 1
                 ? <button type="button" aria-label={"اختار " + option.name}
-                    aria-pressed={selected > 0} onClick={() => change(group, option.id, 1)}
+                    aria-pressed={selected > 0} onClick={() => change(group, option.id, selected && group.min_choices === 0 ? 0 : 1)}
                     className={"min-h-10 rounded-lg border px-3 text-xs font-bold " + (selected ? "bg-[#005931] text-white" : "bg-white text-[#005931]")}>
                     {selected ? "تم الاختيار" : "اختيار"}
                   </button>
