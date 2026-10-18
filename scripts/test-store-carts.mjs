@@ -67,10 +67,29 @@ for (const [file,fn,idKey,rpcName] of [
  const calls=[];
  const mod={};
  const mockSupabase={rpc:async(name,args)=>{calls.push({name,args});return {data:{id:'existing-order',orders:[]},error:null}},from:()=>{throw Error('must not re-quote a persisted request')}};
- vm.runInNewContext(compile(fs.readFileSync(`src/lib/${file}.ts`,'utf8')),{exports:mod,require:name=>name==='@/lib/supabase'?{supabase:mockSupabase}:{},localStorage:{}});
+ vm.runInNewContext(compile(fs.readFileSync(`src/lib/${file}.ts`,'utf8')),{exports:mod,require:name=>name==='@/lib/supabase'?{supabase:mockSupabase}:name==='@/lib/marketplaceCheckout'?{assertNoUnverifiedRestaurantOptions:()=>{}}:{},localStorage:{}});
  const pending={[idKey]:'same-request',routeQuoteId:'original-route',quoteToken:'original-token',sources:[],items:[],addressId:'address',branchId:'branch',paymentMethod:'cash',notes:'',substitutionPolicy:'contact_me'};
  await mod[fn](pending); await mod[fn](pending);
  assert.equal(calls.length,2);assert.equal(calls[0].name,rpcName);
  assert.deepEqual(calls[0],calls[1]);assert.equal(calls[0].args.p_route_quote_id,'original-route');
 }
 console.log('PASS checkout retry: original request and route replayed without fresh stock quote');
+
+// Malformed / future modifier picks must never quietly pass through legacy
+// marketplace or combined checkout and be billed as the base product.
+const guardExports = {};
+vm.runInNewContext(
+  compile(fs.readFileSync('src/lib/marketplaceCheckout.ts','utf8')),
+  { exports: guardExports, require: name => name === '@/lib/supabase' ? { supabase: { rpc: async () => ({ data: null, error: null }) } } : {} },
+);
+guardExports.assertNoUnverifiedRestaurantOptions([{ product_id: 'regular' }]);
+guardExports.assertNoUnverifiedRestaurantOptions([{ modifier_picks: [] }]);
+for (const field of ['restaurant_modifier_picks','modifier_picks','modifiers']) {
+  assert.throws(
+    () => guardExports.assertNoUnverifiedRestaurantOptions([{ [field]: [{ group_id:'size',option_id:'large',quantity:1 }] }]),
+    /RESTAURANT_MODIFIERS_NOT_READY/,
+  );
+}
+const customized = { ...item('a','la'), restaurant_modifier_picks: [{ group_id:'size',option_id:'large',quantity:1 }] };
+assert.throws(() => guardExports.marketplaceCheckoutLines([customized]), /RESTAURANT_MODIFIERS_NOT_READY/);
+console.log('PASS unverified restaurant modifiers never silently enter base-only checkout');

@@ -496,7 +496,7 @@ const ProductDetail = () => {
             </div>
 
             {isRestaurantStore && requestedStoreId && id && (
-              <RestaurantModifierPreview branchId={requestedStoreId} productId={id} />
+              <RestaurantModifierPreview key={`${requestedStoreId}:${id}`} branchId={requestedStoreId} productId={id} basePrice={displayPrice} />
             )}
 
             <div className="mt-5 hidden md:block">

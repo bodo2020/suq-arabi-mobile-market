@@ -317,6 +317,7 @@ const messages: Record<string, string> = {
   INVALID_QUANTITY: 'راجع كميات المنتجات في السلة.',
   INVALID_MULTI_STORE_CART: 'راجع المحلات والمنتجات في السلة.',
   INVALID_CART: 'راجع محتويات السلة وحاول تاني.',
+  RESTAURANT_MODIFIERS_NOT_READY: 'إضافات المطاعم لسه تحت التجربة؛ السلة الحالية بتقبل الصنف الأساسي فقط.',
   SAAS_APP_SUSPENDED: 'الخدمة متوقفة مؤقتًا بواسطة إدارة المنصة.',
   SAAS_CAPABILITY_DISABLED: 'الطلبات الأونلاين متوقفة مؤقتًا بواسطة إدارة المنصة.',
 };

@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
 import { checkoutLines } from '@/lib/checkout';
-import { marketplaceCheckoutLines } from '@/lib/marketplaceCheckout';
+import { assertNoUnverifiedRestaurantOptions, marketplaceCheckoutLines } from '@/lib/marketplaceCheckout';
 import type { CombinedDeliveryQuote } from '@/lib/cartQuote';
 import { getMultiStoreRoadQuote } from '@/lib/multistoreRoadRoute';
 import { normalizeSubstitutionPolicy, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
@@ -142,6 +142,7 @@ export async function quoteCombinedOrder(sources: CombinedCheckoutSource[], addr
 }
 
 export async function placeCombinedOrder(order: PendingCombinedCheckout) {
+  assertNoUnverifiedRestaurantOptions(order.sources.flatMap(source => source.items));
   // Replay the original request before re-quoting. The server checks idempotency
   // before stock/route expiry, so a lost success response cannot create a new order.
   let routeQuoteId = order.routeQuoteId;
@@ -215,6 +216,7 @@ const messages: Record<string, string> = {
   ROUTE_DISTANCE_UNAVAILABLE: 'تعذر حساب طريق التوصيل حاليًا. حاول مرة تانية.',
   INVALID_QUANTITY: 'راجع كميات المنتجات.',
   INVALID_CART: 'راجع محتويات السلة.',
+  RESTAURANT_MODIFIERS_NOT_READY: 'إضافات المطاعم للمعاينة فقط؛ الطلب المجمّع لسه مش بيدعمها.',
   INVALID_MULTI_STORE_CART: 'السلة المجمعة لازم تحتوي على مصدرين إلى ثلاثة بحد أقصى.',
   INVALID_ORDER: 'راجع بيانات الطلب.',
   REQUEST_CONFLICT: 'تعذر استكمال المحاولة السابقة. راجع طلباتك.',
@@ -237,7 +239,7 @@ export function combinedDefinitelyRejected(error: unknown) {
     'PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','MIN_ORDER_NOT_MET',
     'QUOTE_CHANGED','INVALID_MULTI_STORE_ROUTE','ROAD_QUOTE_REQUIRED','ROAD_QUOTE_EXPIRED',
     'ROAD_QUOTE_MISMATCH','ROUTE_QUOTE_STORE_FAILED','MULTISTORE_ROUTE_FAILED','ROUTE_DISTANCE_UNAVAILABLE',
-    'INVALID_QUANTITY','INVALID_CART','INVALID_MULTI_STORE_CART','INVALID_ORDER',
+    'INVALID_QUANTITY','INVALID_CART','RESTAURANT_MODIFIERS_NOT_READY','INVALID_MULTI_STORE_CART','INVALID_ORDER',
     'SAAS_APP_SUSPENDED','SAAS_CAPABILITY_DISABLED',
   ].includes(message);
 }

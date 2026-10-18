@@ -76,8 +76,25 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
   args: Record<string, unknown>,
 ) => Promise<{ data: unknown; error: { message: string; code?: string } | null }>;
 
+// Future customized lines MUST NOT silently fall back to base-item billing.
+// The old RPCs cannot validate or snapshot these picks yet.
+export function assertNoUnverifiedRestaurantOptions(lines: unknown[]) {
+  for (const line of lines) {
+    if (!line || typeof line !== 'object') continue;
+    const value = line as Record<string, unknown>;
+    for (const field of ['restaurant_modifier_picks', 'modifier_picks', 'modifiers']) {
+      if (!(field in value)) continue;
+      const picks = value[field];
+      if (picks != null && (!Array.isArray(picks) || picks.length > 0)) {
+        throw new Error('RESTAURANT_MODIFIERS_NOT_READY');
+      }
+    }
+  }
+}
+
 export function marketplaceCheckoutLines(items: CartItem[]) {
   if (!items.length || items.some(item => item.commerce_source !== 'marketplace')) throw new Error('INVALID_CART');
+  assertNoUnverifiedRestaurantOptions(items);
   const branches = new Set(items.map(item => item.marketplace_branch_id).filter(Boolean));
   const merchants = new Set(items.map(item => item.merchant_id).filter(Boolean));
   if (branches.size !== 1 || merchants.size !== 1) throw new Error('MIXED_MERCHANT_CART');
@@ -121,6 +138,7 @@ export async function quoteMarketplaceOrder(items: MarketplaceCheckoutLine[], ad
 }
 
 export async function placeMarketplaceOrder(order: PendingMarketplaceCheckout) {
+  assertNoUnverifiedRestaurantOptions(order.items);
   // Preserve the original route for retries; the server returns a committed
   // request before checking stock or route expiry again.
   let routeQuoteId = order.routeQuoteId;
@@ -178,6 +196,7 @@ const messages: Record<string, string> = {
   QUOTE_CHANGED: 'السعر أو المخزون أو التوصيل اتغيّر. راجع الملخص وحاول تاني.',
   INVALID_QUANTITY: 'راجع كميات المنتجات.',
   INVALID_CART: 'راجع محتويات السلة.',
+  RESTAURANT_MODIFIERS_NOT_READY: 'إضافات المطاعم لسه للمعاينة فقط؛ احذف التخصيص واطلب الصنف الأساسي.',
   INVALID_ORDER: 'راجع بيانات الطلب.',
   REQUEST_CONFLICT: 'تعذر استكمال المحاولة السابقة. راجع طلباتك.',
   ROAD_QUOTE_REQUIRED: 'تعذر تثبيت مسار التوصيل. حاول مرة تانية.',
@@ -198,5 +217,5 @@ export function marketplaceCheckoutError(error: unknown) {
 
 export function marketplaceDefinitelyRejected(error: unknown) {
   const message = (error as { message?: string })?.message || '';
-  return ['PROFILE_REQUIRED','ADDRESS_REQUIRED','DELIVERY_ADDRESS_REQUIRED','DELIVERY_UNAVAILABLE','MARKETPLACE_STORE_UNAVAILABLE','MIXED_MERCHANT_CART','ROAD_QUOTE_REQUIRED','ROAD_QUOTE_EXPIRED','ROAD_QUOTE_MISMATCH','ROUTE_QUOTE_STORE_FAILED','STORE_ROUTE_FAILED','ROUTE_DISTANCE_UNAVAILABLE','INVALID_LOCATION','INSUFFICIENT_STOCK','PRODUCT_UNAVAILABLE','PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','MIN_ORDER_NOT_MET','QUOTE_CHANGED','INVALID_QUANTITY','INVALID_CART','INVALID_ORDER','SAAS_APP_SUSPENDED','SAAS_CAPABILITY_DISABLED'].includes(message);
+  return ['PROFILE_REQUIRED','ADDRESS_REQUIRED','DELIVERY_ADDRESS_REQUIRED','DELIVERY_UNAVAILABLE','MARKETPLACE_STORE_UNAVAILABLE','MIXED_MERCHANT_CART','ROAD_QUOTE_REQUIRED','ROAD_QUOTE_EXPIRED','ROAD_QUOTE_MISMATCH','ROUTE_QUOTE_STORE_FAILED','STORE_ROUTE_FAILED','ROUTE_DISTANCE_UNAVAILABLE','INVALID_LOCATION','INSUFFICIENT_STOCK','PRODUCT_UNAVAILABLE','PRODUCT_UNIT_CHANGED','BULK_UNAVAILABLE','PRICE_UNAVAILABLE','MIN_ORDER_NOT_MET','QUOTE_CHANGED','INVALID_QUANTITY','INVALID_CART','RESTAURANT_MODIFIERS_NOT_READY','INVALID_ORDER','SAAS_APP_SUSPENDED','SAAS_CAPABILITY_DISABLED'].includes(message);
 }
