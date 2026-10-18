@@ -7,17 +7,22 @@ import {
   evaluateRestaurantModifiers,
   type RestaurantModifierGroup, type RestaurantModifierPick,
 } from "@/lib/restaurantModifiers";
+import type { CommerceProductInput } from "@/contexts/cartTypes";
+import { useCart } from "@/contexts/useCart";
+import { useToast } from "@/hooks/use-toast";
 
 const money = (value: number) => Number(value || 0).toLocaleString("ar-EG", { maximumFractionDigits: 2 });
 
 /**
- * Customer can TRY configurations against an authoritative server quote.
- * No chosen options are written to a cart or submitted through legacy checkout.
+ * Customer can save a server-verified configuration as a non-payable cart draft.
+ * Legacy checkout is guarded until the placement RPC captures the same options.
  */
-export default function RestaurantModifierPreview({ branchId, productId, basePrice }: {
-  branchId: string; productId: string; basePrice: number;
+export default function RestaurantModifierPreview({ branchId, productId, basePrice, product }: {
+  branchId: string; productId: string; basePrice: number; product?: CommerceProductInput;
 }) {
   const [picks, setPicks] = useState<RestaurantModifierPick[]>([]);
+  const { addToCart, items, isInitialized } = useCart();
+  const { toast } = useToast();
   const menu = useQuery({
     queryKey: ["restaurant-modifier-preview", branchId, productId],
     queryFn: () => getRestaurantListingModifierPreview(branchId, productId),
@@ -60,6 +65,28 @@ export default function RestaurantModifierPreview({ branchId, productId, basePri
 
   const verified = evaluation && quote.data && !quote.isFetching && !quote.isError
     ? quote.data : null;
+  const alreadyInCart = items.filter(item => item.commerce_source === 'marketplace'
+    && item.marketplace_branch_id === branchId && item.product.id === productId
+    && item.marketplace_listing_id === product?.marketplace_listing_id)
+    .reduce((total, item) => total + item.quantity, 0);
+  const canSave = Boolean(verified && product && isInitialized && product.quantity > alreadyInCart
+    && product.commerce_source === 'marketplace'
+    && product.marketplace_branch_id === branchId
+    && product.marketplace_listing_id);
+  const saveSelection = () => {
+    if (!canSave || !verified || !product || !evaluation) return;
+    const result = addToCart({
+      ...product,
+      available_quantity: product.quantity,
+      quantity: 1,
+      is_bulk: false,
+      restaurant_modifier_picks: evaluation.picks,
+      restaurant_modifier_selection_key: verified.selection_key,
+      restaurant_modifier_snapshot: verified.picks,
+      restaurant_modifier_unit_delta: Number(verified.price_delta),
+    });
+    if (result === 'added') toast({ title: 'اتحفظت الوجبة', description: 'تكوين الوجبة ظاهر في السلة للمعاينة. الطلب بالإضافات لسه غير متاح.' });
+  };
 
   return <section aria-label="تجربة خيارات الوجبة" dir="rtl"
     className="mt-5 space-y-4 rounded-2xl border border-[#e7cd80] bg-[#fffaf0] p-4">
@@ -67,7 +94,7 @@ export default function RestaurantModifierPreview({ branchId, productId, basePri
       <h2 className="font-black text-[#005931]">جرّب تخصيص وجبتك</h2>
       <p className="mt-1 text-xs leading-6 text-slate-700">
         اختار الحجم والإضافات علشان تشوف السعر محسوب من المطعم.
-        <strong> دي تجربة فقط: اختياراتك مش هتتضاف للسلة، وزر الشراء الحالي بيطلب الصنف الأساسي من غير إضافات.</strong>
+        <strong> تقدر تحفظ التكوين في السلة للمعاينة. طلب الإضافات والدفع بها لسه غير متاحين.</strong>
       </p>
     </div>
     {groups.filter(group => group.active !== false).map(group =>
@@ -118,5 +145,9 @@ export default function RestaurantModifierPreview({ branchId, productId, basePri
         </>}
       <p className="mt-1 text-xs text-slate-500">السعر المعروض للمعاينة فقط، ومش سعرًا مؤكدًا لطلب فعلي.</p>
     </div>
+    <button type="button" onClick={saveSelection} disabled={!canSave}
+      className="min-h-12 w-full rounded-xl bg-[#005931] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">
+      {product && product.quantity <= alreadyInCart ? 'الكمية المتاحة في السلة' : 'احفظ تكوين الوجبة في السلة'}
+    </button>
   </section>;
 }

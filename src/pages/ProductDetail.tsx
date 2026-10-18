@@ -66,7 +66,7 @@ const ProductDetail = () => {
   const weightStep = product && weighted ? productWeightStepGrams(product) : 0;
   const maxWeight = weighted ? Math.floor(stock * 1000) : 0;
   const listingId = product?.marketplace_listing_id || null;
-  const regularCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && !item.is_bulk && item.unit_of_measure !== 'weight');
+  const regularCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && !item.restaurant_modifier_selection_key && !item.is_bulk && item.unit_of_measure !== 'weight');
   const weightedCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && !item.is_bulk && item.unit_of_measure === 'weight');
   const bulkCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && item.is_bulk);
   const activeCartItem = bulkMode ? bulkCartItem : weighted ? weightedCartItem : regularCartItem;
@@ -496,7 +496,7 @@ const ProductDetail = () => {
             </div>
 
             {isRestaurantStore && requestedStoreId && id && (
-              <RestaurantModifierPreview key={`${requestedStoreId}:${id}`} branchId={requestedStoreId} productId={id} basePrice={displayPrice} />
+              <RestaurantModifierPreview key={`${requestedStoreId}:${id}`} branchId={requestedStoreId} productId={id} basePrice={displayPrice} product={product as typeof product & { quantity: number }} />
             )}
 
             <div className="mt-5 hidden md:block">

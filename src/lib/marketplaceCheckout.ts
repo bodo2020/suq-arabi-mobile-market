@@ -82,10 +82,10 @@ export function assertNoUnverifiedRestaurantOptions(lines: unknown[]) {
   for (const line of lines) {
     if (!line || typeof line !== 'object') continue;
     const value = line as Record<string, unknown>;
-    for (const field of ['restaurant_modifier_picks', 'modifier_picks', 'modifiers']) {
+    for (const field of ['restaurant_modifier_picks', 'restaurant_modifier_selection_key', 'modifier_picks', 'modifiers']) {
       if (!(field in value)) continue;
       const picks = value[field];
-      if (picks != null && (!Array.isArray(picks) || picks.length > 0)) {
+      if (picks != null) {
         throw new Error('RESTAURANT_MODIFIERS_NOT_READY');
       }
     }
