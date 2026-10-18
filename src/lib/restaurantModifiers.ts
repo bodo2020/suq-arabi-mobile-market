@@ -57,7 +57,7 @@ function verifyGroups(groups: RestaurantModifierGroup[]) {
     requireValid(Boolean(group.id) && !groupIds.has(group.id), 'MODIFIER_INVALID_GROUP');
     groupIds.add(group.id);
     requireValid(
-      whole(group.min_choices) && whole(group.max_choices) && group.min_choices <= group.max_choices,
+      whole(group.min_choices) && whole(group.max_choices) && group.min_choices <= group.max_choices && group.max_choices <= 100,
       'MODIFIER_INVALID_GROUP',
     );
     const optionIds = new Set<string>();
@@ -67,7 +67,7 @@ function verifyGroups(groups: RestaurantModifierGroup[]) {
       optionIds.add(option.id);
       piasters(option.price_delta);
       const max = option.max_quantity ?? 1;
-      requireValid(Number.isSafeInteger(max) && max >= 1, 'MODIFIER_INVALID_OPTION');
+      requireValid(Number.isSafeInteger(max) && max >= 1 && max <= 100, 'MODIFIER_INVALID_OPTION');
       if (option.active !== false) capacity += max;
     }
     if (group.active !== false) {
@@ -131,7 +131,8 @@ export function evaluateRestaurantModifiers(
 
   const picks = requested
     .map(pick => ({ group_id: pick.group_id, option_id: pick.option_id, quantity: pick.quantity }))
-    .sort((a, b) => a.group_id.localeCompare(b.group_id) || a.option_id.localeCompare(b.option_id));
+    .sort((a, b) => (a.group_id < b.group_id ? -1 : a.group_id > b.group_id ? 1 : 0)
+      || (a.option_id < b.option_id ? -1 : a.option_id > b.option_id ? 1 : 0));
   return {
     picks,
     price_delta: total / 100,
