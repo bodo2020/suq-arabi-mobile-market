@@ -1,0 +1,31 @@
+name: Restaurant storefront preview
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/customerRestaurantModifiers.ts'
+      - 'src/components/restaurant/RestaurantModifierPreview.tsx'
+      - 'src/pages/ProductDetail.tsx'
+      - '.github/workflows/restaurant-storefront-preview.yml'
+  push:
+    branches: ['feat/restaurant-modifier-storefront-preview']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storefront-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Build
+        run: npm run build
