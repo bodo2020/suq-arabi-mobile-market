@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, ChefHat, Clock3, ImageOff, Search, UtensilsCrossed } from 'lucide-react';
@@ -33,6 +33,16 @@ export default function RestaurantDemo() {
     (category === 'الكل' || demoRestaurantCategory(product) === category)
     && (!search.trim() || `${product.name} ${product.description || ''}`.includes(search.trim())),
   ), [products, category, search]);
+  useEffect(() => {
+    if (!selectedId) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById('demo-meal-preview')?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedId]);
   const selected = products.find(p => p.id === selectedId) || null;
   const previewSupported = Boolean(selected && DEMO_RESTAURANT_CUSTOMIZABLE.has(selected.id));
 
