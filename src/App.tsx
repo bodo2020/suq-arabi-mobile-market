@@ -35,6 +35,7 @@ const MarketplacePayment = lazy(() => import('./pages/MarketplacePayment'));
 const CombinedPayment = lazy(() => import('./pages/CombinedPayment'));
 const MarketplaceStores = lazy(() => import('./pages/MarketplaceStores'));
 const MarketplaceStore = lazy(() => import('./pages/MarketplaceStore'));
+const RestaurantDemo = lazy(() => import('./pages/RestaurantDemo'));
 const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
 const Account = lazy(() => import('./pages/Account'));
 const EditAccount = lazy(() => import('./pages/EditAccount'));
@@ -86,6 +87,7 @@ function App() {
                       <Route path="/" element={<Index />} />
                       <Route path="/stores" element={<MarketplaceStores />} />
                       <Route path="/stores/:branchId" element={<MarketplaceStore />} />
+                      <Route path="/restaurants/demo" element={<RestaurantDemo />} />
                       <Route path="/offers" element={<Offers />} />
                       <Route path="/flash-sale" element={<Offers />} />
                       <Route path="/categories" element={<Categories />} />
