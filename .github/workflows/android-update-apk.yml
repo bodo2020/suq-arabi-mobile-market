@@ -11,6 +11,8 @@ on:
       - 'package-lock.json'
       - 'capacitor.config.ts'
       - '.github/workflows/android-update-apk.yml'
+  pull_request:
+    branches: [feat/restaurant-cart-nonpayable-previews]
   workflow_dispatch:
 permissions:
   contents: read
