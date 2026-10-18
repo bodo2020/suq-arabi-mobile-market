@@ -1,0 +1,29 @@
+name: Restaurant cart preview client
+on:
+  pull_request:
+    paths:
+      - 'src/lib/restaurantCartPreview.ts'
+      - 'scripts/test-restaurant-cart-preview.mjs'
+      - '.github/workflows/restaurant-cart-preview-client.yml'
+  push:
+    branches: ['feat/restaurant-cart-nonpayable-previews']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview-client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate non-payable cart preview clients
+        run: node scripts/test-restaurant-cart-preview.mjs
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Build
+        run: npm run build
