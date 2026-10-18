@@ -80,7 +80,7 @@ console.log('PASS checkout retry: original request and route replayed without fr
 const guardExports = {};
 vm.runInNewContext(
   compile(fs.readFileSync('src/lib/marketplaceCheckout.ts','utf8')),
-  { exports: guardExports, require: () => ({}) },
+  { exports: guardExports, require: name => name === '@/lib/supabase' ? { supabase: { rpc: async () => ({ data: null, error: null }) } } : {} },
 );
 guardExports.assertNoUnverifiedRestaurantOptions([{ product_id: 'regular' }]);
 guardExports.assertNoUnverifiedRestaurantOptions([{ modifier_picks: [] }]);
