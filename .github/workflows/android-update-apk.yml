@@ -72,6 +72,7 @@ jobs:
           node scripts/set-android-version.mjs
           node scripts/prepare-android.mjs
           node scripts/prepare-android-back.mjs
+          node scripts/prepare-play-release.mjs
           grep -q 'com.elmadawy.market.customer' android/app/build.gradle
           grep -Eq 'versionCode[[:space:]]+1300100' android/app/build.gradle
       - name: Assemble test/debug APK
