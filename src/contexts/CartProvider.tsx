@@ -8,7 +8,7 @@ import {
 } from './cartTypes';
 import { useCartSync } from './cartSupabaseSync';
 import { useUser } from './UserContext';
-import { canCombineStores, defaultCheckoutStores, storeKey, subtractPurchasedItems, type PurchasedCartSource } from '@/lib/storeCarts';
+import { canCombineStores, cartLineTotal, defaultCheckoutStores, storeKey, subtractPurchasedItems, type PurchasedCartSource } from '@/lib/storeCarts';
 
 export const CartContext = React.createContext<CartContextType | undefined>(undefined);
 
@@ -65,6 +65,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nextItem: CartItem = {
       product: {
         ...product,
+        quantity: product.available_quantity ?? product.quantity,
         bulk_quantity: product.bulk_quantity || 1,
         barcode: product.is_bulk ? product.bulk_barcode : product.barcode,
       },
@@ -77,6 +78,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       merchant_name: product.merchant_name || null,
       marketplace_branch_id: product.marketplace_branch_id || null,
       marketplace_branch_name: product.marketplace_branch_name || null,
+      restaurant_modifier_picks: product.restaurant_modifier_picks,
+      restaurant_modifier_selection_key: product.restaurant_modifier_selection_key,
+      restaurant_modifier_snapshot: product.restaurant_modifier_snapshot,
+      restaurant_modifier_unit_delta: product.restaurant_modifier_unit_delta,
     };
 
     setItems(currentItems => {
@@ -90,11 +95,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 'added';
   }, [isInitialized, items]);
 
-  const removeFromCart = useCallback((productId: string, is_bulk?: boolean, listingId?: string | null) => {
+  const removeFromCart = useCallback((productId: string, is_bulk?: boolean, listingId?: string | null, modifierKey: string | null = null) => {
     if (!isInitialized) return;
     setItems(currentItems => currentItems.filter(item => {
       if (item.product.id !== productId) return true;
       if (listingId !== undefined && (item.marketplace_listing_id || null) !== listingId) return true;
+      if ((item.restaurant_modifier_selection_key || null) !== modifierKey) return true;
       if (is_bulk === undefined) return false;
       return item.is_bulk !== is_bulk;
     }));
@@ -107,28 +113,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getTotalItems = useCallback(() => items.length, [items]);
 
-  const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean, listingId?: string | null) => {
+  const updateQuantity = useCallback((productId: string, quantity: number, is_bulk?: boolean, listingId?: string | null, modifierKey: string | null = null) => {
     if (quantity <= 0) {
-      removeFromCart(productId, is_bulk, listingId);
+      removeFromCart(productId, is_bulk, listingId, modifierKey);
       return;
     }
     if (!isInitialized) return;
     setItems(currentItems => currentItems.map(item => (
       item.product.id === productId && item.is_bulk === (is_bulk || false) && (listingId === undefined || (item.marketplace_listing_id || null) === listingId)
+        && (item.restaurant_modifier_selection_key || null) === modifierKey
         ? { ...item, quantity }
         : item
     )));
   }, [removeFromCart, isInitialized]);
 
-  const getTotalPrice = useCallback(() => items.reduce((total, item) => {
-    if (item.is_bulk) return total + (item.product.bulk_price || 0) * item.quantity;
-    if (item.unit_of_measure === 'weight') {
-      const pricePerKg = item.product.offer_price || item.product.price || 0;
-      return total + pricePerKg * (item.quantity / 1000);
-    }
-    const price = item.product.offer_price || item.product.price || 0;
-    return total + price * item.quantity;
-  }, 0), [items]);
+  const getTotalPrice = useCallback(() => items.reduce((total, item) => total + cartLineTotal(item), 0), [items]);
 
   return (
     <CartContext.Provider value={{

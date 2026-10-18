@@ -70,7 +70,7 @@ export default function RestaurantDemo() {
 
         <div role="note" className="my-5 rounded-2xl border border-amber-200 bg-[#fff8e2] px-4 py-3 text-sm leading-7 text-amber-950">
           <strong>معاينة تجريبية فقط:</strong> الصور توضيحية وليست صورًا رسمية من المطعم. الإضافات والأسعار المعروضة للتجربة،
-          ولا يتم إرسال اختياراتها إلى السلة أو تحصيل مبالغ عنها. إتاحة الطلب الفعلي تعتمد على التوصيل والمخزون وتفعيل الدفع المخصص.
+          ويمكن حفظ تكوين الوجبة في السلة إذا توفرت الكمية، لكن لا يمكن طلب الإضافات أو تحصيل ثمنها بعد. إتاحة الطلب الفعلي تعتمد على التوصيل والمخزون وتفعيل الدفع المخصص.
         </div>
 
         <label className="relative mb-4 block">
@@ -132,7 +132,7 @@ export default function RestaurantDemo() {
             <button type="button" aria-label="إغلاق تفاصيل الصنف" className="rounded-lg border px-3 py-2 text-xs" onClick={() => setSelectedId(null)}>إغلاق</button>
           </div>
           {previewSupported
-            ? <RestaurantModifierPreview key={selected.id} branchId={DEMO_RESTAURANT_BRANCH_ID} productId={selected.id} basePrice={Number(selected.price)}/>
+            ? <RestaurantModifierPreview key={selected.id} branchId={DEMO_RESTAURANT_BRANCH_ID} productId={selected.id} basePrice={Number(selected.price)} product={selected}/>
             : <p className="mt-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">الصنف ده مفيش له إضافات مفعّلة في منيو التجربة حاليًا.</p>}
         </section>}
 

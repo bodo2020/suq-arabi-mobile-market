@@ -41,7 +41,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const bulk = wantsBulk && hasBulkPurchase(product);
   const bulkAlternative = !bulk && !weighted && hasBulkPurchase(product);
   const listingId = product.marketplace_listing_id || null;
-  const item = items.find(i => i.product.id === product.id && (i.marketplace_listing_id || null) === listingId && !!i.is_bulk === bulk && (weighted ? i.unit_of_measure === 'weight' : true));
+  const item = items.find(i => i.product.id === product.id && (i.marketplace_listing_id || null) === listingId && !i.restaurant_modifier_selection_key && !!i.is_bulk === bulk && (weighted ? i.unit_of_measure === 'weight' : true));
   const pack = bulk ? Number(product.bulk_quantity || 1) : 1;
   const stock = Math.max(0, Number(product.quantity || 0));
   const maxCartQuantity = weighted ? Math.floor(stock * 1000) : bulk ? Math.floor(stock / Math.max(pack, 1)) : Math.floor(stock);

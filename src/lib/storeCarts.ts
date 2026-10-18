@@ -33,7 +33,8 @@ export const cartLinePrice = (item: CartItem) => {
   if (item.is_bulk) return Number(item.product.bulk_price || 0);
   const price = Number(item.product.price || 0);
   const offer = Number(item.product.offer_price || 0);
-  return offer > 0 && offer < price ? offer : price;
+  return (offer > 0 && offer < price ? offer : price)
+    + (Number.isFinite(item.restaurant_modifier_unit_delta) ? Number(item.restaurant_modifier_unit_delta) : 0);
 };
 export const cartLineTotal = (item: CartItem) => cartLinePrice(item) * item.quantity
   / (item.unit_of_measure === 'weight' && !item.is_bulk ? 1000 : 1);

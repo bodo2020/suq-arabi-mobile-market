@@ -28,6 +28,7 @@ export default function Cart() {
   const { branch, branchLoading, branchError, refreshBranch } = useBranch();
   const navigate = useNavigate();
   const [weightItem, setWeightItem] = useState<CartItem | null>(null);
+  const hasModifierDraft = checkoutItems.some(item => Boolean(item.restaurant_modifier_selection_key || item.restaurant_modifier_picks));
 
   const quoteSignature = useMemo(
     () => checkoutItems.map(item => `${cartItemIdentity(item)}:${item.quantity}`).sort().join('|'),
@@ -37,7 +38,7 @@ export default function Cart() {
   const quoteQuery = useQuery({
     queryKey: ['cart-server-quote', branch?.delivery_branch_id, user?.id || 'guest', quoteSignature],
     queryFn: () => quoteCart(checkoutItems),
-    enabled: isInitialized && checkoutItems.length > 0 && Boolean(branch) && !branchLoading,
+    enabled: isInitialized && checkoutItems.length > 0 && Boolean(branch) && !branchLoading && !hasModifierDraft,
     retry: 1,
     staleTime: 0,
     refetchOnWindowFocus: true,
@@ -52,7 +53,7 @@ export default function Cart() {
   const quoteError = quoteQuery.error ? cartQuoteError(quoteQuery.error) : null;
   const quotePending = quoteQuery.isLoading || quoteQuery.isFetching;
   const serverReady = Boolean(quote) && !quotePending && !quoteError;
-  const blocked = !checkoutItems.length || !isInitialized || authLoading || !!syncError || isSaving || branchLoading || !!branchError || !branch || !serverReady;
+  const blocked = hasModifierDraft || !checkoutItems.length || !isInitialized || authLoading || !!syncError || isSaving || branchLoading || !!branchError || !branch || !serverReady;
 
   const combinedCart = isCombinedCart(checkoutItems);
   const marketplaceCart = isSingleMarketplaceCart(checkoutItems);
@@ -69,7 +70,7 @@ export default function Cart() {
   };
 
   const cta = <Button className="cart-primary" onClick={proceed} disabled={blocked}>
-    {isSaving ? <><BrandLoader size="sm" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
+    {hasModifierDraft ? 'طلب الإضافات غير متاح بعد' : isSaving ? <><BrandLoader size="sm" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
   </Button>;
 
   const subtotal = Number(quote?.subtotal ?? checkoutItems.reduce((sum, item) => sum + localItemTotal(item), 0));
@@ -84,6 +85,7 @@ export default function Cart() {
   return <CheckoutLayout>
     {syncError && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{syncError}</span><Button variant="outline" onClick={retrySync}>إعادة المحاولة</Button></div>}
     {(branchError || quoteError) && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{branchError || quoteError}</span><Button variant="outline" onClick={() => void retryQuote()}><RefreshCw size={16} />إعادة المراجعة</Button></div>}
+    {hasModifierDraft && <div role="note" className="cart-alert"><AlertCircle size={20} /><span>تكوينات وجبات المطعم محفوظة للمعاينة فقط. الأسعار المعروضة هنا تقديرية، وطلب الوجبات بالإضافات هيتاح بعد تفعيل الدفع والتحقق النهائي من السعر.</span></div>}
 
     {!isInitialized ? <div className="cart-loading"><BrandLoader size="lg" /><span>{syncError ? 'سلتك المحفوظة لم تُحمّل بعد' : 'بنجهّز سلتك'}</span></div> : !items.length ?
       <section className="cart-empty"><div className="cart-empty-mark"><ShoppingBag size={38} /></div><h1>سلتك مستنية اختياراتك</h1><p>ضيف احتياجاتك، وهتلاقيها كلها هنا.<br />تقدر تتسوّق وتختار براحتك قبل تسجيل الدخول.</p><Button asChild className="cart-primary"><Link to="/">ابدأ التسوّق<ArrowLeft size={18} /></Link></Button></section> : <>
@@ -141,8 +143,15 @@ export default function Cart() {
             : item.is_bulk
               ? Math.floor(availableStock / Math.max(1, bulkQty))
               : Math.floor(availableStock);
+          const usedAcrossMealChoices = items.some(other => other.marketplace_listing_id === item.marketplace_listing_id
+              && other.marketplace_branch_id === item.marketplace_branch_id
+              && other.product.id === item.product.id && other.restaurant_modifier_selection_key)
+            ? items.filter(other => other.marketplace_listing_id === item.marketplace_listing_id
+              && other.marketplace_branch_id === item.marketplace_branch_id
+              && other.product.id === item.product.id && !other.is_bulk).reduce((sum, other) => sum + other.quantity, 0)
+            : item.quantity;
           const lineReady = selected && serverReady && Boolean(line);
-          const atLimit = item.quantity >= maxQuantity;
+          const atLimit = usedAcrossMealChoices >= maxQuantity;
           const weightCanIncrease = isWeight && (lineReady || !selected) && item.quantity < maxQuantity;
           const openWeightEditor = () => setWeightItem({
             ...item,
@@ -154,8 +163,13 @@ export default function Cart() {
             <div>
               <div className="cart-line-heading">
                 <div><Link to={productHref} className="cart-product-name">{item.product.name}</Link><div className="mt-1 text-[11px] font-bold text-primary">{item.commerce_source === 'marketplace' ? (item.merchant_name || item.marketplace_branch_name || 'متجر شريك') : 'ســــــوبـرمــــاركو'}</div><div className="cart-kind">{item.is_bulk ? <><Package size={14} />{bulkUnitType} · {money(bulkQty)} قطعة</> : isWeight ? <><Scale size={14} />بالوزن · الخطوة {formatWeightAmount(weightStep)}</> : 'بالقطعة'}</div></div>
-                <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk, item.marketplace_listing_id || null)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>
+                <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk, item.marketplace_listing_id || null, item.restaurant_modifier_selection_key || null)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>
               </div>
+              {item.restaurant_modifier_selection_key && <div className="mt-2 rounded-xl bg-amber-50 p-2 text-xs leading-5 text-amber-950">
+                <strong>تكوين الوجبة · معاينة فقط</strong>
+                <span className="mt-1 block">{item.restaurant_modifier_snapshot?.map(option => `${option.option_name}${option.quantity > 1 ? ` × ${option.quantity}` : ''}`).join('، ') || 'بدون إضافات'}</span>
+                <span className="block">الإضافات: {money(Number(item.restaurant_modifier_unit_delta || 0))} ج.م للوجبة</span>
+              </div>}
               <p className="cart-unit-price">{money(unitPrice)} ج.م {item.is_bulk ? `/ ${bulkUnitType}` : isWeight ? '/ كجم' : '/ قطعة'}{line && <span className="mr-2 text-[11px] text-primary">سعر الفرع</span>}</p>
               <div className="cart-line-bottom">
                 {isWeight ? (
@@ -179,9 +193,9 @@ export default function Cart() {
                     >{item.quantity <= weightStep ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                   </div>
                 ) : <div className="cart-counter">
-                  <button disabled={atLimit || (selected && !lineReady)} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk, item.marketplace_listing_id || null)}><Plus size={17} /></button>
+                  <button disabled={atLimit || (selected && !lineReady && !item.restaurant_modifier_selection_key)} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk, item.marketplace_listing_id || null, item.restaurant_modifier_selection_key || null)}><Plus size={17} /></button>
                   <output aria-label={`كمية ${item.product.name}`} aria-live="polite">{money(item.quantity)}</output>
-                  <button aria-label={item.quantity === 1 ? `حذف ${item.product.name}` : `تقليل كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity - 1, !!item.is_bulk, item.marketplace_listing_id || null)}>{item.quantity === 1 ? <Trash2 size={16} /> : <Minus size={17} />}</button>
+                  <button aria-label={item.quantity === 1 ? `حذف ${item.product.name}` : `تقليل كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity - 1, !!item.is_bulk, item.marketplace_listing_id || null, item.restaurant_modifier_selection_key || null)}>{item.quantity === 1 ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                 </div>}
                 <strong className="cart-line-total">{money(lineTotal)} <small>ج.م</small></strong>
               </div>

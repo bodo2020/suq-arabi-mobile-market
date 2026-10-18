@@ -100,7 +100,34 @@ type SavedMetadata = {
   branch_id?: string | null;
   branch_name?: string | null;
   listing_id?: string | null;
+  restaurant_modifier_picks?: CartItem['restaurant_modifier_picks'];
+  restaurant_modifier_selection_key?: string | null;
+  restaurant_modifier_snapshot?: CartItem['restaurant_modifier_snapshot'];
+  restaurant_modifier_unit_delta?: number | null;
 };
+
+function restaurantChoice(meta: SavedMetadata | null): Pick<CartItem,
+  'restaurant_modifier_picks' | 'restaurant_modifier_selection_key' |
+  'restaurant_modifier_snapshot' | 'restaurant_modifier_unit_delta'> {
+  if (!meta?.restaurant_modifier_selection_key) return meta?.restaurant_modifier_picks
+    ? { restaurant_modifier_selection_key: 'invalid-saved-choice' } : {};
+  if (!/^[0-9a-f]{32}$/.test(meta.restaurant_modifier_selection_key)
+    || !Array.isArray(meta.restaurant_modifier_picks)
+    || meta.restaurant_modifier_picks.length > 100
+    || meta.restaurant_modifier_picks.some(pick =>
+      !pick || typeof pick.group_id !== 'string' || typeof pick.option_id !== 'string'
+      || !Number.isSafeInteger(pick.quantity) || pick.quantity < 1)
+    || !Array.isArray(meta.restaurant_modifier_snapshot)
+    || meta.restaurant_modifier_snapshot.length > 100
+    || !Number.isFinite(meta.restaurant_modifier_unit_delta)
+    || Number(meta.restaurant_modifier_unit_delta) < 0) return { restaurant_modifier_selection_key: 'invalid-saved-choice' };
+  return {
+    restaurant_modifier_picks: meta.restaurant_modifier_picks,
+    restaurant_modifier_selection_key: meta.restaurant_modifier_selection_key,
+    restaurant_modifier_snapshot: meta.restaurant_modifier_snapshot,
+    restaurant_modifier_unit_delta: Number(meta.restaurant_modifier_unit_delta),
+  };
+}
 
 async function hydrateRows(rows: Array<{ product_id: string; quantity: number; metadata: unknown }>): Promise<CartItem[]> {
   const ownedRows = rows.filter(row => ((row.metadata as SavedMetadata | null)?.source_kind || 'owned') !== 'marketplace');
@@ -150,6 +177,7 @@ async function hydrateRows(rows: Array<{ product_id: string; quantity: number; m
         merchant_name: meta.merchant_name || product.merchant_name,
         marketplace_branch_id: branchId,
         marketplace_branch_name: meta.branch_name || product.marketplace_branch_name,
+        ...restaurantChoice(meta),
       });
     }
   }
@@ -327,6 +355,10 @@ export function useCartSync(
                 branch_id: item.marketplace_branch_id || null,
                 branch_name: item.marketplace_branch_name || null,
                 listing_id: item.marketplace_listing_id || null,
+                restaurant_modifier_picks: item.restaurant_modifier_picks || null,
+                restaurant_modifier_selection_key: item.restaurant_modifier_selection_key || null,
+                restaurant_modifier_snapshot: item.restaurant_modifier_snapshot || null,
+                restaurant_modifier_unit_delta: item.restaurant_modifier_unit_delta ?? null,
               },
             })),
           });
