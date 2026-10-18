@@ -15,7 +15,7 @@ on:
     branches: [feat/restaurant-cart-nonpayable-previews]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: marko-update-${{ github.ref }}
   cancel-in-progress: true
@@ -93,6 +93,18 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
         continue-on-error: true
+      - name: Fallback download via private GitHub prerelease (diagnostic only)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="super-marko-debug-only-1300100-20261018"
+          NOTES="This is a DEBUG TEST APK (versionCode 1300100). It is NOT a verified in-place update for any installed app. An existing signing key/certificate is required before distributing an install-over-existing release."
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --prerelease --title "Super Marko - TEST ONLY, NOT UPDATE COMPATIBLE" --notes "$NOTES" --target "$GITHUB_SHA"
+          gh release upload "$TAG" "android/app/build/outputs/apk/debug/app-debug.apk" --clobber
+          echo "Diagnostic APK release: https://github.com/bodo2020/suq-arabi-mobile-market/releases/tag/$TAG"
+
       - name: Ensure complete existing release credentials
         if: env.ANDROID_KEYSTORE_B64 != ''
         run: |
