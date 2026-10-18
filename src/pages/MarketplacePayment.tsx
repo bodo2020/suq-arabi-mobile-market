@@ -46,6 +46,7 @@ export default function MarketplacePayment() {
   const lines = useMemo(() => {
     try { return marketplaceCheckoutLines(items); } catch { return []; }
   }, [items]);
+  const hasModifierDraft = items.some(item => Boolean(item.restaurant_modifier_selection_key || item.restaurant_modifier_picks));
   const restaurant = items.some(item => item.product.business_profile === 'restaurant');
   const branchId = items[0]?.marketplace_branch_id || pending?.branchId || '';
 
@@ -90,7 +91,7 @@ export default function MarketplacePayment() {
   const quoteQuery = useQuery({
     queryKey: ['marketplace-checkout-quote', user?.id, addressId, effectiveBranch, JSON.stringify(effectiveLines)],
     queryFn: () => quoteMarketplaceOrder(effectiveLines, addressId, effectiveBranch),
-    enabled: !!user && !!addressId && !!effectiveBranch && effectiveLines.length > 0,
+    enabled: !!user && !!addressId && !!effectiveBranch && effectiveLines.length > 0 && !hasModifierDraft,
     staleTime: 3_000,
     retry: false,
   });
@@ -98,6 +99,7 @@ export default function MarketplacePayment() {
   const quote = quoteQuery.data;
   const handleSubmit = async () => {
     if (submitting.current || loading || isSaving) return;
+    if (hasModifierDraft) return toast({ title: 'طلب الإضافات غير متاح بعد', description: 'تكوين الوجبة محفوظ للمعاينة فقط، ولا يمكن الدفع به الآن.', variant: 'destructive' });
     if (!user) return navigate('/phone-verify?returnTo=%2Fmarketplace-payment');
     if (!customerQuery.data?.customer?.id || !customerQuery.data.customer.name?.trim()) return navigate('/register?returnTo=%2Fmarketplace-payment');
     if (!addressId) return navigate('/addresses?returnTo=%2Fmarketplace-payment');
@@ -151,6 +153,7 @@ export default function MarketplacePayment() {
   return <CheckoutLayout step={2}>
     <h1 className="checkout-title">{restaurant ? 'تأكيد طلب المطعم' : 'تأكيد طلب المتجر'}</h1>
     <p className="checkout-intro">راجع اختياراتك والعنوان قبل التأكيد. كوبونات ســــــوبـرمــــاركو غير مطبقة على متاجر الشركاء حاليًا.</p>
+    {hasModifierDraft && <p role="alert" className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">إضافات الوجبات محفوظة للمعاينة فقط. ارجع للسلة قبل تأكيد الطلب.</p>}
 
     {pending && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>محاولة الطلب محفوظة بأمان.</strong><p className="mt-1">لو الاتصال انقطع، إعادة التأكيد هتكمل نفس الطلب بدون إنشاء نسخة مكررة.</p></div>}
 
@@ -164,7 +167,7 @@ export default function MarketplacePayment() {
         <Card><CardHeader><CardTitle>ملاحظات الطلب</CardTitle></CardHeader><CardContent><Textarea value={notes} onChange={event => !pending && setNotes(event.target.value)} maxLength={1000} placeholder="مثلاً: اتصل قبل الوصول" disabled={!!pending} /></CardContent></Card>
       </div>
       <aside><Card className="sticky top-4"><CardHeader><CardTitle>ملخص الطلب</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">{quoteQuery.isLoading ? <div className="flex justify-center py-8"><BrandLoader size="md" /></div> : quoteQuery.error ? <div className="rounded-xl bg-red-50 p-3 text-red-700">{marketplaceCheckoutError(quoteQuery.error)}</div> : <><div className="flex justify-between"><span>المنتجات</span><strong>{money(quote?.subtotal || pending?.total || 0)} ج.م</strong></div><div className="flex justify-between"><span>التوصيل</span><strong>{money(quote?.shipping_cost || 0)} ج.م</strong></div><div className="flex justify-between border-t pt-3 text-base"><span>الإجمالي</span><strong className="text-primary">{money(quote?.total || pending?.total || 0)} ج.م</strong></div>{quote && !quote.minimum_order_met && <p className="rounded-xl bg-amber-50 p-3 text-amber-800">الحد الأدنى {money(quote.min_order_amount)} ج.م</p>}</>}
-        <Button className="mt-3 h-12 w-full" onClick={() => void handleSubmit()} disabled={loading || isSaving || quoteQuery.isFetching || (!pending && (!quote || !quote.minimum_order_met))}>{loading ? <BrandLoader size="sm" /> : <ShieldCheck size={18} />}تأكيد الطلب</Button><p className="text-center text-xs leading-5 text-gray-500">سلات باقي المحلات هتفضل محفوظة بعد تأكيد الطلب.</p></CardContent></Card></aside>
+        <Button className="mt-3 h-12 w-full" onClick={() => void handleSubmit()} disabled={hasModifierDraft || loading || isSaving || quoteQuery.isFetching || (!pending && (!quote || !quote.minimum_order_met))}>{loading ? <BrandLoader size="sm" /> : <ShieldCheck size={18} />}تأكيد الطلب</Button><p className="text-center text-xs leading-5 text-gray-500">سلات باقي المحلات هتفضل محفوظة بعد تأكيد الطلب.</p></CardContent></Card></aside>
     </div>
   </CheckoutLayout>;
 }

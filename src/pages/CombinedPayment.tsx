@@ -55,6 +55,7 @@ export default function CombinedPayment() {
       return [];
     }
   }, [items]);
+  const hasModifierDraft = items.some(item => Boolean(item.restaurant_modifier_selection_key || item.restaurant_modifier_picks));
 
   useEffect(() => {
     if (!user?.id) return;
@@ -109,7 +110,7 @@ export default function CombinedPayment() {
   const quoteQuery = useQuery({
     queryKey: ['combined-checkout-quote', user?.id, addressId, JSON.stringify(effectiveSources)],
     queryFn: () => quoteCombinedOrder(effectiveSources, addressId),
-    enabled: !!user && !!addressId && effectiveSources.length >= 2,
+    enabled: !!user && !!addressId && effectiveSources.length >= 2 && !hasModifierDraft,
     staleTime: 3_000,
     retry: false,
   });
@@ -118,6 +119,7 @@ export default function CombinedPayment() {
 
   const handleSubmit = async () => {
     if (submitting.current || loading || isSaving) return;
+    if (hasModifierDraft) return toast({ title: 'طلب الإضافات غير متاح بعد', description: 'السلة المجمّعة لا تقبل وجبة مخصصة للمعاينة.', variant: 'destructive' });
     if (!user) return navigate('/phone-verify?returnTo=%2Fcombined-payment');
     if (!customerQuery.data?.customer?.id || !customerQuery.data.customer.name?.trim()) {
       return navigate('/register?returnTo=%2Fcombined-payment');
@@ -219,6 +221,7 @@ export default function CombinedPayment() {
     <p className="checkout-intro">
       اختياراتك من كل محل واضحة قدامك، وتوصيل واحد يجمعها لحد بابك.
     </p>
+    {hasModifierDraft && <p role="alert" className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">الوجبات المخصصة في السلة للمعاينة فقط. ارجع للسلة قبل تأكيد الطلب المجمّع.</p>}
 
     {pending && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
       <strong>محاولة الطلب محفوظة بأمان.</strong>
@@ -347,7 +350,7 @@ export default function CombinedPayment() {
             <Button
               className="mt-3 h-12 w-full"
               onClick={() => void handleSubmit()}
-              disabled={loading || isSaving || quoteQuery.isFetching || (!pending && !quote)}
+              disabled={hasModifierDraft || loading || isSaving || quoteQuery.isFetching || (!pending && !quote)}
             >
               {loading ? <BrandLoader size="sm" /> : <ShieldCheck size={18} />}
               تأكيد الطلب المجمّع
