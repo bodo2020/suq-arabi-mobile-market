@@ -11,6 +11,7 @@ import SEOHead from '@/components/seo/SEOHead';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import WeightSelector from '@/components/ui/WeightSelector';
 import { getMarketplaceStore, getMarketplaceStoreProduct } from '@/lib/marketplace';
+import RestaurantModifierPreview from '@/components/restaurant/RestaurantModifierPreview';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +34,7 @@ const ProductDetail = () => {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [isRestaurantStore, setIsRestaurantStore] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [detailWeight, setDetailWeight] = useState(0);
@@ -95,6 +97,7 @@ const ProductDetail = () => {
       if (!id) return;
       setLoading(true);
       setLoadError(false);
+      setIsRestaurantStore(false);
       setProduct(null);
       setSelectedImageIndex(0);
       setRelatedProducts([]);
@@ -109,6 +112,7 @@ const ProductDetail = () => {
           : await getProductById(id);
         if (!data) throw new Error('PRODUCT_NOT_FOUND');
         if (active) {
+          setIsRestaurantStore(Boolean(store?.business_profile === 'restaurant'));
           const typed = data as Product;
           setProduct(typed);
           if (isWeightedProduct(typed)) setDetailWeight(productWeightStepGrams(typed));
@@ -490,6 +494,10 @@ const ProductDetail = () => {
               </div>
               {company && <button type="button" onClick={() => navigate(`/company/${company.id}`)} className="mt-3 text-sm font-bold text-[#005931] underline decoration-emerald-200 underline-offset-4">منتجات {company.name}</button>}
             </div>
+
+            {isRestaurantStore && requestedStoreId && id && (
+              <RestaurantModifierPreview branchId={requestedStoreId} productId={id} />
+            )}
 
             <div className="mt-5 hidden md:block">
               {weighted ? weightedPurchaseControl : piecePurchaseControl}
