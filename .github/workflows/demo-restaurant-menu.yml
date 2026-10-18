@@ -1,0 +1,35 @@
+name: Demo restaurant menu and food photography
+on:
+  pull_request:
+    paths:
+      - 'src/lib/demoRestaurant.ts'
+      - 'src/pages/RestaurantDemo.tsx'
+      - 'src/pages/MarketplaceStores.tsx'
+      - 'src/pages/Index.tsx'
+      - 'src/pages/ProductDetail.tsx'
+      - 'src/components/ui/ProductCard.tsx'
+      - 'src/App.tsx'
+      - 'scripts/test-demo-restaurant-menu.mjs'
+      - '.github/workflows/demo-restaurant-menu.yml'
+  push:
+    branches: ['feat/restaurant-demo-visible-menu-photos']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  demo-menu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify demo menu, imagery and safe add-on preview
+        run: node scripts/test-demo-restaurant-menu.mjs
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Build customer app
+        run: npm run build
