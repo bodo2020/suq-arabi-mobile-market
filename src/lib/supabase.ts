@@ -38,6 +38,7 @@ export type Product = {
   marketplace_branch_id?: string;
   marketplace_branch_name?: string;
   preparation_minutes?: number | null;
+  business_profile?: 'retail' | 'restaurant' | 'pharmacy' | 'lite';
   fallback_reason?: string;
 };
 

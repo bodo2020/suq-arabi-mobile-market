@@ -8,6 +8,7 @@ import {storeProductSections} from '@/lib/storeProductSections';
 import {centerSectionChip} from '@/lib/centerSectionChip';
 
 export default function MainCategoryProductSections({products,level='main'}:{products:DisplayProduct[];level?:'main'|'sub'}){
+ const restaurant = products.length > 0 && products.every(p => p.business_profile === 'restaurant');
  const taxonomy=useQuery({queryKey:['categories'],queryFn:getCategories});
  const subcategories=useQuery({queryKey:['subcategories'],queryFn:()=>getSubcategories(),enabled:level==='sub'});
  const groups=useMemo(()=>{
@@ -45,8 +46,8 @@ export default function MainCategoryProductSections({products,level='main'}:{pro
   </div>
   <div className="space-y-7">
    {groups.map(g=><section key={g.id} ref={node=>{refs.current[g.id]=node}} data-main-category={level==='main'?g.id:undefined} data-subcategory={level==='sub'?g.id:undefined} style={{scrollMarginTop:'calc(var(--top-nav-height, 68px) + 74px)'}}>
-    <div className="mb-3 flex items-baseline justify-between gap-2"><h2 className="text-base font-black text-slate-950 sm:text-lg">{g.name}</h2><span className="rounded-full bg-[#fff5d3] px-2 py-1 text-xs font-bold text-[#005931]">{g.products.length} منتج</span></div>
-    <div className="grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">{g.products.map(p=><ProductCard key={(p.marketplace_listing_id||'owned')+':'+productCardKey(p)} product={p}/>)}</div>
+    <div className="mb-3 flex items-baseline justify-between gap-2"><h2 className="text-base font-black text-slate-950 sm:text-lg">{g.name}</h2><span className="rounded-full bg-[#fff5d3] px-2 py-1 text-xs font-bold text-[#005931]">{g.products.length} {restaurant ? 'صنف' : 'منتج'}</span></div>
+    <div className={restaurant ? "grid grid-cols-1 gap-3 md:grid-cols-2" : "grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"}>{g.products.map(p=><ProductCard key={(p.marketplace_listing_id||'owned')+':'+productCardKey(p)} product={p} menuLayout={restaurant}/>)}</div>
    </section>)}
   </div>
  </>;

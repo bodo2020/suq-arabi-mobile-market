@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { CartItem } from '@/contexts/cartTypes';
 import { checkoutLines } from '@/lib/checkout';
 import { marketplaceCheckoutLines } from '@/lib/marketplaceCheckout';
+import type { CombinedDeliveryQuote } from '@/lib/cartQuote';
 import { getMultiStoreRoadQuote } from '@/lib/multistoreRoadRoute';
 import { normalizeSubstitutionPolicy, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
 
@@ -41,25 +42,7 @@ export type CombinedOrderQuote = {
   total: number;
   route_quote_id: string;
   road_verified: boolean;
-  delivery: {
-    route_distance_km: number;
-    estimated_route_minutes: number;
-    detour_km: number;
-    distance_source?: 'estimated_haversine' | 'verified_road_route';
-    route_quote_id?: string;
-    route_quote_expires_at?: string;
-    route_provider?: 'google' | 'osrm' | 'straight_line_fallback';
-    route_degraded?: boolean;
-    customer_delivery_fee: number;
-    extra_pickup_fee: number;
-    stops: Array<{
-      type: 'pickup' | 'customer';
-      source_kind?: 'owned' | 'marketplace';
-      branch_id?: string;
-      branch_name?: string;
-      address?: string | null;
-    }>;
-  };
+  delivery: CombinedDeliveryQuote;
 };
 
 export type PendingCombinedCheckout = {
@@ -69,6 +52,7 @@ export type PendingCombinedCheckout = {
   paymentMethod: 'cash' | 'wallet';
   notes: string;
   quoteToken: string;
+  routeQuoteId?: string;
   total: number;
   substitutionPolicy: SubstitutionPolicy;
 };
@@ -136,7 +120,8 @@ async function loadAddressPoint(addressId: string) {
     .eq('id', addressId)
     .maybeSingle();
   if (error) throw error;
-  const latitude = Number(data?.latitude);
+  if (data?.latitude == null || data?.longitude == null) throw new Error('DELIVERY_ADDRESS_REQUIRED');
+  const latitude = Number(data.latitude);
   const longitude = Number(data?.longitude);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     throw new Error('DELIVERY_ADDRESS_REQUIRED');
@@ -157,8 +142,14 @@ export async function quoteCombinedOrder(sources: CombinedCheckoutSource[], addr
 }
 
 export async function placeCombinedOrder(order: PendingCombinedCheckout) {
-  const freshQuote = await quoteCombinedOrder(order.sources, order.addressId);
-  if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
+  // Replay the original request before re-quoting. The server checks idempotency
+  // before stock/route expiry, so a lost success response cannot create a new order.
+  let routeQuoteId = order.routeQuoteId;
+  if (!routeQuoteId) {
+    const freshQuote = await quoteCombinedOrder(order.sources, order.addressId);
+    if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
+    routeQuoteId = freshQuote.route_quote_id;
+  }
 
   const { data, error } = await rpc('place_combined_order_group_v3', {
     p_group_id: order.groupId,
@@ -167,7 +158,7 @@ export async function placeCombinedOrder(order: PendingCombinedCheckout) {
     p_payment_method: order.paymentMethod,
     p_notes: order.notes,
     p_quote_token: order.quoteToken,
-    p_route_quote_id: freshQuote.route_quote_id,
+    p_route_quote_id: routeQuoteId,
     p_substitution_policy: order.substitutionPolicy,
   });
   if (error) throw error;

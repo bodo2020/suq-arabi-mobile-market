@@ -12,29 +12,32 @@ import { useBranch } from '@/contexts/BranchContext';
 import { CartItem, cartItemIdentity, isCombinedCart, isSingleMarketplaceCart } from '@/contexts/cartTypes';
 import { cartQuoteError, quoteCart, type CartQuoteLine } from '@/lib/cartQuote';
 import { formatWeightAmount, productWeightStepGrams } from '@/lib/productPurchase';
+import DeliveryRouteSummary from '@/components/checkout/DeliveryRouteSummary';
+import { groupStoreCarts, itemQuoteIdentity, quoteIdentity, cartLinePrice, cartLineTotal } from '@/lib/storeCarts';
+import { useToast } from '@/hooks/use-toast';
 
 const money = (value: number) => new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(value);
-const localItemPrice = (item: CartItem) => item.is_bulk ? item.product.bulk_price || 0 : item.product.offer_price || item.product.price || 0;
-const localItemTotal = (item: CartItem) => localItemPrice(item) * item.quantity / (item.unit_of_measure === 'weight' && !item.is_bulk ? 1000 : 1);
-const itemKey = (item: CartItem) => `${item.product.id}:${!!item.is_bulk}:${item.unit_of_measure === 'weight' ? 'weight' : 'piece'}`;
-const quoteLineKey = (line: CartQuoteLine) => `${line.product_id}:${!!line.is_bulk}:${line.unit_of_measure}`;
+const localItemPrice = cartLinePrice;
+const localItemTotal = cartLineTotal;
 
 export default function Cart() {
-  const { items, updateQuantity, removeFromCart, getTotalPrice, isInitialized, syncError, isSaving, retrySync } = useCart();
+  const { items, checkoutItems, selectedStoreKeys, toggleCheckoutStore, updateQuantity, removeFromCart, isInitialized, syncError, isSaving, retrySync } = useCart();
+  const { toast } = useToast();
+  const groups = useMemo(() => groupStoreCarts(items), [items]);
   const { user, authLoading } = useUser();
   const { branch, branchLoading, branchError, refreshBranch } = useBranch();
   const navigate = useNavigate();
   const [weightItem, setWeightItem] = useState<CartItem | null>(null);
 
   const quoteSignature = useMemo(
-    () => items.map(item => `${cartItemIdentity(item)}:${item.quantity}`).sort().join('|'),
-    [items],
+    () => checkoutItems.map(item => `${cartItemIdentity(item)}:${item.quantity}`).sort().join('|'),
+    [checkoutItems],
   );
 
   const quoteQuery = useQuery({
     queryKey: ['cart-server-quote', branch?.delivery_branch_id, user?.id || 'guest', quoteSignature],
-    queryFn: () => quoteCart(items),
-    enabled: isInitialized && items.length > 0 && Boolean(branch) && !branchLoading,
+    queryFn: () => quoteCart(checkoutItems),
+    enabled: isInitialized && checkoutItems.length > 0 && Boolean(branch) && !branchLoading,
     retry: 1,
     staleTime: 0,
     refetchOnWindowFocus: true,
@@ -42,17 +45,17 @@ export default function Cart() {
 
   const quote = quoteQuery.data;
   const quoteLines = useMemo(
-    () => new Map((quote?.items || []).map(line => [quoteLineKey(line), line])),
+    () => new Map((quote?.items || []).map(line => [quoteIdentity(line), line])),
     [quote?.items],
   );
 
   const quoteError = quoteQuery.error ? cartQuoteError(quoteQuery.error) : null;
   const quotePending = quoteQuery.isLoading || quoteQuery.isFetching;
   const serverReady = Boolean(quote) && !quotePending && !quoteError;
-  const blocked = !isInitialized || authLoading || !!syncError || isSaving || branchLoading || !!branchError || !branch || !serverReady;
+  const blocked = !checkoutItems.length || !isInitialized || authLoading || !!syncError || isSaving || branchLoading || !!branchError || !branch || !serverReady;
 
-  const combinedCart = isCombinedCart(items);
-  const marketplaceCart = isSingleMarketplaceCart(items);
+  const combinedCart = isCombinedCart(checkoutItems);
+  const marketplaceCart = isSingleMarketplaceCart(checkoutItems);
 
   const proceed = () => {
     if (blocked) return;
@@ -69,8 +72,8 @@ export default function Cart() {
     {isSaving ? <><BrandLoader size="sm" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
   </Button>;
 
-  const subtotal = Number(quote?.subtotal ?? getTotalPrice());
-  const shipping = Number(quote?.shipping_cost ?? branch?.delivery_fee ?? 0);
+  const subtotal = Number(quote?.subtotal ?? checkoutItems.reduce((sum, item) => sum + localItemTotal(item), 0));
+  const shipping = Number(quote?.shipping_cost ?? 0);
   const total = Number(quote?.total ?? subtotal + shipping);
   const deliveryEtaStart = Math.max(
     10,
@@ -85,11 +88,11 @@ export default function Cart() {
     {!isInitialized ? <div className="cart-loading"><BrandLoader size="lg" /><span>{syncError ? 'سلتك المحفوظة لم تُحمّل بعد' : 'بنجهّز سلتك'}</span></div> : !items.length ?
       <section className="cart-empty"><div className="cart-empty-mark"><ShoppingBag size={38} /></div><h1>سلتك مستنية اختياراتك</h1><p>ضيف احتياجاتك، وهتلاقيها كلها هنا.<br />تقدر تتسوّق وتختار براحتك قبل تسجيل الدخول.</p><Button asChild className="cart-primary"><Link to="/">ابدأ التسوّق<ArrowLeft size={18} /></Link></Button></section> : <>
       <div className="cart-heading">
-        <div><h1>سلتك، على ذوقك.</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
+        <div><h1>سلات محلاتك</h1><p>{money(groups.length)} محلات · اختار السلات اللي هتطلبها مع بعض</p></div>
         <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />سلتك محفوظة</> : 'سلة الضيف جاهزة'}</div>
       </div>
 
-      {branch && <div className="cart-alert" role="status">
+      {serverReady && branch && <div className="cart-alert" role="status">
         <Clock3 size={18} />
         <span>
           {combinedCart && quote?.stores_count ? <>طلب مجمّع من <strong>{money(quote.stores_count)} متاجر</strong> · </> : marketplaceCart && quote?.merchant_name ? <>طلب من <strong>{quote.merchant_name}</strong> · </> : null}
@@ -102,9 +105,24 @@ export default function Cart() {
         <span><strong>{quote.delivery_campaign.name}</strong> · وفّرت {money(Number(quote.delivery_campaign.discount || 0))} ج.م من التوصيل</span>
       </div>}
 
-      <div className="cart-grid"><section className="cart-list" aria-label="منتجات السلة">
-        {items.map(item => {
-          const line = quoteLines.get(itemKey(item));
+      <p className="mb-4 text-sm leading-6 text-slate-600">كل محل له سلته. تقدر تجمع محلين شركاء ومعاهم ســــــوبـرمــــاركو في توصيل واحد؛ السلات غير المختارة تفضل محفوظة.</p>
+      <div className="cart-grid"><div className="space-y-4">
+        {groups.map(group => {
+          const selected = selectedStoreKeys.includes(group.key);
+          const groupTotal = group.items.reduce((sum, item) => sum + Number((selected ? quoteLines.get(itemQuoteIdentity(item))?.total : undefined) ?? localItemTotal(item)), 0);
+          return <section key={group.key} className={'cart-list ' + (selected ? 'ring-1 ring-[#9acbb2]' : '')} aria-label={'سلة ' + group.name}>
+            <header className="store-cart-heading">
+              <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                <input type="checkbox" className="h-5 w-5 shrink-0 accent-[#005931]" checked={selected} onChange={() => {
+                  if (!toggleCheckoutStore(group.key)) toast({ title: 'اختار محلين شركاء للطلب الواحد', description: 'شيل اختيار محل لإضافة محل تاني. كل السلات هتفضل محفوظة.' });
+                }} />
+                <span className="min-w-0"><strong className="block break-words">{group.name}</strong><small>{money(group.items.length)} أصناف · {selected ? 'ضمن الطلب' : 'محفوظة لوقت تاني'}</small></span>
+              </label>
+              <strong className="shrink-0 text-primary">{money(groupTotal)} ج.م</strong>
+            </header>
+            <Link className="flex min-h-10 items-center px-4 text-xs font-bold text-primary" to={group.branchId ? '/stores/' + group.branchId : '/'}>كمّل اختياراتك من المحل ←</Link>
+        {group.items.map(item => {
+          const line = selected ? quoteLines.get(itemQuoteIdentity(item)) : undefined;
           const unitPrice = Number(line?.price ?? localItemPrice(item));
           const lineTotal = Number(line?.total ?? localItemTotal(item));
           const availableStock = Number(line?.available_stock ?? item.product.quantity ?? 0);
@@ -123,8 +141,9 @@ export default function Cart() {
             : item.is_bulk
               ? Math.floor(availableStock / Math.max(1, bulkQty))
               : Math.floor(availableStock);
-          const atLimit = serverReady && item.quantity >= maxQuantity;
-          const weightCanIncrease = isWeight && serverReady && item.quantity < maxQuantity;
+          const lineReady = selected && serverReady && Boolean(line);
+          const atLimit = item.quantity >= maxQuantity;
+          const weightCanIncrease = isWeight && (lineReady || !selected) && item.quantity < maxQuantity;
           const openWeightEditor = () => setWeightItem({
             ...item,
             product: { ...item.product, quantity: availableStock },
@@ -160,7 +179,7 @@ export default function Cart() {
                     >{item.quantity <= weightStep ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                   </div>
                 ) : <div className="cart-counter">
-                  <button disabled={atLimit || !serverReady} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk, item.marketplace_listing_id || null)}><Plus size={17} /></button>
+                  <button disabled={atLimit || (selected && !lineReady)} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk, item.marketplace_listing_id || null)}><Plus size={17} /></button>
                   <output aria-label={`كمية ${item.product.name}`} aria-live="polite">{money(item.quantity)}</output>
                   <button aria-label={item.quantity === 1 ? `حذف ${item.product.name}` : `تقليل كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity - 1, !!item.is_bulk, item.marketplace_listing_id || null)}>{item.quantity === 1 ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                 </div>}
@@ -169,19 +188,22 @@ export default function Cart() {
             </div>
           </article>;
         })}
-      </section><aside className="cart-summary">
-        <h2>ملخص سلتك</h2>
+      </section>; })}
+      </div><aside className="cart-summary">
+        <h2>ملخص السلات المختارة</h2>
+        {!checkoutItems.length && <p className="mb-4 text-sm text-slate-500">اختار سلة واحدة على الأقل عشان نراجع السعر والتوصيل.</p>}
         <div className="cart-summary-row"><span>قيمة المنتجات</span><strong>{quotePending ? '...' : `${money(subtotal)} ج.م`}</strong></div>
-        <div className="cart-summary-row"><span>التوصيل</span>{quotePending ? <small>جاري الحساب</small> : shipping <= 0 ? <strong className="text-primary">مجاني</strong> : <strong>{money(shipping)} ج.م</strong>}</div>
+        <div className="cart-summary-row"><span>التوصيل</span>{!serverReady ? <small>بعد مراجعة المسار</small> : shipping <= 0 ? <strong className="text-primary">مجاني</strong> : <strong>{money(shipping)} ج.م</strong>}</div>
         {quote?.delivery_campaign && Number(quote.delivery_campaign.discount || 0) > 0 && <div className="cart-summary-row"><span>{quote.delivery_campaign.name}</span><small className="text-primary">خصم {money(Number(quote.delivery_campaign.discount || 0))} ج.م</small></div>}
         {quote?.free_delivery && <div className="cart-summary-row"><span>عرض التوصيل</span><small className="text-primary">توصيل مجاني مطبق</small></div>}
-        <div className="cart-summary-total"><span>الإجمالي</span><strong>{quotePending ? '...' : money(total)} <small>ج.م</small></strong></div>
+        <div className="cart-summary-total"><span>الإجمالي</span><strong>{!serverReady ? '—' : money(total)} <small>ج.م</small></strong></div>
+        {quote?.delivery && serverReady && <DeliveryRouteSummary delivery={quote.delivery} />}
         {quote && quote.min_order_amount > 0 && <p className="cart-help">الحد الأدنى للطلب من الفرع: {money(quote.min_order_amount)} ج.م</p>}
         {cta}
         {!user && <p className="cart-help">سجّل برقم موبايلك وكلمة المرور عشان تكمّل الطلب.</p>}
       </aside></div>
 
-      <div className="cart-mobile-action"><div><span>الإجمالي شامل التوصيل</span><strong>{quotePending ? '...' : `${money(total)} ج.م`}</strong></div>{cta}</div>
+      <div className="cart-mobile-action"><div><span>إجمالي السلات المختارة</span><strong>{!serverReady ? '—' : `${money(total)} ج.م`}</strong></div>{cta}</div>
     </>}
 
     {weightItem && <WeightSelector product={weightItem.product} isOpen onClose={() => setWeightItem(null)} />}

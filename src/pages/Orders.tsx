@@ -63,6 +63,7 @@ type OrderRow = {
   is_combined?: boolean;
   group_operations?: OrderGroupOperations | null;
   child_order_ids?: string[];
+  child_orders?: OrderRow[];
 };
 
 const STATUS_META: Record<string, { label: string; description: string; className: string }> = {
@@ -275,6 +276,7 @@ const collapseOrderGroups = (
       is_combined: true,
       group_operations: operations,
       child_order_ids: sorted.map(order => order.id),
+      child_orders: sorted,
     } satisfies OrderRow;
   });
 
@@ -747,12 +749,22 @@ const Orders = () => {
                             </section>
                           </div>
 
-                          <OrderSubstitutionPanel orderId={order.id} />
+                          {(order.child_order_ids || [order.id]).map(id => <OrderSubstitutionPanel key={id} orderId={id} />)}
 
                           <section className="mt-5 rounded-2xl bg-white p-5">
-                            <h3 className="font-bold">المنتجات ({items.length})</h3>
+                            <h3 className="font-bold text-primary">اختياراتك ({items.length})</h3>
+                            {order.child_orders && <div className="mt-4 space-y-3">
+                              {order.child_orders.map(child => {
+                                const store = order.group_operations?.stores.find(value => value.order_id === child.id);
+                                return <div key={child.id} className="rounded-2xl border border-[#d8ebdf] bg-[#f4faf6] p-4">
+                                  <div className="flex justify-between gap-3 text-sm"><strong>{store?.merchant_name || store?.branch_name || 'طلب المحل'}</strong><span>{STATUS_META[child.status]?.label || child.status}</span></div>
+                                  <ul className="mt-3 space-y-2 text-xs">{normalizeItems(child.items).map((item,index) => <li key={index} className="flex justify-between gap-3"><span>{item.name || 'صنف'} × {item.quantity}</span><strong>{formatMoney(Number(item.price || 0) * Number(item.quantity || 0))}</strong></li>)}</ul>
+                                  <div className="mt-3 flex justify-between border-t border-[#d8ebdf] pt-3 text-xs"><span>قيمة الأصناف</span><strong>{formatMoney(Number(child.total) - Number(child.shipping_cost || 0))}</strong></div>
+                                </div>;
+                              })}
+                            </div>}
                             <div className="mt-4 space-y-3">
-                              {items.length ? items.map((item, index) => {
+                              {!order.child_orders && (items.length ? items.map((item, index) => {
                                 const quantity = Number(item.quantity || 0);
                                 const price = Number(item.price || 0);
                                 return (
@@ -767,7 +779,7 @@ const Orders = () => {
                                     <p className="shrink-0 text-sm font-bold">{formatMoney(quantity * price)}</p>
                                   </div>
                                 );
-                              }) : <p className="text-sm text-gray-500">تفاصيل المنتجات غير متاحة لهذا الطلب.</p>}
+                              }) : <p className="text-sm text-gray-500">تفاصيل المنتجات غير متاحة لهذا الطلب.</p>)}
                             </div>
 
                             <div className="mt-5 space-y-2 border-t border-gray-100 pt-4 text-sm">

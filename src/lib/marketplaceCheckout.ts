@@ -56,6 +56,7 @@ export type PendingMarketplaceCheckout = {
   paymentMethod: 'cash' | 'wallet';
   notes: string;
   quoteToken: string;
+  routeQuoteId?: string;
   total: number;
   substitutionPolicy: SubstitutionPolicy;
 };
@@ -120,9 +121,15 @@ export async function quoteMarketplaceOrder(items: MarketplaceCheckoutLine[], ad
 }
 
 export async function placeMarketplaceOrder(order: PendingMarketplaceCheckout) {
-  const freshQuote = await quoteMarketplaceOrder(order.items, order.addressId, order.branchId);
-  if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
-  if (!freshQuote.route_quote_id) throw new Error('ROAD_QUOTE_REQUIRED');
+  // Preserve the original route for retries; the server returns a committed
+  // request before checking stock or route expiry again.
+  let routeQuoteId = order.routeQuoteId;
+  if (!routeQuoteId) {
+    const freshQuote = await quoteMarketplaceOrder(order.items, order.addressId, order.branchId);
+    if (freshQuote.quote_token !== order.quoteToken) throw new Error('QUOTE_CHANGED');
+    routeQuoteId = freshQuote.route_quote_id;
+  }
+  if (!routeQuoteId) throw new Error('ROAD_QUOTE_REQUIRED');
 
   const { data, error } = await rpc('place_marketplace_order_v3', {
     p_request_id: order.requestId,
@@ -132,7 +139,7 @@ export async function placeMarketplaceOrder(order: PendingMarketplaceCheckout) {
     p_payment_method: order.paymentMethod,
     p_notes: order.notes,
     p_quote_token: order.quoteToken,
-    p_route_quote_id: freshQuote.route_quote_id,
+    p_route_quote_id: routeQuoteId,
     p_substitution_policy: order.substitutionPolicy,
   });
   if (error) throw error;

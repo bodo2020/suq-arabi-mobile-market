@@ -5,6 +5,9 @@ import { loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
 export type MarketplaceStore = {
   merchant_id: string;
   merchant_name: string;
+  business_profile?: 'retail' | 'restaurant' | 'pharmacy' | 'lite';
+  logo_url?: string | null;
+  business_category?: string | null;
   merchant_type: 'partner' | 'franchise';
   branch_id: string;
   branch_name: string;
@@ -44,6 +47,9 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 const normalizeStore = (row: Record<string, unknown>): MarketplaceStore => ({
   merchant_id: String(row.merchant_id || ''),
   merchant_name: String(row.merchant_name || ''),
+  business_profile: (['restaurant', 'pharmacy', 'lite'].includes(String(row.business_profile)) ? row.business_profile : 'retail') as MarketplaceStore['business_profile'],
+  logo_url: row.logo_url ? String(row.logo_url) : null,
+  business_category: row.business_category ? String(row.business_category) : null,
   merchant_type: row.merchant_type === 'franchise' ? 'franchise' : 'partner',
   branch_id: String(row.branch_id || ''),
   branch_name: String(row.branch_name || ''),

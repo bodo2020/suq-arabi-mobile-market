@@ -11,16 +11,9 @@ const offlineCartKey = (userId: string) => `offline_cart:${userId}`;
 const pendingCartKey = (userId: string) => `pending_cart:${userId}`;
 
 function keepAllowedSources(items: CartItem[]) {
-  const allowedPartnerBranches: string[] = [];
-  return items.filter(item => {
-    if (item.commerce_source !== 'marketplace') return true;
-    const branchId = item.marketplace_branch_id;
-    if (!branchId) return false;
-    if (allowedPartnerBranches.includes(branchId)) return true;
-    if (allowedPartnerBranches.length >= 2) return false;
-    allowedPartnerBranches.push(branchId);
-    return true;
-  });
+  return items.filter(item => item.commerce_source !== 'marketplace' || Boolean(
+    item.marketplace_branch_id && item.merchant_id && item.marketplace_listing_id,
+  ));
 }
 
 export function mergeCartItems(saved: CartItem[], guest: CartItem[]) {
@@ -70,7 +63,7 @@ async function reconcileWithCommerce(items: CartItem[]): Promise<CartItem[]> {
   }
 
   const marketplaceItems = candidate.filter(item => item.commerce_source === 'marketplace');
-  const branchIds = [...new Set(marketplaceItems.map(item => item.marketplace_branch_id).filter((value): value is string => Boolean(value)))].slice(0, 2);
+  const branchIds = [...new Set(marketplaceItems.map(item => item.marketplace_branch_id).filter((value): value is string => Boolean(value)))];
   for (const branchId of branchIds) {
     const catalog = await getMarketplaceStoreCatalog(branchId, null, 500);
     const byListing = new Map(catalog.map(product => [product.marketplace_listing_id, product]));
@@ -136,7 +129,7 @@ async function hydrateRows(rows: Array<{ product_id: string; quantity: number; m
     marketRows
       .map(row => (row.metadata as SavedMetadata | null)?.branch_id)
       .filter((value): value is string => Boolean(value)),
-  )].slice(0, 2);
+  )];
 
   for (const branchId of branchIds) {
     const catalog = await getMarketplaceStoreCatalog(branchId, null, 500);

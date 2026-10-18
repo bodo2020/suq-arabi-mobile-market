@@ -56,6 +56,10 @@ export const isCombinedCart = (items: CartItem[]) => cartSourceIdentities(items)
 
 export type CartContextType = {
   items: CartItem[];
+  checkoutItems: CartItem[];
+  selectedStoreKeys: string[];
+  toggleCheckoutStore: (key: string) => boolean;
+  completeCheckout: (requestId: string, sources: import('@/lib/storeCarts').PurchasedCartSource[]) => void;
   cart: { items: CartItem[] };
   addToCart: (product: CommerceProductInput) => CartAddResult;
   removeFromCart: (productId: string, is_bulk?: boolean, listingId?: string | null) => void;

@@ -50,6 +50,8 @@ export type CombinedDeliveryQuote = {
   merchant_delivery_subsidy: number;
   elmadawy_delivery_subsidy: number;
   extra_pickup_fee: number;
+  base_fee?: number;
+  policy?: { price_per_km: number; included_km: number };
   distance_fee: number;
   free_delivery: boolean;
   distance_source?: 'estimated_haversine' | 'verified_road_route';
@@ -66,6 +68,7 @@ export type CombinedDeliveryQuote = {
     address?: string | null;
     latitude: number;
     longitude: number;
+    distance_from_previous_km?: number;
   }>;
 };
 

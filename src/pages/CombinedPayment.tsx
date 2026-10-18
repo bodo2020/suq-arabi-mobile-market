@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CreditCard, MapPin, Route, ShieldCheck, Store, Wallet } from 'lucide-react';
+import DeliveryRouteSummary from '@/components/checkout/DeliveryRouteSummary';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
 import SubstitutionPreferenceCard from '@/components/checkout/SubstitutionPreferenceCard';
@@ -36,7 +37,7 @@ const money = (value: number) => new Intl.NumberFormat('ar-EG', {
 
 export default function CombinedPayment() {
   const navigate = useNavigate();
-  const { items, clearCart, isInitialized, syncError, isSaving } = useCart();
+  const { checkoutItems: items, completeCheckout, isInitialized, syncError, isSaving } = useCart();
   const { user, authLoading } = useUser();
   const { toast } = useToast();
   const submitting = useRef(false);
@@ -149,6 +150,7 @@ export default function CombinedPayment() {
         paymentMethod,
         notes: notes.trim(),
         quoteToken: quote!.quote_token,
+        routeQuoteId: quote!.route_quote_id,
         total: quote!.total,
         substitutionPolicy,
       };
@@ -159,7 +161,7 @@ export default function CombinedPayment() {
       const placed = await placeCombinedOrder(candidate);
       removePendingCombinedCheckout(user.id);
       setPending(null);
-      clearCart();
+      completeCheckout(candidate.groupId, candidate.sources);
 
       const leadOrderId = placed.orders?.find(order => order.source_kind === 'owned')?.order_id
         || placed.orders?.[0]?.order_id;
@@ -215,7 +217,7 @@ export default function CombinedPayment() {
   return <CheckoutLayout step={2}>
     <h1 className="checkout-title">تأكيد الطلب المجمّع</h1>
     <p className="checkout-intro">
-      دفع واحد وتوصيل واحد، والنظام يقسّم الطلب داخليًا على كل متجر ويحافظ على المخزون والحسابات بشكل مستقل.
+      اختياراتك من كل محل واضحة قدامك، وتوصيل واحد يجمعها لحد بابك.
     </p>
 
     {pending && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -237,67 +239,25 @@ export default function CombinedPayment() {
               const name = source.source_kind === 'owned'
                 ? quote?.hub_branch_name || 'ســــــوبـرمــــاركو'
                 : source.plan.merchant_name || source.plan.branch_name || 'متجر شريك';
-              return <div key={source.branch_id + source.source_kind} className="flex items-center justify-between rounded-2xl border p-4">
+              return <div key={source.branch_id + source.source_kind} className="rounded-2xl border border-[#d8ebdf] bg-[#f8fcf9] p-4">
                 <div>
                   <p className="text-xs font-bold text-primary">
                     {source.source_kind === 'owned' ? 'فرع ســــــوبـرمــــاركو' : 'متجر شريك'}
                   </p>
                   <strong className="mt-1 block">{index + 1}. {name}</strong>
                 </div>
-                <strong>{money(source.plan.subtotal)} ج.م</strong>
+                <ul className="my-3 divide-y divide-[#e1eee7] border-y border-[#e1eee7] text-sm">
+                  {source.plan.items.map((item, itemIndex) => <li key={item.product_id + ':' + itemIndex} className="flex justify-between gap-3 py-2">
+                    <span>{item.name || item.product_name || 'صنف'}</span><strong className="shrink-0">{money(item.total)} ج.م</strong>
+                  </li>)}
+                </ul>
+                <div className="flex justify-between text-sm"><span>إجمالي المحل</span><strong className="text-primary">{money(source.plan.subtotal)} ج.م</strong></div>
               </div>;
             })}
           </CardContent>
         </Card>
 
-        {quote?.delivery && <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Route className="h-5 w-5 text-primary" />
-              رحلة التوصيل
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {quote.delivery.stops.map((stop, index) => (
-                <div key={index} className="flex items-start gap-3 rounded-2xl bg-gray-50 p-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <strong className="block">
-                      {stop.type === 'customer' ? 'التسليم ليك' : stop.branch_name || 'نقطة استلام'}
-                    </strong>
-                    {stop.address && <p className="mt-1 text-xs text-gray-500">{stop.address}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-xl border p-3">
-                <span className="text-gray-500">
-                  {quote.delivery.distance_source === 'verified_road_route' && !quote.delivery.route_degraded
-                    ? 'مسافة الطريق'
-                    : 'المسافة التقديرية'}
-                </span>
-                <strong className="mt-1 block">{money(quote.delivery.route_distance_km)} كم</strong>
-              </div>
-              <div className="rounded-xl border p-3">
-                <span className="text-gray-500">
-                  {quote.delivery.distance_source === 'verified_road_route' && !quote.delivery.route_degraded
-                    ? 'زمن الطريق'
-                    : 'زمن الطريق التقديري'}
-                </span>
-                <strong className="mt-1 block">{quote.delivery.estimated_route_minutes} دقيقة</strong>
-              </div>
-            </div>
-            {quote.delivery.distance_source === 'verified_road_route' && <p className="mt-3 text-xs text-gray-500">
-              {quote.delivery.route_degraded
-                ? 'تعذر الوصول لمزوّد الطرق مؤقتًا؛ تم استخدام تقدير احتياطي آمن وسيُعاد التحقق قبل تأكيد الطلب.'
-                : `المسار محسوب عبر ${quote.delivery.route_provider === 'google' ? 'Google Maps' : 'خدمة الطرق الاحتياطية'} وسيُعاد التحقق منه قبل تسجيل الطلب.`}
-            </p>}
-          </CardContent>
-        </Card>}
+        {quote?.delivery && <DeliveryRouteSummary delivery={quote.delivery} />}
 
         <Card>
           <CardHeader>
@@ -393,7 +353,7 @@ export default function CombinedPayment() {
               تأكيد الطلب المجمّع
             </Button>
             <p className="text-center text-xs leading-5 text-gray-500">
-              الطلب بيتسجل كمجموعة واحدة وبداخلها طلب مستقل لكل متجر، والتوصيل بيتحسب مرة واحدة.
+              تابع تجهيز كل محل من صفحة طلباتك، وتكلفة التوصيل محسوبة مرة واحدة للمجموعة.
             </p>
           </CardContent>
         </Card>

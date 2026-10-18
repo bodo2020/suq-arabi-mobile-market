@@ -51,6 +51,7 @@ type Point = {
 type RouteResult = {
   distanceKm: number;
   durationMinutes: number;
+  legDistancesKm: number[];
   provider: "google" | "osrm" | "straight_line_fallback";
   degraded: boolean;
 };
@@ -87,29 +88,6 @@ async function callerAllowed(request: Request) {
   return !error && !!data.user;
 }
 
-function haversineKm(a: Point, b: Point) {
-  const radius = 6371;
-  const radians = (value: number) => value * Math.PI / 180;
-  const dLat = radians(b.lat - a.lat);
-  const dLon = radians(b.lng - a.lng);
-  const x = Math.sin(dLat / 2) ** 2
-    + Math.cos(radians(a.lat)) * Math.cos(radians(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * radius * Math.asin(Math.sqrt(x));
-}
-
-function straightRoute(points: Point[]): RouteResult {
-  let distanceKm = 0;
-  for (let index = 1; index < points.length; index += 1) {
-    distanceKm += haversineKm(points[index - 1], points[index]);
-  }
-  return {
-    distanceKm,
-    durationMinutes: Math.max(1, Math.ceil(distanceKm / 25 * 60)),
-    provider: "straight_line_fallback",
-    degraded: true,
-  };
-}
-
 async function googleRoute(points: Point[]): Promise<RouteResult | null> {
   if (!GOOGLE_KEY || points.length < 2) return null;
   try {
@@ -135,7 +113,7 @@ async function googleRoute(points: Point[]): Promise<RouteResult | null> {
     });
     const payload = await response.json().catch(() => null) as Record<string, any> | null;
     const legs = payload?.routes?.[0]?.legs as Array<Record<string, any>> | undefined;
-    if (!response.ok || payload?.status !== "OK" || !legs?.length) return null;
+    if (!response.ok || payload?.status !== "OK" || !legs?.length || legs.length !== points.length - 1) return null;
 
     const distanceMeters = legs.reduce(
       (sum, leg) => sum + Number(leg.distance?.value || 0),
@@ -146,10 +124,11 @@ async function googleRoute(points: Point[]): Promise<RouteResult | null> {
       0,
     );
 
-    if (!(distanceMeters > 0) || !(durationSeconds > 0)) return null;
+    if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds) || distanceMeters < 0 || durationSeconds < 0) return null;
     return {
       distanceKm: distanceMeters / 1000,
       durationMinutes: Math.max(1, Math.round(durationSeconds / 60)),
+      legDistancesKm: legs.map(leg => Number(leg.distance?.value || 0) / 1000),
       provider: "google",
       degraded: false,
     };
@@ -176,6 +155,7 @@ async function osrmRoute(points: Point[]): Promise<RouteResult | null> {
     const route = payload?.routes?.[0];
     if (!response.ok || payload?.code !== "Ok" || !route) return null;
 
+    if (!Array.isArray(route.legs) || route.legs.length !== points.length - 1) return null;
     const distanceMeters = Number(route.distance || 0);
     const durationSeconds = Number(route.duration || 0);
     if (!(distanceMeters > 0) || !(durationSeconds > 0)) return null;
@@ -183,6 +163,7 @@ async function osrmRoute(points: Point[]): Promise<RouteResult | null> {
     return {
       distanceKm: distanceMeters / 1000,
       durationMinutes: Math.max(1, Math.round(durationSeconds / 60)),
+      legDistancesKm: route.legs.map((leg: { distance: number }) => Number(leg.distance) / 1000),
       provider: "osrm",
       degraded: false,
     };
@@ -236,7 +217,8 @@ Deno.serve(async (request: Request) => {
     const storeCount = (hasOwned ? 1 : 0) + partnerIds.length;
 
     if (
-      !Number.isFinite(latitude)
+      body?.latitude == null || body?.longitude == null
+      || !Number.isFinite(latitude)
       || !Number.isFinite(longitude)
       || latitude < -90 || latitude > 90
       || longitude < -180 || longitude > 180
@@ -312,7 +294,7 @@ Deno.serve(async (request: Request) => {
       },
     );
 
-    if (!cacheError && cached?.route_quote_id) {
+    if (!cacheError && cached?.route_quote_id && !cached.degraded) {
       return json({
         ...cached,
         hub_branch_name: hub.name,
@@ -340,9 +322,9 @@ Deno.serve(async (request: Request) => {
       ? [partnerPoints, [partnerPoints[1], partnerPoints[0]]]
       : [partnerPoints];
 
-    const baselinePath = [hubPoint, customerPoint];
-    const candidatePaths = orders.map(order => [hubPoint, ...order, customerPoint]);
-    const allPaths = [baselinePath, ...candidatePaths];
+    const candidatePaths = orders.map(order => [...(hasOwned ? [hubPoint] : []), ...order, customerPoint]);
+    const baselinePaths = candidatePaths.map(path => [path[0], customerPoint]);
+    const allPaths = [...baselinePaths, ...candidatePaths];
 
     let routeResults = await routesForProvider("google", allPaths);
     let provider: RouteResult["provider"] = "google";
@@ -351,12 +333,10 @@ Deno.serve(async (request: Request) => {
       provider = "osrm";
     }
     if (!routeResults) {
-      routeResults = allPaths.map(straightRoute);
-      provider = "straight_line_fallback";
+      return json({ error: "ROUTE_DISTANCE_UNAVAILABLE" }, 503);
     }
 
-    const baseline = routeResults[0];
-    const candidateResults = routeResults.slice(1);
+    const candidateResults = routeResults.slice(candidatePaths.length);
     let bestIndex = 0;
     for (let index = 1; index < candidateResults.length; index += 1) {
       const current = candidateResults[index];
@@ -370,10 +350,11 @@ Deno.serve(async (request: Request) => {
       ) bestIndex = index;
     }
 
+    const baseline = routeResults[bestIndex];
     const bestOrder = orders[bestIndex] || [];
     const bestRoute = candidateResults[bestIndex];
     const detour = Math.max(0, bestRoute.distanceKm - baseline.distanceKm);
-    const degraded = provider === "straight_line_fallback";
+    const degraded = false;
 
     const stops = [
       ...(hasOwned ? [{
@@ -399,7 +380,10 @@ Deno.serve(async (request: Request) => {
         latitude,
         longitude,
       },
-    ];
+    ].map((stop, index) => ({
+      ...stop,
+      distance_from_previous_km: index === 0 ? 0 : Number(bestRoute.legDistancesKm[index - 1].toFixed(3)),
+    }));
 
     const orderedPartnerIds = bestOrder
       .map(point => point.branch_id)
@@ -423,7 +407,8 @@ Deno.serve(async (request: Request) => {
         p_degraded: degraded,
         p_stops: stops,
         p_metadata: {
-          route_anchor: "hub",
+          route_version: "store-origin-v2",
+          route_anchor: hasOwned ? "hub" : "first_pickup",
           route_anchor_hub_id: hub.id,
           candidate_count: candidatePaths.length,
           generated_by: "customer-multistore-route",
