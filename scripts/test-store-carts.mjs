@@ -25,6 +25,24 @@ assert.equal(after.find(value=>value.marketplace_branch_id==='b').quantity,2);
 assert.equal(subtractPurchasedItems(cart,[{source_kind:'owned',items:[{product_id:'same-product',quantity:2}]}]).length,4);
 const weight={...item('a','weight',750),unit_of_measure:'weight'};
 assert.equal(subtractPurchasedItems([weight],[{source_kind:'marketplace',branch_id:'a',items:[{product_id:'same-product',listing_id:'weight',quantity:500,unit_of_measure:'weight'}]}])[0].quantity,250);
+// Duplicate identities can exist in a legacy or merged persisted cart. A purchased
+// quantity must be consumed once across those rows, never once per matching row.
+const duplicates=[item('a','la',2),item('a','la',3),item('b','lb',4)];
+const duplicateAfter=subtractPurchasedItems(duplicates,[
+  {source_kind:'marketplace',branch_id:'a',items:[{product_id:'same-product',listing_id:'la',quantity:3}]},
+]);
+assert.equal(duplicateAfter.filter(value=>value.marketplace_branch_id==='a').reduce((sum,value)=>sum+value.quantity,0),2);
+assert.equal(duplicateAfter.find(value=>value.marketplace_branch_id==='b').quantity,4);
+const overPurchase=subtractPurchasedItems(duplicates,[
+  {source_kind:'marketplace',branch_id:'a',items:[{product_id:'same-product',listing_id:'la',quantity:99}]},
+]);
+assert.equal(overPurchase.filter(value=>value.marketplace_branch_id==='a').length,0);
+const splitPurchase=subtractPurchasedItems(duplicates,[
+  {source_kind:'marketplace',branch_id:'a',items:[{product_id:'same-product',listing_id:'la',quantity:1},{product_id:'same-product',listing_id:'la',quantity:2}]},
+]);
+assert.equal(splitPurchase.filter(value=>value.marketplace_branch_id==='a').reduce((sum,value)=>sum+value.quantity,0),2);
+console.log('PASS purchased quantities applied once across duplicate identities and split purchase lines');
+
 console.log('PASS independent baskets, checkout limits, source-specific prices, selective cleanup, weight quantities');
 
 let handler;

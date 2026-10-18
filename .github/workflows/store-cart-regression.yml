@@ -1,0 +1,31 @@
+name: Store carts regression
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/storeCarts.ts'
+      - 'scripts/test-store-carts.mjs'
+      - '.github/workflows/store-cart-regression.yml'
+  push:
+    branches:
+      - 'codex/cart-purchased-quantity-accounting'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  store-carts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check independent baskets and purchased-quantity accounting
+        run: node scripts/test-store-carts.mjs
+      - name: Check TypeScript
+        run: npx tsc --noEmit
