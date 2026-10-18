@@ -1,13 +1,14 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   CartContextType,
   CartItem,
   CommerceProductInput,
   cartItemIdentity,
-  marketplaceBranchIds,
   type CartAddResult,
 } from './cartTypes';
 import { useCartSync } from './cartSupabaseSync';
+import { useUser } from './UserContext';
+import { canCombineStores, defaultCheckoutStores, storeKey, subtractPurchasedItems, type PurchasedCartSource } from '@/lib/storeCarts';
 
 export const CartContext = React.createContext<CartContextType | undefined>(undefined);
 
@@ -15,6 +16,41 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [items, setItems] = useState<CartItem[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const sync = useCartSync(items, setItems, isInitialized, setIsInitialized);
+  const { user } = useUser();
+  const ownerKey = user?.id || 'guest';
+  const [selection, setSelection] = useState<Record<string, string[]>>({});
+  const completed = useRef(new Set<string>());
+  const selectedStoreKeys = useMemo(() => {
+    let saved = selection[ownerKey];
+    if (!saved) {
+      try { const value = JSON.parse(localStorage.getItem(`checkout-stores:${ownerKey}`) || 'null');
+        if (Array.isArray(value) && value.every(key => typeof key === 'string') && canCombineStores(value)) saved = value;
+      } catch { /* use the current carts */ }
+    }
+    return (saved || defaultCheckoutStores(items)).filter(key => items.some(item => storeKey(item) === key));
+  }, [items, ownerKey, selection]);
+  const checkoutItems = useMemo(() => items.filter(item => selectedStoreKeys.includes(storeKey(item))), [items, selectedStoreKeys]);
+  const toggleCheckoutStore = useCallback((key: string) => {
+    const next = selectedStoreKeys.includes(key) ? selectedStoreKeys.filter(value => value !== key) : [...selectedStoreKeys, key];
+    if (!canCombineStores(next)) return false;
+    setSelection(current => ({ ...current, [ownerKey]: next }));
+    try { localStorage.setItem(`checkout-stores:${ownerKey}`, JSON.stringify(next)); } catch { /* in-memory selection remains */ }
+    return true;
+  }, [selectedStoreKeys, ownerKey]);
+  const completeCheckout = useCallback((requestId: string, sources: PurchasedCartSource[]) => {
+    if (!isInitialized) return;
+    const key = `cart-completed:${ownerKey}:${requestId}`;
+    if (completed.current.has(key)) return;
+    try { if (localStorage.getItem(key)) return; } catch { /* memory guard remains */ }
+    completed.current.add(key);
+    setItems(current => {
+      const next = subtractPurchasedItems(current, sources);
+      try { localStorage.setItem(ownerKey === 'guest' ? 'guest_cart' : 'pending_cart:' + ownerKey, JSON.stringify(next)); } catch { /* normal cart sync retries persistence */ }
+      return next;
+    });
+    try { localStorage.setItem(key, '1'); } catch { /* guarded in memory */ }
+  }, [isInitialized, ownerKey]);
+
 
   const addToCart = useCallback((product: CommerceProductInput): CartAddResult => {
     if (!isInitialized) return 'not_ready';
@@ -23,18 +59,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!product.marketplace_branch_id || !product.merchant_id || !product.marketplace_listing_id) {
         return 'conflict';
       }
-      const partnerBranches = marketplaceBranchIds(items);
-      const isExistingPartner = partnerBranches.includes(product.marketplace_branch_id);
-      if (!isExistingPartner && partnerBranches.length >= 2) {
-        window.dispatchEvent(new CustomEvent('cart-source-conflict', {
-          detail: {
-            reason: 'partner_limit',
-            incomingMerchant: product.merchant_name || 'المتجر الجديد',
-            partnerCount: partnerBranches.length,
-          },
-        }));
-        return 'limit';
-      }
+
     }
 
     const nextItem: CartItem = {
@@ -108,6 +133,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <CartContext.Provider value={{
       items,
+      checkoutItems,
+      selectedStoreKeys,
+      toggleCheckoutStore,
+      completeCheckout,
       cart: { items },
       addToCart,
       removeFromCart,

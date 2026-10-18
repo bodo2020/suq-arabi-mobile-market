@@ -57,7 +57,7 @@ const money = (value: number) => new Intl.NumberFormat('ar-EG', { minimumFractio
 const Payment = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { items, clearCart, isInitialized, syncError, isSaving } = useCart();
+  const { checkoutItems: items, completeCheckout, isInitialized, syncError, isSaving } = useCart();
   const { toast } = useToast();
   const { user, authLoading } = useUser();
   const submitting = useRef(false);
@@ -242,13 +242,12 @@ const Payment = () => {
       setRequestId(pending.requestId as `${string}-${string}-${string}-${string}-${string}`);
 
       const placed = await placeOrder(pending);
-      const cartMatchesPlacedAttempt = JSON.stringify(pending.items) === serializedLines;
 
       removePendingCheckout(user.id);
       setPendingCheckout(null);
       setWalletDialogOpen(false);
       setSelectedVoucherId('none');
-      if (cartMatchesPlacedAttempt) clearCart();
+      completeCheckout(pending.requestId, [{ source_kind: 'owned', items: pending.items }]);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['loyalty-vouchers', user.id] }),
         queryClient.invalidateQueries({ queryKey: ['loyalty-card', user.id] }),

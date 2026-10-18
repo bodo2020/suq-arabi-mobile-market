@@ -32,7 +32,7 @@ const money = (value: number) => new Intl.NumberFormat('ar-EG', { minimumFractio
 
 export default function MarketplacePayment() {
   const navigate = useNavigate();
-  const { items, clearCart, isInitialized, syncError, isSaving } = useCart();
+  const { checkoutItems: items, completeCheckout, isInitialized, syncError, isSaving } = useCart();
   const { user, authLoading } = useUser();
   const { toast } = useToast();
   const submitting = useRef(false);
@@ -46,6 +46,7 @@ export default function MarketplacePayment() {
   const lines = useMemo(() => {
     try { return marketplaceCheckoutLines(items); } catch { return []; }
   }, [items]);
+  const restaurant = items.some(item => item.product.business_profile === 'restaurant');
   const branchId = items[0]?.marketplace_branch_id || pending?.branchId || '';
 
   useEffect(() => {
@@ -115,6 +116,7 @@ export default function MarketplacePayment() {
         paymentMethod,
         notes: notes.trim(),
         quoteToken: quote!.quote_token,
+        routeQuoteId: quote!.route_quote_id,
         total: quote!.total,
         substitutionPolicy,
       };
@@ -124,7 +126,7 @@ export default function MarketplacePayment() {
       const placed = await placeMarketplaceOrder(candidate);
       removePendingMarketplaceCheckout(user.id);
       setPending(null);
-      clearCart();
+      completeCheckout(candidate.requestId, [{ source_kind: 'marketplace', branch_id: candidate.branchId, items: candidate.items }]);
       navigate('/order-success', { state: { orderId: placed.id, orderNumber: placed.tracking_number, amountDue: placed.amount_due } });
     } catch (error) {
       const message = marketplaceCheckoutError(error);
@@ -147,8 +149,8 @@ export default function MarketplacePayment() {
   if (!items.length && !pending) return <CheckoutLayout step={2}><div className="mx-auto max-w-md py-20 text-center"><Store className="mx-auto h-12 w-12 text-primary" /><h1 className="mt-4 text-xl font-black">السلة فارغة</h1><Button className="mt-5" onClick={() => navigate('/stores')}>تصفح المتاجر</Button></div></CheckoutLayout>;
 
   return <CheckoutLayout step={2}>
-    <h1 className="checkout-title">تأكيد طلب المتجر</h1>
-    <p className="checkout-intro">السعر والمخزون ومنطقة التوصيل بيتراجعوا من السيرفر قبل إنشاء الطلب. كوبونات ســــــوبـرمــــاركو غير مطبقة على متاجر الشركاء في المرحلة الحالية.</p>
+    <h1 className="checkout-title">{restaurant ? 'تأكيد طلب المطعم' : 'تأكيد طلب المتجر'}</h1>
+    <p className="checkout-intro">راجع اختياراتك والعنوان قبل التأكيد. كوبونات ســــــوبـرمــــاركو غير مطبقة على متاجر الشركاء حاليًا.</p>
 
     {pending && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>محاولة الطلب محفوظة بأمان.</strong><p className="mt-1">لو الاتصال انقطع، إعادة التأكيد هتكمل نفس الطلب بدون إنشاء نسخة مكررة.</p></div>}
 
@@ -157,11 +159,12 @@ export default function MarketplacePayment() {
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><Store className="h-5 w-5 text-primary" />{quote?.merchant_name || items[0]?.merchant_name || 'المتجر'}</CardTitle></CardHeader><CardContent className="space-y-2 text-sm"><p><strong>الفرع:</strong> {quote?.branch_name || items[0]?.marketplace_branch_name}</p><p><strong>منطقة التوصيل:</strong> {quote?.zone_name || 'جاري التحديد'}</p>{quote?.estimated_time && <p><strong>الوقت المتوقع:</strong> {quote.estimated_time}</p>}</CardContent></Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" />عنوان التوصيل</CardTitle></CardHeader><CardContent><p className="text-sm text-gray-700">{customerQuery.data?.address?.address || 'جاري تحميل العنوان...'}</p><Button variant="link" className="mt-2 px-0" onClick={() => navigate('/addresses?returnTo=%2Fmarketplace-payment')}>تغيير العنوان</Button></CardContent></Card>
         <Card><CardHeader><CardTitle>طريقة الدفع</CardTitle></CardHeader><CardContent><RadioGroup value={paymentMethod} onValueChange={value => !pending && setPaymentMethod(value as 'cash' | 'wallet')} className="grid gap-3 sm:grid-cols-2"><Label className="flex cursor-pointer items-center gap-3 rounded-2xl border p-4"><RadioGroupItem value="cash" /><CreditCard className="h-5 w-5 text-primary" /><span><strong className="block">كاش عند الاستلام</strong><small className="text-gray-500">ادفع للمندوب</small></span></Label><Label className="flex cursor-pointer items-center gap-3 rounded-2xl border p-4"><RadioGroupItem value="wallet" /><Wallet className="h-5 w-5 text-primary" /><span><strong className="block">محفظة إلكترونية</strong><small className="text-gray-500">{WALLET_PHONE_NUMBER}</small></span></Label></RadioGroup></CardContent></Card>
+        {quote?.items && <Card><CardHeader><CardTitle>{restaurant ? 'وجبتك' : 'اختياراتك'}</CardTitle></CardHeader><CardContent><ul className="divide-y divide-[#e1eee7]">{quote.items.map(item => <li key={item.listing_id} className="flex justify-between gap-3 py-3 text-sm"><span>{item.name} × {item.unit_of_measure === 'weight' ? item.quantity + ' كجم' : item.quantity}</span><strong className="text-primary">{money(item.total)} ج.م</strong></li>)}</ul></CardContent></Card>}
         <SubstitutionPreferenceCard value={pending?.substitutionPolicy || substitutionPolicy} onChange={setSubstitutionPolicy} disabled={!!pending} />
         <Card><CardHeader><CardTitle>ملاحظات الطلب</CardTitle></CardHeader><CardContent><Textarea value={notes} onChange={event => !pending && setNotes(event.target.value)} maxLength={1000} placeholder="مثلاً: اتصل قبل الوصول" disabled={!!pending} /></CardContent></Card>
       </div>
       <aside><Card className="sticky top-4"><CardHeader><CardTitle>ملخص الطلب</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">{quoteQuery.isLoading ? <div className="flex justify-center py-8"><BrandLoader size="md" /></div> : quoteQuery.error ? <div className="rounded-xl bg-red-50 p-3 text-red-700">{marketplaceCheckoutError(quoteQuery.error)}</div> : <><div className="flex justify-between"><span>المنتجات</span><strong>{money(quote?.subtotal || pending?.total || 0)} ج.م</strong></div><div className="flex justify-between"><span>التوصيل</span><strong>{money(quote?.shipping_cost || 0)} ج.م</strong></div><div className="flex justify-between border-t pt-3 text-base"><span>الإجمالي</span><strong className="text-primary">{money(quote?.total || pending?.total || 0)} ج.م</strong></div>{quote && !quote.minimum_order_met && <p className="rounded-xl bg-amber-50 p-3 text-amber-800">الحد الأدنى {money(quote.min_order_amount)} ج.م</p>}</>}
-        <Button className="mt-3 h-12 w-full" onClick={() => void handleSubmit()} disabled={loading || isSaving || quoteQuery.isFetching || (!pending && (!quote || !quote.minimum_order_met))}>{loading ? <BrandLoader size="sm" /> : <ShieldCheck size={18} />}تأكيد الطلب</Button><p className="text-center text-xs leading-5 text-gray-500">كل طلب مربوط بمتجر واحد، والسيرفر يعيد التحقق من السعر والمخزون قبل الخصم.</p></CardContent></Card></aside>
+        <Button className="mt-3 h-12 w-full" onClick={() => void handleSubmit()} disabled={loading || isSaving || quoteQuery.isFetching || (!pending && (!quote || !quote.minimum_order_met))}>{loading ? <BrandLoader size="sm" /> : <ShieldCheck size={18} />}تأكيد الطلب</Button><p className="text-center text-xs leading-5 text-gray-500">سلات باقي المحلات هتفضل محفوظة بعد تأكيد الطلب.</p></CardContent></Card></aside>
     </div>
   </CheckoutLayout>;
 }

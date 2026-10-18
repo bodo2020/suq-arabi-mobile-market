@@ -4,7 +4,6 @@ import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import {
-  checkoutLines,
   readPendingCheckout,
   reconcilePendingCheckoutAttempt,
   removePendingCheckout,
@@ -16,7 +15,7 @@ export default function CheckoutAttemptRecovery() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, authLoading } = useUser();
-  const { items, isInitialized, clearCart } = useCart();
+  const { isInitialized, completeCheckout } = useCart();
   const { toast } = useToast();
   const resolvingRequestId = useRef<string | null>(null);
 
@@ -56,8 +55,7 @@ export default function CheckoutAttemptRecovery() {
         removePendingCheckout(user.id);
 
         if (result.exists && result.id) {
-          const currentLines = checkoutLines(items);
-          if (JSON.stringify(currentLines) === JSON.stringify(pending.items)) clearCart();
+          completeCheckout(pending.requestId, [{ source_kind: 'owned', items: pending.items }]);
           navigate('/order-success', {
             replace: true,
             state: {
@@ -87,7 +85,7 @@ export default function CheckoutAttemptRecovery() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, authLoading, isInitialized, user?.id, items, clearCart, navigate, toast]);
+  }, [location.pathname, authLoading, isInitialized, user?.id, completeCheckout, navigate, toast]);
 
   return null;
 }
