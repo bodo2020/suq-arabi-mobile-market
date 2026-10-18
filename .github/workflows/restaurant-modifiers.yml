@@ -1,0 +1,31 @@
+name: Restaurant modifier contract
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/restaurantModifiers.ts'
+      - 'scripts/test-restaurant-modifiers.mjs'
+      - '.github/workflows/restaurant-modifiers.yml'
+  push:
+    branches:
+      - 'feat/restaurant-modifier-contract'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  modifiers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate restaurant option pricing and meal identity
+        run: node scripts/test-restaurant-modifiers.mjs
+      - name: TypeScript check
+        run: npx tsc --noEmit
