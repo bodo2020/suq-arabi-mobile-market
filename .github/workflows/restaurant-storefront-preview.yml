@@ -6,6 +6,10 @@ on:
       - 'src/lib/customerRestaurantModifiers.ts'
       - 'src/components/restaurant/RestaurantModifierPreview.tsx'
       - 'src/pages/ProductDetail.tsx'
+      - 'src/lib/marketplaceCheckout.ts'
+      - 'src/lib/combinedCheckout.ts'
+      - 'src/lib/cartQuote.ts'
+      - 'scripts/test-store-carts.mjs'
       - '.github/workflows/restaurant-storefront-preview.yml'
   push:
     branches: ['feat/restaurant-modifier-storefront-preview']
@@ -25,6 +29,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Store cart checkout safety regressions
+        run: node scripts/test-store-carts.mjs
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Build
