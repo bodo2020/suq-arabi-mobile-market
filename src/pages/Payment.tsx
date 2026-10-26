@@ -375,21 +375,21 @@ const Payment = () => {
                   <div className="flex justify-center py-6"><BrandLoader size="sm" /></div>
                 ) : activeVouchers.length === 0 ? (
                   <div className="rounded-2xl border border-dashed p-5 text-center">
-                    <Gift className="mx-auto mb-2 text-gray-300" size={30} />
+                    <Gift className="mx-auto mb-2 text-brand-yellow" size={30} />
                     <p className="font-semibold">مفيش كوبون خصم متاح حاليًا</p>
                     <p className="mt-1 text-xs text-gray-500">حوّل نقاطك إلى كوبون خصم الأول.</p>
                     <Button variant="outline" className="mt-3" onClick={() => navigate('/vouchers')}>كوبوناتي وتحويل النقاط</Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <button type="button" onClick={() => setSelectedVoucherId('none')} className={`w-full rounded-2xl border p-4 text-right transition ${selectedVoucherId === 'none' ? 'border-primary bg-green-50' : 'hover:bg-gray-50'}`}>
+                    <button type="button" onClick={() => setSelectedVoucherId('none')} className={`w-full rounded-2xl border p-4 text-right transition ${selectedVoucherId === 'none' ? 'border-brand-yellow bg-brand-ivory' : 'hover:bg-brand-ivory'}`}>
                       <div className="flex items-center justify-between"><span className="font-semibold">بدون كوبون خصم</span>{selectedVoucherId === 'none' && <Badge>مختار</Badge>}</div>
                     </button>
                     {activeVouchers.map(voucher => {
                       const applied = Math.min(Number(voucher.remaining_value_egp || 0), grossTotal);
                       const selected = selectedVoucherId === voucher.id;
                       return (
-                        <button key={voucher.id} type="button" onClick={() => setSelectedVoucherId(voucher.id)} className={`w-full rounded-2xl border p-4 text-right transition ${selected ? 'border-primary bg-green-50 shadow-sm' : 'hover:border-emerald-200 hover:bg-gray-50'}`}>
+                        <button key={voucher.id} type="button" onClick={() => setSelectedVoucherId(voucher.id)} className={`w-full rounded-2xl border p-4 text-right transition ${selected ? 'border-brand-yellow bg-brand-ivory shadow-sm' : 'hover:border-brand-yellow/60 hover:bg-brand-ivory'}`}>
                           <div className="flex items-start justify-between gap-3">
                             <div><p dir="ltr" className="text-right font-mono text-sm font-bold">{voucher.voucher_code}</p><p className="mt-1 text-xs text-gray-500">رصيده {money(voucher.remaining_value_egp)} ج.م</p></div>
                             <div className="text-left"><div className="font-black text-primary">- {money(applied)} ج.م</div>{selected && <Badge className="mt-1">مختار</Badge>}</div>
@@ -454,7 +454,7 @@ const Payment = () => {
                 <Separator />
                 {quote && !pendingCheckout && <div className="space-y-2"><div className="flex justify-between"><span>قيمة المنتجات</span><span className="font-bold">{money(quote.subtotal)} ج.م</span></div><div className="flex justify-between"><span>التوصيل</span><span className="font-bold">{quote.free_delivery ? <span className="text-green-600">مجاناً</span> : `${money(displayedShipping)} ج.م`}</span></div></div>}
                 <div className="flex justify-between text-sm"><span>إجمالي الطلب</span><span className="font-bold">{grossTotal > 0 ? `${money(grossTotal)} ج.م` : '—'}</span></div>
-                {voucherAmount > 0 && <div className="flex justify-between rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800"><span>كوبون خصم</span><strong>- {money(voucherAmount)} ج.م</strong></div>}
+                {voucherAmount > 0 && <div className="flex justify-between rounded-xl bg-brand-ivory px-3 py-2 text-sm text-brand-green"><span>كوبون خصم</span><strong>- {money(voucherAmount)} ج.م</strong></div>}
                 <Separator />
                 <div className="flex justify-between text-lg font-bold"><span>المطلوب دفعه</span><span className="text-primary">{grossTotal > 0 ? `${money(payableTotal)} ج.م` : '—'}</span></div>
 
