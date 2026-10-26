@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { collectProductBrowseState } from '@/lib/productBrowsing';
 import { Bell, BellRing, Loader2, Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
@@ -30,6 +31,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const { items, addToCart, updateQuantity, removeFromCart, isInitialized } = useCart();
   const [weightOpen, setWeightOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [reminderPending, setReminderPending] = useState(false);
 
   const weighted = isWeightedProduct(product);
@@ -54,10 +57,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ? (String((product as Product & { bulk_variant_type?: string | null }).bulk_variant_type || '').trim() || 'جملة')
     : '';
   const variantId = bulk ? product.bulk_variant_id || null : null;
+  const storeQuery = product.commerce_source === 'marketplace' && product.marketplace_branch_id
+    ? `store=${encodeURIComponent(product.marketplace_branch_id)}`
+    : '';
   const detailHref = bulk
-    ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}`
-    : `/product/${product.id}${product.commerce_source === 'marketplace' && product.marketplace_branch_id ? `?store=${encodeURIComponent(product.marketplace_branch_id)}` : ''}`;
+    ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}${storeQuery ? `&${storeQuery}` : ''}`
+    : `/product/${product.id}${storeQuery ? `?${storeQuery}` : ''}`;
   const imageSrc = bulkImageUrl || product.image_urls?.[0] || '/placeholder.svg';
+  const openDetails = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    event.preventDefault();
+    navigate(detailHref, { state: collectProductBrowseState(event.currentTarget, location.pathname + location.search) });
+  };
 
   const selectedWeight = weighted
     ? Math.min(maxCartQuantity || weightStep, Math.max(1, Math.round(Number(item?.quantity || weightStep))))
@@ -148,7 +159,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       data-product-card="v3-compact"
     >
       <div className="relative mb-5 sm:mb-7">
-        <Link to={detailHref} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
+        <Link to={detailHref} onClick={openDetails} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
           <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5">
             <SmartImage
               src={productCardImage(imageSrc)}
@@ -223,7 +234,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
       </div>
 
-      <Link to={detailHref} className="min-w-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]">
+      <Link to={detailHref} onClick={openDetails} className="min-w-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]">
         <h3 className="min-h-8 line-clamp-2 text-[11px] font-bold leading-4 text-slate-950 sm:min-h-10 sm:text-[15px] sm:leading-5">{displayName}</h3>
       </Link>
 
