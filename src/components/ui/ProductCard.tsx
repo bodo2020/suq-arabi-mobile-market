@@ -12,6 +12,16 @@ import WeightSelector from './WeightSelector';
 import SmartImage from './SmartImage';
 import { productCardImage } from '@/lib/productCardImage';
 
+// Warm the lazily loaded detail page once the catalog is on screen, instead
+// of downloading the route only after the shopper taps a product.
+let detailModuleWarmupScheduled = false;
+const warmDetailModule = () => { void import('@/pages/ProductDetail').catch(() => {}); };
+const scheduleDetailWarmup = () => {
+  if (detailModuleWarmupScheduled || typeof window === 'undefined') return;
+  detailModuleWarmupScheduled = true;
+  window.setTimeout(warmDetailModule, 650);
+};
+
 interface ProductCardProps {
   product: Product & { displayType?: 'regular' | 'bulk'; variantKey?: string };
   hideIfUnavailable?: boolean;
@@ -69,6 +79,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const imageSrc = bulkImageUrl || product.image_urls?.[0] || '/placeholder.svg';
   useEffect(() => {
     registerBrowsableProduct(detailHref, product);
+    scheduleDetailWarmup();
   }, [detailHref, product]);
 
   const openDetails = (event: React.MouseEvent<HTMLAnchorElement>) => {
