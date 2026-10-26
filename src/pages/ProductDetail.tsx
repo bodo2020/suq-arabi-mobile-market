@@ -37,6 +37,13 @@ const ProductDetail = () => {
   const canSwipePrevious = browseIndex > 0;
   const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
   const sheetTouch = useRef<{ x: number; y: number; gallery: boolean } | null>(null);
+  const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [swipeX, setSwipeX] = useState(0);
+  const [swipeAnimating, setSwipeAnimating] = useState(false);
+  const [swipeLocked, setSwipeLocked] = useState(false);
+  const previousPreview = browse && browseIndex > 0 ? browse.previews.find(p => p.path === browse.paths[browseIndex - 1]) : null;
+  const nextPreview = browse && canSwipeNext ? browse.previews.find(p => p.path === browse.paths[browseIndex + 1]) : null;
+  const nextCategory = !canSwipeNext ? browse?.nextCategory : undefined;
   const requestedBulk = searchParams.get('unit') === 'bulk';
   const requestedVariantId = searchParams.get('variant');
   const requestedStoreId = searchParams.get('store');
@@ -67,39 +74,79 @@ const ProductDetail = () => {
     else navigate('/');
   };
 
+  useEffect(() => {
+    setSwipeX(0);
+    setSwipeAnimating(false);
+    setSwipeLocked(false);
+  }, [id, location.search]);
+  useEffect(() => () => {
+    if (swipeTimer.current) clearTimeout(swipeTimer.current);
+  }, []);
+
   const browseProduct = (offset: -1 | 1) => {
-    if (!browse || browseIndex < 0 || weightOpen) return;
+    if (!browse || browseIndex < 0 || weightOpen || swipeLocked) return;
     const next = browse.paths[browseIndex + offset];
-    if (!next) return;
+    const destination = next || (offset === 1 ? browse.nextCategory?.path : undefined);
+    if (!destination) return;
+    setSwipeLocked(true);
+    setSwipeAnimating(true);
     sheetTouch.current = null;
-    navigate(next, { replace: true, state: location.state });
+    setSwipeX(offset === 1 ? -Math.min(window.innerWidth * .9, 660) : Math.min(window.innerWidth * .9, 660));
+    if (swipeTimer.current) clearTimeout(swipeTimer.current);
+    swipeTimer.current = setTimeout(() => {
+      swipeTimer.current = null;
+      if (next) navigate(next, { replace: true, state: location.state });
+      else navigate(destination);
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 190);
   };
 
   const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
-    if (!touch || weightOpen) return;
+    if (!touch || weightOpen || swipeLocked) return;
+    // Scrolling the related-product rail must not trigger a main-product swipe.
+    if ((event.target as HTMLElement).closest('[data-product-recommendations]')) {
+      sheetTouch.current = null;
+      return;
+    }
     sheetTouch.current = {
       x: touch.clientX,
       y: touch.clientY,
       gallery: Boolean((event.target as HTMLElement).closest('[data-product-gallery]')),
     };
+    setSwipeAnimating(false);
+  };
+
+  const moveSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = sheetTouch.current;
+    const touch = event.touches[0];
+    if (!start || !touch || start.gallery || weightOpen || swipeLocked) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    const allowed = dx < 0 ? (canSwipeNext || Boolean(nextCategory)) : canSwipePrevious;
+    setSwipeX(allowed ? Math.max(-window.innerWidth * .75, Math.min(window.innerWidth * .75, dx)) : dx * .12);
   };
 
   const finishSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const start = sheetTouch.current;
     sheetTouch.current = null;
     const end = event.changedTouches[0];
-    if (!start || !end || weightOpen) return;
+    if (!start || !end || weightOpen || swipeLocked) return;
     const dx = end.clientX - start.x;
     const dy = end.clientY - start.y;
-    // Let vertical scrolling, taps and short diagonal movements work normally.
-    if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     if (start.gallery && images.length > 1) {
-      goToImage(dx < 0 ? 1 : -1);
+      if (Math.abs(dx) >= 45 && Math.abs(dx) >= Math.abs(dy) * 1.4) goToImage(dx < 0 ? 1 : -1);
       return;
     }
-    // In RTL, dragging left reveals the next product, dragging right the previous.
-    browseProduct(dx < 0 ? 1 : -1);
+    if (Math.abs(dx) >= 65 && Math.abs(dx) >= Math.abs(dy) * 1.5) {
+      const offset = dx < 0 ? 1 : -1;
+      if ((offset === 1 && (canSwipeNext || nextCategory)) || (offset === -1 && canSwipePrevious)) {
+        browseProduct(offset);
+        return;
+      }
+    }
+    setSwipeAnimating(true);
+    setSwipeX(0);
   };
 
   const weighted = product ? isWeightedProduct(product) : false;
@@ -190,6 +237,8 @@ const ProductDetail = () => {
     if (!product) return;
     let active = true;
 
+    setRelatedProducts([]);
+    setCompany(null);
     const loadExtras = async () => {
       const [related, companyData] = await Promise.allSettled([
         getRelatedProducts(product.id, product.main_category_id),
@@ -473,13 +522,48 @@ const ProductDetail = () => {
       <div className="hidden md:block"><TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} /></div>
 
       {/* Handheld immersive product browsing: the desktop detail route stays intact. */}
-      <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 px-3 pt-7 pb-1 md:hidden">
+      <div className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/65 px-0 pt-7 pb-1 md:hidden">
+        {/* Adjacent cards remain visible while the active product slides. */}
+        {([
+          { preview: previousPreview, direction: -1 as const, side: 'left' as const },
+          { preview: nextPreview, direction: 1 as const, side: 'right' as const },
+        ]).map(({ preview, direction, side }) => preview ? (
+          <button
+            key={`peek-${side}-${preview.path}`}
+            type="button"
+            onClick={() => browseProduct(direction)}
+            disabled={swipeLocked}
+            aria-label={`عرض ${direction === -1 ? 'المنتج السابق' : 'المنتج التالي'}: ${preview.name}`}
+            className={`absolute bottom-[5%] left-1/2 z-[1] flex h-[83%] w-[84vw] max-w-[560px] flex-col overflow-hidden rounded-[29px] border border-white/50 bg-white px-3 pt-14 text-right opacity-95 shadow-2xl disabled:opacity-60 ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
+            style={{ transform: `translate3d(calc(${side === 'left' ? '-150% - 10px' : '50% + 10px'} + ${swipeX}px),0,0)` }}
+          >
+            <div className="flex h-[45%] w-full items-center justify-center rounded-3xl bg-[#f6f8f7]">
+              <img src={preview.image || '/placeholder.svg'} alt="" draggable={false} className="h-full w-full object-contain p-7" />
+            </div>
+            <span className="mt-4 line-clamp-2 text-base font-black text-[#005931]">{preview.name}</span>
+            {preview.price && <span className="mt-2 text-sm font-bold text-slate-500">{preview.price} ج.م</span>}
+          </button>
+        ) : null)}
+        {nextCategory && browseIndex >= 0 && (
+          <button
+            type="button"
+            onClick={() => browseProduct(1)}
+            disabled={swipeLocked}
+            aria-label={`الانتقال إلى ${nextCategory.name}`}
+            className={`absolute bottom-[5%] left-1/2 z-[1] flex h-[83%] w-[84vw] max-w-[560px] flex-col items-center justify-center rounded-[29px] bg-[#005931] p-6 text-center text-white shadow-2xl ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
+            style={{ transform: `translate3d(calc(50% + 10px + ${swipeX}px),0,0)` }}
+          >
+            <span className="text-xs font-bold text-yellow-300">القسم التالي</span>
+            <strong className="mt-2 text-xl">{nextCategory.name}</strong>
+          </button>
+        )}
         <section
           role="dialog"
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className="relative flex h-[calc(100dvh-36px)] w-full max-w-[600px] flex-col overflow-hidden rounded-[32px] bg-[#f6f8f7] shadow-[0_22px_70px_rgba(0,0,0,.22)]"
+          className={`relative z-10 flex h-[calc(100dvh-36px)] w-[84vw] max-w-[560px] flex-col overflow-hidden rounded-[32px] bg-[#f6f8f7] shadow-[0_22px_70px_rgba(0,0,0,.22)] will-change-transform ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
+          style={{ transform: `translate3d(${swipeX}px,0,0)` }}
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-5 pt-5">
             <button type="button" className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"><X size={23} /></button>
@@ -493,7 +577,9 @@ const ProductDetail = () => {
             key={`product-sheet-${id}`}
             className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain px-3 pb-5 pt-2"
             onTouchStart={startSheetSwipe}
+            onTouchMove={moveSheetSwipe}
             onTouchEnd={finishSheetSwipe}
+            onTouchCancel={() => { sheetTouch.current = null; setSwipeAnimating(true); setSwipeX(0); }}
           >
             <div data-product-gallery className="relative flex h-[min(43vh,340px)] items-center justify-center overflow-hidden rounded-[26px] bg-white">
               {bulkMode && !bulkImageUrl ? (
@@ -516,11 +602,11 @@ const ProductDetail = () => {
                 </div>
               )}
             </div>
-            {browse && browseIndex >= 0 && browse.paths.length > 1 && (
+            {browse && browseIndex >= 0 && (browse.paths.length > 1 || nextCategory) && (
               <div className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-xs font-bold text-[#005931]">
                 <button type="button" onClick={() => browseProduct(-1)} disabled={!canSwipePrevious} aria-label="المنتج السابق" className="flex min-h-10 items-center gap-1 rounded-xl px-2 disabled:opacity-30"><ChevronRight size={16} /> السابق</button>
                 <span className="text-slate-500">{browseIndex + 1} من {browse.paths.length} · اسحب يمين أو شمال</span>
-                <button type="button" onClick={() => browseProduct(1)} disabled={!canSwipeNext} aria-label="المنتج التالي" className="flex min-h-10 items-center gap-1 rounded-xl px-2 disabled:opacity-30">التالي <ChevronLeft size={16} /></button>
+                <button type="button" onClick={() => browseProduct(1)} disabled={!canSwipeNext && !nextCategory} aria-label="المنتج التالي" className="flex min-h-10 items-center gap-1 rounded-xl px-2 disabled:opacity-30">التالي <ChevronLeft size={16} /></button>
               </div>
             )}
             <div className="rounded-[24px] bg-white px-4 py-5">
@@ -552,6 +638,21 @@ const ProductDetail = () => {
               <p className="mt-2 text-sm leading-7 text-slate-600">طريقة البيع: {weighted ? 'بالوزن' : bulkMode ? bulkUnitType : 'بالقطعة'} · الوحدة: {unitDescription}</p>
               {company && <button type="button" className="mt-2 text-sm font-bold text-[#005931]" onClick={() => navigate(`/company/${company.id}`)}>اكتشف منتجات {company.name}</button>}
             </div>
+            {relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)).length > 0 && (
+              <section data-product-recommendations className="rounded-[24px] bg-white p-3.5" aria-label="منتجات مقترحة">
+                <div className="mb-3 px-1">
+                  <h2 className="text-base font-black text-slate-950">منتجات مقترحة ليك</h2>
+                  <p className="mt-1 text-xs font-medium text-slate-500">اختار منتج تاني وكمل تصفحك</p>
+                </div>
+                <div dir="rtl" className="hide-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-2">
+                  {relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)).slice(0, 8).map(item => (
+                    <div key={item.id} className="w-[136px] shrink-0 snap-start sm:w-[156px]">
+                      <ProductCard product={item} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
           <footer className="shrink-0 border-t border-slate-100 bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
             {weighted ? weightedPurchaseControl : piecePurchaseControl}

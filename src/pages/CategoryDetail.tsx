@@ -4,6 +4,7 @@ import { ChevronLeft, Layers3, PackageSearch } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
+import NextCategoryPrompt from '@/components/sections/NextCategoryPrompt';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import SmartImage from '@/components/ui/SmartImage';
 import { MainCategory, Product, Subcategory, getCategories, getProducts, getSubcategories } from '@/lib/supabase';
@@ -23,6 +24,7 @@ const CategoryDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
+  const [nextCategory, setNextCategory] = useState<MainCategory | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,8 @@ const CategoryDetail = () => {
         ]);
         if (!active) return;
         setCategoryInfo(categoriesData.find(category => category.id === id) || null);
+        const nextIndex = categoriesData.findIndex(category => category.id === id) + 1;
+        setNextCategory(nextIndex > 0 && nextIndex < categoriesData.length ? categoriesData[nextIndex] : null);
         setSubcategories(subcategoriesData);
         setProducts(productsData.filter(product => Number(product.quantity || 0) > 0));
       } catch (error) {
@@ -95,6 +99,7 @@ const CategoryDetail = () => {
   }, [activeSection]);
 
   useEffect(() => {
+    restoredScroll.current = false;
     if (!id) return;
     const key = `category-scroll:${id}`;
     return () => { sessionStorage.setItem(key, String(window.scrollY)); };
@@ -249,7 +254,12 @@ const CategoryDetail = () => {
           </div>
         )}
 
-        <div className="space-y-6 px-3 sm:space-y-7 sm:px-5">
+        <div
+          className="space-y-6 px-3 sm:space-y-7 sm:px-5"
+          data-category-product-sections
+          data-next-category-path={nextCategory ? `/category/${nextCategory.id}` : undefined}
+          data-next-category-name={nextCategory?.name}
+        >
           {sections.map(section => {
             const sectionProducts = getProductListWithVariants(section.products);
             return (
@@ -292,6 +302,10 @@ const CategoryDetail = () => {
                 ))}
               </div>
             </section>
+          )}
+
+          {nextCategory && (
+            <NextCategoryPrompt name={nextCategory.name} onNext={() => navigate(`/category/${nextCategory.id}`)} />
           )}
 
           {subcategories.length === 0 && products.length === 0 && (
