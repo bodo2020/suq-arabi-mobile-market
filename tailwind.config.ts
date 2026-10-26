@@ -34,6 +34,13 @@ export default {
           DEFAULT: '#005931',
           foreground: 'hsl(var(--primary-foreground))'
         },
+        brand: {
+          green: '#005931',
+          yellow: 'hsl(var(--brand-yellow))',
+          cream: 'hsl(var(--brand-yellow-soft))',
+          ivory: 'hsl(var(--brand-yellow-pale))',
+          ink: 'hsl(var(--brand-yellow-ink))'
+        },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))'
