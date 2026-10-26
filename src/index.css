@@ -76,8 +76,10 @@ html.native-android #root {
     --popover-foreground: 222.2 84% 4.9%;
  
     --primary: 153 100% 17.5%;
-    --brand-yellow: 45 100% 56.3%;
-    --brand-yellow-ink: 40 100% 34%;
+    --brand-yellow: 43 100% 56.3%; /* #FFC120: original brand accent */
+    --brand-yellow-soft: 46 100% 92%; /* warm cream chip/icon surface */
+    --brand-yellow-pale: 46 100% 97%; /* subtle card surface */
+    --brand-yellow-ink: 153 100% 17.5%; /* brand green on yellow */
     --primary-foreground: 0 0% 100%;
  
     --secondary: 210 40% 96.1%;
@@ -86,8 +88,8 @@ html.native-android #root {
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
  
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 46 100% 95%;
+    --accent-foreground: 153 100% 17.5%;
  
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -110,8 +112,10 @@ html.native-android #root {
     --popover-foreground: 210 40% 98%;
  
     --primary: 153 100% 25%;
-    --brand-yellow: 45 100% 56.3%;
-    --brand-yellow-ink: 45 100% 56.3%;
+    --brand-yellow: 43 100% 56.3%;
+    --brand-yellow-soft: 46 100% 20%;
+    --brand-yellow-pale: 46 80% 13%;
+    --brand-yellow-ink: 43 100% 56.3%;
     --primary-foreground: 144.9 80.4% 10%;
  
     --secondary: 217.2 32.6% 17.5%;
@@ -238,7 +242,17 @@ html.native-platform [role="button"] {
 }
 .bottom-nav-item { @apply flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-gray-500 transition-all; }
 .bottom-nav-item.active { @apply text-primary; }
-.bottom-nav-item.active > span:first-child { @apply bg-green-50; }
+.bottom-nav-item.active > span:first-child {
+  background: hsl(var(--brand-yellow-soft));
+  color: #005931;
+}
+/* Shared brand surfaces for the old green/gold customer identity. */
+.brand-icon-surface { background: hsl(var(--brand-yellow-soft)); color: #005931; }
+.brand-icon-accent { color: hsl(var(--brand-yellow)); }
+.brand-surface-warm { background: hsl(var(--brand-yellow-pale)); }
+.brand-accent-gradient { background: linear-gradient(110deg, hsl(var(--brand-yellow-pale)), #ffffff 62%, #eef9f2); }
+.brand-green-action > svg, .brand-green-action > span > svg { color: hsl(var(--brand-yellow)); }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 /* App-wide connection state. It floats above the bottom nav / checkout action instead of shifting page layouts. */
