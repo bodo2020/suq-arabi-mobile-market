@@ -422,7 +422,7 @@ const ProductDetail = () => {
 
   const invalidBulkPage = Boolean(product && requestedBulk && (!bulkAvailable || !variantMatches));
 
-  if (!product || loadError || invalidBulkPage) {
+  if (!product || (loadError && !cachedProduct) || invalidBulkPage) {
     return (
       <MainLayout>
         <TopNavBar hideLogo hideSearch pageTitle={requestedBulk ? 'تفاصيل الجملة' : 'تفاصيل المنتج'} showBackButton onBack={() => navigate(-1)} />
