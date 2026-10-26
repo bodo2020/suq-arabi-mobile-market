@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, Layers3, PackageSearch } from 'lucide-react';
+import { Layers3, PackageSearch } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -95,7 +95,7 @@ const JourneyCategory = React.memo(function JourneyCategory({
       ref={containerRef}
       id={`journey-category-${category.id}`}
       data-journey-category={category.id}
-      className="min-h-[270px] scroll-mt-40 pb-8"
+      className={`min-h-[270px] scroll-mt-40 pb-8 transition-[opacity,transform] duration-300 motion-reduce:transition-none ${near ? "translate-y-0 opacity-100" : "translate-y-2 opacity-90"}`}
     >
       <div className="relative mb-4 flex min-h-[120px] items-center overflow-hidden rounded-[24px] border border-emerald-100 bg-[#ecf8f2] px-4 py-5 sm:min-h-[150px] sm:px-6">
         {category.image_url && (
@@ -180,11 +180,9 @@ export default function CategoryJourney() {
   const [activeSubcategory, setActiveSubcategory] = useState('');
   const [subChips, setSubChips] = useState<Record<string, Chip[]>>({});
   const [visibleIndex, setVisibleIndex] = useState(0);
-  const [chipsPinned, setChipsPinned] = useState(false);
   const rootRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const subRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const scrollStartedFor = useRef<string | null>(null);
-  const categoryStripRef = useRef<HTMLDivElement | null>(null);
 
   const onChips = useCallback((categoryId: string, chips: Chip[]) => {
     setSubChips(prev => {
@@ -244,8 +242,6 @@ export default function CategoryJourney() {
         else break;
       }
       setActiveSubcategory(prev => prev === sub ? prev : sub);
-      const strip = categoryStripRef.current;
-      if (strip) setChipsPinned(strip.getBoundingClientRect().top <= topOffset() - 95);
     };
     const requestScroll = () => { if (!frame) frame = requestAnimationFrame(observeScroll); };
     requestScroll();
@@ -295,7 +291,7 @@ export default function CategoryJourney() {
     <MainLayout>
       <TopNavBar hideLogo hideSearch pageTitle="تصفح الأقسام" showBackButton onBack={() => navigate('/categories')} />
       <div className="mx-auto max-w-7xl pb-20">
-        <div ref={categoryStripRef} className="sticky z-[45] bg-white/95 shadow-sm backdrop-blur-xl"
+        <div className="sticky z-[45] bg-white/95 shadow-sm backdrop-blur-xl"
           style={{ top: 'var(--top-nav-height, 68px)' }}>
           <div className="hide-scrollbar flex h-[49px] items-center gap-2 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الرئيسية">
             {categories.map(category => {
