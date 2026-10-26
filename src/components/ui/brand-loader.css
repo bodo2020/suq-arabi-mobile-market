@@ -1,9 +1,9 @@
 .brand-loader { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; vertical-align: middle; min-width: 112px; min-height: 48px; color: hsl(var(--primary)); }
-.brand-loader__name { display: block; white-space: nowrap; font-family: 'Thmanyah', 'Cairo', sans-serif; font-size: 18px; font-weight: 800; animation: brand-load 1.4s ease-in-out infinite; }
-.brand-loader__name strong { color: hsl(var(--brand-yellow-ink)); }
+.brand-loader__name { display: block; white-space: nowrap; animation: brand-load 1.4s ease-in-out infinite; }
+.brand-loader__name .brand-name { font-size: 1rem; }
 .brand-loader--sm { min-width: 72px; min-height: 24px; }
-.brand-loader--sm .brand-loader__name { font-size: 12px; }
+.brand-loader--sm .brand-name { font-size: .7rem; }
 .brand-loader--lg { min-width: 156px; min-height: 80px; }
-.brand-loader--lg .brand-loader__name { font-size: 26px; }
+.brand-loader--lg .brand-name { font-size: 1.45rem; }
 @keyframes brand-load { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .brand-loader__name { animation: none; } }
