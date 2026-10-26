@@ -40,19 +40,19 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ searchPlaceholder='دور على 
     };
   }, [hideLogo, hideSearch, pageTitle, showBackButton, user]);
 
-  return <header ref={headerRef} className="native-safe-top fixed inset-x-0 top-0 z-50 border-b border-gray-100 bg-white/95 text-primary shadow-sm backdrop-blur-xl">
+  return <header ref={headerRef} className="native-safe-top fixed inset-x-0 top-0 z-50 border-b border-emerald-100 bg-white/95 text-primary shadow-sm backdrop-blur-xl">
     <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-4">
       <div className="flex min-h-11 items-center gap-2.5">
-        {showBackButton && <button onClick={onBack||(()=>navigate(-1))} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 active:scale-95"><ArrowRight size={21}/></button>}
+        {showBackButton && <button onClick={onBack||(()=>navigate(-1))} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-cream active:scale-95"><ArrowRight size={21}/></button>}
         {!hideLogo && <Link to="/" aria-label="الرئيسية" className="shrink-0 rounded-xl active:scale-95"><BrandWordmark className="brand-name--header" /></Link>}
         {pageTitle && hideSearch ? <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold">{pageTitle}</h1> : !hideSearch && <div className="min-w-0 flex-1 md:max-w-2xl"><SearchBar placeholder={searchPlaceholder} onFocus={focus} readOnly={!searchPage} {...searchProps}/></div>}
         {user && <CustomerNotificationBell />}
         <div className="mr-auto hidden items-center gap-1 md:flex">
-          {!hideCart&&<Link to="/cart" className="relative flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-green-50"><ShoppingCart size={19}/>السلة{cartCount>0&&<span className="rounded-full bg-white px-1.5 text-xs text-primary">{cartCount}</span>}</Link>}
-          <Link to={user?'/account':'/phone-login'} className="flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-green-50"><User size={19}/>{user?'حسابي':'دخول'}</Link>
+          {!hideCart&&<Link to="/cart" className="relative flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-brand-cream"><ShoppingCart size={19}/>السلة{cartCount>0&&<span className="rounded-full bg-white px-1.5 text-xs text-primary">{cartCount}</span>}</Link>}
+          <Link to={user?'/account':'/phone-login'} className="flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-brand-cream"><User size={19}/>{user?'حسابي':'دخول'}</Link>
         </div>
       </div>
-      <nav className="mt-2 hidden items-center gap-1 border-t border-gray-100 pt-2 md:flex" aria-label="التنقل الرئيسي">{desktopLinks.filter(x=>!x.authOnly||user).map(({to,label,icon:Icon})=><Link key={to} to={to} aria-current={location.pathname===to?'page':undefined} className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ${location.pathname===to?'bg-green-50 font-bold':'text-gray-600 hover:bg-green-50'}`}><Icon size={17}/>{label}</Link>)}</nav>
+      <nav className="mt-2 hidden items-center gap-1 border-t border-gray-100 pt-2 md:flex" aria-label="التنقل الرئيسي">{desktopLinks.filter(x=>!x.authOnly||user).map(({to,label,icon:Icon})=><Link key={to} to={to} aria-current={location.pathname===to?'page':undefined} className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ${location.pathname===to?'bg-green-50 font-bold':'text-gray-600 hover:bg-brand-cream'}`}><Icon size={17}/>{label}</Link>)}</nav>
     </div>
   </header>;
 };
