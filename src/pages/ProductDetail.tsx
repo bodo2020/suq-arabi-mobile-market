@@ -37,6 +37,13 @@ const ProductDetail = () => {
   const canSwipePrevious = browseIndex > 0;
   const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
   const sheetTouch = useRef<{ x: number; y: number; gallery: boolean } | null>(null);
+  const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [swipeX, setSwipeX] = useState(0);
+  const [swipeAnimating, setSwipeAnimating] = useState(false);
+  const [swipeLocked, setSwipeLocked] = useState(false);
+  const previousPreview = browse && browseIndex > 0 ? browse.previews.find(p => p.path === browse.paths[browseIndex - 1]) : null;
+  const nextPreview = browse && canSwipeNext ? browse.previews.find(p => p.path === browse.paths[browseIndex + 1]) : null;
+  const nextCategory = !canSwipeNext ? browse?.nextCategory : undefined;
   const requestedBulk = searchParams.get('unit') === 'bulk';
   const requestedVariantId = searchParams.get('variant');
   const requestedStoreId = searchParams.get('store');
@@ -67,39 +74,74 @@ const ProductDetail = () => {
     else navigate('/');
   };
 
+  useEffect(() => {
+    setSwipeX(0);
+    setSwipeAnimating(false);
+    setSwipeLocked(false);
+  }, [id, location.search]);
+  useEffect(() => () => {
+    if (swipeTimer.current) clearTimeout(swipeTimer.current);
+  }, []);
+
   const browseProduct = (offset: -1 | 1) => {
-    if (!browse || browseIndex < 0 || weightOpen) return;
+    if (!browse || browseIndex < 0 || weightOpen || swipeLocked) return;
     const next = browse.paths[browseIndex + offset];
-    if (!next) return;
+    const destination = next || (offset === 1 ? browse.nextCategory?.path : undefined);
+    if (!destination) return;
+    setSwipeLocked(true);
+    setSwipeAnimating(true);
     sheetTouch.current = null;
-    navigate(next, { replace: true, state: location.state });
+    setSwipeX(offset === 1 ? -Math.min(window.innerWidth * .9, 660) : Math.min(window.innerWidth * .9, 660));
+    if (swipeTimer.current) clearTimeout(swipeTimer.current);
+    swipeTimer.current = setTimeout(() => {
+      swipeTimer.current = null;
+      if (next) navigate(next, { replace: true, state: location.state });
+      else navigate(destination);
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 190);
   };
 
   const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
-    if (!touch || weightOpen) return;
+    if (!touch || weightOpen || swipeLocked) return;
     sheetTouch.current = {
       x: touch.clientX,
       y: touch.clientY,
       gallery: Boolean((event.target as HTMLElement).closest('[data-product-gallery]')),
     };
+    setSwipeAnimating(false);
+  };
+
+  const moveSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = sheetTouch.current;
+    const touch = event.touches[0];
+    if (!start || !touch || start.gallery || weightOpen || swipeLocked) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    const allowed = dx < 0 ? (canSwipeNext || Boolean(nextCategory)) : canSwipePrevious;
+    setSwipeX(allowed ? Math.max(-window.innerWidth * .75, Math.min(window.innerWidth * .75, dx)) : dx * .12);
   };
 
   const finishSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const start = sheetTouch.current;
     sheetTouch.current = null;
     const end = event.changedTouches[0];
-    if (!start || !end || weightOpen) return;
+    if (!start || !end || weightOpen || swipeLocked) return;
     const dx = end.clientX - start.x;
     const dy = end.clientY - start.y;
-    // Let vertical scrolling, taps and short diagonal movements work normally.
-    if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     if (start.gallery && images.length > 1) {
-      goToImage(dx < 0 ? 1 : -1);
+      if (Math.abs(dx) >= 45 && Math.abs(dx) >= Math.abs(dy) * 1.4) goToImage(dx < 0 ? 1 : -1);
       return;
     }
-    // In RTL, dragging left reveals the next product, dragging right the previous.
-    browseProduct(dx < 0 ? 1 : -1);
+    if (Math.abs(dx) >= 65 && Math.abs(dx) >= Math.abs(dy) * 1.5) {
+      const offset = dx < 0 ? 1 : -1;
+      if ((offset === 1 && (canSwipeNext || nextCategory)) || (offset === -1 && canSwipePrevious)) {
+        browseProduct(offset);
+        return;
+      }
+    }
+    setSwipeAnimating(true);
+    setSwipeX(0);
   };
 
   const weighted = product ? isWeightedProduct(product) : false;
