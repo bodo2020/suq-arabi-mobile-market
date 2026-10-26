@@ -1,5 +1,6 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -12,12 +13,15 @@ import BreadcrumbStructuredData from '@/components/seo/BreadcrumbStructuredData'
 import SEOHead from '@/components/seo/SEOHead';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import WeightSelector from '@/components/ui/WeightSelector';
-import { getMarketplaceStore, getMarketplaceStoreProduct } from '@/lib/marketplace';
+import {
+  detailCompanyKey, detailProductKey, detailRelatedKey, fetchDetailProduct,
+  getCachedDetailProduct, PRODUCT_DETAIL_STALE_MS, warmAdjacentProductPages,
+} from '@/lib/productDetailCache';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/useCart';
-import { Product, getProductById, getRelatedProducts, getCompanyById, Company } from '@/lib/supabase';
+import { Product, getRelatedProducts, getCompanyById, Company } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 
 const money = (value: number) => Number(value || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 });
@@ -48,7 +52,16 @@ const ProductDetail = () => {
   const requestedVariantId = searchParams.get('variant');
   const requestedStoreId = searchParams.get('store');
 
-  const [product, setProduct] = useState<Product | null>(null);
+  const [loadedProduct, setProduct] = useState<Product | null>(null);
+  const queryClient = useQueryClient();
+  // Prefetched data is available during the first render after a swipe, so no
+  // in-between loading sheet is shown. Fallback to the current request's state.
+  const cachedProduct = getCachedDetailProduct(queryClient, id, requestedStoreId);
+  const product = cachedProduct || (
+    loadedProduct?.id === id && (!requestedStoreId || loadedProduct.marketplace_branch_id === requestedStoreId)
+      ? loadedProduct
+      : null
+  );
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -197,62 +210,66 @@ const ProductDetail = () => {
   const limitedStock = !weighted && !unavailable && (bulkMode ? maxBulkQuantity : maxRegularQuantity) <= 5;
 
   useEffect(() => {
+    if (!id) return;
     let active = true;
+    const cached = getCachedDetailProduct(queryClient, id, requestedStoreId);
+    setLoading(!cached);
+    setLoadError(false);
+    setProduct(cached);
+    setSelectedImageIndex(0);
+    setRelatedProducts([]);
+    setCompany(null);
+    setQuantity(1);
+    setDetailWeight(cached && isWeightedProduct(cached) ? productWeightStepGrams(cached) : 0);
 
-    const fetchProduct = async () => {
-      if (!id) return;
-      setLoading(true);
-      setLoadError(false);
-      setProduct(null);
-      setSelectedImageIndex(0);
-      setRelatedProducts([]);
-      setCompany(null);
-      setQuantity(1);
-      setDetailWeight(0);
-
-      try {
-        const store = requestedStoreId ? await getMarketplaceStore(requestedStoreId) : null;
-        const data = requestedStoreId
-          ? store ? await getMarketplaceStoreProduct(requestedStoreId, id) : null
-          : await getProductById(id);
-        if (!data) throw new Error('PRODUCT_NOT_FOUND');
-        if (active) {
-          const typed = data as Product;
-          setProduct(typed);
-          if (isWeightedProduct(typed)) setDetailWeight(productWeightStepGrams(typed));
-        }
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        if (active) setLoadError(true);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    void fetchProduct();
+    void queryClient.fetchQuery({
+      queryKey: detailProductKey(id, requestedStoreId),
+      queryFn: () => fetchDetailProduct(id, requestedStoreId),
+      staleTime: PRODUCT_DETAIL_STALE_MS,
+    }).then(data => {
+      if (!active) return;
+      setProduct(data);
+      if (isWeightedProduct(data)) setDetailWeight(productWeightStepGrams(data));
+    }).catch(error => {
+      console.error('Error fetching product:', error);
+      if (active) setLoadError(true);
+    }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [id, requestedBulk, requestedVariantId, requestedStoreId]);
+  }, [id, requestedStoreId, queryClient]);
+
+  useEffect(() => {
+    if (!browse || browseIndex < 0) return;
+    warmAdjacentProductPages(queryClient, browse.paths, browseIndex);
+  }, [browse, browseIndex, queryClient]);
 
   useEffect(() => {
     if (!product) return;
     let active = true;
+    const relatedKey = detailRelatedKey(product.id, product.main_category_id);
+    const companyKey = product.company_id ? detailCompanyKey(product.company_id) : null;
+    setRelatedProducts(queryClient.getQueryData<Product[]>(relatedKey) || []);
+    setCompany(companyKey ? queryClient.getQueryData<Company>(companyKey) || null : null);
 
-    setRelatedProducts([]);
-    setCompany(null);
     const loadExtras = async () => {
       const [related, companyData] = await Promise.allSettled([
-        getRelatedProducts(product.id, product.main_category_id),
-        product.company_id ? getCompanyById(product.company_id) : Promise.resolve(null),
+        queryClient.fetchQuery({
+          queryKey: relatedKey,
+          queryFn: () => getRelatedProducts(product.id, product.main_category_id),
+          staleTime: PRODUCT_DETAIL_STALE_MS,
+        }),
+        companyKey ? queryClient.fetchQuery({
+          queryKey: companyKey,
+          queryFn: () => getCompanyById(product.company_id),
+          staleTime: PRODUCT_DETAIL_STALE_MS,
+        }) : Promise.resolve(null),
       ]);
-
       if (!active) return;
       if (related.status === 'fulfilled') setRelatedProducts((related.value || []) as Product[]);
       if (companyData.status === 'fulfilled') setCompany(companyData.value as Company | null);
     };
-
     void loadExtras();
     return () => { active = false; };
-  }, [product]);
+  }, [product, queryClient]);
 
   const images = useMemo(() => {
     if (!product) return [];
@@ -386,7 +403,7 @@ const ProductDetail = () => {
     setTouchStartX(null);
   };
 
-  if (loading || (product !== null && product.id !== id)) {
+  if ((loading && !cachedProduct) || (product !== null && product.id !== id)) {
     return (
       <MainLayout>
         <div className="hidden md:block">
@@ -405,7 +422,7 @@ const ProductDetail = () => {
 
   const invalidBulkPage = Boolean(product && requestedBulk && (!bulkAvailable || !variantMatches));
 
-  if (!product || loadError || invalidBulkPage) {
+  if (!product || (loadError && !cachedProduct) || invalidBulkPage) {
     return (
       <MainLayout>
         <TopNavBar hideLogo hideSearch pageTitle={requestedBulk ? 'تفاصيل الجملة' : 'تفاصيل المنتج'} showBackButton onBack={() => navigate(-1)} />
