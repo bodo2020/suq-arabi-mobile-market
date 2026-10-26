@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { collectProductBrowseState } from '@/lib/productBrowsing';
 import { Bell, BellRing, Minus, Package, Plus, Scale, Trash2, Clock3 } from 'lucide-react';
 import BrandLoader from './BrandLoader';
 import { Product } from '@/lib/supabase';
@@ -33,6 +34,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const { items, addToCart, updateQuantity, removeFromCart, isInitialized } = useCart();
   const [weightOpen, setWeightOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [reminderPending, setReminderPending] = useState(false);
 
   const weighted = isWeightedProduct(product);
@@ -61,6 +64,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}`
     : `/product/${product.id}${product.commerce_source === 'marketplace' && product.marketplace_branch_id ? `?store=${encodeURIComponent(product.marketplace_branch_id)}` : ''}`;
   const imageSrc = bulkImageUrl || product.image_urls?.[0] || '/placeholder.svg';
+  const openDetails = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    event.preventDefault();
+    navigate(detailHref, { state: collectProductBrowseState(event.currentTarget, location.pathname + location.search) });
+  };
 
   const selectedWeight = weighted
     ? Math.min(maxCartQuantity || weightStep, Math.max(1, Math.round(Number(item?.quantity || weightStep))))
@@ -146,14 +154,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   if (menuLayout && !weighted && !bulk) return <article dir="rtl" className={`flex min-w-0 gap-4 rounded-2xl border bg-white p-4 ${item ? 'border-[#9acbb2]' : 'border-[#e1eee7]'}`} data-product-state={unavailable ? 'unavailable' : item ? 'in-cart' : 'available'}>
     <div className="flex min-w-0 flex-1 flex-col">
-      <Link to={detailHref} className="text-base font-black leading-6">{displayName}</Link>
+      <Link to={detailHref} onClick={openDetails} className="text-base font-black leading-6">{displayName}</Link>
       {product.description && <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{product.description}</p>}
       {Number(product.preparation_minutes) > 0 && <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-500"><Clock3 size={12}/>تجهيز حوالي {money(Number(product.preparation_minutes))} دقيقة</p>}
       <strong className="mt-auto pt-3 text-primary">{money(price)} <small>ج.م</small></strong>
     </div>
     <div className="flex w-[104px] shrink-0 flex-col items-center gap-2">
-      <Link to={detailHref} className="block h-24 w-full overflow-hidden rounded-2xl bg-[#fff9e4]"><SmartImage src={productCardImage(imageSrc)} originalSrc={imageSrc} alt={displayName} className="h-full w-full object-cover" /></Link>
-      <Link to={detailHref} className="flex min-h-10 w-full items-center justify-center gap-1 rounded-xl bg-[#FFC120] px-2 text-center text-xs font-black text-primary">
+      <Link to={detailHref} onClick={openDetails} className="block h-24 w-full overflow-hidden rounded-2xl bg-[#fff9e4]"><SmartImage src={productCardImage(imageSrc)} originalSrc={imageSrc} alt={displayName} className="h-full w-full object-cover" /></Link>
+      <Link to={detailHref} onClick={openDetails} className="flex min-h-10 w-full items-center justify-center gap-1 rounded-xl bg-[#FFC120] px-2 text-center text-xs font-black text-primary">
         {unavailable ? 'عرض الصنف' : 'التفاصيل والإضافات'}
       </Link>
       {item && <span className="text-[10px] font-bold text-emerald-700">في السلة: {money(item.quantity)} من الصنف الأساسي</span>}
@@ -168,7 +176,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       data-product-state={unavailable ? 'unavailable' : item ? 'in-cart' : 'available'}
     >
       <div className="relative mb-5 sm:mb-7">
-        <Link to={detailHref} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
+        <Link to={detailHref} onClick={openDetails} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
           <div className={`relative aspect-square overflow-hidden rounded-[14px] p-2 sm:rounded-[18px] sm:p-3.5 ${unavailable ? 'bg-slate-50' : 'bg-[#f8fbf8]'}`}>
             <SmartImage
               src={productCardImage(imageSrc)}
@@ -243,7 +251,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
       </div>
 
-      <Link to={detailHref} className="min-w-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]">
+      <Link to={detailHref} onClick={openDetails} className="min-w-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]">
         <h3 className="min-h-8 line-clamp-2 text-[11px] font-bold leading-4 text-slate-950 sm:min-h-10 sm:text-[15px] sm:leading-5">{displayName}</h3>
       </Link>
 
