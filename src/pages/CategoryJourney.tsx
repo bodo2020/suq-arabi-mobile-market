@@ -177,6 +177,7 @@ export default function CategoryJourney() {
   const categories = categoriesQuery.data || [];
   const initialIndex = categories.findIndex(category => category.id === id);
   const [activeCategory, setActiveCategory] = useState(id || '');
+  const [readyForId, setReadyForId] = useState<string | null>(null);
   const [activeSubcategory, setActiveSubcategory] = useState('');
   const [subChips, setSubChips] = useState<Record<string, Chip[]>>({});
   const [visibleIndex, setVisibleIndex] = useState(0);
@@ -192,21 +193,30 @@ export default function CategoryJourney() {
     });
   }, []);
 
-  // Bring the selected and immediate neighbor categories into cache from the
-  // first visit, before the shopper reaches them on either side.
+  // Fetch the starting category and the one ABOVE it before anchoring the
+  // viewport. Later inserts should never make the current screen jump down.
+  // Fetch the next category in parallel as lower-priority background work.
   useEffect(() => {
-    if (initialIndex < 0) return;
-    for (const cat of categories.slice(Math.max(0, initialIndex - 1), initialIndex + 2)) {
-      void client.prefetchQuery({
-        queryKey: categoryContentKey(cat.id),
-        queryFn: () => getCategoryContent(cat.id),
-        staleTime: 60_000,
-      });
-    }
-  }, [client, categories, initialIndex]);
+    if (!id || !categories.length) return;
+    let active = true;
+    if (initialIndex < 0) { setReadyForId(id); return; }
+    const makeQuery = (cat: MainCategory) => ({
+      queryKey: categoryContentKey(cat.id),
+      queryFn: () => getCategoryContent(cat.id),
+      staleTime: 60_000,
+    });
+    const essential = categories.slice(Math.max(0, initialIndex - 1), initialIndex + 1);
+    void Promise.allSettled(essential.map(cat => client.fetchQuery(makeQuery(cat))))
+      .then(() => { if (active) setReadyForId(id); });
+    const next = categories[initialIndex + 1];
+    if (next) void client.prefetchQuery(makeQuery(next));
+    return () => { active = false; };
+  }, [client, categories, id, initialIndex]);
+
+  const isReady = readyForId === id;
 
   useLayoutEffect(() => {
-    if (initialIndex < 0 || !id || scrollStartedFor.current === id) return;
+    if (!isReady || initialIndex < 0 || !id || scrollStartedFor.current === id) return;
     scrollStartedFor.current = id;
     setActiveCategory(id);
     setVisibleIndex(initialIndex);
@@ -216,10 +226,10 @@ export default function CategoryJourney() {
       jumpTo(document.getElementById(`journey-category-${id}`), false);
     });
     return () => cancelAnimationFrame(frame);
-  }, [id, initialIndex]);
+  }, [id, initialIndex, isReady]);
 
   useEffect(() => {
-    if (!categories.length) return;
+    if (!categories.length || !isReady) return;
     let frame = 0;
     const observeScroll = () => {
       frame = 0;
@@ -252,7 +262,7 @@ export default function CategoryJourney() {
       window.removeEventListener('scroll', requestScroll);
       window.removeEventListener('resize', requestScroll);
     };
-  }, [categories]);
+  }, [categories, isReady]);
 
   useEffect(() => {
     const active = rootRefs.current[activeCategory];
@@ -276,7 +286,7 @@ export default function CategoryJourney() {
 
   const chips = subChips[activeCategory] || [];
 
-  if (categoriesQuery.isLoading) return (
+  if (categoriesQuery.isLoading || (categories.length > 0 && !isReady)) return (
     <MainLayout><TopNavBar hideLogo hideSearch pageTitle="الأقسام" showBackButton onBack={() => navigate(-1)} />
       <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader /></div>
     </MainLayout>
