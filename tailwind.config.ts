@@ -11,8 +11,10 @@ export default {
   prefix: "",
   theme: {
     fontFamily: {
-      sans: ['Cairo', 'sans-serif'],
-      cairo: ['Cairo', 'sans-serif'],
+      sans: ['Thmanyah', 'Cairo', 'sans-serif'],
+      // Keep the legacy utility available while making Thmanyah the default.
+      cairo: ['Thmanyah', 'Cairo', 'sans-serif'],
+      thmanyah: ['Thmanyah', 'Cairo', 'sans-serif'],
     },
     container: {
       center: true,
