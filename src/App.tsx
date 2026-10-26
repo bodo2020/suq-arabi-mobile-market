@@ -23,7 +23,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const UpdatePassword = lazy(() => import('./pages/UpdatePassword'));
 const ChangePhone = lazy(() => import('./pages/ChangePhone'));
 const Categories = lazy(() => import('./pages/Categories'));
-const CategoryDetail = lazy(() => import('./pages/CategoryDetail'));
+const CategoryDetail = lazy(() => import('./pages/CategoryJourney'));
 const CategoryProducts = lazy(() => import('./pages/CategoryProducts'));
 const SubcategoryDetail = lazy(() => import('./pages/SubcategoryDetail'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
