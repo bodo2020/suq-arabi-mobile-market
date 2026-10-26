@@ -157,6 +157,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
       className={`group/card relative flex h-full min-w-0 flex-col rounded-[18px] bg-white p-1.5 shadow-[0_3px_14px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] transition-[transform,box-shadow,opacity] duration-200 hover:-translate-y-0.5 hover:shadow-[0_9px_24px_rgba(0,89,49,0.09)] active:scale-[0.995] sm:rounded-[22px] sm:p-2.5 ${unavailable ? 'opacity-[0.82]' : ''}`}
       dir="rtl"
       data-product-card="v3-compact"
+      data-product-name={displayName}
+      data-product-image={imageSrc}
+      data-product-price={money(price)}
     >
       <div className="relative mb-5 sm:mb-7">
         <Link to={detailHref} onClick={openDetails} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
