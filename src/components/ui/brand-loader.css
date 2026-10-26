@@ -1,5 +1,5 @@
 .brand-loader { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; vertical-align: middle; min-width: 112px; min-height: 48px; color: hsl(var(--primary)); }
-.brand-loader__name { display: block; white-space: nowrap; font-family: Cairo, sans-serif; font-size: 18px; font-weight: 800; animation: brand-load 1.4s ease-in-out infinite; }
+.brand-loader__name { display: block; white-space: nowrap; font-family: 'Thmanyah', 'Cairo', sans-serif; font-size: 18px; font-weight: 800; animation: brand-load 1.4s ease-in-out infinite; }
 .brand-loader__name strong { color: hsl(var(--brand-yellow-ink)); }
 .brand-loader--sm { min-width: 72px; min-height: 24px; }
 .brand-loader--sm .brand-loader__name { font-size: 12px; }

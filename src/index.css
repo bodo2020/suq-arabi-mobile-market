@@ -134,7 +134,12 @@ html.native-android #root {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Form controls must inherit the same Arabic UI font as the rest of the app. */
+  button, input, select, textarea {
+    font-family: inherit;
   }
 
   html, body, #root {
@@ -336,6 +341,6 @@ html.native-platform [role="button"] {
 }
 
 /* Super Marko brand wordmark: text only until the official Figma asset is available. */
-.brand-name { display: inline-flex; align-items: center; gap: .25em; white-space: nowrap; font-family: Cairo, sans-serif; font-size: 1.4rem; line-height: 1.4; font-weight: 900; color: hsl(var(--primary)); }
+.brand-name { display: inline-flex; align-items: center; gap: .25em; white-space: nowrap; font-family: 'Thmanyah', 'Cairo', sans-serif; font-size: 1.4rem; line-height: 1.4; font-weight: 900; color: hsl(var(--primary)); }
 .brand-name strong { color: hsl(var(--brand-yellow-ink)); font-weight: 900; }
 .brand-name--header { font-size: clamp(1rem, 2vw, 1.35rem); }
