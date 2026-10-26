@@ -338,8 +338,16 @@ const ProductDetail = () => {
   if (loading) {
     return (
       <MainLayout>
-        <TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} />
-        <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader size="md" /></div>
+        <div className="hidden md:block">
+          <TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} />
+          <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader size="md" /></div>
+        </div>
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 px-3 pt-7 pb-1 md:hidden">
+          <div role="status" aria-live="polite" className="flex h-[calc(100dvh-36px)] w-full max-w-[600px] flex-col items-center justify-center rounded-[32px] bg-white">
+            <BrandLoader size="md" />
+            <span className="mt-4 text-sm font-bold text-[#005931]">جاري عرض المنتج…</span>
+          </div>
+        </div>
       </MainLayout>
     );
   }
