@@ -14,6 +14,7 @@ import { getProductListWithVariants } from '@/utils/productUtils';
 
 type CategoryContent = { products: Product[]; subcategories: Subcategory[] };
 type Chip = { id: string; name: string };
+type JourneyChip = Chip & { categoryId: string };
 
 const categoryContentKey = (categoryId: string) => ['customer-continuous-category', categoryId] as const;
 const getCategoryContent = async (categoryId: string): Promise<CategoryContent> => {
@@ -29,7 +30,8 @@ const getCategoryContent = async (categoryId: string): Promise<CategoryContent> 
 const topOffset = () => {
   if (typeof document === 'undefined') return 155;
   const nav = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top-nav-height')) || 68;
-  return nav + 104;
+  // One sticky subcategory rail (52px) plus breathing room for headings.
+  return nav + 62;
 };
 
 const jumpTo = (element: HTMLElement | null, smooth = true) => {
@@ -40,12 +42,13 @@ const jumpTo = (element: HTMLElement | null, smooth = true) => {
 
 /** A permanently mounted category section. Its content is only fetched near the viewport. */
 const JourneyCategory = React.memo(function JourneyCategory({
-  category, index, orderedCategories, eager, onChips,
+  category, index, orderedCategories, eager, boundaryPull, onChips,
 }: {
   category: MainCategory;
   index: number;
   orderedCategories: MainCategory[];
   eager: boolean;
+  boundaryPull: -1 | 0 | 1;
   onChips: (categoryId: string, chips: Chip[]) => void;
 }) {
   const containerRef = useRef<HTMLElement | null>(null);
@@ -97,7 +100,7 @@ const JourneyCategory = React.memo(function JourneyCategory({
       data-journey-category={category.id}
       className={`min-h-[270px] scroll-mt-40 pb-8 transition-[opacity,transform] duration-300 motion-reduce:transition-none ${near ? "translate-y-0 opacity-100" : "translate-y-2 opacity-90"}`}
     >
-      <div className="relative mb-4 flex min-h-[120px] items-center overflow-hidden rounded-[24px] border border-emerald-100 bg-[#ecf8f2] px-4 py-5 sm:min-h-[150px] sm:px-6">
+      <div className={`relative mb-3 flex min-h-[86px] items-center overflow-hidden rounded-[20px] border border-emerald-100 bg-[#ecf8f2] px-4 py-3 sm:min-h-[108px] sm:px-6 transition-transform duration-300 [transition-timing-function:cubic-bezier(0.2,0.8,0.3,1.2)] motion-reduce:transform-none ${boundaryPull === 1 ? 'translate-x-2' : boundaryPull === -1 ? '-translate-x-2' : 'translate-x-0'}`}>
         {category.image_url && (
           <div className="absolute inset-y-0 left-0 w-[38%] opacity-30">
             <SmartImage src={category.image_url} alt="" className="h-full w-full object-cover" />
@@ -133,7 +136,7 @@ const JourneyCategory = React.memo(function JourneyCategory({
           data-next-category-name={next?.name}
         >
           {sections.map(section => (
-            <div key={section.id} id={`journey-sub-${section.id}`} data-journey-sub-id={section.id} className="scroll-mt-40">
+            <div key={section.id} id={`journey-sub-${category.id}-${section.id}`} data-journey-sub-id={section.id} className="scroll-mt-40">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-black text-slate-950 sm:text-lg">{section.name}</h3>
@@ -150,12 +153,6 @@ const JourneyCategory = React.memo(function JourneyCategory({
           {!sections.length && (
             <div className="rounded-2xl border border-dashed border-emerald-100 bg-white px-5 py-8 text-center text-sm text-slate-600">
               مفيش منتجات متاحة في القسم حاليًا.
-            </div>
-          )}
-          {next && (
-            <div className="rounded-2xl border border-emerald-100 bg-white p-3 text-xs font-semibold text-emerald-800">
-              <span>القسم اللي بعده: </span><strong>{next.name}</strong>
-              <span className="mr-2 text-slate-500">كمّل نزول أو اختاره من الشريط</span>
             </div>
           )}
         </div>
@@ -181,7 +178,9 @@ export default function CategoryJourney() {
   const [activeSubcategory, setActiveSubcategory] = useState('');
   const [subChips, setSubChips] = useState<Record<string, Chip[]>>({});
   const [visibleIndex, setVisibleIndex] = useState(0);
-  const rootRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [boundaryCue, setBoundaryCue] = useState<{ id: string; direction: -1 | 1 } | null>(null);
+  const previousVisibleIndex = useRef<number | null>(null);
+  const cueTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const subRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const scrollStartedFor = useRef<string | null>(null);
 
@@ -242,6 +241,13 @@ export default function CategoryJourney() {
       }
       const current = categories[currentIndex];
       if (!current) return;
+      if (previousVisibleIndex.current !== null && previousVisibleIndex.current !== currentIndex) {
+        const direction = (currentIndex > previousVisibleIndex.current ? 1 : -1) as -1 | 1;
+        setBoundaryCue({ id: current.id, direction });
+        if (cueTimer.current) clearTimeout(cueTimer.current);
+        cueTimer.current = setTimeout(() => setBoundaryCue(null), 160);
+      }
+      previousVisibleIndex.current = currentIndex;
       setVisibleIndex(prev => prev === currentIndex ? prev : currentIndex);
       setActiveCategory(prev => prev === current.id ? prev : current.id);
 
@@ -261,30 +267,34 @@ export default function CategoryJourney() {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('scroll', requestScroll);
       window.removeEventListener('resize', requestScroll);
+      if (cueTimer.current) clearTimeout(cueTimer.current);
     };
   }, [categories, isReady]);
 
   useEffect(() => {
-    const active = rootRefs.current[activeCategory];
-    if (active) active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  }, [activeCategory]);
-
-  useEffect(() => {
-    const active = subRefs.current[activeSubcategory];
+    const active = subRefs.current[`${activeCategory}:${activeSubcategory}`];
     if (active) active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [activeSubcategory, activeCategory]);
 
-  const jumpCategory = async (category: MainCategory) => {
-    // Preload before the scroll; already-fetched panels do not request again.
-    await client.prefetchQuery({
-      queryKey: categoryContentKey(category.id),
-      queryFn: () => getCategoryContent(category.id),
-      staleTime: 60_000,
-    });
-    jumpTo(document.getElementById(`journey-category-${category.id}`));
-  };
+  // The one rail spans all loaded subcategories in catalog order. Adjacent
+  // main categories are prefetched before their chips reach the viewport.
+  const chips = useMemo<JourneyChip[]>(() => categories.flatMap(category =>
+    (subChips[category.id] || []).map(chip => ({ ...chip, categoryId: category.id }))
+  ), [categories, subChips]);
 
-  const chips = subChips[activeCategory] || [];
+  useEffect(() => {
+    if (!categories.length || !activeCategory) return;
+    const currentIndex = categories.findIndex(category => category.id === activeCategory);
+    if (currentIndex < 0) return;
+    for (const adjacent of [categories[currentIndex - 1], categories[currentIndex + 1]]) {
+      if (!adjacent) continue;
+      void client.prefetchQuery({
+        queryKey: categoryContentKey(adjacent.id),
+        queryFn: () => getCategoryContent(adjacent.id),
+        staleTime: 60_000,
+      });
+    }
+  }, [activeCategory, categories, client]);
 
   if (categoriesQuery.isLoading || (categories.length > 0 && !isReady)) return (
     <MainLayout><TopNavBar hideLogo hideSearch pageTitle="الأقسام" showBackButton onBack={() => navigate(-1)} />
@@ -303,24 +313,22 @@ export default function CategoryJourney() {
       <div className="mx-auto max-w-7xl pb-20">
         <div className="sticky z-[45] bg-white/95 shadow-sm backdrop-blur-xl"
           style={{ top: 'var(--top-nav-height, 68px)' }}>
-          <div className="hide-scrollbar flex h-[49px] items-center gap-2 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الرئيسية">
-            {categories.map(category => {
-              const selected = category.id === activeCategory;
-              return <button key={category.id} ref={node => { rootRefs.current[category.id] = node; }}
-                type="button" onClick={() => { void jumpCategory(category); }}
-                aria-current={selected ? 'true' : undefined}
-                className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-bold transition-all duration-300 ${selected ? 'border-[#005931] bg-[#005931] text-white shadow-md' : 'border-emerald-100 bg-white text-slate-600'}`}>
-                {category.name}
-              </button>;
-            })}
-          </div>
-          <div className="hide-scrollbar flex h-[45px] items-center gap-1.5 overflow-x-auto border-t border-emerald-100 px-3" dir="rtl" aria-label="الأقسام الفرعية">
-            {chips.length ? chips.map(chip => {
-              const selected = chip.id === activeSubcategory;
-              return <button key={chip.id} ref={node => { subRefs.current[chip.id] = node; }}
-                type="button" onClick={() => jumpTo(document.getElementById(`journey-sub-${chip.id}`))}
-                aria-current={selected ? 'true' : undefined}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${selected ? 'bg-emerald-100 text-[#005931]' : 'text-slate-500 hover:bg-emerald-50'}`}>{chip.name}</button>;
+          <div className="hide-scrollbar flex h-[52px] items-center gap-1.5 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
+            {chips.length ? chips.map((chip, index) => {
+              const selected = chip.categoryId === activeCategory && chip.id === activeSubcategory;
+              const mainBoundary = index > 0 && chips[index - 1].categoryId !== chip.categoryId;
+              return (
+                <React.Fragment key={`${chip.categoryId}:${chip.id}`}>
+                  {mainBoundary && <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-emerald-200" />}
+                  <button
+                    ref={node => { subRefs.current[`${chip.categoryId}:${chip.id}`] = node; }}
+                    type="button"
+                    onClick={() => jumpTo(document.getElementById(`journey-sub-${chip.categoryId}-${chip.id}`))}
+                    aria-current={selected ? 'true' : undefined}
+                    className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition-colors duration-200 ${selected ? 'bg-[#005931] text-white' : 'bg-emerald-50 text-slate-600 hover:bg-emerald-100'}`}
+                  >{chip.name}</button>
+                </React.Fragment>
+              );
             }) : <span className="text-xs font-medium text-slate-400">تصفح منتجات {categories[visibleIndex]?.name || ''}</span>}
           </div>
         </div>
@@ -333,6 +341,7 @@ export default function CategoryJourney() {
               index={index}
               orderedCategories={categories}
               eager={Math.abs(index - Math.max(initialIndex, 0)) <= 1}
+              boundaryPull={boundaryCue?.id === category.id ? boundaryCue.direction : 0}
               onChips={onChips}
             />
           ))}

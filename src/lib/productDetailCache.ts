@@ -12,7 +12,10 @@ export const detailRelatedKey = (id: string, category: string) =>
   ['customer-product-related', category, id] as const;
 export const detailCompanyKey = (id: string) => ['customer-product-company', id] as const;
 
-export const PRODUCT_DETAIL_STALE_MS = 45_000;
+// Keep browsed products available through repeated swipes. After this interval
+// React Query may refresh silently, but cached details remain visible instantly.
+export const PRODUCT_DETAIL_STALE_MS = 10 * 60_000;
+export const PRODUCT_DETAIL_GC_MS = 60 * 60_000;
 
 export async function fetchDetailProduct(id: string, store: string | null): Promise<Product> {
   const data = store
@@ -31,7 +34,7 @@ export function getCachedDetailProduct(client: QueryClient, id: string | undefin
 const preloadedImages = new Set<string>();
 function warmFirstImage(product: Product) {
   if (typeof Image === 'undefined') return;
-  const candidates = [product.image_urls?.[0], product.bulk_image_url];
+  const candidates = [...(product.image_urls || []).slice(0, 3), product.bulk_image_url];
   for (const source of candidates) {
     if (!source || preloadedImages.has(source)) continue;
     preloadedImages.add(source);
@@ -42,14 +45,15 @@ function warmFirstImage(product: Product) {
 }
 
 /**
- * Prefetch exactly the adjacent two product pages (plus their images/related
- * content), de-duplicated by React Query. All requests obey the selected store.
+ * Warm the immediate previous/next products plus one more on each side.
+ * React Query de-duplicates in-flight requests and retains visits for an hour.
+ * All requests remain scoped to the selected merchant/store.
  */
 export function warmAdjacentProductPages(
   client: QueryClient, paths: string[], currentIndex: number,
 ): void {
   if (currentIndex < 0 || typeof window === 'undefined') return;
-  for (const index of [currentIndex - 1, currentIndex + 1]) {
+  for (const index of [currentIndex - 1, currentIndex + 1, currentIndex - 2, currentIndex + 2]) {
     const path = paths[index];
     if (!path || !/^\/product\/[^/?#]+/.test(path)) continue;
     const url = new URL(path, window.location.origin);
@@ -63,6 +67,7 @@ export function warmAdjacentProductPages(
       queryKey: detailProductKey(id, store),
       queryFn: () => fetchDetailProduct(id, store),
       staleTime: PRODUCT_DETAIL_STALE_MS,
+      gcTime: PRODUCT_DETAIL_GC_MS,
     }).then(() => {
       const product = getCachedDetailProduct(client, id, store);
       if (!product) return;
@@ -71,11 +76,13 @@ export function warmAdjacentProductPages(
         queryKey: detailRelatedKey(product.id, product.main_category_id),
         queryFn: () => getRelatedProducts(product.id, product.main_category_id),
         staleTime: PRODUCT_DETAIL_STALE_MS,
+        gcTime: PRODUCT_DETAIL_GC_MS,
       });
       if (product.company_id) void client.prefetchQuery({
         queryKey: detailCompanyKey(product.company_id),
         queryFn: () => getCompanyById(product.company_id),
         staleTime: PRODUCT_DETAIL_STALE_MS,
+        gcTime: PRODUCT_DETAIL_GC_MS,
       });
     }).catch(() => {
       // An unavailable neighbor must not block viewing the current product.
