@@ -28,7 +28,11 @@ const ProductDetail = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const browse = useMemo(() => readProductBrowseState(location.state), [location.state]);
-  const browseIndex = browse?.paths.indexOf(location.pathname + location.search) ?? -1;
+  // Switching between retail and bulk keeps browsing anchored to the original item.
+  const exactBrowseIndex = browse?.paths.indexOf(location.pathname + location.search) ?? -1;
+  const browseIndex = exactBrowseIndex >= 0
+    ? exactBrowseIndex
+    : (browse?.paths.findIndex(path => path.split('?')[0] === location.pathname) ?? -1);
   const canSwipePrevious = browseIndex > 0;
   const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
   const sheetTouch = useRef<{ x: number; y: number; gallery: boolean } | null>(null);
@@ -335,7 +339,7 @@ const ProductDetail = () => {
     setTouchStartX(null);
   };
 
-  if (loading) {
+  if (loading || (product !== null && product.id !== id)) {
     return (
       <MainLayout>
         <div className="hidden md:block">
