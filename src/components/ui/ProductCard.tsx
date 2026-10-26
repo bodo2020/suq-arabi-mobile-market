@@ -152,7 +152,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       ? `${bulkUnitType} · ${money(pack)} قطعة`
       : rawUnit || 'للقطعة';
 
-  if (menuLayout && !weighted && !bulk) return <article dir="rtl" className={`flex min-w-0 gap-4 rounded-2xl border bg-white p-4 ${item ? 'border-[#9acbb2]' : 'border-[#e1eee7]'}`} data-product-state={unavailable ? 'unavailable' : item ? 'in-cart' : 'available'}>
+  if (menuLayout && !weighted && !bulk) return <article dir="rtl" data-product-card="v3-menu" className={`flex min-w-0 gap-4 rounded-2xl border bg-white p-4 ${item ? 'border-[#9acbb2]' : 'border-[#e1eee7]'}`} data-product-state={unavailable ? 'unavailable' : item ? 'in-cart' : 'available'}>
     <div className="flex min-w-0 flex-1 flex-col">
       <Link to={detailHref} onClick={openDetails} className="text-base font-black leading-6">{displayName}</Link>
       {product.description && <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{product.description}</p>}
