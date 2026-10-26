@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
+import NextCategoryPrompt from '@/components/sections/NextCategoryPrompt';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import ProductFilters from '@/components/ui/ProductFilters';
 import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
@@ -33,6 +34,7 @@ const CategoryProducts = () => {
   const isMobile = useIsMobile();
 
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
+  const [nextCategory, setNextCategory] = useState<MainCategory | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -47,6 +49,8 @@ const CategoryProducts = () => {
       try {
         const categoriesData = await getCategories();
         const categoryData = categoriesData.find(cat => cat.id === id);
+        const nextIndex = categoriesData.findIndex(cat => cat.id === id) + 1;
+        setNextCategory(nextIndex > 0 && nextIndex < categoriesData.length ? categoriesData[nextIndex] : null);
         if (categoryData) {
           setCategoryInfo(categoryData);
           const productsData = await getProducts(id, false);
@@ -174,10 +178,18 @@ const CategoryProducts = () => {
                 </div>
               </div>
 
+              <div
+                data-category-product-sections
+                data-next-category-path={nextCategory ? `/category/${nextCategory.id}` : undefined}
+                data-next-category-name={nextCategory?.name}
+              >
               <div ref={productsRef} className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
                 {getProductListWithVariants(products).map(product => (
                   <ProductCard key={product.variantKey} product={product} />
                 ))}
+              </div>
+
+              {nextCategory && <NextCategoryPrompt name={nextCategory.name} onNext={() => navigate(`/category/${nextCategory.id}`)} />}
               </div>
 
               {products.length === 0 && !loading && (
