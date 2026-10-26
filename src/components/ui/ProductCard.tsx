@@ -86,6 +86,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     event.preventDefault();
     const browseState = collectProductBrowseState(event.currentTarget, location.pathname + location.search);
+    // The active card must win even if a very large catalog evicted it from memory.
+    registerBrowsableProduct(detailHref, product);
     const index = browseState.productBrowse.paths.indexOf(detailHref);
     seedProductBrowseCache(queryClient, browseState.productBrowse.paths, index);
     navigate(detailHref, { state: browseState });
@@ -183,7 +185,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       data-product-price={money(price)}
     >
       <div className="relative mb-5 sm:mb-7">
-        <Link to={detailHref} onClick={openDetails} onPointerEnter={() => { void import("@/pages/ProductDetail"); }} onTouchStart={() => { void import("@/pages/ProductDetail"); }} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
+        <Link to={detailHref} onClick={openDetails} onPointerEnter={warmDetailModule} onTouchStart={warmDetailModule} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
           <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5">
             <SmartImage
               src={productCardImage(imageSrc)}
