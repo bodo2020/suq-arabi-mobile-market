@@ -2,9 +2,13 @@ import { createRoot } from 'react-dom/client'
 import { Capacitor } from '@capacitor/core'
 import App from './App.tsx'
 import './index.css'
+import { installThmanyahFont } from './lib/installThmanyahFont'
 import './styles/product-card-layout.css'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { hydrateOfflineCatalog, subscribeOfflineCatalog } from './lib/offlineCatalogCache'
+
+// Bundled font faces are provided inside the app, not via public /fonts URLs.
+installThmanyahFont()
 
 // Create a client. Queries stay paused while the device is offline and refetch
 // automatically when connectivity returns; mutations are never forced offline.
