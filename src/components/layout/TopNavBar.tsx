@@ -52,7 +52,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ searchPlaceholder='دور على 
           <Link to={user?'/account':'/phone-login'} className="flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-brand-cream"><User size={19}/>{user?'حسابي':'دخول'}</Link>
         </div>
       </div>
-      <nav className="mt-2 hidden items-center gap-1 border-t border-gray-100 pt-2 md:flex" aria-label="التنقل الرئيسي">{desktopLinks.filter(x=>!x.authOnly||user).map(({to,label,icon:Icon})=><Link key={to} to={to} aria-current={location.pathname===to?'page':undefined} className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ${location.pathname===to?'bg-green-50 font-bold':'text-gray-600 hover:bg-brand-cream'}`}><Icon size={17}/>{label}</Link>)}</nav>
+      <nav className="mt-2 hidden items-center gap-1 border-t border-gray-100 pt-2 md:flex" aria-label="التنقل الرئيسي">{desktopLinks.filter(x=>!x.authOnly||user).map(({to,label,icon:Icon})=><Link key={to} to={to} aria-current={location.pathname===to?'page':undefined} className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ${location.pathname===to?'bg-brand-cream font-bold':'text-gray-600 hover:bg-brand-cream'}`}><Icon size={17}/>{label}</Link>)}</nav>
     </div>
   </header>;
 };
