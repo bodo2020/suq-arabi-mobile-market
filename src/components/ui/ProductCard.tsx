@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { collectProductBrowseState } from '@/lib/productBrowsing';
+import { registerBrowsableProduct, seedProductBrowseCache } from '@/lib/productDetailCache';
 import { Bell, BellRing, Loader2, Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
@@ -9,6 +11,16 @@ import FavoriteButton from './FavoriteButton';
 import WeightSelector from './WeightSelector';
 import SmartImage from './SmartImage';
 import { productCardImage } from '@/lib/productCardImage';
+
+// Warm the lazily loaded detail page once the catalog is on screen, instead
+// of downloading the route only after the shopper taps a product.
+let detailModuleWarmupScheduled = false;
+const warmDetailModule = () => { void import('@/pages/ProductDetail').catch(() => {}); };
+const scheduleDetailWarmup = () => {
+  if (detailModuleWarmupScheduled || typeof window === 'undefined') return;
+  detailModuleWarmupScheduled = true;
+  window.setTimeout(warmDetailModule, 650);
+};
 
 interface ProductCardProps {
   product: Product & { displayType?: 'regular' | 'bulk'; variantKey?: string };
@@ -32,6 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const { items, addToCart, updateQuantity, removeFromCart, isInitialized } = useCart();
   const [weightOpen, setWeightOpen] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const [reminderPending, setReminderPending] = useState(false);
 
@@ -64,10 +77,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}${storeQuery ? `&${storeQuery}` : ''}`
     : `/product/${product.id}${storeQuery ? `?${storeQuery}` : ''}`;
   const imageSrc = bulkImageUrl || product.image_urls?.[0] || '/placeholder.svg';
+  useEffect(() => {
+    registerBrowsableProduct(detailHref, product);
+    scheduleDetailWarmup();
+  }, [detailHref, product]);
+
   const openDetails = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     event.preventDefault();
-    navigate(detailHref, { state: collectProductBrowseState(event.currentTarget, location.pathname + location.search) });
+    const browseState = collectProductBrowseState(event.currentTarget, location.pathname + location.search);
+    // The active card must win even if a very large catalog evicted it from memory.
+    registerBrowsableProduct(detailHref, product);
+    const index = browseState.productBrowse.paths.indexOf(detailHref);
+    seedProductBrowseCache(queryClient, browseState.productBrowse.paths, index);
+    navigate(detailHref, { state: browseState });
   };
 
   const selectedWeight = weighted
@@ -162,7 +185,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       data-product-price={money(price)}
     >
       <div className="relative mb-5 sm:mb-7">
-        <Link to={detailHref} onClick={openDetails} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
+        <Link to={detailHref} onClick={openDetails} onPointerEnter={warmDetailModule} onTouchStart={warmDetailModule} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
           <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5">
             <SmartImage
               src={productCardImage(imageSrc)}
