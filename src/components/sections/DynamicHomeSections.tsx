@@ -28,7 +28,7 @@ const SectionHeading = ({ title, subtitle, href }: { title?: string | null; subt
       {title && <h2 className="text-xl font-black text-slate-950">{title}</h2>}
       {subtitle && <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>}
     </div>
-    {href && <Link to={href} className="flex min-h-10 shrink-0 items-center gap-1 rounded-xl px-3 text-sm font-bold text-[#005931] hover:bg-emerald-50">عرض الكل<ChevronLeft size={17} /></Link>}
+    {href && <Link to={href} className="flex min-h-10 shrink-0 items-center gap-1 rounded-xl px-3 text-sm font-bold text-[#005931] hover:bg-brand-cream">عرض الكل<ChevronLeft size={17} /></Link>}
   </div>
 );
 
@@ -185,7 +185,7 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            {smart && <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-[#005931]"><Sparkles size={16} /></span>}
+            {smart && <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-cream text-[#005931]"><Sparkles size={16} /></span>}
             <h2 className="text-xl font-black text-slate-950">{title}</h2>
           </div>
           {subtitle && <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>}
