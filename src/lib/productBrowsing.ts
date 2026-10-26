@@ -48,9 +48,11 @@ export function collectProductBrowseState(anchor: HTMLAnchorElement, fromPath: s
     const card = anchor.closest<HTMLElement>('[data-product-card]');
     distinct.set(ownPath, card ? previewFromCard(card) || { path: ownPath, name: '', image: '', price: '' } : { path: ownPath, name: '', image: '', price: '' });
   }
+  const truncated = distinct.size > 250;
   const previews = Array.from(distinct.values()).slice(0, 250);
   const path = journey?.dataset.nextCategoryPath || '';
-  const nextCategory = validCategoryPath(path)
+  // Never treat the 250-item route-state cap as the end of a longer category.
+  const nextCategory = !truncated && validCategoryPath(path)
     ? { path, name: (journey?.dataset.nextCategoryName || 'القسم التالي').slice(0, 100) }
     : undefined;
   return {
