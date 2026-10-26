@@ -15,7 +15,7 @@ import FavoriteButton from '@/components/ui/FavoriteButton';
 import WeightSelector from '@/components/ui/WeightSelector';
 import {
   detailCompanyKey, detailProductKey, detailRelatedKey, fetchDetailProduct,
-  getCachedDetailProduct, PRODUCT_DETAIL_STALE_MS, warmAdjacentProductPages,
+  getCachedDetailProduct, PRODUCT_DETAIL_GC_MS, PRODUCT_DETAIL_STALE_MS, warmAdjacentProductPages,
 } from '@/lib/productDetailCache';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -217,8 +217,13 @@ const ProductDetail = () => {
     setLoadError(false);
     setProduct(cached);
     setSelectedImageIndex(0);
-    setRelatedProducts([]);
-    setCompany(null);
+    // Restore the already-warmed supplementary sections before the route paints.
+    setRelatedProducts(cached
+      ? queryClient.getQueryData<Product[]>(detailRelatedKey(cached.id, cached.main_category_id)) || []
+      : []);
+    setCompany(cached?.company_id
+      ? queryClient.getQueryData<Company>(detailCompanyKey(cached.company_id)) || null
+      : null);
     setQuantity(1);
     setDetailWeight(cached && isWeightedProduct(cached) ? productWeightStepGrams(cached) : 0);
 
@@ -226,6 +231,7 @@ const ProductDetail = () => {
       queryKey: detailProductKey(id, requestedStoreId),
       queryFn: () => fetchDetailProduct(id, requestedStoreId),
       staleTime: PRODUCT_DETAIL_STALE_MS,
+      gcTime: PRODUCT_DETAIL_GC_MS,
     }).then(data => {
       if (!active) return;
       setProduct(data);
@@ -256,11 +262,13 @@ const ProductDetail = () => {
           queryKey: relatedKey,
           queryFn: () => getRelatedProducts(product.id, product.main_category_id),
           staleTime: PRODUCT_DETAIL_STALE_MS,
+          gcTime: PRODUCT_DETAIL_GC_MS,
         }),
         companyKey ? queryClient.fetchQuery({
           queryKey: companyKey,
           queryFn: () => getCompanyById(product.company_id),
           staleTime: PRODUCT_DETAIL_STALE_MS,
+          gcTime: PRODUCT_DETAIL_GC_MS,
         }) : Promise.resolve(null),
       ]);
       if (!active) return;
