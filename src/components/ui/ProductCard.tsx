@@ -60,9 +60,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ? (String((product as Product & { bulk_variant_type?: string | null }).bulk_variant_type || '').trim() || 'جملة')
     : '';
   const variantId = bulk ? product.bulk_variant_id || null : null;
+  const storeQuery = product.commerce_source === 'marketplace' && product.marketplace_branch_id
+    ? `store=${encodeURIComponent(product.marketplace_branch_id)}`
+    : '';
   const detailHref = bulk
-    ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}`
-    : `/product/${product.id}${product.commerce_source === 'marketplace' && product.marketplace_branch_id ? `?store=${encodeURIComponent(product.marketplace_branch_id)}` : ''}`;
+    ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}${storeQuery ? `&${storeQuery}` : ''}`
+    : `/product/${product.id}${storeQuery ? `?${storeQuery}` : ''}`;
   const imageSrc = bulkImageUrl || product.image_urls?.[0] || '/placeholder.svg';
   const openDetails = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
