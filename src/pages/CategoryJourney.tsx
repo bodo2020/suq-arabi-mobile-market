@@ -182,7 +182,21 @@ export default function CategoryJourney() {
   const previousVisibleIndex = useRef<number | null>(null);
   const cueTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const subRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const railRef = useRef<HTMLDivElement | null>(null);
   const scrollStartedFor = useRef<string | null>(null);
+  const userScrolledBeforeAnchor = useRef(false);
+
+  // Initial data may finish loading after a user starts swiping. Never let
+  // the delayed starting-position anchor override their scroll gesture.
+  useEffect(() => {
+    const markUserScroll = () => { userScrolledBeforeAnchor.current = true; };
+    window.addEventListener('touchmove', markUserScroll, { passive: true });
+    window.addEventListener('wheel', markUserScroll, { passive: true });
+    return () => {
+      window.removeEventListener('touchmove', markUserScroll);
+      window.removeEventListener('wheel', markUserScroll);
+    };
+  }, []);
 
   const onChips = useCallback((categoryId: string, chips: Chip[]) => {
     setSubChips(prev => {
@@ -222,7 +236,7 @@ export default function CategoryJourney() {
     const frame = requestAnimationFrame(() => {
       // The full ordered category skeleton is mounted, so both above and below
       // sections remain reachable without pushing a new route.
-      jumpTo(document.getElementById(`journey-category-${id}`), false);
+      if (!userScrolledBeforeAnchor.current) jumpTo(document.getElementById(`journey-category-${id}`), false);
     });
     return () => cancelAnimationFrame(frame);
   }, [id, initialIndex, isReady]);
@@ -272,8 +286,22 @@ export default function CategoryJourney() {
   }, [categories, isReady]);
 
   useEffect(() => {
+    const rail = railRef.current;
     const active = subRefs.current[`${activeCategory}:${activeSubcategory}`];
-    if (active) active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (!rail || !active) return;
+
+    // scrollIntoView() also scrolls ancestors (including the entire page).
+    // Move only the horizontal chip rail, leaving vertical touch scrolling
+    // and the user's current product/category position completely untouched.
+    const railRect = rail.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    const distance = activeRect.left + activeRect.width / 2
+      - (railRect.left + railRect.width / 2);
+    if (Math.abs(distance) < 12) return;
+    rail.scrollBy({
+      left: distance,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
   }, [activeSubcategory, activeCategory]);
 
   // The one rail spans all loaded subcategories in catalog order. Adjacent
@@ -313,7 +341,7 @@ export default function CategoryJourney() {
       <div className="mx-auto max-w-7xl pb-20">
         <div className="sticky z-[45] bg-white/95 shadow-sm backdrop-blur-xl"
           style={{ top: 'var(--top-nav-height, 68px)' }}>
-          <div className="hide-scrollbar flex h-[52px] items-center gap-1.5 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
+          <div ref={railRef} className="hide-scrollbar flex h-[52px] items-center gap-1.5 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
             {chips.length ? chips.map((chip, index) => {
               const selected = chip.categoryId === activeCategory && chip.id === activeSubcategory;
               const mainBoundary = index > 0 && chips[index - 1].categoryId !== chip.categoryId;
