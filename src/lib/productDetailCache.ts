@@ -54,7 +54,9 @@ export function warmAdjacentProductPages(
     if (!path || !/^\/product\/[^/?#]+/.test(path)) continue;
     const url = new URL(path, window.location.origin);
     if (url.origin !== window.location.origin) continue;
-    const id = decodeURIComponent(url.pathname.slice('/product/'.length));
+    let id: string;
+    try { id = decodeURIComponent(url.pathname.slice('/product/'.length)); }
+    catch { continue; }
     const store = url.searchParams.get('store');
     if (!id || id.includes('/')) continue;
     void client.prefetchQuery({
