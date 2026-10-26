@@ -1,7 +1,9 @@
 import BrandLoader from '@/components/ui/BrandLoader';
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Check, ImageIcon, Minus, Package, Plus, Scale, Share2, ShoppingCart, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { readProductBrowseState } from '@/lib/productBrowsing';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Check, ChevronLeft, ChevronRight, ImageIcon, Minus, Package, Plus, Scale, Share2, ShoppingCart, Trash2, X } from 'lucide-react';
 import TopNavBar from '@/components/layout/TopNavBar';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductCard from '@/components/ui/ProductCard';
@@ -24,6 +26,17 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isMobile = useIsMobile();
+  const location = useLocation();
+  const browse = useMemo(() => readProductBrowseState(location.state), [location.state]);
+  // Switching between retail and bulk keeps browsing anchored to the original item.
+  const exactBrowseIndex = browse?.paths.indexOf(location.pathname + location.search) ?? -1;
+  const browseIndex = exactBrowseIndex >= 0
+    ? exactBrowseIndex
+    : (browse?.paths.findIndex(path => path.split('?')[0] === location.pathname) ?? -1);
+  const canSwipePrevious = browseIndex > 0;
+  const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
+  const sheetTouch = useRef<{ x: number; y: number; gallery: boolean } | null>(null);
   const requestedBulk = searchParams.get('unit') === 'bulk';
   const requestedVariantId = searchParams.get('variant');
   const requestedStoreId = searchParams.get('store');
@@ -40,6 +53,54 @@ const ProductDetail = () => {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const { addToCart, items, updateQuantity, removeFromCart, isInitialized } = useCart();
   const { toast } = useToast();
+
+  // Lock the background document only on handheld product sheets.
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const previous = document.body.style.overflow;
+    if (media.matches) document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, []);
+
+  const closeSheet = () => {
+    if (browse) navigate(-1);
+    else navigate('/');
+  };
+
+  const browseProduct = (offset: -1 | 1) => {
+    if (!browse || browseIndex < 0 || weightOpen) return;
+    const next = browse.paths[browseIndex + offset];
+    if (!next) return;
+    sheetTouch.current = null;
+    navigate(next, { replace: true, state: location.state });
+  };
+
+  const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch || weightOpen) return;
+    sheetTouch.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      gallery: Boolean((event.target as HTMLElement).closest('[data-product-gallery]')),
+    };
+  };
+
+  const finishSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = sheetTouch.current;
+    sheetTouch.current = null;
+    const end = event.changedTouches[0];
+    if (!start || !end || weightOpen) return;
+    const dx = end.clientX - start.x;
+    const dy = end.clientY - start.y;
+    // Let vertical scrolling, taps and short diagonal movements work normally.
+    if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (start.gallery && images.length > 1) {
+      goToImage(dx < 0 ? 1 : -1);
+      return;
+    }
+    // In RTL, dragging left reveals the next product, dragging right the previous.
+    browseProduct(dx < 0 ? 1 : -1);
+  };
 
   const weighted = product ? isWeightedProduct(product) : false;
   const bulkAvailable = product ? hasBulkPurchase(product) : false;
@@ -169,13 +230,13 @@ const ProductDetail = () => {
 
   const openRegular = () => {
     if (!product) return;
-    navigate(`/product/${product.id}`, { replace: true });
+    navigate(`/product/${product.id}${requestedStoreId ? `?store=${encodeURIComponent(requestedStoreId)}` : ''}`, { replace: true, state: location.state });
   };
 
   const openBulk = () => {
     if (!product || !bulkAvailable) return;
     const variant = product.bulk_variant_id ? `&variant=${encodeURIComponent(product.bulk_variant_id)}` : '';
-    navigate(`/product/${product.id}?unit=bulk${variant}`, { replace: true });
+    navigate(`/product/${product.id}?unit=bulk${variant}${requestedStoreId ? `&store=${encodeURIComponent(requestedStoreId)}` : ''}`, { replace: true, state: location.state });
   };
 
   const addRegular = () => {
@@ -276,11 +337,19 @@ const ProductDetail = () => {
     setTouchStartX(null);
   };
 
-  if (loading) {
+  if (loading || (product !== null && product.id !== id)) {
     return (
       <MainLayout>
-        <TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} />
-        <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader size="md" /></div>
+        <div className="hidden md:block">
+          <TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} />
+          <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader size="md" /></div>
+        </div>
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 px-3 pt-7 pb-1 md:hidden">
+          <div role="status" aria-live="polite" className="flex h-[calc(100dvh-36px)] w-full max-w-[600px] flex-col items-center justify-center rounded-[32px] bg-white">
+            <BrandLoader size="md" />
+            <span className="mt-4 text-sm font-bold text-[#005931]">جاري عرض المنتج…</span>
+          </div>
+        </div>
       </MainLayout>
     );
   }
@@ -401,9 +470,97 @@ const ProductDetail = () => {
         { name: displayName, url: bulkMode ? `/product/${product.id}?unit=bulk` : `/product/${product.id}` },
       ]} />
 
-      <TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} />
+      <div className="hidden md:block"><TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} /></div>
 
-      <main className="mx-auto max-w-6xl px-3 pb-40 pt-2 sm:px-5 md:pb-10">
+      {/* Handheld immersive product browsing: the desktop detail route stays intact. */}
+      <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 px-3 pt-7 pb-1 md:hidden">
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-label={`تفاصيل ${displayName}`}
+          dir="rtl"
+          className="relative flex h-[calc(100dvh-36px)] w-full max-w-[600px] flex-col overflow-hidden rounded-[32px] bg-[#f6f8f7] shadow-[0_22px_70px_rgba(0,0,0,.22)]"
+        >
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-5 pt-5">
+            <button type="button" className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"><X size={23} /></button>
+            <div className="pointer-events-auto flex flex-col gap-3">
+              <button type="button" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md" aria-label="مشاركة المنتج" onClick={handleShare}><Share2 size={19} /></button>
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md"><FavoriteButton productId={product.id} variantId={favoriteVariantId} size="sm" /></div>
+              <button type="button" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md" aria-label="عرض السلة" onClick={() => navigate('/cart')}><ShoppingCart size={19} /></button>
+            </div>
+          </div>
+          <div
+            key={`product-sheet-${id}`}
+            className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain px-3 pb-5 pt-2"
+            onTouchStart={startSheetSwipe}
+            onTouchEnd={finishSheetSwipe}
+          >
+            <div data-product-gallery className="relative flex h-[min(43vh,340px)] items-center justify-center overflow-hidden rounded-[26px] bg-white">
+              {bulkMode && !bulkImageUrl ? (
+                <div className="flex h-40 w-40 items-center justify-center rounded-[30px] bg-[#005931] text-6xl font-black text-white">{packNumber}</div>
+              ) : images.length > 0 ? (
+                <img
+                  className="h-full w-full object-contain px-5 py-7"
+                  src={images[selectedImageIndex] || '/placeholder.svg'}
+                  alt={displayName}
+                  draggable={false}
+                  onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-400"><ImageIcon size={45} /><span>لا توجد صورة</span></div>
+              )}
+              {discount > 0 && <span className="absolute bottom-4 right-4 rounded-xl bg-[#FFC120] px-3 py-1.5 text-xs font-black text-[#005931]">خصم {discount}%</span>}
+              {images.length > 1 && (
+                <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1.5">
+                  {images.map((_, index) => <span key={index} className={`h-1.5 rounded-full ${index === selectedImageIndex ? 'w-5 bg-[#005931]' : 'w-1.5 bg-slate-300'}`} />)}
+                </div>
+              )}
+            </div>
+            {browse && browseIndex >= 0 && browse.paths.length > 1 && (
+              <div className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-xs font-bold text-[#005931]">
+                <button type="button" onClick={() => browseProduct(-1)} disabled={!canSwipePrevious} aria-label="المنتج السابق" className="flex min-h-10 items-center gap-1 rounded-xl px-2 disabled:opacity-30"><ChevronRight size={16} /> السابق</button>
+                <span className="text-slate-500">{browseIndex + 1} من {browse.paths.length} · اسحب يمين أو شمال</span>
+                <button type="button" onClick={() => browseProduct(1)} disabled={!canSwipeNext} aria-label="المنتج التالي" className="flex min-h-10 items-center gap-1 rounded-xl px-2 disabled:opacity-30">التالي <ChevronLeft size={16} /></button>
+              </div>
+            )}
+            <div className="rounded-[24px] bg-white px-4 py-5">
+              <h1 className="text-[22px] font-black leading-[1.55] text-slate-950">{displayName}</h1>
+              <p className="mt-1 text-sm text-slate-500">{weighted ? 'يباع بالوزن · ' : ''}{unitDescription}</p>
+              <div className="mt-4 flex flex-wrap items-end gap-2">
+                <strong className="text-[30px] font-black leading-none text-[#005931]">{money(displayPrice)} <small className="text-base">ج.م</small></strong>
+                {discount > 0 && <del className="pb-1 text-sm text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del>}
+              </div>
+              <div className="mt-3 flex items-center gap-2 text-xs font-semibold">
+                <span className={`rounded-full px-3 py-1.5 ${unavailable ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-[#005931]'}`}>{unavailable ? 'غير متوفر حاليًا' : 'متوفر للطلب'}</span>
+                {limitedStock && <span className="rounded-full bg-amber-50 px-3 py-1.5 text-amber-700">كمية محدودة</span>}
+              </div>
+              {product.commerce_source === 'marketplace' && product.marketplace_branch_id && (
+                <button type="button" className="mt-4 block w-full rounded-xl bg-emerald-50 px-3 py-3 text-right text-sm font-bold text-[#005931]" onClick={() => navigate(`/stores/${product.marketplace_branch_id}`)}>
+                  يباع بواسطة {product.merchant_name || 'متجر شريك'} · عرض المتجر
+                </button>
+              )}
+              {bulkAvailable && !weighted && (
+                <div className="mt-4 flex gap-2">
+                  <button type="button" onClick={openRegular} aria-pressed={!bulkMode} className={`flex-1 rounded-xl px-3 py-3 text-sm font-bold ${!bulkMode ? 'bg-[#005931] text-white' : 'bg-slate-100 text-slate-600'}`}>قطاعي · {money(unitPrice)} ج.م</button>
+                  <button type="button" onClick={openBulk} aria-pressed={bulkMode} className={`flex-1 rounded-xl px-3 py-3 text-sm font-bold ${bulkMode ? 'bg-[#005931] text-white' : 'bg-slate-100 text-slate-600'}`}>{bulkUnitType} · {money(Number(product.bulk_price || 0))} ج.م</button>
+                </div>
+              )}
+            </div>
+            {product.description && <div className="rounded-[24px] bg-white p-4"><h2 className="mb-2 text-base font-black">الوصف</h2><p className="whitespace-pre-line text-sm leading-7 text-slate-600">{product.description}</p></div>}
+            <div className="rounded-[24px] bg-white p-4">
+              <h2 className="text-base font-black">تفاصيل المنتج</h2>
+              <p className="mt-2 text-sm leading-7 text-slate-600">طريقة البيع: {weighted ? 'بالوزن' : bulkMode ? bulkUnitType : 'بالقطعة'} · الوحدة: {unitDescription}</p>
+              {company && <button type="button" className="mt-2 text-sm font-bold text-[#005931]" onClick={() => navigate(`/company/${company.id}`)}>اكتشف منتجات {company.name}</button>}
+            </div>
+          </div>
+          <footer className="shrink-0 border-t border-slate-100 bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
+            {weighted ? weightedPurchaseControl : piecePurchaseControl}
+          </footer>
+        </section>
+      </div>
+
+      {!isMobile && (
+      <main className="mx-auto hidden max-w-6xl px-3 pb-40 pt-2 sm:px-5 md:block md:pb-10">
         <div className="grid gap-4 lg:grid-cols-[1.06fr_.94fr] lg:items-start lg:gap-6">
           <section className="relative overflow-hidden rounded-[28px] bg-white p-3 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] sm:p-5">
             <div
@@ -534,12 +691,7 @@ const ProductDetail = () => {
           </section>
         )}
       </main>
-
-      <div className="fixed inset-x-0 z-40 border-t border-slate-100 bg-white/96 px-3 pt-2 shadow-[0_-12px_30px_rgba(15,23,42,.08)] backdrop-blur-xl md:hidden" style={{ bottom: 'calc(5rem + var(--safe-area-bottom))', paddingBottom: '8px' }}>
-        <div className="mx-auto max-w-xl">
-          {weighted ? weightedPurchaseControl : piecePurchaseControl}
-        </div>
-      </div>
+      )}
 
       {weightOpen && weighted && (
         <WeightSelector product={product} isOpen={weightOpen} onClose={() => setWeightOpen(false)} initialWeight={weightedCartItem ? currentWeight : weightStep} onSelect={applyWeight} />
