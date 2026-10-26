@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
+import { productCardImage } from '@/lib/productCardImage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Check, ChevronLeft, ChevronRight, ImageIcon, Minus, Package, Plus, Scale, Share2, ShoppingCart, Trash2, X } from 'lucide-react';
 import TopNavBar from '@/components/layout/TopNavBar';
@@ -15,7 +16,7 @@ import FavoriteButton from '@/components/ui/FavoriteButton';
 import WeightSelector from '@/components/ui/WeightSelector';
 import {
   detailCompanyKey, detailProductKey, detailRelatedKey, fetchDetailProduct,
-  getCachedDetailProduct, PRODUCT_DETAIL_GC_MS, PRODUCT_DETAIL_STALE_MS, warmAdjacentProductPages,
+  getCachedDetailProduct, PRODUCT_DETAIL_GC_MS, PRODUCT_DETAIL_STALE_MS, seedProductBrowseCache, warmAdjacentProductPages,
 } from '@/lib/productDetailCache';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -101,6 +102,9 @@ const ProductDetail = () => {
     const next = browse.paths[browseIndex + offset];
     const destination = next || (offset === 1 ? browse.nextCategory?.path : undefined);
     if (!destination) return;
+    // Hydrate the destination *before* the swipe animation starts: the next
+    // details sheet should paint from the existing card snapshot immediately.
+    if (next) seedProductBrowseCache(queryClient, browse.paths, browseIndex + offset);
     setSwipeLocked(true);
     setSwipeAnimating(true);
     sheetTouch.current = null;
@@ -610,13 +614,24 @@ const ProductDetail = () => {
               {bulkMode && !bulkImageUrl ? (
                 <div className="flex h-40 w-40 items-center justify-center rounded-[30px] bg-[#005931] text-6xl font-black text-white">{packNumber}</div>
               ) : images.length > 0 ? (
-                <img
-                  className="h-full w-full object-contain px-5 py-7"
+                <>
+                  {productCardImage(images[selectedImageIndex]) !== images[selectedImageIndex] && (
+                    <img
+                      src={productCardImage(images[selectedImageIndex])}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                      className="absolute inset-0 h-full w-full object-contain px-5 py-7"
+                    />
+                  )}
+                  <img
+                  className="relative h-full w-full object-contain px-5 py-7"
                   src={images[selectedImageIndex] || '/placeholder.svg'}
                   alt={displayName}
                   draggable={false}
                   onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
                 />
+                </>
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400"><ImageIcon size={45} /><span>لا توجد صورة</span></div>
               )}
