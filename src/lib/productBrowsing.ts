@@ -65,7 +65,7 @@ export function collectProductBrowseState(anchor: HTMLAnchorElement, fromPath: s
   const previews = Array.from(distinct.values()).slice(0, 250);
   const path = journey?.dataset.nextCategoryPath || '';
   // Never treat the 250-item route-state cap as the end of a longer category.
-  const nextCategory = !hasFollowingLoaded && !truncated && validCategoryPath(path)
+  const nextCategory = !hasFollowingLoaded && (!truncated || currentIndex === allCards.length - 1) && validCategoryPath(path)
     ? { path, name: (journey?.dataset.nextCategoryName || 'القسم التالي').slice(0, 100) }
     : undefined;
   return {
