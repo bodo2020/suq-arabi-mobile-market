@@ -54,7 +54,7 @@ const CategoryItem = ({ category, hideTitle = false, onClick, variant = 'default
             decoding="async"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#eaf9ed] to-[#fff5cf] text-4xl font-black text-[#005931]">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#eaf9ed] to-brand-cream text-4xl font-black text-[#005931]">
             {category.name.charAt(0)}
           </div>
         )}
@@ -63,7 +63,7 @@ const CategoryItem = ({ category, hideTitle = false, onClick, variant = 'default
       {!hideTitle && (
         <div className="flex min-h-[58px] items-center gap-2 px-1 pt-2.5">
           <span className="line-clamp-2 min-w-0 flex-1 text-right text-[13px] font-black leading-5 text-slate-950 sm:text-sm">{category.name}</span>
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#fff5d6] text-[#005931] transition-transform group-hover:-translate-x-0.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-brand-green transition-transform group-hover:-translate-x-0.5">
             <ChevronLeft size={15} strokeWidth={2.3} />
           </span>
         </div>
