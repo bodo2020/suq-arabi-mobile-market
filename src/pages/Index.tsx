@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
@@ -58,9 +59,10 @@ const Index = () => {
       <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
         <button
           onClick={openAddress}
-          className="mb-5 flex w-full items-center gap-2 px-1 py-1.5 text-right transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="mb-5 flex w-full items-center gap-2 rounded-2xl border border-emerald-100 bg-white px-3 py-2 text-right transition hover:bg-brand-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           aria-label={address ? 'تغيير عنوان التوصيل' : 'إضافة عنوان توصيل'}
         >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-cream text-brand-green"><MapPin size={19} /></span>
           <span className="shrink-0 text-xs text-gray-500">التوصيل إلى</span>
             <strong className="min-w-0 truncate text-sm font-bold text-primary">
               {authLoading || (user && addressQuery.isLoading)
