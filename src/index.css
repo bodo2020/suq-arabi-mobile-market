@@ -340,7 +340,30 @@ html.native-platform [role="button"] {
   height: auto;
 }
 
-/* Super Marko brand wordmark: text only until the official Figma asset is available. */
-.brand-name { display: inline-flex; align-items: center; gap: .25em; white-space: nowrap; font-family: 'Thmanyah', 'Cairo', sans-serif; font-size: 1.4rem; line-height: 1.4; font-weight: 900; color: hsl(var(--primary)); }
-.brand-name strong { color: hsl(var(--brand-yellow-ink)); font-weight: 900; }
-.brand-name--header { font-size: clamp(1rem, 2vw, 1.35rem); }
+/* Official wordmark: the literal tatweels and zero inter-word gap are in BrandWordmark. */
+.brand-name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 0;
+  padding: .35em .52em;
+  border-radius: 12px;
+  direction: rtl;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+  max-width: 100%;
+  font-family: 'Thmanyah', 'Cairo', sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.35;
+  font-weight: 900;
+  letter-spacing: 0;
+  color: #fff;
+  background-color: #005931;
+}
+.brand-name__super { color: #fff; }
+.brand-name__marko { color: #FFC120; }
+.brand-name--header { font-size: clamp(.75rem, 2.7vw, 1.05rem); padding: .25em .35em; border-radius: 9px; }
+@media (max-width: 360px) {
+  .brand-name--header { font-size: .72rem; padding: .2em .25em; }
+}
