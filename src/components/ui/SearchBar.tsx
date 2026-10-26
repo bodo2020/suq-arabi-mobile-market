@@ -61,7 +61,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className={`relative flex items-center overflow-hidden border transition-colors focus-within:border-[#005931] ${appearance === 'category' ? 'rounded-full border-emerald-200 bg-white shadow-[0_2px_8px_rgba(0,89,49,.02)]' : 'rounded-xl border-gray-200 bg-gray-50 focus-within:bg-white'}`}>
+      <div className={`relative flex items-center overflow-hidden border transition-colors focus-within:border-[#005931] ${appearance === 'category' ? 'rounded-full border-emerald-200 bg-white shadow-[0_2px_8px_rgba(0,89,49,.02)]' : 'rounded-xl border-emerald-100 bg-white focus-within:bg-white'}`}>
         <div className="relative flex min-w-0 flex-1 items-center">
           <Search size={20} className={appearance === 'category' ? 'absolute right-3.5 text-[#005931]' : 'absolute right-3 text-gray-400'} />
           <input
@@ -83,7 +83,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           onClick={handleBarcodeClick}
           aria-label="مسح باركود المنتج"
           title="مسح باركود المنتج"
-          className={`group flex h-11 w-12 shrink-0 items-center justify-center border-r transition-colors ${appearance === 'category' ? 'border-emerald-200 bg-[#fff6d6] text-[#005931] hover:bg-[#fff0be] active:bg-[#ffebac]' : 'border-gray-200 bg-white/70 hover:bg-emerald-50 active:bg-emerald-100'}`}
+          className={`group flex h-11 w-12 shrink-0 items-center justify-center border-r transition-colors ${appearance === 'category' ? 'border-emerald-200 bg-brand-cream text-brand-green hover:bg-brand-yellow/25 active:bg-brand-yellow/35' : 'border-emerald-100 bg-brand-cream text-brand-green hover:bg-brand-yellow/25 active:bg-brand-yellow/35'}`}
         >
           <Barcode size={23} strokeWidth={2.2} className="text-[#005931] transition-transform group-active:scale-95" />
         </button>
