@@ -315,7 +315,7 @@ export default function CategoryJourney() {
           </div>
         </div>
 
-        <div className="space-y-8 px-3 pt-4 sm:px-5">
+        <div data-continuous-category-journey className="space-y-8 px-3 pt-4 sm:px-5">
           {categories.map((category, index) => (
             <JourneyCategory
               key={category.id}
