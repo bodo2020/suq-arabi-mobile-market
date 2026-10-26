@@ -30,7 +30,8 @@ const getCategoryContent = async (categoryId: string): Promise<CategoryContent> 
 const topOffset = () => {
   if (typeof document === 'undefined') return 155;
   const nav = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top-nav-height')) || 68;
-  return nav + 104;
+  // One sticky subcategory rail (52px) plus breathing room for headings.
+  return nav + 62;
 };
 
 const jumpTo = (element: HTMLElement | null, smooth = true) => {
