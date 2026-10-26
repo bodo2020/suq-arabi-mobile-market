@@ -37,7 +37,7 @@ export function getCachedDetailProduct(client: QueryClient, id: string | undefin
 // The checkout flow still validates actual price and stock against the server.
 const visibleSnapshots = new Map<string, { product: Product; savedAt: number }>();
 const SNAPSHOT_TTL_MS = 5 * 60_000;
-const MAX_SNAPSHOTS = 400;
+const MAX_SNAPSHOTS = 1200;
 
 export function registerBrowsableProduct(path: string, product: Product): void {
   if (!/^\/product\/[^/?#]+/.test(path)) return;
@@ -97,7 +97,14 @@ export function seedProductBrowseCache(
       if (store && snapshot.product.marketplace_branch_id !== store) continue;
       if (!store && snapshot.product.commerce_source === 'marketplace') continue;
       const key = detailProductKey(productId, store);
-      if (!client.getQueryData(key)) client.setQueryData(key, snapshot.product);
+      if (!client.getQueryData(key)) {
+        // Show the card immediately. Only the selected product is considered
+        // stale, so its canonical detail is refreshed silently in the sheet
+        // while neighboring records stay ready for instant swipes.
+        client.setQueryData(key, snapshot.product, {
+          updatedAt: offset === 0 ? Date.now() - PRODUCT_DETAIL_STALE_MS - 1 : Date.now(),
+        });
+      }
       warmFirstImage(snapshot.product, offset <= 1, url.searchParams.get('unit') === 'bulk');
     }
   }
