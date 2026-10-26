@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
+import NextCategoryPrompt from '@/components/sections/NextCategoryPrompt';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import ProductFilters from '@/components/ui/ProductFilters';
 import { MainCategory, Subcategory, Product, getProducts, getCategories, getSubcategories, supabase } from '@/lib/supabase';
@@ -30,6 +31,7 @@ const SubcategoryDetail = () => {
 
   const [categoryInfo, setCategoryInfo] = useState<MainCategory | null>(null);
   const [subcategoryInfo, setSubcategoryInfo] = useState<Subcategory | null>(null);
+  const [nextSection, setNextSection] = useState<{ name: string; path: string } | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -53,6 +55,15 @@ const SubcategoryDetail = () => {
         if (categoryData && subcategoryData) {
           setCategoryInfo(categoryData);
           setSubcategoryInfo(subcategoryData);
+          const nextSubIndex = subcategoriesData.findIndex(section => section.id === subcategoryId) + 1;
+          const followingSubcategory = nextSubIndex > 0 ? subcategoriesData[nextSubIndex] : null;
+          const followingCategoryIndex = categoriesData.findIndex(section => section.id === categoryId) + 1;
+          const followingCategory = followingCategoryIndex > 0 ? categoriesData[followingCategoryIndex] : null;
+          setNextSection(followingSubcategory
+            ? { name: followingSubcategory.name, path: `/category/${categoryId}/subcategory/${followingSubcategory.id}` }
+            : followingCategory
+              ? { name: followingCategory.name, path: `/category/${followingCategory.id}` }
+              : null);
 
           const productsData = await getProducts(categoryId, false);
           const availableSubcategoryProducts = productsData.filter(product =>
@@ -162,8 +173,12 @@ const SubcategoryDetail = () => {
                 </div>
               </div>
 
+              <div data-category-product-sections data-next-category-path={nextSection?.path} data-next-category-name={nextSection?.name}>
               <div ref={productsRef} className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
                 {products.map(product => <ProductCard key={product.id} product={product} />)}
+              </div>
+
+              {nextSection && <NextCategoryPrompt name={nextSection.name} onNext={() => navigate(nextSection.path)} />}
               </div>
 
               {products.length === 0 && !loading && (
