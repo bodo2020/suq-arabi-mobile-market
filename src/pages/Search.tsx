@@ -398,9 +398,9 @@ const Search = () => {
               )}
 
               {!query && (
-                <section className="mb-6 rounded-[26px] border border-emerald-100 bg-gradient-to-l from-[#edf8f2] to-white p-5 shadow-sm sm:p-6">
+                <section className="mb-6 rounded-[26px] border border-emerald-100 bg-gradient-to-l from-brand-ivory via-white to-[#edf8f2] p-5 shadow-sm sm:p-6">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#005931] text-white">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-green text-brand-yellow">
                       <SearchIcon size={22} />
                     </div>
                     <div>
@@ -492,7 +492,7 @@ const Search = () => {
                         type="button"
                         onClick={() => setOnlyOffers(value => !value)}
                         aria-pressed={onlyOffers}
-                        className={`min-h-10 shrink-0 rounded-full border px-3.5 text-xs font-bold transition sm:text-sm ${onlyOffers ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-700'}`}
+                        className={`min-h-10 shrink-0 rounded-full border px-3.5 text-xs font-bold transition sm:text-sm ${onlyOffers ? 'border-brand-yellow bg-brand-cream text-brand-green' : 'border-slate-200 bg-white text-slate-700'}`}
                       >
                         العروض
                       </button>

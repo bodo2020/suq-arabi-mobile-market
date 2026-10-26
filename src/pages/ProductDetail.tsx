@@ -582,7 +582,7 @@ const ProductDetail = () => {
             className={`absolute bottom-[5%] left-1/2 z-[1] flex h-[83%] w-[84vw] max-w-[560px] flex-col items-center justify-center rounded-[29px] bg-[#005931] p-6 text-center text-white shadow-2xl ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
             style={{ transform: `translate3d(calc(50% + 10px + ${swipeX}px),0,0)` }}
           >
-            <span className="text-xs font-bold text-yellow-300">القسم التالي</span>
+            <span className="text-xs font-bold text-brand-yellow">القسم التالي</span>
             <strong className="mt-2 text-xl">{nextCategory.name}</strong>
           </button>
         )}
@@ -635,7 +635,7 @@ const ProductDetail = () => {
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400"><ImageIcon size={45} /><span>لا توجد صورة</span></div>
               )}
-              {discount > 0 && <span className="absolute bottom-4 right-4 rounded-xl bg-[#FFC120] px-3 py-1.5 text-xs font-black text-[#005931]">خصم {discount}%</span>}
+              {discount > 0 && <span className="absolute bottom-4 right-4 rounded-xl bg-brand-yellow px-3 py-1.5 text-xs font-black text-[#005931]">خصم {discount}%</span>}
               {images.length > 1 && (
                 <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1.5">
                   {images.map((_, index) => <span key={index} className={`h-1.5 rounded-full ${index === selectedImageIndex ? 'w-5 bg-[#005931]' : 'w-1.5 bg-slate-300'}`} />)}
@@ -667,8 +667,8 @@ const ProductDetail = () => {
               )}
               {bulkAvailable && !weighted && (
                 <div className="mt-4 flex gap-2">
-                  <button type="button" onClick={openRegular} aria-pressed={!bulkMode} className={`flex-1 rounded-xl px-3 py-3 text-sm font-bold ${!bulkMode ? 'bg-[#005931] text-white' : 'bg-slate-100 text-slate-600'}`}>قطاعي · {money(unitPrice)} ج.م</button>
-                  <button type="button" onClick={openBulk} aria-pressed={bulkMode} className={`flex-1 rounded-xl px-3 py-3 text-sm font-bold ${bulkMode ? 'bg-[#005931] text-white' : 'bg-slate-100 text-slate-600'}`}>{bulkUnitType} · {money(Number(product.bulk_price || 0))} ج.م</button>
+                  <button type="button" onClick={openRegular} aria-pressed={!bulkMode} className={`flex-1 rounded-xl px-3 py-3 text-sm font-bold ${!bulkMode ? 'bg-[#005931] text-white ring-2 ring-brand-yellow/70' : 'bg-slate-100 text-slate-600'}`}>قطاعي · {money(unitPrice)} ج.م</button>
+                  <button type="button" onClick={openBulk} aria-pressed={bulkMode} className={`flex-1 rounded-xl px-3 py-3 text-sm font-bold ${bulkMode ? 'bg-[#005931] text-white ring-2 ring-brand-yellow/70' : 'bg-slate-100 text-slate-600'}`}>{bulkUnitType} · {money(Number(product.bulk_price || 0))} ج.م</button>
                 </div>
               )}
             </div>
@@ -780,7 +780,7 @@ const ProductDetail = () => {
             )}
 
             <div className="mt-5 border-y border-slate-100 py-5">
-              {discount > 0 && <div className="mb-1.5 flex items-center gap-2"><del className="text-sm font-medium text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del><span className="rounded-md bg-[#d8ff36] px-2 py-1 text-xs font-black text-[#294500]">وفر {discount}%</span></div>}
+              {discount > 0 && <div className="mb-1.5 flex items-center gap-2"><del className="text-sm font-medium text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del><span className="rounded-md bg-brand-cream px-2 py-1 text-xs font-black text-brand-green">وفر {discount}%</span></div>}
               <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
                 <strong className="text-4xl font-black tracking-tight text-slate-950">{money(displayPrice)}</strong>
                 <span className="pb-1 text-sm font-black text-[#005931]">ج.م</span>

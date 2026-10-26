@@ -345,7 +345,7 @@ export default function CategoryJourney() {
                   className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white/85 text-[#005931]'}`}
                 >
                   <span>{chip.name}</span>
-                  <span className={`text-[10px] tabular-nums ${selected ? 'text-[#FFD43B]' : 'text-slate-500'}`}>{chip.count}</span>
+                  <span className={`text-[10px] tabular-nums ${selected ? 'text-brand-yellow' : 'text-slate-500'}`}>{chip.count}</span>
                 </button>
               );
             }) : <span className="text-xs font-medium text-slate-500">تصفح منتجات {categories[visibleIndex]?.name || ''}</span>}
