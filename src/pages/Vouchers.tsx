@@ -106,7 +106,7 @@ export default function Vouchers() {
         </section>
 
         <Card className="rounded-3xl border-gray-100 shadow-sm">
-          <CardHeader><CardTitle className="flex items-center gap-2"><Gift className="text-brand-yellow" size={21} />حوّل نقاطك لكوبون خصم</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Gift className="text-brand-green" size={21} />حوّل نقاطك لكوبون خصم</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-gray-500">اختار عدد نقاط بمضاعفات {redemptionPoints.toLocaleString('ar-EG')}. النقاط هتتخصم فور إنشاء كوبون الخصم، وبعدها تقدر تستخدمه في نقطة البيع أو داخل التطبيق.</p>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
