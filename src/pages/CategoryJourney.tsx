@@ -12,7 +12,7 @@ import {
 import { getProductListWithVariants } from '@/utils/productUtils';
 
 type CategoryContent = { products: Product[]; subcategories: Subcategory[] };
-type Chip = { id: string; name: string };
+type Chip = { id: string; name: string; count: number };
 type JourneyChip = Chip & { categoryId: string };
 
 const categoryContentKey = (categoryId: string) => ['customer-continuous-category', categoryId] as const;
@@ -29,8 +29,8 @@ const getCategoryContent = async (categoryId: string): Promise<CategoryContent> 
 const topOffset = () => {
   if (typeof document === 'undefined') return 155;
   const nav = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top-nav-height')) || 68;
-  // One sticky subcategory rail (52px) plus breathing room for headings.
-  return nav + 62;
+  // Original fixed glass rail: 40px chips + 20px padding + borders + heading gap.
+  return nav + 76;
 };
 
 const jumpTo = (element: HTMLElement | null, smooth = true) => {
@@ -88,7 +88,7 @@ const JourneyCategory = React.memo(function JourneyCategory({
   }, [query.data]);
 
   useEffect(() => {
-    if (query.data) onChips(category.id, sections.map(section => ({ id: section.id, name: section.name })));
+    if (query.data) onChips(category.id, sections.map(section => ({ id: section.id, name: section.name, count: section.products.length })));
   }, [query.data, category.id, sections, onChips]);
 
   const next = orderedCategories[index + 1];
@@ -189,7 +189,7 @@ export default function CategoryJourney() {
   const onChips = useCallback((categoryId: string, chips: Chip[]) => {
     setSubChips(prev => {
       const before = prev[categoryId] || [];
-      if (before.length === chips.length && before.every((chip, i) => chip.id === chips[i].id && chip.name === chips[i].name)) return prev;
+      if (before.length === chips.length && before.every((chip, i) => chip.id === chips[i].id && chip.name === chips[i].name && chip.count === chips[i].count)) return prev;
       return { ...prev, [categoryId]: chips };
     });
   }, []);
@@ -313,24 +313,27 @@ export default function CategoryJourney() {
   }, [activeCategory, categories, client]);
 
   if (categoriesQuery.isLoading || (categories.length > 0 && !isReady)) return (
-    <MainLayout><TopNavBar hideLogo hideSearch pageTitle="الأقسام" showBackButton onBack={() => navigate(-1)} />
+    <MainLayout><TopNavBar hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} searchProps={{ appearance: 'category' }} />
       <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader /></div>
     </MainLayout>
   );
   if (categoriesQuery.isError || !categories.length) return (
-    <MainLayout><TopNavBar hideLogo hideSearch pageTitle="الأقسام" showBackButton onBack={() => navigate(-1)} />
+    <MainLayout><TopNavBar hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} searchProps={{ appearance: 'category' }} />
       <div className="p-6 text-center"><PackageSearch className="mx-auto mb-3 text-[#005931]" size={28} /><p>الأقسام مش متاحة حاليًا.</p></div>
     </MainLayout>
   );
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch pageTitle="تصفح الأقسام" showBackButton onBack={() => navigate('/categories')} />
-      <div className="mx-auto max-w-7xl pb-20">
-        <div className="sticky z-[45] border-b border-white/70 bg-white/80 shadow-sm backdrop-blur-xl"
-          style={{ top: 'var(--top-nav-height, 68px)' }}>
-          <div ref={railRef} className="hide-scrollbar flex h-[45px] items-center gap-1.5 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
-                        {chips.length ? chips.map(chip => {
+      <TopNavBar hideLogo showBackButton onBack={() => navigate('/categories')} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} searchProps={{ appearance: 'category' }} />
+      {/* Fixed to the viewport: scrolled products pass behind translucent glass. */}
+      <div
+        className="fixed inset-x-0 z-[45] border-y border-emerald-100/70 bg-white/60 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur-xl backdrop-saturate-150"
+        style={{ top: 'var(--top-nav-height, 68px)', WebkitBackdropFilter: 'blur(18px) saturate(150%)' }}
+      >
+        <div className="mx-auto w-full max-w-7xl">
+          <div ref={railRef} className="hide-scrollbar flex h-10 w-full flex-nowrap items-center gap-1.5 overflow-x-auto scroll-smooth px-3 sm:gap-2 sm:px-5" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
+            {chips.length ? chips.map(chip => {
               const selected = chip.categoryId === activeCategory && chip.id === activeSubcategory;
               return (
                 <button
@@ -338,15 +341,19 @@ export default function CategoryJourney() {
                   ref={node => { subRefs.current[`${chip.categoryId}:${chip.id}`] = node; }}
                   type="button"
                   onClick={() => jumpTo(document.getElementById(`journey-sub-${chip.categoryId}-${chip.id}`))}
-                  aria-current={selected ? 'true' : undefined}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${selected ? 'bg-emerald-100 text-[#005931]' : 'text-slate-500 hover:bg-emerald-50'}`}
-                >{chip.name}</button>
+                  aria-pressed={selected}
+                  className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white/85 text-[#005931]'}`}
+                >
+                  <span>{chip.name}</span>
+                  <span className={`text-[10px] tabular-nums ${selected ? 'text-[#FFD43B]' : 'text-slate-500'}`}>{chip.count}</span>
+                </button>
               );
-            }) : <span className="text-xs font-medium text-slate-400">تصفح منتجات {categories[visibleIndex]?.name || ''}</span>}
+            }) : <span className="text-xs font-medium text-slate-500">تصفح منتجات {categories[visibleIndex]?.name || ''}</span>}
           </div>
         </div>
-
-        <div data-continuous-category-journey className="space-y-8 px-3 pt-4 sm:px-5">
+      </div>
+      <div className="mx-auto max-w-7xl pb-20">
+        <div data-continuous-category-journey className="space-y-8 px-3 pt-[78px] sm:px-5">
           {categories.map((category, index) => (
             <JourneyCategory
               key={category.id}
