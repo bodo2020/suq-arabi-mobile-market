@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PackageSearch } from 'lucide-react';
@@ -6,13 +7,14 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
 import ProductCard from '@/components/ui/ProductCard';
+import SmartImage from '@/components/ui/SmartImage';
 import {
   getCategories, getProducts, getSubcategories, type MainCategory, type Product, type Subcategory,
 } from '@/lib/supabase';
 import { getProductListWithVariants } from '@/utils/productUtils';
 
 type CategoryContent = { products: Product[]; subcategories: Subcategory[] };
-type Chip = { id: string; name: string };
+type Chip = { id: string; name: string; imageUrl?: string | null; count: number };
 type JourneyChip = Chip & { categoryId: string };
 
 const categoryContentKey = (categoryId: string) => ['customer-continuous-category', categoryId] as const;
@@ -29,8 +31,8 @@ const getCategoryContent = async (categoryId: string): Promise<CategoryContent> 
 const topOffset = () => {
   if (typeof document === 'undefined') return 155;
   const nav = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top-nav-height')) || 68;
-  // One sticky subcategory rail (52px) plus breathing room for headings.
-  return nav + 62;
+  // Fixed 60px rail plus room for subcategory headings.
+  return nav + 72;
 };
 
 const jumpTo = (element: HTMLElement | null, smooth = true) => {
@@ -78,17 +80,18 @@ const JourneyCategory = React.memo(function JourneyCategory({
     const grouped = subcategories.map(subcategory => ({
       id: subcategory.id,
       name: subcategory.name,
+      imageUrl: subcategory.image_url,
       products: products.filter(product => product.subcategory_id === subcategory.id),
     })).filter(section => section.products.length > 0);
     const remaining = products.filter(product =>
       !product.subcategory_id || !subcategories.some(item => item.id === product.subcategory_id)
     );
-    if (remaining.length) grouped.push({ id: 'other', name: 'منتجات أخرى', products: remaining });
+    if (remaining.length) grouped.push({ id: 'other', name: 'منتجات أخرى', imageUrl: null, products: remaining });
     return grouped;
   }, [query.data]);
 
   useEffect(() => {
-    if (query.data) onChips(category.id, sections.map(section => ({ id: section.id, name: section.name })));
+    if (query.data) onChips(category.id, sections.map(section => ({ id: section.id, name: section.name, imageUrl: section.imageUrl, count: section.products.length })));
   }, [query.data, category.id, sections, onChips]);
 
   const next = orderedCategories[index + 1];
@@ -189,7 +192,7 @@ export default function CategoryJourney() {
   const onChips = useCallback((categoryId: string, chips: Chip[]) => {
     setSubChips(prev => {
       const before = prev[categoryId] || [];
-      if (before.length === chips.length && before.every((chip, i) => chip.id === chips[i].id && chip.name === chips[i].name)) return prev;
+      if (before.length === chips.length && before.every((chip, i) => chip.id === chips[i].id && chip.name === chips[i].name && chip.imageUrl === chips[i].imageUrl && chip.count === chips[i].count)) return prev;
       return { ...prev, [categoryId]: chips };
     });
   }, []);
@@ -327,24 +330,52 @@ export default function CategoryJourney() {
     <MainLayout>
       <TopNavBar hideLogo hideSearch pageTitle="تصفح الأقسام" showBackButton onBack={() => navigate('/categories')} />
       <div className="mx-auto max-w-7xl pb-20">
-        <div className="sticky z-[45] border-b border-white/70 bg-white/80 shadow-sm backdrop-blur-xl"
-          style={{ top: 'var(--top-nav-height, 68px)' }}>
-          <div ref={railRef} className="hide-scrollbar flex h-[45px] items-center gap-1.5 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
-                        {chips.length ? chips.map(chip => {
-              const selected = chip.categoryId === activeCategory && chip.id === activeSubcategory;
-              return (
-                <button
-                  key={`${chip.categoryId}:${chip.id}`}
-                  ref={node => { subRefs.current[`${chip.categoryId}:${chip.id}`] = node; }}
-                  type="button"
-                  onClick={() => jumpTo(document.getElementById(`journey-sub-${chip.categoryId}-${chip.id}`))}
-                  aria-current={selected ? 'true' : undefined}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${selected ? 'bg-emerald-100 text-[#005931]' : 'text-slate-500 hover:bg-emerald-50'}`}
-                >{chip.name}</button>
-              );
-            }) : <span className="text-xs font-medium text-slate-400">تصفح منتجات {categories[visibleIndex]?.name || ''}</span>}
-          </div>
-        </div>
+        {/* Render above any animated/layout ancestors so position:fixed remains viewport-fixed on Android. */}
+        {typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-x-0 z-[45] flex h-[60px] items-center border-y border-emerald-100/70 bg-white/75 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur-xl"
+            style={{ top: 'var(--top-nav-height, 68px)' }}
+          >
+            <div className="mx-auto w-full max-w-7xl">
+              <div
+                ref={railRef}
+                className="hide-scrollbar flex w-full flex-nowrap items-center gap-1.5 overflow-x-auto scroll-smooth px-3 py-1.5 sm:gap-2 sm:px-5"
+                dir="rtl"
+                role="navigation"
+                aria-label="الأقسام الفرعية المتصلة"
+              >
+                {chips.length ? chips.map(chip => {
+                  const selected = chip.categoryId === activeCategory && chip.id === activeSubcategory;
+                  return (
+                    <button
+                      key={`${chip.categoryId}:${chip.id}`}
+                      ref={node => { subRefs.current[`${chip.categoryId}:${chip.id}`] = node; }}
+                      type="button"
+                      onClick={() => jumpTo(document.getElementById(`journey-sub-${chip.categoryId}-${chip.id}`))}
+                      aria-current={selected ? 'true' : undefined}
+                      className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white text-slate-700'}`}
+                    >
+                      {chip.imageUrl && (
+                        <span className="h-5 w-5 shrink-0 overflow-hidden rounded-full bg-white sm:h-6 sm:w-6">
+                          <SmartImage src={chip.imageUrl} alt="" preloadMargin="900px 0px" className="h-full w-full object-cover" />
+                        </span>
+                      )}
+                      <span>{chip.name}</span>
+                      {chip.count > 0 && (
+                        <span className={`text-[9px] sm:text-[10px] ${selected ? 'text-emerald-100' : 'text-slate-400'}`}>
+                          {chip.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                }) : <span className="px-3 text-xs font-medium text-slate-500">تصفح منتجات {categories[visibleIndex]?.name || ''}</span>}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+        {/* Keep the rail's space in normal flow without moving it during scrolling. */}
+        <div className="h-[60px]" aria-hidden="true" />
 
         <div data-continuous-category-journey className="space-y-8 px-3 pt-4 sm:px-5">
           {categories.map((category, index) => (
