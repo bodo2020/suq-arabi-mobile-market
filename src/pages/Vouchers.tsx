@@ -94,8 +94,8 @@ export default function Vouchers() {
         <section className="overflow-hidden rounded-3xl bg-[#005931] p-5 text-white shadow-lg sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} /><span className="text-sm font-bold">نقاط المعداوي</span></div>
-              <div className="mt-2 text-4xl font-black">{Number(card?.points_balance || 0).toLocaleString('ar-EG')} <span className="text-lg font-semibold">نقطة</span></div>
+              <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} className="text-brand-yellow" /><span className="text-sm font-bold">نقاط سوبر ماركو</span></div>
+              <div className="mt-2 text-4xl font-black text-brand-yellow">{Number(card?.points_balance || 0).toLocaleString('ar-EG')} <span className="text-lg font-semibold">نقطة</span></div>
               <p className="mt-2 text-sm text-emerald-50/90">كل {redemptionPoints.toLocaleString('ar-EG')} نقطة = كوبون خصم بقيمة {money(redemptionValue)}.</p>
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur">
@@ -106,7 +106,7 @@ export default function Vouchers() {
         </section>
 
         <Card className="rounded-3xl border-gray-100 shadow-sm">
-          <CardHeader><CardTitle className="flex items-center gap-2"><Gift className="text-primary" size={21} />حوّل نقاطك لكوبون خصم</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Gift className="text-brand-yellow" size={21} />حوّل نقاطك لكوبون خصم</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-gray-500">اختار عدد نقاط بمضاعفات {redemptionPoints.toLocaleString('ar-EG')}. النقاط هتتخصم فور إنشاء كوبون الخصم، وبعدها تقدر تستخدمه في نقطة البيع أو داخل التطبيق.</p>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
@@ -144,9 +144,9 @@ export default function Vouchers() {
             <div className="grid gap-4 md:grid-cols-2">
               {activeVouchers.map(voucher => (
                 <Card key={voucher.id} className="overflow-hidden rounded-3xl border-emerald-100 shadow-sm">
-                  <div className="bg-gradient-to-l from-emerald-50 to-white p-5">
+                  <div className="bg-gradient-to-l from-brand-ivory via-white to-emerald-50 p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <div><p className="text-xs font-bold text-primary">كوبون خصم المعداوي</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
+                      <div><p className="text-xs font-bold text-primary">كوبون خصم سوبر ماركو</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
                       <Badge className={statusMeta[voucher.status].className}>{statusMeta[voucher.status].label}</Badge>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-3">
