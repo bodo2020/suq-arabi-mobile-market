@@ -66,7 +66,7 @@ export default function WeightSelector({ product, isOpen, onClose, initialWeight
 
   return (
     <Drawer open={isOpen} onOpenChange={open => { if (!open) onClose(); }} shouldScaleBackground={false}>
-      <DrawerContent className="max-h-[88dvh] rounded-t-[30px] border-0 bg-white" dir="rtl">
+      <DrawerContent overlayClassName="z-[150]" className="z-[160] max-h-[88dvh] rounded-t-[30px] border-0 bg-white" dir="rtl">
         <div className="mx-auto w-full max-w-xl overflow-y-auto px-4 pb-[calc(18px+var(--safe-area-bottom))] sm:px-6">
           <DrawerHeader className="px-0 pb-2 pt-5 text-right sm:text-right">
             <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-[#005931]"><Scale size={21} /></div>
