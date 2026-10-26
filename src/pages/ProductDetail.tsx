@@ -104,7 +104,10 @@ const ProductDetail = () => {
     const touch = event.touches[0];
     if (!touch || weightOpen || swipeLocked) return;
     // Scrolling the related-product rail must not trigger a main-product swipe.
-    if ((event.target as HTMLElement).closest('[data-product-recommendations]')) return;
+    if ((event.target as HTMLElement).closest('[data-product-recommendations]')) {
+      sheetTouch.current = null;
+      return;
+    }
     sheetTouch.current = {
       x: touch.clientX,
       y: touch.clientY,
