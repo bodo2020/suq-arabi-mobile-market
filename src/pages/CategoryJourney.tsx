@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Layers3, PackageSearch } from 'lucide-react';
+import { PackageSearch } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
 import ProductCard from '@/components/ui/ProductCard';
-import SmartImage from '@/components/ui/SmartImage';
 import {
   getCategories, getProducts, getSubcategories, type MainCategory, type Product, type Subcategory,
 } from '@/lib/supabase';
@@ -100,22 +99,11 @@ const JourneyCategory = React.memo(function JourneyCategory({
       data-journey-category={category.id}
       className={`min-h-[270px] scroll-mt-40 pb-8 transition-[opacity,transform] duration-300 motion-reduce:transition-none ${near ? "translate-y-0 opacity-100" : "translate-y-2 opacity-90"}`}
     >
-      <div className={`relative mb-3 flex min-h-[86px] items-center overflow-hidden rounded-[20px] border border-emerald-100 bg-[#ecf8f2] px-4 py-3 sm:min-h-[108px] sm:px-6 transition-transform duration-300 [transition-timing-function:cubic-bezier(0.2,0.8,0.3,1.2)] motion-reduce:transform-none ${boundaryPull === 1 ? 'translate-x-2' : boundaryPull === -1 ? '-translate-x-2' : 'translate-x-0'}`}>
-        {category.image_url && (
-          <div className="absolute inset-y-0 left-0 w-[38%] opacity-30">
-            <SmartImage src={category.image_url} alt="" className="h-full w-full object-cover" />
-          </div>
-        )}
-        <div className="relative z-10 min-w-0">
-          <span className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#005931]">
-            <Layers3 size={18} />
-          </span>
-          <h2 className="text-xl font-black text-[#005931] sm:text-2xl">{category.name}</h2>
-          <p className="mt-1 text-xs text-slate-600">
-            {query.data ? `${query.data.products.length} منتج متاح` : 'اكتشف منتجات القسم'}
-          </p>
-        </div>
-      </div>
+      <h2
+        className={`mb-4 px-1 text-xl font-black text-[#005931] sm:text-2xl transition-transform duration-300 [transition-timing-function:cubic-bezier(0.2,0.8,0.3,1.2)] motion-reduce:transform-none ${boundaryPull === 1 ? 'translate-x-2' : boundaryPull === -1 ? '-translate-x-2' : 'translate-x-0'}`}
+      >
+        {category.name}
+      </h2>
 
       {query.isError ? (
         <button type="button" onClick={() => { setNear(true); void query.refetch(); }} className="w-full rounded-2xl bg-white p-5 text-[#005931]">
@@ -339,23 +327,20 @@ export default function CategoryJourney() {
     <MainLayout>
       <TopNavBar hideLogo hideSearch pageTitle="تصفح الأقسام" showBackButton onBack={() => navigate('/categories')} />
       <div className="mx-auto max-w-7xl pb-20">
-        <div className="sticky z-[45] bg-white/95 shadow-sm backdrop-blur-xl"
+        <div className="sticky z-[45] border-b border-white/70 bg-white/80 shadow-sm backdrop-blur-xl"
           style={{ top: 'var(--top-nav-height, 68px)' }}>
-          <div ref={railRef} className="hide-scrollbar flex h-[52px] items-center gap-1.5 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
-            {chips.length ? chips.map((chip, index) => {
+          <div ref={railRef} className="hide-scrollbar flex h-[45px] items-center gap-1.5 overflow-x-auto px-3" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
+                        {chips.length ? chips.map(chip => {
               const selected = chip.categoryId === activeCategory && chip.id === activeSubcategory;
-              const mainBoundary = index > 0 && chips[index - 1].categoryId !== chip.categoryId;
               return (
-                <React.Fragment key={`${chip.categoryId}:${chip.id}`}>
-                  {mainBoundary && <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-emerald-200" />}
-                  <button
-                    ref={node => { subRefs.current[`${chip.categoryId}:${chip.id}`] = node; }}
-                    type="button"
-                    onClick={() => jumpTo(document.getElementById(`journey-sub-${chip.categoryId}-${chip.id}`))}
-                    aria-current={selected ? 'true' : undefined}
-                    className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition-colors duration-200 ${selected ? 'bg-[#005931] text-white' : 'bg-emerald-50 text-slate-600 hover:bg-emerald-100'}`}
-                  >{chip.name}</button>
-                </React.Fragment>
+                <button
+                  key={`${chip.categoryId}:${chip.id}`}
+                  ref={node => { subRefs.current[`${chip.categoryId}:${chip.id}`] = node; }}
+                  type="button"
+                  onClick={() => jumpTo(document.getElementById(`journey-sub-${chip.categoryId}-${chip.id}`))}
+                  aria-current={selected ? 'true' : undefined}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${selected ? 'bg-emerald-100 text-[#005931]' : 'text-slate-500 hover:bg-emerald-50'}`}
+                >{chip.name}</button>
               );
             }) : <span className="text-xs font-medium text-slate-400">تصفح منتجات {categories[visibleIndex]?.name || ''}</span>}
           </div>
