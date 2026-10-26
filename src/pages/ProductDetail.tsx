@@ -2,6 +2,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Check, ChevronLeft, ChevronRight, ImageIcon, Minus, Package, Plus, Scale, Share2, ShoppingCart, Trash2, X } from 'lucide-react';
 import TopNavBar from '@/components/layout/TopNavBar';
 import MainLayout from '@/components/layout/MainLayout';
@@ -25,6 +26,7 @@ const money = (value: number) => Number(value || 0).toLocaleString('ar-EG', { ma
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const browse = useMemo(() => readProductBrowseState(location.state), [location.state]);
@@ -565,6 +567,7 @@ const ProductDetail = () => {
         </section>
       </div>
 
+      {!isMobile && (
       <main className="mx-auto hidden max-w-6xl px-3 pb-40 pt-2 sm:px-5 md:block md:pb-10">
         <div className="grid gap-4 lg:grid-cols-[1.06fr_.94fr] lg:items-start lg:gap-6">
           <section className="relative overflow-hidden rounded-[28px] bg-white p-3 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] sm:p-5">
@@ -700,6 +703,7 @@ const ProductDetail = () => {
           </section>
         )}
       </main>
+      )}
 
       {weightOpen && weighted && (
         <WeightSelector product={product} isOpen={weightOpen} onClose={() => setWeightOpen(false)} initialWeight={weightedCartItem ? currentWeight : weightStep} onSelect={applyWeight} />
