@@ -10,6 +10,7 @@ interface SearchBarProps {
   onBarcodeClick?: () => void;
   onFocus?: () => void;
   readOnly?: boolean;
+  appearance?: 'default' | 'category';
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -18,7 +19,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   initialQuery = '',
   onBarcodeClick,
   onFocus,
-  readOnly = false
+  readOnly = false,
+  appearance = 'default'
 }) => {
   const [query, setQuery] = useState(initialQuery);
   const navigate = useNavigate();
@@ -59,9 +61,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className="relative flex items-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 transition-colors focus-within:border-[#005931] focus-within:bg-white">
+      <div className={`relative flex items-center overflow-hidden border transition-colors focus-within:border-[#005931] ${appearance === 'category' ? 'rounded-full border-emerald-200 bg-white shadow-[0_2px_8px_rgba(0,89,49,.02)]' : 'rounded-xl border-gray-200 bg-gray-50 focus-within:bg-white'}`}>
         <div className="relative flex min-w-0 flex-1 items-center">
-          <Search size={20} className="absolute right-3 text-gray-400" />
+          <Search size={20} className={appearance === 'category' ? 'absolute right-3.5 text-[#005931]' : 'absolute right-3 text-gray-400'} />
           <input
             type="search"
             aria-label="البحث عن المنتجات"
@@ -81,7 +83,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           onClick={handleBarcodeClick}
           aria-label="مسح باركود المنتج"
           title="مسح باركود المنتج"
-          className="group flex h-11 w-12 shrink-0 items-center justify-center border-r border-gray-200 bg-white/70 transition-colors hover:bg-emerald-50 active:bg-emerald-100"
+          className={`group flex h-11 w-12 shrink-0 items-center justify-center border-r transition-colors ${appearance === 'category' ? 'border-emerald-200 bg-[#fff6d6] text-[#005931] hover:bg-[#fff0be] active:bg-[#ffebac]' : 'border-gray-200 bg-white/70 hover:bg-emerald-50 active:bg-emerald-100'}`}
         >
           <Barcode size={23} strokeWidth={2.2} className="text-[#005931] transition-transform group-active:scale-95" />
         </button>
