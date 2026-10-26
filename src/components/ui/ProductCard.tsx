@@ -232,7 +232,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   aria-label={`إضافة ${displayName} بوزن ${formatWeightAmount(Math.min(maxCartQuantity || weightStep, weightStep))}`}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-[#005931] text-white shadow-[0_7px_18px_rgba(0,89,49,0.22)] transition-transform active:scale-90 disabled:opacity-50 sm:h-12 sm:w-12"
                 >
-                  <Plus className="h-5 w-5 sm:h-[27px] sm:w-[27px]" strokeWidth={2.4} />
+                  <Plus className="h-5 w-5 text-brand-yellow sm:h-[27px] sm:w-[27px]" strokeWidth={2.4} />
                 </button>
               )
             ) : item ? (
@@ -253,7 +253,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 aria-label={`إضافة ${displayName} للسلة`}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-[#005931] text-white shadow-[0_7px_18px_rgba(0,89,49,0.22)] transition-transform active:scale-90 disabled:opacity-50 sm:h-12 sm:w-12"
               >
-                <Plus className="h-5 w-5 sm:h-[27px] sm:w-[27px]" strokeWidth={2.4} />
+                <Plus className="h-5 w-5 text-brand-yellow sm:h-[27px] sm:w-[27px]" strokeWidth={2.4} />
               </button>
             )}
           </div>
@@ -268,7 +268,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {weighted ? <Scale className="h-2.5 w-2.5 text-[#005931] sm:h-[13px] sm:w-[13px]" /> : bulk ? <Package className="h-2.5 w-2.5 text-[#005931] sm:h-[13px] sm:w-[13px]" /> : null}
         <span className="truncate">{unitLabel}</span>
         {bulkAlternative && <span className="rounded-full bg-emerald-50 px-1 py-0.5 text-[8px] font-bold text-[#005931] sm:px-1.5 sm:text-[10px]">جملة</span>}
-        {limitedStock && <span className="mr-auto rounded-full bg-amber-50 px-1 py-0.5 text-[8px] font-bold text-amber-700 sm:px-1.5 sm:text-[10px]">قليل</span>}
+        {limitedStock && <span className="mr-auto rounded-full bg-brand-cream px-1 py-0.5 text-[8px] font-bold text-brand-green sm:px-1.5 sm:text-[10px]">قليل</span>}
       </div>
 
       <div className="mt-auto pt-1.5 sm:pt-2.5">
