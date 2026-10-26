@@ -103,6 +103,8 @@ const ProductDetail = () => {
   const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
     if (!touch || weightOpen || swipeLocked) return;
+    // Scrolling the related-product rail must not trigger a main-product swipe.
+    if ((event.target as HTMLElement).closest('[data-product-recommendations]')) return;
     sheetTouch.current = {
       x: touch.clientX,
       y: touch.clientY,
@@ -232,6 +234,8 @@ const ProductDetail = () => {
     if (!product) return;
     let active = true;
 
+    setRelatedProducts([]);
+    setCompany(null);
     const loadExtras = async () => {
       const [related, companyData] = await Promise.allSettled([
         getRelatedProducts(product.id, product.main_category_id),
@@ -632,7 +636,7 @@ const ProductDetail = () => {
               {company && <button type="button" className="mt-2 text-sm font-bold text-[#005931]" onClick={() => navigate(`/company/${company.id}`)}>اكتشف منتجات {company.name}</button>}
             </div>
             {relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)).length > 0 && (
-              <section className="rounded-[24px] bg-white p-3.5" aria-label="منتجات مقترحة">
+              <section data-product-recommendations className="rounded-[24px] bg-white p-3.5" aria-label="منتجات مقترحة">
                 <div className="mb-3 px-1">
                   <h2 className="text-base font-black text-slate-950">منتجات مقترحة ليك</h2>
                   <p className="mt-1 text-xs font-medium text-slate-500">اختار منتج تاني وكمل تصفحك</p>
