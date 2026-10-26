@@ -12,7 +12,7 @@ export type ProductBrowse = {
 export type ProductBrowseState = { productBrowse: ProductBrowse };
 
 const validPath = (path: string) => /^\/product\/[^/?#]+(?:\?[^#]*)?$/.test(path);
-const validCategoryPath = (path: string) => /^\/category\/[^/?#]+$/.test(path);
+const validCategoryPath = (path: string) => /^\/category\/[^/?#]+(?:\/subcategory\/[^/?#]+)?$/.test(path);
 const safeImage = (url: string) => url.startsWith('/') && !url.startsWith('//') || /^https?:\/\//i.test(url);
 
 const previewFromCard = (card: HTMLElement): ProductPreview | null => {
