@@ -28,17 +28,27 @@ export function collectProductBrowseState(anchor: HTMLAnchorElement, fromPath: s
   // Category detail should traverse all its ordered subcategory sections rather
   // than stopping at the end of a single product grid.
   const journey = anchor.closest<HTMLElement>('[data-category-product-sections]');
-  let cards: HTMLElement[] = journey
-    ? Array.from(journey.querySelectorAll<HTMLElement>('[data-product-card]'))
+  const continuous = anchor.closest<HTMLElement>('[data-continuous-category-journey]');
+  const source = continuous || journey;
+  let allCards: HTMLElement[] = source
+    ? Array.from(source.querySelectorAll<HTMLElement>('[data-product-card]'))
     : [];
-  if (!cards.length) {
+  if (!allCards.length) {
     let node = anchor.closest('[data-product-card]')?.parentElement || null;
     while (node && !node.classList.contains('app-main-layout')) {
       const found = Array.from(node.querySelectorAll<HTMLElement>('[data-product-card]'));
-      if (found.length > 1) { cards = found; break; }
+      if (found.length > 1) { allCards = found; break; }
       node = node.parentElement;
     }
   }
+  // Keep a centered window around the clicked item. The previous "first 250"
+  // cap broke neighbor swipes when a shopper opened a late catalog product.
+  const activeCard = anchor.closest<HTMLElement>('[data-product-card]');
+  const currentIndex = activeCard ? allCards.indexOf(activeCard) : -1;
+  const start = allCards.length > 250 && currentIndex >= 0
+    ? Math.max(0, Math.min(currentIndex - 120, allCards.length - 250))
+    : 0;
+  const cards = allCards.slice(start, start + 250);
   const distinct = new Map<string, ProductPreview>();
   cards.map(previewFromCard).forEach(preview => {
     if (preview && !distinct.has(preview.path)) distinct.set(preview.path, preview);
@@ -48,11 +58,14 @@ export function collectProductBrowseState(anchor: HTMLAnchorElement, fromPath: s
     const card = anchor.closest<HTMLElement>('[data-product-card]');
     distinct.set(ownPath, card ? previewFromCard(card) || { path: ownPath, name: '', image: '', price: '' } : { path: ownPath, name: '', image: '', price: '' });
   }
-  const truncated = distinct.size > 250;
+  // A continuous journey can contain other already-rendered main categories.
+  // Only provide a route fallback when this is truly the last visible product.
+  const hasFollowingLoaded = currentIndex >= 0 && currentIndex < allCards.length - 1;
+  const truncated = allCards.length > 250;
   const previews = Array.from(distinct.values()).slice(0, 250);
   const path = journey?.dataset.nextCategoryPath || '';
   // Never treat the 250-item route-state cap as the end of a longer category.
-  const nextCategory = !truncated && validCategoryPath(path)
+  const nextCategory = !hasFollowingLoaded && !truncated && validCategoryPath(path)
     ? { path, name: (journey?.dataset.nextCategoryName || 'القسم التالي').slice(0, 100) }
     : undefined;
   return {
