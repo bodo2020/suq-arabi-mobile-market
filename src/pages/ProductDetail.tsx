@@ -276,7 +276,7 @@ const ProductDetail = () => {
     if (!product || sheetVisible) return;
     const frame = requestAnimationFrame(() => setSheetVisible(true));
     return () => cancelAnimationFrame(frame);
-  }, [Boolean(product), sheetVisible]);
+  }, [Boolean(product)]);
 
   useEffect(() => {
     if (!product) return;
