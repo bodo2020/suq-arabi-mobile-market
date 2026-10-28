@@ -1,5 +1,5 @@
 import { getMarketplaceStore, getMarketplaceStoreProduct } from '@/lib/marketplace';
-import { getProductById, getRelatedProducts, getCompanyById, type Product } from '@/lib/supabase';
+import { getProductById, type Product } from '@/lib/supabase';
 import type { QueryClient } from '@tanstack/react-query';
 import { productCardImage } from '@/lib/productCardImage';
 
@@ -9,8 +9,9 @@ import { productCardImage } from '@/lib/productCardImage';
  */
 export const detailProductKey = (id: string, store: string | null) =>
   ['customer-product-detail', store || 'owned', id] as const;
-export const detailRelatedKey = (id: string, category: string) =>
-  ['customer-product-related', category, id] as const;
+export const detailRelatedKey = (product: Product) =>
+  ['customer-product-related-v2', product.commerce_source || 'owned',
+    product.marketplace_branch_id || product.delivery_branch_id || 'branch', product.id] as const;
 export const detailCompanyKey = (id: string) => ['customer-product-company', id] as const;
 
 // Keep browsed products available through repeated swipes. After this interval
@@ -102,7 +103,7 @@ export function seedProductBrowseCache(
         // stale, so its canonical detail is refreshed silently in the sheet
         // while neighboring records stay ready for instant swipes.
         client.setQueryData(key, snapshot.product, {
-          updatedAt: offset === 0 ? Date.now() - PRODUCT_DETAIL_STALE_MS - 1 : Date.now(),
+          updatedAt: Date.now() - PRODUCT_DETAIL_STALE_MS - 1,
         });
       }
       warmFirstImage(snapshot.product, offset <= 1, url.searchParams.get('unit') === 'bulk');
@@ -120,43 +121,15 @@ export function warmAdjacentProductPages(
 ): void {
   if (currentIndex < 0 || typeof window === 'undefined') return;
   seedProductBrowseCache(client, paths, currentIndex);
+  // Only warm images for the neighbors. Full details are revalidated when
+  // selected; recommended products NEVER compete with an active swipe.
   for (const index of [currentIndex - 1, currentIndex + 1, currentIndex - 2, currentIndex + 2]) {
     const path = paths[index];
-    if (!path || !/^\/product\/[^/?#]+/.test(path)) continue;
+    if (!path || !/^\\/product\\/[^/?#]+/.test(path)) continue;
     const url = new URL(path, window.location.origin);
     if (url.origin !== window.location.origin) continue;
-    let id: string;
-    try { id = decodeURIComponent(url.pathname.slice('/product/'.length)); }
-    catch { continue; }
-    const store = url.searchParams.get('store');
-    if (!id || id.includes('/')) continue;
-    void client.prefetchQuery({
-      queryKey: detailProductKey(id, store),
-      queryFn: () => fetchDetailProduct(id, store),
-      staleTime: PRODUCT_DETAIL_STALE_MS,
-      gcTime: PRODUCT_DETAIL_GC_MS,
-    }).then(() => {
-      const product = getCachedDetailProduct(client, id, store);
-      if (!product) return;
-      const immediate = Math.abs(index - currentIndex) === 1;
-      warmFirstImage(product, immediate, url.searchParams.get('unit') === 'bulk');
-      // Supplementary recommendations are non-critical: only warm the nearest
-      // two, leaving bandwidth for the product and its main image.
-      if (!immediate) return;
-      void client.prefetchQuery({
-        queryKey: detailRelatedKey(product.id, product.main_category_id),
-        queryFn: () => getRelatedProducts(product.id, product.main_category_id),
-        staleTime: PRODUCT_DETAIL_STALE_MS,
-        gcTime: PRODUCT_DETAIL_GC_MS,
-      });
-      if (product.company_id) void client.prefetchQuery({
-        queryKey: detailCompanyKey(product.company_id),
-        queryFn: () => getCompanyById(product.company_id),
-        staleTime: PRODUCT_DETAIL_STALE_MS,
-        gcTime: PRODUCT_DETAIL_GC_MS,
-      });
-    }).catch(() => {
-      // An unavailable neighbor must not block viewing the current product.
-    });
+    const id = decodeURIComponent(url.pathname.slice('/product/'.length));
+    const product = getCachedDetailProduct(client, id, url.searchParams.get('store'));
+    if (product) warmFirstImage(product, Math.abs(index - currentIndex) === 1, url.searchParams.get('unit') === 'bulk');
   }
 }
