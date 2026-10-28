@@ -71,6 +71,7 @@ const ProductDetail = () => {
   );
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [fullResolutionProductId, setFullResolutionProductId] = useState<string | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -314,6 +315,13 @@ const ProductDetail = () => {
     }, isMobile ? 320 : 0);
     return () => { active = false; window.clearTimeout(timer); };
   }, [product?.id, product?.marketplace_branch_id, product?.delivery_branch_id, queryClient, isMobile]);
+
+  // Use the small card image for the entrance animation; load full resolution
+  // only after the sheet has settled, never before the user sees name/price.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setFullResolutionProductId(id || null), isMobile ? 320 : 0);
+    return () => window.clearTimeout(timer);
+  }, [id, isMobile]);
 
   const images = useMemo(() => {
     if (!product) return [];
@@ -654,15 +662,19 @@ const ProductDetail = () => {
                       aria-hidden="true"
                       draggable={false}
                       className="absolute inset-0 h-full w-full object-contain px-5 py-7"
+                      onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = images[selectedImageIndex]; }}
                     />
                   )}
-                  <img
-                  className="relative h-full w-full object-contain px-5 py-7"
-                  src={images[selectedImageIndex] || '/placeholder.svg'}
-                  alt={displayName}
-                  draggable={false}
-                  onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
-                />
+                  {(fullResolutionProductId === id || productCardImage(images[selectedImageIndex]) === images[selectedImageIndex]) && (
+                    <img
+                      className="relative h-full w-full object-contain px-5 py-7"
+                      src={images[selectedImageIndex] || '/placeholder.svg'}
+                      alt={displayName}
+                      decoding="async"
+                      draggable={false}
+                      onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
+                    />
+                  )}
                 </>
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400"><ImageIcon size={45} /><span>لا توجد صورة</span></div>
