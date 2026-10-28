@@ -28,7 +28,7 @@ function ProductSwipePeek({ side, preview, product, locked, transitioning, onOpe
   const price = product
     ? (bulk ? Number(product.bulk_price || 0) : productUnitPrice(product)).toLocaleString('ar-EG', { maximumFractionDigits: 2 })
     : preview.price;
-  const position = side === 'left' ? '-150% - 10px' : '50% + 10px';
+  const position = side === 'left' ? '-150% + 8px' : '50% - 8px';
 
   return (
     <button
