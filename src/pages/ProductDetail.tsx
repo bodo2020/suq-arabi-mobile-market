@@ -215,7 +215,7 @@ const ProductDetail = () => {
   const moveSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const start = sheetTouch.current;
     const touch = event.touches[0];
-    if (!start || !touch || start.gallery || weightOpen || swipeLocked) return;
+    if (!start || !touch || (start.gallery && images.length > 1) || weightOpen || swipeLocked) return;
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
     if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
@@ -719,15 +719,23 @@ const ProductDetail = () => {
 
       <div className="hidden md:block"><TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} /></div>
 
-      {/* Handheld immersive product browsing: the desktop detail route stays intact. */}
+      {/* Three-card carousel: neighbors stay mounted and follow the same GPU transform. */}
       <div ref={sheetStage} className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/50 px-0 pt-5 md:hidden" style={{ '--product-swipe-x': '0px' } as React.CSSProperties}>
+        <ProductSwipePeek side="left" preview={neighbors.previous.preview} product={neighbors.previous.product}
+          locked={swipeLocked} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(-1)} />
+        <ProductSwipePeek side="right" preview={neighbors.next.preview} product={neighbors.next.product}
+          locked={swipeLocked} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(1)} />
         <section
+          data-product-center-card
           role="dialog"
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`relative z-10 flex h-[calc(100dvh-20px)] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
+          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[230ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
           style={{ transform: `translate3d(var(--product-swipe-x, 0px), ${sheetVisible ? '0px' : '105dvh'}, 0)` }}
+          onTransitionEnd={event => {
+            if (event.currentTarget === event.target && event.propertyName === 'transform') completeSwipeNavigation();
+          }}
         >
           <header className="relative z-20 shrink-0 rounded-t-[30px] bg-white px-4 pb-2 pt-3">
             <button type="button" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج" className="mx-auto mb-2 flex h-3 w-14 items-center justify-center">
@@ -742,7 +750,6 @@ const ProductDetail = () => {
               <div className="flex shrink-0 items-center gap-1">
                 <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700" aria-label="مشاركة المنتج" onClick={handleShare}><Share2 size={19} /></button>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full"><FavoriteButton productId={product.id} variantId={favoriteVariantId} size="sm" /></div>
-                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700" aria-label="عرض السلة" onClick={() => navigate('/cart')}><ShoppingCart size={19} /></button>
               </div>
             </div>
           </header>
