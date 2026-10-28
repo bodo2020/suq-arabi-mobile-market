@@ -105,7 +105,9 @@ export function seedProductBrowseCache(
           updatedAt: Date.now() - PRODUCT_DETAIL_STALE_MS - 1,
         });
       }
-      warmFirstImage(snapshot.product, false, url.searchParams.get('unit') === 'bulk');
+      if (Math.abs(index - currentIndex) <= 2) {
+        warmFirstImage(snapshot.product, false, url.searchParams.get('unit') === 'bulk');
+      }
     }
   }
 }
@@ -130,4 +132,54 @@ export function warmAdjacentProductPages(
     const product = getCachedDetailProduct(client, id, url.searchParams.get('store'));
     if (product) warmFirstImage(product, false, url.searchParams.get('unit') === 'bulk');
   }
+}
+
+
+/**
+ * Warm canonical details for the two adjacent cards after the current hero
+ * has had its first paint. Cache scopes are identical to the selected route.
+ * Only two requests may be started here; no speculative recommendation fetch.
+ */
+export async function prefetchAdjacentProductDetails(
+  client: QueryClient,
+  paths: string[],
+  currentIndex: number,
+  onReady?: () => void,
+): Promise<void> {
+  if (currentIndex < 0 || typeof window === 'undefined') return;
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  // Respect a user preference to save mobile data.
+  if (connection?.saveData) return;
+
+  const neighbors = [paths[currentIndex + 1], paths[currentIndex - 1]];
+  await Promise.all(neighbors.map(async path => {
+    if (!path || !/^\/product\/[^/?#]+/.test(path)) return;
+    const url = new URL(path, window.location.origin);
+    if (url.origin !== window.location.origin) return;
+    let id: string;
+    try { id = decodeURIComponent(url.pathname.slice('/product/'.length)); }
+    catch { return; }
+    const store = url.searchParams.get('store');
+    const key = detailProductKey(id, store);
+    try {
+      await client.prefetchQuery({
+        queryKey: key,
+        queryFn: () => fetchDetailProduct(id, store),
+        staleTime: PRODUCT_DETAIL_STALE_MS,
+        gcTime: PRODUCT_DETAIL_GC_MS,
+        retry: false,
+      });
+      const product = getCachedDetailProduct(client, id, store);
+      if (product) {
+        // Neighbor thumbnails are prioritized; full resolution can begin on
+        // normal connections while the shopper is viewing the current card.
+        const allowLarge = connection?.effectiveType !== '2g' && connection?.effectiveType !== 'slow-2g';
+        warmFirstImage(product, allowLarge, url.searchParams.get('unit') === 'bulk');
+      }
+    } catch {
+      // Presentation snapshots remain available offline/when fetch fails.
+    } finally {
+      onReady?.();
+    }
+  }));
 }
