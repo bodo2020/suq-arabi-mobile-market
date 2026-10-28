@@ -3,7 +3,7 @@ import { Heart, Share2, X } from 'lucide-react';
 import type { Product } from '@/lib/supabase';
 import type { ProductPreview } from '@/lib/productBrowsing';
 import { productCardImage } from '@/lib/productCardImage';
-import { isWeightedProduct, productUnitPrice } from '@/lib/productPurchase';
+import { isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 
 type Props = {
   side: 'left' | 'right';
@@ -36,10 +36,14 @@ function ProductSwipePeek({ side, preview, product, locked, visible, transitioni
     ? product?.bulk_image_url || product?.image_urls?.[0]
     : product?.image_urls?.[0]) || '';
   const title = (bulk ? product?.bulk_name || product?.name : product?.name) || preview.name || 'المنتج';
-  const price = product
-    ? money(bulk ? Number(product.bulk_price || 0) : productUnitPrice(product))
-    : preview.price;
   const isWeighted = product ? isWeightedProduct(product) : false;
+  const price = product
+    ? money(bulk
+      ? Number(product.bulk_price || 0)
+      : isWeighted
+        ? productUnitPrice(product) * productWeightStepGrams(product) / 1000
+        : productUnitPrice(product))
+    : preview.price;
   const unit = bulk ? 'جملة' : isWeighted ? 'يباع بالوزن' : String(product?.unit_of_measure || 'قطعة');
   const inStock = product ? Number(product.quantity || 0) > 0 : true;
   const original = product ? Number(product.price || 0) : 0;
