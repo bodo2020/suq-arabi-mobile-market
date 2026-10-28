@@ -657,66 +657,40 @@ const ProductDetail = () => {
       <div className="hidden md:block"><TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} /></div>
 
       {/* Handheld immersive product browsing: the desktop detail route stays intact. */}
-      <div ref={sheetStage} className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/65 px-0 pt-7 pb-1 md:hidden" style={{ '--product-swipe-x': '0px' } as React.CSSProperties}>
-        {/* Adjacent cards remain visible while the active product slides. */}
-        {([
-          { preview: previousPreview, direction: -1 as const, side: 'left' as const },
-          { preview: nextPreview, direction: 1 as const, side: 'right' as const },
-        ]).map(({ preview, direction, side }) => preview ? (
-          <button
-            key={`peek-${side}-${preview.path}`}
-            type="button"
-            onClick={() => browseProduct(direction)}
-            disabled={swipeLocked}
-            aria-label={`عرض ${direction === -1 ? 'المنتج السابق' : 'المنتج التالي'}: ${preview.name}`}
-            className={`absolute bottom-[5%] left-1/2 z-[1] flex h-[83%] w-[84vw] max-w-[560px] flex-col overflow-hidden rounded-[29px] border border-white/50 bg-white px-3 pt-14 text-right opacity-95 shadow-2xl disabled:opacity-60 ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
-            style={{ transform: `translate3d(calc(${side === 'left' ? '-150% - 10px' : '50% + 10px'} + var(--product-swipe-x, 0px)),0,0)` }}
-          >
-            <div className="flex h-[45%] w-full items-center justify-center rounded-3xl bg-[#f6f8f7]">
-              <img src={preview.image || '/placeholder.svg'} alt="" draggable={false} className="h-full w-full object-contain p-7" />
-            </div>
-            <span className="mt-4 line-clamp-2 text-base font-black text-[#005931]">{preview.name}</span>
-            {preview.price && <span className="mt-2 text-sm font-bold text-slate-500">{preview.price} ج.م</span>}
-          </button>
-        ) : null)}
-        {nextCategory && browseIndex >= 0 && (
-          <button
-            type="button"
-            onClick={() => browseProduct(1)}
-            disabled={swipeLocked}
-            aria-label={`الانتقال إلى ${nextCategory.name}`}
-            className={`absolute bottom-[5%] left-1/2 z-[1] flex h-[83%] w-[84vw] max-w-[560px] flex-col items-center justify-center rounded-[29px] bg-[#005931] p-6 text-center text-white shadow-2xl ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
-            style={{ transform: 'translate3d(calc(50% + 10px + var(--product-swipe-x, 0px)),0,0)' }}
-          >
-            <span className="text-xs font-bold text-brand-yellow">القسم التالي</span>
-            <strong className="mt-2 text-xl">{nextCategory.name}</strong>
-          </button>
-        )}
+      <div ref={sheetStage} className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/50 px-0 pt-5 md:hidden" style={{ '--product-swipe-x': '0px' } as React.CSSProperties}>
         <section
           role="dialog"
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`relative z-10 flex h-[calc(100dvh-36px)] w-[84vw] max-w-[560px] flex-col overflow-hidden rounded-[32px] bg-[#f6f8f7] shadow-[0_22px_70px_rgba(0,0,0,.22)] will-change-transform ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
+          className={`relative z-10 flex h-[calc(100dvh-20px)] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
           style={{ transform: `translate3d(var(--product-swipe-x, 0px), ${sheetVisible ? '0px' : '105dvh'}, 0)` }}
         >
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-5 pt-5">
-            <button type="button" className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"><X size={23} /></button>
-            <div className="pointer-events-auto flex flex-col gap-3">
-              <button type="button" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md" aria-label="مشاركة المنتج" onClick={handleShare}><Share2 size={19} /></button>
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md"><FavoriteButton productId={product.id} variantId={favoriteVariantId} size="sm" /></div>
-              <button type="button" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md" aria-label="عرض السلة" onClick={() => navigate('/cart')}><ShoppingCart size={19} /></button>
+          <header className="relative z-20 shrink-0 rounded-t-[30px] bg-white px-4 pb-2 pt-3">
+            <div className="mx-auto mb-2 h-1 w-11 rounded-full bg-slate-200" aria-hidden="true" />
+            <div className="flex items-center justify-between gap-2">
+              <button type="button" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-800 active:scale-95">
+                <X size={19} />
+              </button>
+              <span className="truncate text-center text-sm font-extrabold text-slate-700">تفاصيل المنتج</span>
+              <div className="flex shrink-0 items-center gap-1">
+                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700" aria-label="مشاركة المنتج" onClick={handleShare}><Share2 size={19} /></button>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full"><FavoriteButton productId={product.id} variantId={favoriteVariantId} size="sm" /></div>
+                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700" aria-label="عرض السلة" onClick={() => navigate('/cart')}><ShoppingCart size={19} /></button>
+              </div>
             </div>
-          </div>
+          </header>
           <div
+            ref={mobileScrollRef}
             key={`product-sheet-${id}`}
-            className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain px-3 pb-5 pt-2"
+            className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain px-3 pb-5 pt-3"
             onTouchStart={startSheetSwipe}
             onTouchMove={moveSheetSwipe}
             onTouchEnd={finishSheetSwipe}
             onTouchCancel={() => { sheetTouch.current = null; setSheetDragging(false); setSwipeAnimating(true); setSheetOffset(0); }}
           >
-            <div data-product-gallery className="relative flex h-[min(43vh,340px)] items-center justify-center overflow-hidden rounded-[26px] bg-white">
+            <div data-product-gallery className="relative flex h-[min(34dvh,270px)] items-center justify-center overflow-hidden rounded-[24px] border border-slate-100 bg-white">
               {bulkMode && !bulkImageUrl ? (
                 <div className="flex h-40 w-40 items-center justify-center rounded-[30px] bg-[#005931] text-6xl font-black text-white">{packNumber}</div>
               ) : images.length > 0 ? (
@@ -727,13 +701,13 @@ const ProductDetail = () => {
                       alt=""
                       aria-hidden="true"
                       draggable={false}
-                      className="absolute inset-0 h-full w-full object-contain px-5 py-7"
+                      className="absolute inset-0 h-full w-full object-contain px-7 py-5"
                       onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = images[selectedImageIndex]; }}
                     />
                   )}
                   {(fullResolutionProductId === id || productCardImage(images[selectedImageIndex]) === images[selectedImageIndex]) && (
                     <img
-                      className="relative h-full w-full object-contain px-5 py-7"
+                      className="relative h-full w-full object-contain px-7 py-5"
                       src={images[selectedImageIndex] || '/placeholder.svg'}
                       alt={displayName}
                       decoding="async"
@@ -752,61 +726,70 @@ const ProductDetail = () => {
                 </div>
               )}
             </div>
-            {browse && browseIndex >= 0 && (browse.paths.length > 1 || nextCategory) && (
-              <div className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-xs font-bold text-[#005931]">
-                <button type="button" onClick={() => browseProduct(-1)} disabled={!canSwipePrevious} aria-label="المنتج السابق" className="flex min-h-10 items-center gap-1 rounded-xl px-2 disabled:opacity-30"><ChevronRight size={16} /> السابق</button>
-                <span className="text-slate-500">{browseIndex + 1} من {browse.paths.length} · اسحب يمين أو شمال</span>
-                <button type="button" onClick={() => browseProduct(1)} disabled={!canSwipeNext && !nextCategory} aria-label="المنتج التالي" className="flex min-h-10 items-center gap-1 rounded-xl px-2 disabled:opacity-30">التالي <ChevronLeft size={16} /></button>
+            <section className="rounded-[24px] border border-slate-100 bg-white px-4 pb-4 pt-4">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${unavailable ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-[#005931]'}`}>
+                  {unavailable ? 'غير متوفر حاليًا' : 'متوفر للطلب'}
+                </span>
+                {limitedStock && <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">كمية محدودة</span>}
+                {bulkMode && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-[#005931]">جملة</span>}
               </div>
-            )}
-            <div className="rounded-[24px] bg-white px-4 py-5">
-              <h1 className="text-[22px] font-black leading-[1.55] text-slate-950">{displayName}</h1>
-              <p className="mt-1 text-sm text-slate-500">{weighted ? 'يباع بالوزن · ' : ''}{unitDescription}</p>
-              <div className="mt-4 flex flex-wrap items-end gap-2">
-                <strong className="text-[30px] font-black leading-none text-[#005931]">{money(displayPrice)} <small className="text-base">ج.م</small></strong>
-                {discount > 0 && <del className="pb-1 text-sm text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del>}
-              </div>
-              <div className="mt-3 flex items-center gap-2 text-xs font-semibold">
-                <span className={`rounded-full px-3 py-1.5 ${unavailable ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-[#005931]'}`}>{unavailable ? 'غير متوفر حاليًا' : 'متوفر للطلب'}</span>
-                {limitedStock && <span className="rounded-full bg-amber-50 px-3 py-1.5 text-amber-700">كمية محدودة</span>}
+              <h1 className="text-[21px] font-black leading-[1.45] text-slate-950">{displayName}</h1>
+              <p className="mt-1 text-xs font-medium text-slate-500">{weighted ? 'يباع بالوزن · ' : ''}{unitDescription}</p>
+              <div className="mt-4 flex flex-wrap items-end gap-x-2 gap-y-1 border-t border-slate-100 pt-4">
+                <strong className="text-[31px] font-black leading-none tracking-tight text-[#005931]">{money(displayPrice)}</strong>
+                <span className="pb-0.5 text-sm font-black text-[#005931]">ج.م</span>
+                {discount > 0 && <del className="mr-auto pb-0.5 text-xs font-medium text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del>}
               </div>
               {product.commerce_source === 'marketplace' && product.marketplace_branch_id && (
-                <button type="button" className="mt-4 block w-full rounded-xl bg-emerald-50 px-3 py-3 text-right text-sm font-bold text-[#005931]" onClick={() => navigate(`/stores/${product.marketplace_branch_id}`)}>
-                  يباع بواسطة {product.merchant_name || 'متجر شريك'} · عرض المتجر
+                <button type="button" className="mt-4 flex w-full items-center justify-between rounded-xl bg-[#f1f8f4] px-3 py-2.5 text-right text-xs font-bold text-[#005931]" onClick={() => navigate(`/stores/${product.marketplace_branch_id}`)}>
+                  <span className="truncate">يباع بواسطة {product.merchant_name || 'متجر شريك'}</span>
+                  <span className="shrink-0 text-[11px]">عرض المتجر</span>
                 </button>
               )}
               {bulkAvailable && !weighted && (
-                <div className="mt-4 flex gap-2">
-                  <button type="button" onClick={openRegular} aria-pressed={!bulkMode} className={`flex-1 rounded-xl px-3 py-3 text-sm font-bold ${!bulkMode ? 'bg-[#005931] text-white ring-2 ring-brand-yellow/70' : 'bg-slate-100 text-slate-600'}`}>قطاعي · {money(unitPrice)} ج.م</button>
-                  <button type="button" onClick={openBulk} aria-pressed={bulkMode} className={`flex-1 rounded-xl px-3 py-3 text-sm font-bold ${bulkMode ? 'bg-[#005931] text-white ring-2 ring-brand-yellow/70' : 'bg-slate-100 text-slate-600'}`}>{bulkUnitType} · {money(Number(product.bulk_price || 0))} ج.م</button>
+                <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+                  <button type="button" onClick={openRegular} aria-pressed={!bulkMode}
+                    className={`rounded-xl px-2 py-3 text-xs font-bold ${!bulkMode ? 'bg-white text-[#005931] shadow-sm' : 'text-slate-600'}`}>
+                    قطاعي · {money(unitPrice)} ج.م
+                  </button>
+                  <button type="button" onClick={openBulk} aria-pressed={bulkMode}
+                    className={`rounded-xl px-2 py-3 text-xs font-bold ${bulkMode ? 'bg-white text-[#005931] shadow-sm' : 'text-slate-600'}`}>
+                    {bulkUnitType} · {money(Number(product.bulk_price || 0))} ج.م
+                  </button>
                 </div>
               )}
-            </div>
-            {product.description && <div className="rounded-[24px] bg-white p-4"><h2 className="mb-2 text-base font-black">الوصف</h2><p className="whitespace-pre-line text-sm leading-7 text-slate-600">{product.description}</p></div>}
-            <div className="rounded-[24px] bg-white p-4">
-              <h2 className="text-base font-black">تفاصيل المنتج</h2>
-              <p className="mt-2 text-sm leading-7 text-slate-600">طريقة البيع: {weighted ? 'بالوزن' : bulkMode ? bulkUnitType : 'بالقطعة'} · الوحدة: {unitDescription}</p>
-              {company && <button type="button" className="mt-2 text-sm font-bold text-[#005931]" onClick={() => navigate(`/company/${company.id}`)}>اكتشف منتجات {company.name}</button>}
-            </div>
-            {(relatedLoading || relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)).length > 0) && (
-              <section data-product-recommendations className="rounded-[24px] bg-white p-3.5" aria-label="منتجات مقترحة">
-                <div className="mb-3 px-1">
-                  <h2 className="text-base font-black text-slate-950">منتجات مقترحة ليك</h2>
-                  <p className="mt-1 text-xs font-medium text-slate-500">اختار منتج تاني وكمل تصفحك</p>
+            </section>
+            <div className="overflow-hidden rounded-[24px] border border-slate-100 bg-white">
+              {product.description && (
+                <details className="group border-b border-slate-100">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-4 text-sm font-extrabold text-slate-900">
+                    <span>وصف المنتج</span>
+                    <span className="text-lg text-slate-400 group-open:rotate-45">+</span>
+                  </summary>
+                  <p className="whitespace-pre-line px-4 pb-4 text-sm leading-7 text-slate-600">{product.description}</p>
+                </details>
+              )}
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-4 text-sm font-extrabold text-slate-900">
+                  <span>معلومات إضافية</span>
+                  <span className="text-lg text-slate-400 group-open:rotate-45">+</span>
+                </summary>
+                <div className="space-y-3 px-4 pb-4 text-xs leading-6 text-slate-600">
+                  <p>طريقة البيع: {weighted ? 'بالوزن' : bulkMode ? bulkUnitType : 'بالقطعة'} · الوحدة: {unitDescription}</p>
+                  {company && <button type="button" className="font-extrabold text-[#005931]" onClick={() => navigate(`/company/${company.id}`)}>اكتشف منتجات {company.name}</button>}
                 </div>
-                {relatedLoading && relatedProducts.length === 0 && (
-                  <div className="flex gap-2.5" aria-label="جاري تجهيز الاقتراحات">
-                    {[0, 1, 2].map(index => <div key={index} className="h-40 w-[136px] shrink-0 animate-pulse rounded-2xl bg-slate-100" />)}
-                  </div>
-                )}
-                <div dir="rtl" className="hide-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-2">
-                  {relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)).slice(0, 8).map(item => (
-                    <div key={item.id} className="w-[136px] shrink-0 snap-start sm:w-[156px]">
-                      <ProductCard product={item} />
-                    </div>
-                  ))}
-                </div>
-              </section>
+              </details>
+            </div>
+            <div ref={mobileExtraTriggerRef} className="h-px" aria-hidden="true" />
+            {shouldLoadExtras && (
+              <React.Suspense fallback={<div className="h-40 animate-pulse rounded-[24px] bg-slate-100" />}>
+                <ProductSuggestions
+                  products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
+                  loading={relatedLoading}
+                  layout="mobile"
+                />
+              </React.Suspense>
             )}
           </div>
           <footer className="shrink-0 border-t border-slate-100 bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
@@ -938,13 +921,15 @@ const ProductDetail = () => {
           </Accordion>
         </section>
 
-        {(relatedLoading || relatedProducts.length > 0) && (
-          <section className="mt-5">
-            <div className="mb-3 flex items-end justify-between px-1"><div><h2 className="text-xl font-black text-slate-950">منتجات مشابهة</h2><p className="mt-0.5 text-xs font-medium text-slate-400">ممكن تعجبك كمان</p></div></div>
-            <div className="flex snap-x gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:overflow-visible" style={{ scrollbarWidth: 'none' }}>
-              {relatedProducts.slice(0, 8).map(relatedProduct => <div key={relatedProduct.id} className="w-[170px] min-w-[170px] snap-start sm:w-[190px] sm:min-w-[190px] md:w-auto md:min-w-0"><ProductCard product={relatedProduct} /></div>)}
-            </div>
-          </section>
+        <div ref={desktopExtraTriggerRef} className="h-px" aria-hidden="true" />
+        {shouldLoadExtras && (
+          <React.Suspense fallback={<div className="mt-5 h-40 animate-pulse rounded-[26px] bg-slate-100" />}>
+            <ProductSuggestions
+              products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
+              loading={relatedLoading}
+              layout="desktop"
+            />
+          </React.Suspense>
         )}
       </main>
       )}
