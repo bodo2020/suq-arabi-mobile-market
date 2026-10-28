@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
+import ProductSwipePeek from '@/components/product/ProductSwipePeek';
 import { productCardImage } from '@/lib/productCardImage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Check, ImageIcon, Minus, Package, Plus, Scale, Share2, ShoppingCart, Trash2, X } from 'lucide-react';
@@ -14,7 +15,7 @@ import FavoriteButton from '@/components/ui/FavoriteButton';
 import WeightSelector from '@/components/ui/WeightSelector';
 import {
   detailCompanyKey, detailProductKey, detailRelatedKey, fetchDetailProduct,
-  getCachedDetailProduct, PRODUCT_DETAIL_GC_MS, PRODUCT_DETAIL_STALE_MS, seedProductBrowseCache, warmAdjacentProductPages,
+  getCachedDetailProduct, prefetchAdjacentProductDetails, PRODUCT_DETAIL_GC_MS, PRODUCT_DETAIL_STALE_MS, seedProductBrowseCache, warmAdjacentProductPages,
 } from '@/lib/productDetailCache';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -45,15 +46,18 @@ const ProductDetail = () => {
     : (browse?.paths.findIndex(path => path.split('?')[0] === location.pathname) ?? -1);
   const canSwipePrevious = browseIndex > 0;
   const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
-  const sheetTouch = useRef<{ x: number; y: number; gallery: boolean } | null>(null);
+  const sheetTouch = useRef<{ x: number; y: number; at: number; gallery: boolean } | null>(null);
   const sheetStage = useRef<HTMLDivElement>(null);
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const swipeFrame = useRef<number | null>(null);
+  const pendingSwipeNavigation = useRef<(() => void) | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closingRef = useRef(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetDragging, setSheetDragging] = useState(false);
   const [swipeAnimating, setSwipeAnimating] = useState(false);
   const [swipeLocked, setSwipeLocked] = useState(false);
+  const [neighborRevision, setNeighborRevision] = useState(0);
   const setSheetOffset = (x: number) => {
     sheetStage.current?.style.setProperty('--product-swipe-x', `${x}px`);
   };
@@ -64,6 +68,22 @@ const ProductDetail = () => {
 
   const [loadedProduct, setProduct] = useState<Product | null>(null);
   const queryClient = useQueryClient();
+  // Keep exactly the two adjacent preview cards mounted; canonical data
+  // seamlessly upgrades each preview when its background prefetch finishes.
+  const neighbors = useMemo(() => {
+    const resolve = (direction: -1 | 1) => {
+      const path = browse && browseIndex >= 0 ? browse.paths[browseIndex + direction] : undefined;
+      const preview = path ? browse?.previews.find(item => item.path === path) || null : null;
+      if (!path || typeof window === 'undefined') return { preview, product: null };
+      try {
+        const url = new URL(path, window.location.origin);
+        const productId = decodeURIComponent(url.pathname.slice('/product/'.length));
+        const product = getCachedDetailProduct(queryClient, productId, url.searchParams.get('store'));
+        return { preview, product };
+      } catch { return { preview, product: null }; }
+    };
+    return { previous: resolve(-1), next: resolve(1) };
+  }, [browse, browseIndex, neighborRevision, queryClient]);
   // Prefetched data is available during the first render after a swipe, so no
   // in-between loading sheet is shown. Fallback to the current request's state.
   const cachedProduct = getCachedDetailProduct(queryClient, id, requestedStoreId);
@@ -110,49 +130,83 @@ const ProductDetail = () => {
     }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260);
   };
 
-  useEffect(() => {
+  // Route changes re-center the newly selected card *before the browser paints*.
+  // Suppressing the reset transition avoids the old "slide back" flash.
+  useLayoutEffect(() => {
+    const cards = sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-swipe-card]');
+    cards?.forEach(card => { card.style.transition = 'none'; });
     setSheetOffset(0);
     setSwipeAnimating(false);
     setSwipeLocked(false);
+    const frame = requestAnimationFrame(() => {
+      cards?.forEach(card => { card.style.removeProperty('transition'); });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [id, location.search]);
+
   useEffect(() => () => {
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
+    if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
     if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
+
+  const completeSwipeNavigation = () => {
+    const action = pendingSwipeNavigation.current;
+    if (!action) return;
+    pendingSwipeNavigation.current = null;
+    if (swipeTimer.current) clearTimeout(swipeTimer.current);
+    swipeTimer.current = null;
+    action();
+  };
 
   const browseProduct = (offset: -1 | 1) => {
     if (!browse || browseIndex < 0 || weightOpen || swipeLocked) return;
     const next = browse.paths[browseIndex + offset];
     const destination = next || (offset === 1 ? browse.nextCategory?.path : undefined);
     if (!destination) return;
-    // Hydrate the destination *before* the swipe animation starts: the next
-    // details sheet should paint from the existing card snapshot immediately.
+    // Seed synchronously before the navigation so the next card never waits
+    // on its own network request to show image, name or price.
     if (next) seedProductBrowseCache(queryClient, browse.paths, browseIndex + offset);
     setSwipeLocked(true);
     setSheetDragging(false);
     setSwipeAnimating(true);
     sheetTouch.current = null;
-    setSheetOffset(offset === 1 ? -Math.min(window.innerWidth * .9, 660) : Math.min(window.innerWidth * .9, 660));
-    if (swipeTimer.current) clearTimeout(swipeTimer.current);
-    swipeTimer.current = setTimeout(() => {
-      swipeTimer.current = null;
+    const navigateTo = () => {
       if (next) navigate(next, { replace: true, state: location.state });
       else navigate(destination);
-    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 190);
+    };
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      navigateTo();
+      return;
+    }
+    pendingSwipeNavigation.current = navigateTo;
+    // Match the actual card width + gutter so the adjacent card lands at 0,
+    // rather than stopping early and appearing to jump on route update.
+    const cardWidth = sheetStage.current?.querySelector<HTMLElement>('[data-product-center-card]')?.getBoundingClientRect().width
+      || Math.min(window.innerWidth * .84, 560);
+    const distance = cardWidth + 10;
+    if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
+    swipeFrame.current = requestAnimationFrame(() => {
+      swipeFrame.current = null;
+      setSheetOffset(offset === 1 ? -distance : distance);
+    });
+    // A fallback for hidden-tab and cancelled transitions; the normal path is
+    // the center card's transform transitionend event.
+    if (swipeTimer.current) clearTimeout(swipeTimer.current);
+    swipeTimer.current = setTimeout(completeSwipeNavigation, 310);
   };
 
   const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
     if (!touch || weightOpen || swipeLocked) return;
-    // Scrolling the related-product rail must not trigger a main-product swipe.
-    if ((event.target as HTMLElement).closest('[data-product-recommendations]')) {
-      sheetTouch.current = null;
-      return;
-    }
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-product-recommendations]')) return;
+    if (!target.closest('[data-product-gallery]') && target.closest('button,a,input,textarea,select,[role="button"]')) return;
     sheetTouch.current = {
       x: touch.clientX,
       y: touch.clientY,
-      gallery: Boolean((event.target as HTMLElement).closest('[data-product-gallery]')),
+      at: Date.now(),
+      gallery: Boolean(target.closest('[data-product-gallery]')),
     };
     setSwipeAnimating(false);
     setSheetDragging(true);
@@ -164,11 +218,9 @@ const ProductDetail = () => {
     if (!start || !touch || start.gallery || weightOpen || swipeLocked) return;
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
-    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
     const allowed = dx < 0 ? (canSwipeNext || Boolean(nextCategory)) : canSwipePrevious;
-    // Touch moves update a CSS variable directly; React doesn't re-render
-    // the image, cart controls and recommendations at every pointer frame.
-    setSheetOffset(allowed ? Math.max(-window.innerWidth * .75, Math.min(window.innerWidth * .75, dx)) : dx * .12);
+    setSheetOffset(allowed ? Math.max(-window.innerWidth * .85, Math.min(window.innerWidth * .85, dx)) : dx * .12);
   };
 
   const finishSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -183,7 +235,9 @@ const ProductDetail = () => {
       if (Math.abs(dx) >= 45 && Math.abs(dx) >= Math.abs(dy) * 1.4) goToImage(dx < 0 ? 1 : -1);
       return;
     }
-    if (Math.abs(dx) >= 65 && Math.abs(dx) >= Math.abs(dy) * 1.5) {
+    const elapsed = Math.max(1, Date.now() - start.at);
+    const fastFlick = Math.abs(dx) >= 26 && Math.abs(dx) / elapsed >= .55;
+    if ((Math.abs(dx) >= 65 || fastFlick) && Math.abs(dx) >= Math.abs(dy) * 1.35) {
       const offset = dx < 0 ? 1 : -1;
       if ((offset === 1 && (canSwipeNext || nextCategory)) || (offset === -1 && canSwipePrevious)) {
         browseProduct(offset);
@@ -276,9 +330,18 @@ const ProductDetail = () => {
   }, [id, requestedStoreId, queryClient]);
 
   useEffect(() => {
-    if (!browse || browseIndex < 0) return;
+    if (!browse || browseIndex < 0 || !isMobile) return;
     warmAdjacentProductPages(queryClient, browse.paths, browseIndex);
-  }, [browse, browseIndex, queryClient]);
+    // Give the active product and its lightweight hero first priority, then
+    // upgrade only the two adjacent cards from their server-backed cache.
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void prefetchAdjacentProductDetails(queryClient, browse.paths, browseIndex, () => {
+        if (active) setNeighborRevision(value => value + 1);
+      });
+    }, 300);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [browse, browseIndex, queryClient, isMobile]);
 
   // Reveal the sheet from the bottom once a preview or canonical product is
   // available. Data fetching never controls the opening animation.
