@@ -7,7 +7,7 @@ import CustomerNotificationRealtimeBridge from './components/CustomerNotificatio
 import NetworkStatus from './components/NetworkStatus';
 import CartSourceConflictNotifier from './components/CartSourceConflictNotifier';
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { UserProvider } from './contexts/UserContext';
 import { BranchProvider } from './contexts/BranchContext';
@@ -60,23 +60,14 @@ const RouteFallback = () => (
   </div>
 );
 
-function App() {
+function CustomerRoutes() {
+  const location = useLocation();
+  // Preserve the catalog underneath a mobile product sheet; deep links render
+  // the normal standalone product route and desktop navigation stays unchanged.
+  const backgroundLocation = (location.state as { backgroundLocation?: typeof location } | null)?.backgroundLocation;
   return (
-    <HelmetProvider>
-      <UserProvider>
-        <BranchProvider>
-          <CartProvider>
-            <BrowserRouter>
-              <NetworkStatus />
-              <PushNotificationsBootstrap />
-              <CustomerNotificationRealtimeBridge />
-              <ProfileCompletionGate />
-              <CheckoutAttemptRecovery />
-              <CartSourceConflictNotifier />
-              <Suspense fallback={<RouteFallback />}>
-                <AuthGate>
-                  <AddressGuard>
-                    <Routes>
+    <>
+      <Routes location={backgroundLocation || location}>
                       <Route path="/phone-login" element={<PhoneLogin />} />
                       <Route path="/phone-verify" element={<PhoneVerify />} />
                       <Route path="/register" element={<Register />} />
@@ -123,6 +114,32 @@ function App() {
                       <Route path="/create-return-request/:orderId" element={<CreateReturnRequest />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+      {backgroundLocation && (
+        <Routes>
+          <Route path="/product/:id" element={<ProductDetail />} />
+        </Routes>
+      )}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <HelmetProvider>
+      <UserProvider>
+        <BranchProvider>
+          <CartProvider>
+            <BrowserRouter>
+              <NetworkStatus />
+              <PushNotificationsBootstrap />
+              <CustomerNotificationRealtimeBridge />
+              <ProfileCompletionGate />
+              <CheckoutAttemptRecovery />
+              <CartSourceConflictNotifier />
+              <Suspense fallback={<RouteFallback />}>
+                <AuthGate>
+                  <AddressGuard>
+                    <CustomerRoutes />
                   </AddressGuard>
                 </AuthGate>
               </Suspense>
