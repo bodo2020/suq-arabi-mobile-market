@@ -33,6 +33,10 @@ const ProductDetail = () => {
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const location = useLocation();
+  const inCatalogOverlay = isMobile && Boolean((location.state as { backgroundLocation?: unknown } | null)?.backgroundLocation);
+  // The underlying catalog already renders MainLayout and bottom navigation.
+  // Don't mount a second layout or its fade-in animation above the catalog.
+  const DetailShell = inCatalogOverlay ? React.Fragment : MainLayout;
   const browse = useMemo(() => readProductBrowseState(location.state), [location.state]);
   // Switching between retail and bulk keeps browsing anchored to the original item.
   const exactBrowseIndex = browse?.paths.indexOf(location.pathname + location.search) ?? -1;
@@ -459,7 +463,7 @@ const ProductDetail = () => {
 
   if ((loading && !cachedProduct) || (product !== null && product.id !== id)) {
     return (
-      <MainLayout>
+      <DetailShell>
         <div className="hidden md:block">
           <TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} />
           <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader size="md" /></div>
@@ -470,7 +474,7 @@ const ProductDetail = () => {
             <span className="mt-4 text-sm font-bold text-[#005931]">جاري عرض المنتج…</span>
           </div>
         </div>
-      </MainLayout>
+      </DetailShell>
     );
   }
 
@@ -478,7 +482,7 @@ const ProductDetail = () => {
 
   if (!product || (loadError && !cachedProduct) || invalidBulkPage) {
     return (
-      <MainLayout>
+      <DetailShell>
         <TopNavBar hideLogo hideSearch pageTitle={requestedBulk ? 'تفاصيل الجملة' : 'تفاصيل المنتج'} showBackButton onBack={() => navigate(-1)} />
         <section className="mx-auto mt-10 max-w-md rounded-[28px] border border-slate-100 bg-white p-7 text-center shadow-sm">
           <Package className="mx-auto text-slate-300" size={42} />
@@ -486,7 +490,7 @@ const ProductDetail = () => {
           <p className="mt-2 text-sm leading-6 text-slate-500">ارجع للمنتجات واختار بديل، أو جرّب فتح الصفحة تاني.</p>
           <Button className="mt-5 rounded-xl" onClick={() => navigate(-1)}>رجوع</Button>
         </section>
-      </MainLayout>
+      </DetailShell>
     );
   }
 
@@ -576,7 +580,7 @@ const ProductDetail = () => {
   );
 
   return (
-    <MainLayout>
+    <DetailShell>
       <SEOHead
         title={`${displayName} - سوبر ماركو`}
         description={product.description || `اشتري ${displayName} من سوبر ماركو`}
@@ -888,7 +892,7 @@ const ProductDetail = () => {
       {weightOpen && weighted && (
         <WeightSelector product={product} isOpen={weightOpen} onClose={() => setWeightOpen(false)} initialWeight={weightedCartItem ? currentWeight : weightStep} onSelect={applyWeight} />
       )}
-    </MainLayout>
+    </DetailShell>
   );
 };
 
