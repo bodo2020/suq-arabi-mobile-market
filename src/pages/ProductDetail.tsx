@@ -963,7 +963,18 @@ const ProductDetail = () => {
               {discount > 0 && <span className="absolute bottom-4 right-4 rounded-xl bg-brand-yellow px-3 py-1.5 text-xs font-black text-[#005931]">خصم {discount}%</span>}
               {images.length > 1 && (
                 <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1.5">
-                  {images.map((_, index) => <span key={index} className={`h-1.5 rounded-full ${index === selectedImageIndex ? 'w-5 bg-[#005931]' : 'w-1.5 bg-slate-300'}`} />)}
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setSelectedImageIndex(index)}
+                      aria-label={`عرض صورة ${index + 1}`}
+                      aria-pressed={index === selectedImageIndex}
+                      className={`flex h-5 items-center justify-center px-0.5`}
+                    >
+                      <span className={`h-1.5 rounded-full transition-all ${index === selectedImageIndex ? 'w-5 bg-[#005931]' : 'w-1.5 bg-slate-300'}`} />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
