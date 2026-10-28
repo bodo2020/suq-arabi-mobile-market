@@ -28,7 +28,7 @@ function ProductSwipePeek({ side, preview, product, locked, transitioning, onOpe
   const price = product
     ? (bulk ? Number(product.bulk_price || 0) : productUnitPrice(product)).toLocaleString('ar-EG', { maximumFractionDigits: 2 })
     : preview.price;
-  const position = side === 'left' ? '-150% + 8px' : '50% - 8px';
+  const position = side === 'left' ? '-150% - 10px' : '50% + 10px';
 
   return (
     <button
@@ -37,7 +37,7 @@ function ProductSwipePeek({ side, preview, product, locked, transitioning, onOpe
       onClick={onOpen}
       disabled={locked}
       aria-label={`عرض المنتج ${title}`}
-      className={`absolute bottom-[10px] left-1/2 z-[1] flex h-[calc(100dvh-44px)] w-[84vw] max-w-[560px] flex-col overflow-hidden rounded-[28px] bg-[#f7f9f8] text-right shadow-[0_16px_55px_rgba(0,0,0,.18)] disabled:cursor-default ${transitioning ? 'transition-transform duration-[230ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : ''} motion-reduce:transition-none`}
+      className={`absolute bottom-[10px] left-1/2 z-[1] flex h-[calc(100dvh-44px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-[28px] bg-[#f7f9f8] text-right shadow-[0_16px_55px_rgba(0,0,0,.18)] disabled:cursor-default ${transitioning ? 'transition-transform duration-[230ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : ''} motion-reduce:transition-none`}
       style={{ transform: `translate3d(calc(${position} + var(--product-swipe-x, 0px)),0,0)` }}
     >
       <div className="flex h-12 shrink-0 items-center justify-center bg-white">
