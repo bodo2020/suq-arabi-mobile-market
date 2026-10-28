@@ -508,7 +508,7 @@ const ProductDetail = () => {
           <div role="status" aria-live="polite" aria-label="جاري تجهيز تفاصيل المنتج" dir="rtl"
             className="flex h-[calc(100dvh-20px)] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8]">
             <div className="flex h-14 shrink-0 items-center justify-between bg-white px-5">
-              <div className="h-9 w-9 rounded-full bg-slate-100" />
+              <button type="button" onClick={() => navigate(browse ? -1 : '/', { replace: !browse })} aria-label="رجوع" className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700"><X size={18} /></button>
               <span className="text-sm font-bold text-slate-600">تفاصيل المنتج</span>
               <div className="h-9 w-9 rounded-full bg-slate-100" />
             </div>
@@ -702,7 +702,7 @@ const ProductDetail = () => {
                       aria-hidden="true"
                       draggable={false}
                       className="absolute inset-0 h-full w-full object-contain px-7 py-5"
-                      onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = images[selectedImageIndex]; }}
+                      onError={event => { event.currentTarget.style.visibility = 'hidden'; }}
                     />
                   )}
                   {(fullResolutionProductId === id || productCardImage(images[selectedImageIndex]) === images[selectedImageIndex]) && (
