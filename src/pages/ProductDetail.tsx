@@ -822,9 +822,9 @@ const ProductDetail = () => {
       {/* Three-card carousel: neighbors stay mounted and follow the same GPU transform. */}
       <div ref={sheetStage} className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/50 px-0 pt-5 md:hidden" style={{ '--product-swipe-x': '0px' } as React.CSSProperties}>
         <ProductSwipePeek side="left" preview={neighbors.previous.preview} product={neighbors.previous.product}
-          locked={swipeLocked} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(-1)} />
+          locked={swipeLocked} visible={sheetVisible} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(-1)} />
         <ProductSwipePeek side="right" preview={neighbors.next.preview} product={neighbors.next.product}
-          locked={swipeLocked} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(1)} />
+          locked={swipeLocked} visible={sheetVisible} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(1)} />
         <section
           ref={sheetCardRef}
           data-product-center-card
