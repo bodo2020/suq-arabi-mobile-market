@@ -9,6 +9,7 @@ type Props = {
   preview: ProductPreview | null;
   product: Product | null;
   locked: boolean;
+  visible: boolean;
   transitioning: boolean;
   onOpen: () => void;
 };
@@ -18,7 +19,7 @@ type Props = {
  * title and price remain painted while the center card is dragged. No cart,
  * recommendations, route fetches, or heavy product component is mounted here.
  */
-function ProductSwipePeek({ side, preview, product, locked, transitioning, onOpen }: Props) {
+function ProductSwipePeek({ side, preview, product, locked, visible, transitioning, onOpen }: Props) {
   if (!preview) return null;
   const bulk = new URLSearchParams(preview.path.split('?')[1] || '').get('unit') === 'bulk';
   // Never swap the URL of a visible side card merely because its background
@@ -37,9 +38,9 @@ function ProductSwipePeek({ side, preview, product, locked, transitioning, onOpe
       type="button"
       data-product-swipe-card
       onClick={onOpen}
-      disabled={locked}
+      disabled={locked || !visible}
       aria-label={`عرض المنتج ${title}`}
-      className={`absolute bottom-[10px] left-1/2 z-[1] flex h-[calc(100dvh-44px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-[28px] bg-[#f7f9f8] text-right shadow-[0_16px_55px_rgba(0,0,0,.18)] disabled:cursor-default ${transitioning ? 'transition-transform duration-[230ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : ''} motion-reduce:transition-none`}
+      className={`absolute bottom-[10px] left-1/2 z-[1] flex h-[calc(100dvh-44px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-[28px] bg-[#f7f9f8] text-right shadow-[0_16px_55px_rgba(0,0,0,.18)] disabled:cursor-default ${visible ? 'opacity-100' : 'opacity-0'} ${transitioning ? 'transition-[transform,opacity] duration-[230ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-opacity duration-200'} motion-reduce:transition-none`}
       style={{ transform: `translate3d(calc(${position} + var(--product-swipe-x, 0px)),0,0)` }}
     >
       <div className="flex h-12 shrink-0 items-center justify-center bg-white">
