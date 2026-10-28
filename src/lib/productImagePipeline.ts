@@ -10,6 +10,8 @@ import type { ProductPreview } from '@/lib/productBrowsing';
 type ImageEntry = { element: HTMLImageElement; promise: Promise<boolean>; ready: boolean };
 const entries = new Map<string, ImageEntry>();
 const MAX_PREPARED_IMAGES = 24;
+const failedAt = new Map<string, number>();
+const FAILED_RETRY_MS = 2 * 60_000;
 
 const trimEntries = () => {
   while (entries.size > MAX_PREPARED_IMAGES) {
@@ -24,6 +26,9 @@ export const isProductImageReady = (source: string): boolean =>
 
 function decodeImage(url: string): Promise<boolean> {
   if (typeof Image === 'undefined' || !url) return Promise.resolve(false);
+  const previousFailure = failedAt.get(url);
+  if (previousFailure && Date.now() - previousFailure < FAILED_RETRY_MS) return Promise.resolve(false);
+  failedAt.delete(url);
   const existing = entries.get(url);
   if (existing) {
     entries.delete(url);
@@ -52,6 +57,12 @@ function decodeImage(url: string): Promise<boolean> {
     image.onload = markReady;
     image.onerror = () => {
       entries.delete(url);
+      failedAt.set(url, Date.now());
+      while (failedAt.size > MAX_PREPARED_IMAGES) {
+        const oldest = failedAt.keys().next().value;
+        if (!oldest) break;
+        failedAt.delete(oldest);
+      }
       resolve(false);
     };
     image.src = url;
