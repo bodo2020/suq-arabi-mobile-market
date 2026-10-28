@@ -37,8 +37,10 @@ export function getCachedDetailProduct(client: QueryClient, id: string | undefin
 // route-scoped copy so opening/swiping never waits for a second catalog read.
 // The checkout flow still validates actual price and stock against the server.
 const visibleSnapshots = new Map<string, { product: Product; savedAt: number }>();
-const SNAPSHOT_TTL_MS = 5 * 60_000;
-const MAX_SNAPSHOTS = 1200;
+// Preserve a long catalog journey while the sheet stays open. Display-only
+// snapshots never authorize checkout prices, quantities or stock.
+const SNAPSHOT_TTL_MS = 20 * 60_000;
+const MAX_SNAPSHOTS = 5000;
 
 export function registerBrowsableProduct(path: string, product: Product): void {
   if (!/^\/product\/[^/?#]+/.test(path)) return;
