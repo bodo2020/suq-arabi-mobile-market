@@ -260,7 +260,11 @@ const ProductDetail = () => {
   };
 
   const browseProduct = (offset: -1 | 1) => {
-    if (!browse || browseIndex < 0 || weightOpen || swipeLocked) return;
+    if (!browse || browseIndex < 0 || weightOpen || swipeLocked || closingRef.current) return;
+    // An unfinished opening FLIP must not keep the center card locked while
+    // tapping an adjacent peek or flicking immediately after opening.
+    entranceAnimation.current?.cancel();
+    entranceAnimation.current = null;
     const next = browse.paths[browseIndex + offset];
     const destination = next || (offset === 1 ? browse.nextCategory?.path : undefined);
     if (!destination) return;
@@ -310,6 +314,8 @@ const ProductDetail = () => {
       at: Date.now(),
       axis: 'pending',
     };
+    entranceAnimation.current?.cancel();
+    entranceAnimation.current = null;
     setCarouselMotion(false);
   };
 
