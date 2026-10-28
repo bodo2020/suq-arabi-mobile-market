@@ -226,9 +226,9 @@ export async function getCompanyById(id: string) {
   return data;
 }
 
-export async function getRelatedProducts(productId: string, categoryId: string) {
-  const rows = await getBranchCatalog({ mainCategoryId: categoryId, limit: 12 });
-  return rows.filter(product => product.id !== productId).slice(0, 4);
+export async function getRelatedProducts(product: Product): Promise<Product[]> {
+  const { fetchSmartRecommendations } = await import('@/lib/productRecommendations');
+  return fetchSmartRecommendations(product);
 }
 
 export async function searchProducts(query: string) {
