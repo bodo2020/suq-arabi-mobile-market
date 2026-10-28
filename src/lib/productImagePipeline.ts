@@ -109,3 +109,34 @@ export function prepareProductBrowseImages(
     : undefined);
   if (!connection?.saveData) far.forEach(prepare);
 }
+
+/**
+ * A single IntersectionObserver handles every catalog card: only images in
+ * (or just around) the viewport are decoded ahead of the user's next tap.
+ * This avoids spawning a separate observer or preloading an entire category.
+ */
+const observedCardImages = new WeakMap<Element, string>();
+let cardImageObserver: IntersectionObserver | null = null;
+
+export function observeProductCardImage(card: Element, source: string): () => void {
+  if (!source || typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+    return () => {};
+  }
+  if (!cardImageObserver) {
+    cardImageObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const image = observedCardImages.get(entry.target);
+        if (image) void prepareProductImage(image);
+        cardImageObserver?.unobserve(entry.target);
+        observedCardImages.delete(entry.target);
+      }
+    }, { rootMargin: '250px 0px', threshold: 0 });
+  }
+  observedCardImages.set(card, source);
+  cardImageObserver.observe(card);
+  return () => {
+    cardImageObserver?.unobserve(card);
+    observedCardImages.delete(card);
+  };
+}
