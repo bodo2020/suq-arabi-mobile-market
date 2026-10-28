@@ -45,6 +45,7 @@ const ProductDetail = () => {
   const sheetStage = useRef<HTMLDivElement>(null);
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closingRef = useRef(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetDragging, setSheetDragging] = useState(false);
   const [swipeAnimating, setSwipeAnimating] = useState(false);
@@ -92,7 +93,8 @@ const ProductDetail = () => {
   }, []);
 
   const closeSheet = () => {
-    if (closeTimer.current) return;
+    if (closingRef.current) return;
+    closingRef.current = true;
     setSheetVisible(false);
     closeTimer.current = setTimeout(() => {
       closeTimer.current = null;
@@ -274,10 +276,10 @@ const ProductDetail = () => {
   // Reveal the sheet from the bottom once a preview or canonical product is
   // available. Data fetching never controls the opening animation.
   useEffect(() => {
-    if (!product || sheetVisible) return;
+    if (!product || sheetVisible || closingRef.current) return;
     const frame = requestAnimationFrame(() => setSheetVisible(true));
     return () => cancelAnimationFrame(frame);
-  }, [Boolean(product)]);
+  }, [product, sheetVisible]);
 
   useEffect(() => {
     if (!product) return;
