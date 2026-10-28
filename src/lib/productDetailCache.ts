@@ -37,8 +37,10 @@ export function getCachedDetailProduct(client: QueryClient, id: string | undefin
 // route-scoped copy so opening/swiping never waits for a second catalog read.
 // The checkout flow still validates actual price and stock against the server.
 const visibleSnapshots = new Map<string, { product: Product; savedAt: number }>();
-const SNAPSHOT_TTL_MS = 5 * 60_000;
-const MAX_SNAPSHOTS = 1200;
+// Preserve a long catalog journey while the sheet stays open. Display-only
+// snapshots never authorize checkout prices, quantities or stock.
+const SNAPSHOT_TTL_MS = 20 * 60_000;
+const MAX_SNAPSHOTS = 5000;
 
 export function registerBrowsableProduct(path: string, product: Product): void {
   if (!/^\/product\/[^/?#]+/.test(path)) return;
@@ -126,9 +128,11 @@ export function warmAdjacentProductPages(
 
 
 /**
- * Warm canonical details for the two adjacent cards after the current hero
+ * Warm canonical details for the two nearest cards on each side after
+ * the current hero
  * has had its first paint. Cache scopes are identical to the selected route.
- * Only two requests may be started here; no speculative recommendation fetch.
+ * The full ordered journey is already known; only the small rolling
+ * window needs canonical validation. No recommendation requests on swipe.
  */
 export async function prefetchAdjacentProductDetails(
   client: QueryClient,
@@ -141,7 +145,10 @@ export async function prefetchAdjacentProductDetails(
   // Respect a user preference to save mobile data.
   if (connection?.saveData) return;
 
-  const neighbors = [paths[currentIndex + 1], paths[currentIndex - 1]];
+  const neighbors = [
+    paths[currentIndex + 1], paths[currentIndex - 1],
+    paths[currentIndex + 2], paths[currentIndex - 2],
+  ];
   await Promise.all(neighbors.map(async path => {
     if (!path || !/^\/product\/[^/?#]+/.test(path)) return;
     const url = new URL(path, window.location.origin);

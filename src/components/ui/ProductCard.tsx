@@ -108,7 +108,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
       (mobile && !location.pathname.startsWith('/product/') ? location : undefined);
     navigate(detailHref, {
       state: {
-        ...browseState,
+        // Reference the complete in-memory journey rather than cloning every
+        // product into browser history on each swipe.
+        productBrowseKey: browseState.productBrowseKey,
         ...(backgroundLocation ? { backgroundLocation } : {}),
         ...(mobile && productCardOrigin ? { productCardOrigin } : {}),
       },

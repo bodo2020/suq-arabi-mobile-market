@@ -6,11 +6,13 @@ import { productCardImage } from '@/lib/productCardImage';
 import { isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 
 type Props = {
-  side: 'left' | 'right';
+  offset: number;
   preview: ProductPreview | null;
   product: Product | null;
   locked: boolean;
   visible: boolean;
+  handoff: boolean;
+  handoffExiting: boolean;
   transitioning: boolean;
   onOpen: () => void;
 };
@@ -27,7 +29,9 @@ const money = (amount: number) => Number(amount || 0).toLocaleString('ar-EG', { 
  * Only two neighbors exist in the DOM, so the gesture does not rerender
  * hundreds of catalog products or fetch details inside an animation frame.
  */
-function ProductSwipePeek({ side, preview, product, locked, visible, transitioning, onOpen }: Props) {
+function ProductSwipePeek({
+  offset, preview, product, locked, visible, handoff, handoffExiting, transitioning, onOpen,
+}: Props) {
   if (!preview) return null;
   const bulk = new URLSearchParams(preview.path.split('?')[1] || '').get('unit') === 'bulk';
   // The catalog URL was already decoded before the swipe. Do not replace the
@@ -51,7 +55,9 @@ function ProductSwipePeek({ side, preview, product, locked, visible, transitioni
   const discount = !bulk && original > current && current > 0
     ? Math.round((1 - current / original) * 100)
     : 0;
-  const position = side === 'left' ? '-150% - 10px' : '50% + 10px';
+  // Slot 0 is centered at -50%; +/-1 are one card width plus 10px away.
+  // Stable keyed elements slide between slots without image remounts.
+  const position = `${offset * 100 - 50}% + ${offset * 10}px`;
 
   return (
     <button
@@ -59,8 +65,9 @@ function ProductSwipePeek({ side, preview, product, locked, visible, transitioni
       data-product-swipe-card
       onClick={onOpen}
       disabled={locked || !visible}
+      aria-hidden={!visible}
       aria-label={`عرض تفاصيل ${title}`}
-      className={`absolute bottom-0 left-1/2 z-[1] flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none disabled:cursor-default ${visible ? 'opacity-100' : 'opacity-0'} ${transitioning ? 'transition-[transform,opacity] duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-opacity duration-200'}`}
+      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none disabled:cursor-default ${visible && !(handoff && handoffExiting) ? 'opacity-100' : 'opacity-0'} ${transitioning ? 'transition-[transform,opacity] duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-opacity duration-200'}`}
       style={{ transform: `translate3d(calc(${position} + var(--product-swipe-x, 0px)), 0, 0)` }}
       dir="rtl"
     >

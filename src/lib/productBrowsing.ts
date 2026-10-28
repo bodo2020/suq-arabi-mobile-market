@@ -9,7 +9,36 @@ export type ProductBrowse = {
   previews: ProductPreview[];
   nextCategory?: { path: string; name: string };
 };
-export type ProductBrowseState = { productBrowse: ProductBrowse };
+export type ProductBrowseState = { productBrowse: ProductBrowse; productBrowseKey: string };
+
+// The catalog may contain thousands of already-rendered cards. Keep its
+// ordered journey in a bounded in-memory session store rather than serializing
+// every preview into each React Router history entry.
+const MAX_BROWSE_SESSIONS = 8;
+const BROWSE_SESSION_MS = 45 * 60_000;
+const browseSessions = new Map<string, { browse: ProductBrowse; savedAt: number }>();
+let nextBrowseSessionId = 0;
+
+function rememberBrowse(browse: ProductBrowse): string {
+  const key = `product-journey-${++nextBrowseSessionId}`;
+  browseSessions.set(key, { browse, savedAt: Date.now() });
+  for (const [id, session] of browseSessions) {
+    if (Date.now() - session.savedAt > BROWSE_SESSION_MS || browseSessions.size > MAX_BROWSE_SESSIONS) {
+      browseSessions.delete(id);
+    }
+  }
+  return key;
+}
+
+function lookupBrowse(key: string): ProductBrowse | null {
+  const session = browseSessions.get(key);
+  if (!session) return null;
+  if (Date.now() - session.savedAt > BROWSE_SESSION_MS) {
+    browseSessions.delete(key);
+    return null;
+  }
+  return session.browse;
+}
 
 const validPath = (path: string) => /^\/product\/[^/?#]+(?:\?[^#]*)?$/.test(path);
 const validCategoryPath = (path: string) => /^\/category\/[^/?#]+(?:\/subcategory\/[^/?#]+)?$/.test(path);
@@ -41,14 +70,11 @@ export function collectProductBrowseState(anchor: HTMLAnchorElement, fromPath: s
       node = node.parentElement;
     }
   }
-  // Keep a centered window around the clicked item. The previous "first 250"
-  // cap broke neighbor swipes when a shopper opened a late catalog product.
+  // Capture the complete ordering of all catalog cards already rendered.
+  // The UI virtualizes the moving slides, not the catalog's data/sequence.
   const activeCard = anchor.closest<HTMLElement>('[data-product-card]');
   const currentIndex = activeCard ? allCards.indexOf(activeCard) : -1;
-  const start = allCards.length > 250 && currentIndex >= 0
-    ? Math.max(0, Math.min(currentIndex - 120, allCards.length - 250))
-    : 0;
-  const cards = allCards.slice(start, start + 250);
+  const cards = allCards;
   const distinct = new Map<string, ProductPreview>();
   cards.map(previewFromCard).forEach(preview => {
     if (preview && !distinct.has(preview.path)) distinct.set(preview.path, preview);
@@ -61,30 +87,34 @@ export function collectProductBrowseState(anchor: HTMLAnchorElement, fromPath: s
   // A continuous journey can contain other already-rendered main categories.
   // Only provide a route fallback when this is truly the last visible product.
   const hasFollowingLoaded = currentIndex >= 0 && currentIndex < allCards.length - 1;
-  const truncated = allCards.length > 250;
-  const previews = Array.from(distinct.values()).slice(0, 250);
+  const previews = Array.from(distinct.values());
   const path = journey?.dataset.nextCategoryPath || '';
-  // Never treat the 250-item route-state cap as the end of a longer category.
-  const nextCategory = !hasFollowingLoaded && (!truncated || currentIndex === allCards.length - 1) && validCategoryPath(path)
+  // Category fallback is used only at the true end of this loaded journey.
+  const nextCategory = !hasFollowingLoaded && validCategoryPath(path)
     ? { path, name: (journey?.dataset.nextCategoryName || 'القسم التالي').slice(0, 100) }
     : undefined;
-  return {
-    productBrowse: {
-      paths: previews.map(preview => preview.path),
-      previews,
-      returnTo: fromPath.startsWith('/') && !fromPath.startsWith('//') ? fromPath : '/',
-      ...(nextCategory ? { nextCategory } : {}),
-    },
+  const productBrowse: ProductBrowse = {
+    paths: previews.map(preview => preview.path),
+    previews,
+    returnTo: fromPath.startsWith('/') && !fromPath.startsWith('//') ? fromPath : '/',
+    ...(nextCategory ? { nextCategory } : {}),
   };
+  return { productBrowse, productBrowseKey: rememberBrowse(productBrowse) };
 }
 
 export function readProductBrowseState(state: unknown): ProductBrowse | null {
-  if (!state || typeof state !== 'object' || !('productBrowse' in state)) return null;
+  if (!state || typeof state !== 'object') return null;
+  const sessionKey = (state as { productBrowseKey?: unknown }).productBrowseKey;
+  if (typeof sessionKey === 'string') {
+    const retained = lookupBrowse(sessionKey);
+    if (retained) return retained;
+  }
+  if (!('productBrowse' in state)) return null;
   const raw = (state as { productBrowse?: unknown }).productBrowse;
   if (!raw || typeof raw !== 'object') return null;
   const candidate = raw as { paths?: unknown; returnTo?: unknown; previews?: unknown; nextCategory?: unknown };
   if (!Array.isArray(candidate.paths)) return null;
-  const paths = [...new Set(candidate.paths.filter((path): path is string => typeof path === 'string' && validPath(path)))].slice(0, 250);
+  const paths = [...new Set(candidate.paths.filter((path): path is string => typeof path === 'string' && validPath(path)))];
   const returnTo = typeof candidate.returnTo === 'string' && candidate.returnTo.startsWith('/') && !candidate.returnTo.startsWith('//')
     ? candidate.returnTo : '/';
   const previews = Array.isArray(candidate.previews) ? candidate.previews.filter((value): value is ProductPreview => {
@@ -92,7 +122,7 @@ export function readProductBrowseState(state: unknown): ProductBrowse | null {
     const p = value as Partial<ProductPreview>;
     return typeof p.path === 'string' && paths.includes(p.path) &&
       typeof p.name === 'string' && typeof p.image === 'string' && typeof p.price === 'string';
-  }).slice(0, 250).map(p => ({
+  }).map(p => ({
     path: p.path, name: p.name.slice(0, 120),
     image: safeImage(p.image) ? p.image.slice(0, 1000) : '', price: p.price.slice(0, 40),
   })) : [];
