@@ -123,7 +123,7 @@ export function warmAdjacentProductPages(
   // selected; recommended products NEVER compete with an active swipe.
   for (const index of [currentIndex - 1, currentIndex + 1, currentIndex - 2, currentIndex + 2]) {
     const path = paths[index];
-    if (!path || !/^\\/product\\/[^/?#]+/.test(path)) continue;
+    if (!path || !/^\/product\/[^/?#]+/.test(path)) continue;
     const url = new URL(path, window.location.origin);
     if (url.origin !== window.location.origin) continue;
     const id = decodeURIComponent(url.pathname.slice('/product/'.length));
