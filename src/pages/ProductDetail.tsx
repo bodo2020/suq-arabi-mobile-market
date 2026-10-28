@@ -2,6 +2,10 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
+import { prepareProductBrowseImages } from '@/lib/productImagePipeline';
+import {
+  animateProductCardSheet, findCurrentProductCardOrigin, prefersReducedProductMotion, readProductCardOrigin,
+} from '@/lib/productSheetMotion';
 import ProductSwipePeek from '@/components/product/ProductSwipePeek';
 import { productCardImage } from '@/lib/productCardImage';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -48,6 +52,11 @@ const ProductDetail = () => {
   const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
   const sheetTouch = useRef<{ x: number; y: number; at: number; gallery: boolean } | null>(null);
   const sheetStage = useRef<HTMLDivElement>(null);
+  const sheetCardRef = useRef<HTMLElement>(null);
+  const hasEnteredRef = useRef(false);
+  const entranceAnimation = useRef<Animation | null>(null);
+  const dismissGesture = useRef<{ pointerId: number; y: number; at: number } | null>(null);
+  const dismissOffset = useRef(0);
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeFrame = useRef<number | null>(null);
   const pendingSwipeNavigation = useRef<(() => void) | null>(null);
@@ -122,12 +131,76 @@ const ProductDetail = () => {
   const closeSheet = () => {
     if (closingRef.current) return;
     closingRef.current = true;
-    setSheetVisible(false);
-    closeTimer.current = setTimeout(() => {
+    // Don't let a pending carousel snap navigate after the sheet is closing.
+    pendingSwipeNavigation.current = null;
+    if (swipeTimer.current) clearTimeout(swipeTimer.current);
+    if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (closeTimer.current) clearTimeout(closeTimer.current);
       closeTimer.current = null;
       if (browse) navigate(-1);
       else navigate('/');
-    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260);
+    };
+    const path = location.pathname + location.search;
+    const origin = inCatalogOverlay
+      ? findCurrentProductCardOrigin(path, readProductCardOrigin(location.state, path))
+      : null;
+    const animation = origin && sheetCardRef.current
+      ? animateProductCardSheet(sheetCardRef.current, origin, 'close')
+      : null;
+    if (animation) {
+      void animation.finished.then(finish, finish);
+      closeTimer.current = setTimeout(finish, 410);
+    } else {
+      // Deep links or catalog cards no longer on screen retain a natural
+      // downward bottom-sheet exit instead of shrinking to a wrong product.
+      if (sheetStage.current) sheetStage.current.style.setProperty('--product-dismiss-y', '0px');
+      setSheetVisible(false);
+      closeTimer.current = setTimeout(finish, prefersReducedProductMotion() ? 0 : 260);
+    }
+  };
+
+  const onHeaderPointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.pointerType === 'mouse' || closingRef.current || swipeLocked || weightOpen) return;
+    if ((event.target as HTMLElement).closest('button, a, input, textarea')) return;
+    dismissGesture.current = { pointerId: event.pointerId, y: event.clientY, at: Date.now() };
+    dismissOffset.current = 0;
+    sheetCardRef.current?.style.setProperty('transition', 'none');
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onHeaderPointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    const gesture = dismissGesture.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    const dy = Math.max(0, Math.min(480, event.clientY - gesture.y));
+    dismissOffset.current = dy;
+    sheetStage.current?.style.setProperty('--product-dismiss-y', `${dy}px`);
+  };
+
+  const onHeaderPointerEnd = (event: React.PointerEvent<HTMLElement>) => {
+    const gesture = dismissGesture.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    dismissGesture.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    sheetCardRef.current?.style.removeProperty('transition');
+    const dy = dismissOffset.current;
+    dismissOffset.current = 0;
+    const elapsed = Math.max(1, Date.now() - gesture.at);
+    if (dy > 110 || (dy > 45 && dy / elapsed > .65)) {
+      closeSheet();
+      return;
+    }
+    // A short drag springs back; keep React out of individual pointer frames.
+    const card = sheetCardRef.current;
+    if (card) card.style.transition = 'transform 240ms cubic-bezier(0.2,0.8,0.2,1)';
+    requestAnimationFrame(() => sheetStage.current?.style.setProperty('--product-dismiss-y', '0px'));
+    window.setTimeout(() => { if (!closingRef.current) card?.style.removeProperty('transition'); }, 250);
   };
 
   // Route changes re-center the newly selected card *before the browser paints*.
@@ -148,6 +221,7 @@ const ProductDetail = () => {
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
     if (closeTimer.current) clearTimeout(closeTimer.current);
+    entranceAnimation.current?.cancel();
   }, []);
 
   const completeSwipeNavigation = () => {
@@ -335,6 +409,7 @@ const ProductDetail = () => {
 
   useEffect(() => {
     if (!browse || browseIndex < 0 || !isMobile) return;
+    prepareProductBrowseImages(browse.previews, browse.paths, browseIndex);
     warmAdjacentProductPages(queryClient, browse.paths, browseIndex);
     // Give the active product and its lightweight hero first priority, then
     // upgrade only the two adjacent cards from their server-backed cache.
@@ -347,13 +422,26 @@ const ProductDetail = () => {
     return () => { active = false; window.clearTimeout(timer); };
   }, [browse, browseIndex, queryClient, isMobile]);
 
-  // Reveal the sheet from the bottom once a preview or canonical product is
-  // available. Data fetching never controls the opening animation.
-  useEffect(() => {
-    if (!product || sheetVisible || closingRef.current) return;
-    const frame = requestAnimationFrame(() => setSheetVisible(true));
-    return () => cancelAnimationFrame(frame);
-  }, [product, sheetVisible]);
+  // First entrance is a shared-element FLIP from the tapped catalog tile.
+  // This layout effect runs before paint so an offscreen -> center flash
+  // cannot occur. Direct links retain the normal bottom-sheet entrance.
+  useLayoutEffect(() => {
+    if (!product || !isMobile || hasEnteredRef.current || closingRef.current) return;
+    const card = sheetCardRef.current;
+    if (!card) return;
+    hasEnteredRef.current = true;
+    const origin = inCatalogOverlay
+      ? readProductCardOrigin(location.state, location.pathname + location.search)
+      : null;
+    const animation = origin ? animateProductCardSheet(card, origin, 'open') : null;
+    if (animation) {
+      entranceAnimation.current = animation;
+      setSheetVisible(true);
+    } else {
+      const frame = requestAnimationFrame(() => setSheetVisible(true));
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [Boolean(product), isMobile]);
 
   // Only begin secondary network work once the user gets near the bottom of
   // the sheet (or the lower section on desktop). The hero renders independently.
