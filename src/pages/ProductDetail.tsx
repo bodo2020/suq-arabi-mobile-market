@@ -818,21 +818,30 @@ const ProductDetail = () => {
         <ProductSwipePeek side="right" preview={neighbors.next.preview} product={neighbors.next.product}
           locked={swipeLocked} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(1)} />
         <section
+          ref={sheetCardRef}
           data-product-center-card
           role="dialog"
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
           className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[230ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
-          style={{ transform: `translate3d(var(--product-swipe-x, 0px), ${sheetVisible ? '0px' : '105dvh'}, 0)` }}
+          style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible || (inCatalogOverlay && Boolean(readProductCardOrigin(location.state, location.pathname + location.search))) ? '0px' : '105dvh'} + var(--product-dismiss-y, 0px)), 0)` }}
           onTransitionEnd={event => {
             if (event.currentTarget === event.target && event.propertyName === 'transform') completeSwipeNavigation();
           }}
         >
-          <header className="relative z-20 shrink-0 rounded-t-[30px] bg-white px-4 pb-2 pt-3">
-            <button type="button" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج" className="mx-auto mb-2 flex h-3 w-14 items-center justify-center">
-              <span className="h-1 w-11 rounded-full bg-slate-200" aria-hidden="true" />
-            </button>
+          <header
+            className="relative z-20 shrink-0 select-none rounded-t-[30px] bg-white px-4 pb-2 pt-3"
+            style={{ touchAction: 'none' }}
+            onPointerDown={onHeaderPointerDown}
+            onPointerMove={onHeaderPointerMove}
+            onPointerUp={onHeaderPointerEnd}
+            onPointerCancel={onHeaderPointerEnd}
+            aria-label="اسحب لأسفل لإغلاق تفاصيل المنتج"
+          >
+            <div data-product-drag-handle className="mx-auto mb-2 flex h-4 w-20 items-center justify-center" aria-hidden="true">
+              <span className="h-1 w-11 rounded-full bg-slate-300" />
+            </div>
             <div className="flex items-center justify-between gap-2">
               <button type="button" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-800 active:scale-95">
@@ -875,7 +884,13 @@ const ProductDetail = () => {
                       aria-hidden="true"
                       draggable={false}
                       className="absolute inset-0 h-full w-full object-contain px-7 py-5"
-                      onError={event => { event.currentTarget.style.visibility = 'hidden'; }}
+                      onError={event => {
+                        const fallback = images[selectedImageIndex];
+                        if (event.currentTarget.src !== fallback) {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = fallback;
+                        }
+                      }}
                     />
                   )}
                   {(fullResolutionProductId === id || productCardImage(images[selectedImageIndex]) === images[selectedImageIndex]) && (
