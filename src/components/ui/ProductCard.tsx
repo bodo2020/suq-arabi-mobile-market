@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { collectProductBrowseState } from '@/lib/productBrowsing';
+import { captureProductCardOrigin } from '@/lib/productSheetMotion';
+import { prepareProductBrowseImages } from '@/lib/productImagePipeline';
 import { registerBrowsableProduct, seedProductBrowseCache } from '@/lib/productDetailCache';
 import { Bell, BellRing, Loader2, Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
 import { Product } from '@/lib/supabase';
@@ -90,12 +92,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
     registerBrowsableProduct(detailHref, product);
     const index = browseState.productBrowse.paths.indexOf(detailHref);
     seedProductBrowseCache(queryClient, browseState.productBrowse.paths, index);
+    // Begin image decode before routing, while the listing images are already
+    // on screen and likely present in the browser's HTTP cache.
+    prepareProductBrowseImages(browseState.productBrowse.previews, browseState.productBrowse.paths, index);
+    const productCardOrigin = captureProductCardOrigin(event.currentTarget, detailHref);
     const inheritedBackground = (location.state as { backgroundLocation?: typeof location } | null)?.backgroundLocation;
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
     const backgroundLocation = inheritedBackground ||
       (mobile && !location.pathname.startsWith('/product/') ? location : undefined);
     navigate(detailHref, {
-      state: { ...browseState, ...(backgroundLocation ? { backgroundLocation } : {}) },
+      state: {
+        ...browseState,
+        ...(backgroundLocation ? { backgroundLocation } : {}),
+        ...(mobile && productCardOrigin ? { productCardOrigin } : {}),
+      },
       // Don't stack nested sheets when tapping a recommendation inside a sheet.
       replace: Boolean(inheritedBackground),
     });
