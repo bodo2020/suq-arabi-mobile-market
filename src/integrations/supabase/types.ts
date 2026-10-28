@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -3691,6 +3691,177 @@ export type Database = {
           },
         ]
       }
+      merchant_retail_market_settings_v1: {
+        Row: {
+          country_code: string
+          created_at: string
+          currency_code: string
+          merchant_id: string
+          receipt_language: string
+          time_zone: string
+          updated_at: string
+        }
+        Insert: {
+          country_code?: string
+          created_at?: string
+          currency_code?: string
+          merchant_id: string
+          receipt_language?: string
+          time_zone?: string
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          currency_code?: string
+          merchant_id?: string
+          receipt_language?: string
+          time_zone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_retail_market_settings_v1_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: true
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_retail_payment_channels_v1: {
+        Row: {
+          account_identifier: string
+          account_name: string
+          active: boolean
+          method: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          account_identifier: string
+          account_name: string
+          active?: boolean
+          method: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          account_identifier?: string
+          account_name?: string
+          active?: boolean
+          method?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      merchant_retail_payment_requests_v1: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          created_at: string
+          id: string
+          merchant_id: string
+          plan_code: string
+          requested_branches: number
+          requested_by: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transfer_method: string
+          transfer_reference: string
+        }
+        Insert: {
+          amount: number
+          billing_cycle: string
+          created_at?: string
+          id?: string
+          merchant_id: string
+          plan_code: string
+          requested_branches?: number
+          requested_by: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transfer_method: string
+          transfer_reference: string
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          created_at?: string
+          id?: string
+          merchant_id?: string
+          plan_code?: string
+          requested_branches?: number
+          requested_by?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transfer_method?: string
+          transfer_reference?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_retail_payment_requests_v1_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_retail_subscriptions_v1: {
+        Row: {
+          billing_cycle: string
+          ends_at: string | null
+          licensed_branches: number
+          merchant_id: string
+          plan_code: string
+          revision: number
+          starts_at: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          billing_cycle: string
+          ends_at?: string | null
+          licensed_branches?: number
+          merchant_id: string
+          plan_code: string
+          revision?: number
+          starts_at?: string
+          status: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          billing_cycle?: string
+          ends_at?: string | null
+          licensed_branches?: number
+          merchant_id?: string
+          plan_code?: string
+          revision?: number
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_retail_subscriptions_v1_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: true
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_settlement_entries: {
         Row: {
           created_at: string
@@ -3819,6 +3990,7 @@ export type Database = {
       }
       merchants: {
         Row: {
+          business_profile: string
           code: string
           contact_name: string | null
           created_at: string
@@ -3836,6 +4008,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_profile?: string
           code: string
           contact_name?: string | null
           created_at?: string
@@ -3853,6 +4026,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_profile?: string
           code?: string
           contact_name?: string | null
           created_at?: string
@@ -7518,6 +7692,7 @@ export type Database = {
           active: boolean
           address: string | null
           balance: number | null
+          branch_id: string | null
           code: string | null
           commercial_registration: string | null
           contact_person: string | null
@@ -7536,6 +7711,7 @@ export type Database = {
           active?: boolean
           address?: string | null
           balance?: number | null
+          branch_id?: string | null
           code?: string | null
           commercial_registration?: string | null
           contact_person?: string | null
@@ -7554,6 +7730,7 @@ export type Database = {
           active?: boolean
           address?: string | null
           balance?: number | null
+          branch_id?: string | null
           code?: string | null
           commercial_registration?: string | null
           contact_person?: string | null
@@ -7568,7 +7745,15 @@ export type Database = {
           tax_number?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tenant_analytics: {
         Row: {
@@ -8004,6 +8189,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_daily_inventory_audit_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
       accept_my_franchise_invitation_v1: {
         Args: { p_invitation_id: string }
         Returns: Json
@@ -8318,6 +8507,10 @@ export type Database = {
         Args: { p_current_pin: string; p_new_pin: string }
         Returns: Json
       }
+      change_retail_promotion_status_v1: {
+        Args: { p_branch_id: string; p_id: string; p_next_status: string }
+        Returns: Json
+      }
       charge_employee_wallet_purchase_v1: {
         Args: {
           p_amount: number
@@ -8565,6 +8758,31 @@ export type Database = {
         Args: { p_branch_code: string; p_branch_id: string }
         Returns: string
       }
+      create_branch_staff_record_v1: {
+        Args: {
+          p_actor_id: string
+          p_branch_id: string
+          p_codes: string[]
+          p_name: string
+          p_phone: string
+          p_user_id: string
+          p_username: string
+        }
+        Returns: Json
+      }
+      create_branch_staff_with_pin_v1: {
+        Args: {
+          p_actor_id: string
+          p_branch_id: string
+          p_codes: string[]
+          p_name: string
+          p_phone: string
+          p_pin: string
+          p_user_id: string
+          p_username: string
+        }
+        Returns: Json
+      }
       create_bucket_if_not_exists: {
         Args: { bucket_name: string }
         Returns: undefined
@@ -8725,6 +8943,20 @@ export type Database = {
         }
         Returns: Json
       }
+      create_marketplace_partner_v2: {
+        Args: {
+          p_address?: string
+          p_branch_code?: string
+          p_branch_name: string
+          p_business_profile?: string
+          p_contact_name?: string
+          p_email?: string
+          p_merchant_name: string
+          p_phone?: string
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
       create_marketplace_settlement_v2: {
         Args: { p_merchant_id: string; p_period_end?: string }
         Returns: Json
@@ -8877,6 +9109,14 @@ export type Database = {
         Args: { p_branch_id: string; p_request_id: string; p_sale: Json }
         Returns: Json
       }
+      create_pos_sale_v8: {
+        Args: { p_branch_id: string; p_request_id: string; p_sale: Json }
+        Returns: Json
+      }
+      create_pos_sale_v9: {
+        Args: { p_branch_id: string; p_request_id: string; p_sale: Json }
+        Returns: Json
+      }
       create_purchase_v2: {
         Args: {
           p_actual_fee?: number
@@ -8896,6 +9136,10 @@ export type Database = {
           p_supplier_id: string
           p_update_sale_prices?: boolean
         }
+        Returns: Json
+      }
+      create_retail_merchant_branch_v1: {
+        Args: { p_merchant_id: string; p_name: string; p_phone?: string }
         Returns: Json
       }
       create_staff_device_pairing_v1: {
@@ -9070,6 +9314,10 @@ export type Database = {
         Args: { p_note?: string; p_transfer_id: string }
         Returns: Json
       }
+      distribute_inventory_audit_session_v1: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
       end_it_session_v1: {
         Args: { p_branch_id?: string; p_reason?: string; p_session_id: string }
         Returns: Json
@@ -9129,9 +9377,23 @@ export type Database = {
         Args: { p_branch_id: string }
         Returns: Json
       }
+      get_branch_business_profile_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
       get_branch_cash_overview: { Args: { p_branch_id: string }; Returns: Json }
       get_branch_control_detail_v1: {
         Args: { p_branch_id: string }
+        Returns: Json
+      }
+      get_branch_customer_debts_v1: {
+        Args: {
+          p_branch_id: string
+          p_customer_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
         Returns: Json
       }
       get_branch_delivery_policy_v2: {
@@ -9172,6 +9434,10 @@ export type Database = {
           neighborhood_name: string
           price: number
         }[]
+      }
+      get_branch_open_customer_credit_v1: {
+        Args: { p_branch_id: string; p_customer_id?: string }
+        Returns: Json
       }
       get_branch_partner_network_v1: {
         Args: { p_tenant_id?: string }
@@ -9223,6 +9489,16 @@ export type Database = {
           name: string
           phone: string
         }[]
+      }
+      get_business_catalog_v1: {
+        Args: {
+          p_branch_id: string
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
+        Returns: Json
       }
       get_business_debts_workspace_v1: {
         Args: { p_branch_id: string; p_limit?: number }
@@ -9308,6 +9584,17 @@ export type Database = {
       }
       get_customer_coupon_conversion_dashboard: {
         Args: { p_branch_id?: string; p_days?: number; p_limit?: number }
+        Returns: Json
+      }
+      get_customer_debts_dashboard_v53: {
+        Args: {
+          p_branch_id: string
+          p_customer_id?: string
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
         Returns: Json
       }
       get_customer_discovery_catalog_v1: {
@@ -9427,6 +9714,10 @@ export type Database = {
       }
       get_customer_service_search_v1: {
         Args: { p_branch_id?: string; p_limit?: number; p_query: string }
+        Returns: Json
+      }
+      get_daily_inventory_offer_v1: {
+        Args: { p_branch_id: string }
         Returns: Json
       }
       get_delivery_assignment_workspace_v1: {
@@ -9563,6 +9854,31 @@ export type Database = {
           p_limit?: number
           p_merchant_id: string
           p_search?: string
+        }
+        Returns: Json
+      }
+      get_full_inventory_shelves_v1: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      get_full_inventory_workspace_v1: {
+        Args: {
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      get_full_inventory_workspace_v2: {
+        Args: {
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_session_id: string
+          p_shelf?: string
         }
         Returns: Json
       }
@@ -9734,11 +10050,19 @@ export type Database = {
         Args: { p_branch_id: string; p_limit?: number }
         Returns: Json
       }
+      get_inventory_audit_dashboard_v3: {
+        Args: { p_branch_id: string; p_limit?: number }
+        Returns: Json
+      }
       get_inventory_audit_setup_v2: {
         Args: { p_branch_id: string }
         Returns: Json
       }
       get_inventory_audit_task_v2: {
+        Args: { p_task_id: string }
+        Returns: Json
+      }
+      get_inventory_audit_task_v3: {
         Args: { p_task_id: string }
         Returns: Json
       }
@@ -9803,6 +10127,25 @@ export type Database = {
         Args: { p_limit?: number; p_merchant_id: string }
         Returns: Json
       }
+      get_merchant_business_profile_v1: {
+        Args: { p_merchant_id: string }
+        Returns: string
+      }
+      get_merchant_retail_admin_v1: { Args: never; Returns: Json }
+      get_merchant_retail_catalog_usage_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
+      get_merchant_retail_payment_channels_v1: { Args: never; Returns: Json }
+      get_merchant_retail_payment_requests_v1: {
+        Args: { p_merchant_id?: string }
+        Returns: Json
+      }
+      get_merchant_retail_plans_v1: { Args: never; Returns: Json }
+      get_merchant_retail_subscription_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
       get_merged_cash_balance:
         | { Args: never; Returns: number }
         | { Args: { p_branch_id?: string }; Returns: number }
@@ -9827,6 +10170,10 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: Json
       }
+      get_my_delivery_cash_handover_history_v1: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       get_my_delivery_cash_handover_state_v1: { Args: never; Returns: Json }
       get_my_delivery_cash_handover_targets_v1: { Args: never; Returns: Json }
       get_my_delivery_customer_phones_v1: { Args: never; Returns: Json }
@@ -9834,6 +10181,7 @@ export type Database = {
         Args: { p_branch_id?: string }
         Returns: Json
       }
+      get_my_delivery_earnings_v1: { Args: { p_days?: number }; Returns: Json }
       get_my_delivery_eta_batch_v1: {
         Args: { p_branch_id?: string }
         Returns: Json
@@ -9857,6 +10205,10 @@ export type Database = {
       }
       get_my_delivery_route_origin_v1: { Args: never; Returns: Json }
       get_my_delivery_shift_v1: { Args: never; Returns: Json }
+      get_my_delivery_support_issues_v1: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       get_my_delivery_workspace_v1: { Args: never; Returns: Json }
       get_my_delivery_workspace_v2: { Args: never; Returns: Json }
       get_my_employee_purchase_profile_v1: {
@@ -9892,6 +10244,10 @@ export type Database = {
       get_my_loyalty_card: { Args: never; Returns: Json }
       get_my_loyalty_history: { Args: { p_limit?: number }; Returns: Json[] }
       get_my_loyalty_vouchers: { Args: { p_status?: string }; Returns: Json[] }
+      get_my_merchant_cash_overview_v55: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
       get_my_notification_center_v2: {
         Args: {
           p_branch_id?: string
@@ -10093,7 +10449,29 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
+      get_online_order_final_receipt_v2: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       get_online_order_sla_policy_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
+      get_online_orders_page_v1: {
+        Args: {
+          p_branch_id: string
+          p_filter?: string
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+        }
+        Returns: Json
+      }
+      get_online_outside_settlements_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
+      get_online_outside_settlements_v2: {
         Args: { p_branch_id: string }
         Returns: Json
       }
@@ -10206,6 +10584,16 @@ export type Database = {
           status: string
         }[]
       }
+      get_pharmacy_workspace_v1: {
+        Args: {
+          p_branch_id: string
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
+        Returns: Json
+      }
       get_picker_assignment_policy_v1: {
         Args: { p_branch_id: string }
         Returns: Json
@@ -10218,6 +10606,14 @@ export type Database = {
           p_search?: string
         }
         Returns: Json[]
+      }
+      get_pos_checkout_policy_v1: {
+        Args: { p_branch_id: string; p_customer_id?: string }
+        Returns: Json
+      }
+      get_pos_drawer_setup_v56: {
+        Args: { p_branch_id: string; p_device_id: string }
+        Returns: Json
       }
       get_pos_expense_categories_v2: {
         Args: { p_device_id: string; p_device_token: string }
@@ -10259,6 +10655,10 @@ export type Database = {
       }
       get_pos_sale_return_preview_v7: {
         Args: { p_sale_id: string }
+        Returns: Json
+      }
+      get_pos_stock_shortfalls_v51: {
+        Args: { p_branch_id: string }
         Returns: Json
       }
       get_product_delete_preview_v2: {
@@ -10305,6 +10705,15 @@ export type Database = {
         Returns: string
       }
       get_push_provider_status_v1: { Args: never; Returns: Json }
+      get_reporting_activity_heatmap_v1: {
+        Args: {
+          p_branch_id: string
+          p_channel?: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
       get_reporting_costs_v2: {
         Args: {
           p_branch_id: string
@@ -10440,6 +10849,41 @@ export type Database = {
         }
         Returns: Json
       }
+      get_restaurant_kitchen_ticket_v1: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
+      get_restaurant_listing_modifiers_v1: {
+        Args: { p_branch_id: string; p_product_id: string }
+        Returns: Json
+      }
+      get_retail_branch_receipt_language_v1: {
+        Args: { p_branch_id: string }
+        Returns: string
+      }
+      get_retail_daily_operations_v2: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
+      get_retail_entitlements_v2: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
+      get_retail_market_settings_v1: {
+        Args: { p_merchant_id: string }
+        Returns: Json
+      }
+      get_retail_registration_catalog_v1: { Args: never; Returns: Json }
+      get_retail_registration_status_v1: { Args: never; Returns: Json }
+      get_retail_setup_activity_v1: {
+        Args: { p_merchant_id: string }
+        Returns: string
+      }
+      get_retail_subscription_activity_v3: {
+        Args: { p_limit?: number; p_merchant_id: string }
+        Returns: Json
+      }
+      get_retail_subscriptions_admin_v3: { Args: never; Returns: Json }
       get_saas_control_center_v1: { Args: never; Returns: Json }
       get_saas_control_center_v2: { Args: never; Returns: Json }
       get_staff_customer_loyalty_profile: {
@@ -10452,6 +10896,10 @@ export type Database = {
       }
       get_supplier_purchase_center_v2: {
         Args: { p_branch_id: string; p_limit?: number }
+        Returns: Json
+      }
+      get_supplier_purchase_reminder_v1: {
+        Args: { p_branch_id: string; p_purchase_id: string }
         Returns: Json
       }
       get_tenant_public_runtime_v1: {
@@ -10541,6 +10989,49 @@ export type Database = {
         Args: { p_branch_id: string; p_limit?: number; p_status?: string }
         Returns: Json[]
       }
+      list_inventory_work_tasks_v1: {
+        Args: {
+          p_branch_id: string
+          p_limit?: number
+          p_offset?: number
+          p_scope?: string
+          p_task_id?: string
+        }
+        Returns: Json
+      }
+      list_marketplace_business_profiles_v1: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
+      list_merchant_customers_v1: {
+        Args: { p_branch_id: string }
+        Returns: {
+          address: string | null
+          area_id: string | null
+          city_id: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          governorate_id: string | null
+          id: string
+          last_name: string | null
+          management_status: string
+          name: string
+          neighborhood_id: string | null
+          notes: string | null
+          phone: string | null
+          phone_verified: boolean | null
+          updated_at: string
+          user_id: string | null
+          verified: boolean
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "customers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       list_my_attendance_verification_orphans_v1: {
         Args: { p_branch_id: string }
         Returns: Json
@@ -10598,6 +11089,18 @@ export type Database = {
         Args: { p_sale_id: string }
         Returns: Json
       }
+      list_restaurant_modifier_groups_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
+      list_retail_promotions_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
+      list_smart_delivery_time_rules_v1: {
+        Args: { p_hub_branch_id: string }
+        Returns: Json
+      }
       log_pos_operational_event: {
         Args: {
           p_details?: Json
@@ -10619,6 +11122,14 @@ export type Database = {
       }
       lookup_loyalty_voucher: {
         Args: { p_branch_id: string; p_code: string; p_customer_id?: string }
+        Returns: Json
+      }
+      lookup_pos_customer_by_id_v52: {
+        Args: { p_branch_id: string; p_customer_id: string }
+        Returns: Json
+      }
+      lookup_pos_customer_by_phone: {
+        Args: { p_branch_id: string; p_phone: string }
         Returns: Json
       }
       manager_close_pos_shift: {
@@ -10885,6 +11396,53 @@ export type Database = {
         }
         Returns: Json
       }
+      place_restaurant_order_v1: {
+        Args: {
+          p_address_id: string
+          p_branch_id: string
+          p_items: Json
+          p_notes: string
+          p_payment_method: string
+          p_quote_token: string
+          p_request_id: string
+          p_route_quote_id: string
+          p_selections: Json
+          p_substitution_policy?: string
+        }
+        Returns: Json
+      }
+      pos_mobile_link_ack_v1: {
+        Args: { p_received: boolean; p_scan_id: number; p_session_id: string }
+        Returns: boolean
+      }
+      pos_mobile_link_claim_v1: {
+        Args: { p_limit?: number; p_session_id: string }
+        Returns: Json
+      }
+      pos_mobile_link_close_v1: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
+      pos_mobile_link_join_v1: {
+        Args: { p_code: string; p_session_id: string }
+        Returns: Json
+      }
+      pos_mobile_link_open_v1: {
+        Args: { p_branch_id: string; p_pos_device_id: string }
+        Returns: Json
+      }
+      pos_mobile_link_receipts_v1: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      pos_mobile_link_send_v1: {
+        Args: { p_barcode: string; p_nonce: string; p_session_id: string }
+        Returns: Json
+      }
+      pos_mobile_link_state_v1: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
       post_customer_receivable_v1: {
         Args: {
           p_amount: number
@@ -10938,8 +11496,25 @@ export type Database = {
         Args: { p_decision: string; p_exception_id: string; p_note?: string }
         Returns: Json
       }
+      prepare_daily_inventory_audit_v1: {
+        Args: { p_branch_id: string }
+        Returns: Json
+      }
       prepare_franchise_password_reset_v1: {
         Args: { p_merchant_id: string; p_user_id: string }
+        Returns: Json
+      }
+      prepare_inventory_audit_session_v1: {
+        Args: {
+          p_assignee_id?: string
+          p_audit_kind: string
+          p_branch_id: string
+          p_description?: string
+          p_due_at?: string
+          p_scope_filter?: Json
+          p_scope_type?: string
+          p_title?: string
+        }
         Returns: Json
       }
       prepare_my_partner_team_password_reset_v1: {
@@ -10952,6 +11527,16 @@ export type Database = {
       }
       prepare_partner_password_reset_v1: {
         Args: { p_merchant_id: string; p_user_id: string }
+        Returns: Json
+      }
+      preview_combined_restaurant_modifiers_v1: {
+        Args: {
+          p_latitude: number
+          p_longitude: number
+          p_restaurant_selections: Json
+          p_route_quote_id?: string
+          p_sources: Json
+        }
         Returns: Json
       }
       preview_customer_push_audience_v1: {
@@ -10977,6 +11562,25 @@ export type Database = {
       }
       preview_notification_target_v3: {
         Args: { p_branch_id?: string; p_target: Json }
+        Returns: Json
+      }
+      preview_restaurant_cart_modifiers_v1: {
+        Args: {
+          p_branch_id: string
+          p_items: Json
+          p_latitude: number
+          p_longitude: number
+          p_route_quote_id?: string
+          p_selections: Json
+        }
+        Returns: Json
+      }
+      preview_smart_delivery_price_v1: {
+        Args: {
+          p_as_of?: string
+          p_route_quote_id: string
+          p_subtotal?: number
+        }
         Returns: Json
       }
       process_online_order: {
@@ -11099,6 +11703,25 @@ export type Database = {
         }
         Returns: Json
       }
+      quote_restaurant_cart_v1: {
+        Args: {
+          p_branch_id: string
+          p_items: Json
+          p_latitude: number
+          p_longitude: number
+          p_route_quote_id: string
+          p_selections: Json
+        }
+        Returns: Json
+      }
+      quote_restaurant_modifiers_v1: {
+        Args: { p_branch_id: string; p_picks?: Json; p_product_id: string }
+        Returns: Json
+      }
+      quote_retail_promotion_preview_v1: {
+        Args: { p_branch_id: string; p_campaign_id: string; p_cart: Json }
+        Returns: Json
+      }
       reassign_customer_followup: {
         Args: {
           p_assigned_to: string
@@ -11201,6 +11824,18 @@ export type Database = {
         }
         Returns: Json
       }
+      recover_customer_checkout_v1: {
+        Args: { p_kind: string; p_request_id: string }
+        Returns: Json
+      }
+      recover_existing_pos_device_v56: {
+        Args: { p_branch_id: string; p_device_code: string }
+        Returns: Json
+      }
+      recover_my_staff_app_pin_google_v1: {
+        Args: { p_new_pin: string }
+        Returns: Json
+      }
       recover_my_staff_app_pin_v2: {
         Args: { p_new_pin: string }
         Returns: Json
@@ -11244,6 +11879,10 @@ export type Database = {
         Args: { p_branch_id: string; p_name: string }
         Returns: Json
       }
+      register_pos_push_device_v1: {
+        Args: { p_branch_id: string; p_device_key?: string; p_token: string }
+        Returns: Json
+      }
       register_push_device_v2: {
         Args: {
           p_app_kind?: string
@@ -11251,6 +11890,16 @@ export type Database = {
           p_locale?: string
           p_platform: string
           p_token: string
+        }
+        Returns: Json
+      }
+      register_retail_merchant_v1: {
+        Args: {
+          p_business_kind?: string
+          p_owner_name: string
+          p_phone: string
+          p_store_name: string
+          p_username: string
         }
         Returns: Json
       }
@@ -11290,6 +11939,10 @@ export type Database = {
         Args: { p_note?: string; p_task_id: string }
         Returns: Json
       }
+      remove_merchant_customer_v1: {
+        Args: { p_branch_id: string; p_customer_id: string }
+        Returns: boolean
+      }
       repair_online_order_financial_ledger_v1: {
         Args: { p_note?: string; p_order_id: string }
         Returns: Json
@@ -11310,6 +11963,10 @@ export type Database = {
         }
         Returns: Json
       }
+      report_my_delivery_support_issue_v1: {
+        Args: { p_issue_type: string; p_note: string; p_order_id: string }
+        Returns: Json
+      }
       request_franchise_branch_settings_v1: {
         Args: {
           p_branch_id: string
@@ -11327,6 +11984,27 @@ export type Database = {
           p_note?: string
           p_product_id: string
           p_sale_price?: number
+        }
+        Returns: Json
+      }
+      request_merchant_retail_plan_v1: {
+        Args: {
+          p_billing_cycle: string
+          p_merchant_id: string
+          p_plan_code: string
+          p_transfer_method?: string
+          p_transfer_reference?: string
+        }
+        Returns: Json
+      }
+      request_merchant_retail_plan_v2: {
+        Args: {
+          p_billing_cycle: string
+          p_branches: number
+          p_merchant_id: string
+          p_plan_code: string
+          p_transfer_method?: string
+          p_transfer_reference?: string
         }
         Returns: Json
       }
@@ -11382,6 +12060,10 @@ export type Database = {
         Args: { p_draft_page_id: string; p_source_page_id: string }
         Returns: Json
       }
+      resume_my_pos_shift_on_new_device_v55: {
+        Args: { p_branch_id: string; p_device_name: string }
+        Returns: Json
+      }
       retry_finance_transfer_receipt_v2: {
         Args: { p_note: string; p_transfer_id: string }
         Returns: Json
@@ -11404,6 +12086,10 @@ export type Database = {
       }
       review_delivery_cash_handover_v1: {
         Args: { p_action: string; p_handover_id: string; p_note?: string }
+        Returns: Json
+      }
+      review_merchant_retail_payment_v1: {
+        Args: { p_approve: boolean; p_note?: string; p_request_id: string }
         Returns: Json
       }
       review_partner_marketplace_request_v1: {
@@ -11440,6 +12126,15 @@ export type Database = {
           total_profit: number
           total_sales: number
         }[]
+      }
+      save_business_catalog_item_v1: {
+        Args: {
+          p_branch_id: string
+          p_changes?: Json
+          p_expected_revision?: number
+          p_product_id?: string
+        }
+        Returns: Json
       }
       save_hr_compensation_profile_v1: {
         Args: {
@@ -11517,6 +12212,35 @@ export type Database = {
         }
         Returns: Json
       }
+      save_merchant_customer_v1: {
+        Args: { p_branch_id: string; p_customer: Json; p_customer_id: string }
+        Returns: {
+          address: string | null
+          area_id: string | null
+          city_id: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          governorate_id: string | null
+          id: string
+          last_name: string | null
+          management_status: string
+          name: string
+          neighborhood_id: string | null
+          notes: string | null
+          phone: string | null
+          phone_verified: boolean | null
+          updated_at: string
+          user_id: string | null
+          verified: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_my_pos_workspace: {
         Args: {
           p_active_tab_id?: string
@@ -11548,6 +12272,43 @@ export type Database = {
           p_variant_id?: string
         }
         Returns: Json
+      }
+      save_restaurant_modifier_group_v1: {
+        Args: {
+          p_branch_id: string
+          p_group_id: string
+          p_is_active?: boolean
+          p_max_choices: number
+          p_min_choices: number
+          p_name: string
+          p_options: Json
+          p_position?: number
+        }
+        Returns: Json
+      }
+      save_retail_promotion_draft_v1: {
+        Args: {
+          p_branch_id: string
+          p_config: Json
+          p_ends_at: string
+          p_id?: string
+          p_kind: string
+          p_name: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
+      save_smart_delivery_time_rule_v1: {
+        Args: {
+          p_active?: boolean
+          p_end: string
+          p_hub_branch_id: string
+          p_iso_weekday: number
+          p_label: string
+          p_multiplier: number
+          p_start: string
+        }
+        Returns: string
       }
       save_supplier_representative_v1: {
         Args: {
@@ -11662,6 +12423,10 @@ export type Database = {
         }
         Returns: Json
       }
+      search_pos_customers_by_name_v1: {
+        Args: { p_branch_id: string; p_query: string }
+        Returns: Json
+      }
       send_customer_push_campaign_v1: {
         Args: {
           p_action_label?: string
@@ -11772,8 +12537,25 @@ export type Database = {
         }
         Returns: Json
       }
+      set_branch_default_pos_drawer_v56: {
+        Args: { p_branch_id: string; p_drawer_account_id: string }
+        Returns: Json
+      }
       set_branch_group_members_v1: {
         Args: { p_branch_ids: string[]; p_group_id: string }
+        Returns: Json
+      }
+      set_branch_open_customer_credit_v1: {
+        Args: { p_branch_id: string; p_enabled: boolean }
+        Returns: Json
+      }
+      set_branch_staff_permissions_v1: {
+        Args: {
+          p_actor_id: string
+          p_branch_id: string
+          p_codes: string[]
+          p_user_id: string
+        }
         Returns: Json
       }
       set_customer_favorite: {
@@ -11881,6 +12663,19 @@ export type Database = {
         Args: { p_active: boolean; p_branch_id: string; p_id: string }
         Returns: Json
       }
+      set_merchant_business_profile_v1: {
+        Args: { p_business_profile: string; p_merchant_id: string }
+        Returns: Json
+      }
+      set_merchant_retail_payment_channel_v1: {
+        Args: {
+          p_account_identifier: string
+          p_account_name: string
+          p_active: boolean
+          p_method: string
+        }
+        Returns: Json
+      }
       set_my_delivery_availability_v1: {
         Args: { p_available: boolean }
         Returns: Json
@@ -11946,6 +12741,18 @@ export type Database = {
         Args: { p_enabled: boolean }
         Returns: Json
       }
+      set_restaurant_listing_groups_v1: {
+        Args: {
+          p_branch_id: string
+          p_group_ids: string[]
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      set_retail_receipt_language_v1: {
+        Args: { p_language: string; p_merchant_id: string }
+        Returns: Json
+      }
       set_staff_pos_access: {
         Args: { p_branch_id: string; p_enabled: boolean; p_user_id: string }
         Returns: undefined
@@ -11953,6 +12760,14 @@ export type Database = {
       set_staff_pos_pin: {
         Args: { p_branch_id: string; p_pin: string; p_user_id: string }
         Returns: undefined
+      }
+      set_supplier_purchase_reminder_v1: {
+        Args: {
+          p_branch_id: string
+          p_purchase_id: string
+          p_remind_on?: string
+        }
+        Returns: Json
       }
       set_tenant_platform_controls_v1: {
         Args: {
@@ -12296,6 +13111,16 @@ export type Database = {
       }
       update_branch_delivery_policy_v2: {
         Args: { p_hub_branch_id: string; p_policy: Json }
+        Returns: Json
+      }
+      update_branch_staff_identity_v1: {
+        Args: {
+          p_actor_id: string
+          p_branch_id: string
+          p_name: string
+          p_phone: string
+          p_user_id: string
+        }
         Returns: Json
       }
       update_finance_bank_account_v2: {
