@@ -591,26 +591,26 @@ const ProductDetail = () => {
           </button>
         </div>
       ) : (
-        <>
+        <div className="flex items-center gap-2 md:flex-col md:items-stretch md:gap-3">
           {!bulkMode && (
-            <div className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-white">
-              <button type="button" onClick={() => setQuantity(value => Math.max(1, value - 1))} className="flex h-12 w-12 items-center justify-center" aria-label="تقليل الكمية"><Minus size={18} /></button>
-              <strong className="text-base font-black">{money(quantity)}</strong>
-              <button type="button" onClick={() => setQuantity(value => Math.min(maxRegularQuantity, value + 1))} disabled={quantity >= maxRegularQuantity} className="flex h-12 w-12 items-center justify-center disabled:opacity-30" aria-label="زيادة الكمية"><Plus size={18} /></button>
+            <div className="flex h-12 w-[124px] shrink-0 items-center justify-between rounded-2xl border border-slate-200 bg-white md:w-full">
+              <button type="button" onClick={() => setQuantity(value => Math.max(1, value - 1))} className="flex h-12 w-9 shrink-0 items-center justify-center md:w-12" aria-label="تقليل الكمية"><Minus size={17} /></button>
+              <strong className="text-sm font-black">{money(quantity)}</strong>
+              <button type="button" onClick={() => setQuantity(value => Math.min(maxRegularQuantity, value + 1))} disabled={quantity >= maxRegularQuantity} className="flex h-12 w-9 shrink-0 items-center justify-center disabled:opacity-30 md:w-12" aria-label="زيادة الكمية"><Plus size={17} /></button>
             </div>
           )}
           <Button
             type="button"
             disabled={!isInitialized || unavailable}
             onClick={bulkMode ? addBulk : addRegular}
-            className="h-14 w-full rounded-2xl bg-[#005931] text-base font-black shadow-[0_10px_24px_rgba(0,89,49,0.16)]"
+            className="h-12 min-w-0 flex-1 rounded-2xl bg-[#005931] px-3 text-sm font-black shadow-[0_8px_20px_rgba(0,89,49,0.14)] md:h-14 md:w-full md:flex-none md:text-base"
           >
-            <span className="flex w-full items-center justify-between gap-3">
-              <span className="flex items-center gap-2"><Plus size={19} />أضف للسلة</span>
-              <span>{money(purchaseTotal)} ج.م</span>
+            <span className="flex w-full items-center justify-between gap-2">
+              <span className="flex shrink-0 items-center gap-1"><Plus size={17} />أضف للسلة</span>
+              <span className="truncate text-xs md:text-base">{money(purchaseTotal)} ج.م</span>
             </span>
           </Button>
-        </>
+        </div>
       )}
     </div>
   );
@@ -770,7 +770,9 @@ const ProductDetail = () => {
                   <p className="whitespace-pre-line px-4 pb-4 text-sm leading-7 text-slate-600">{product.description}</p>
                 </details>
               )}
-              <details className="group">
+              <details className="group" onToggle={event => {
+                if (event.currentTarget.open && id) setExtrasForId(id);
+              }}>
                 <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-4 text-sm font-extrabold text-slate-900">
                   <span>معلومات إضافية</span>
                   <span className="text-lg text-slate-400 group-open:rotate-45">+</span>
