@@ -1,14 +1,12 @@
-import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
 import { productCardImage } from '@/lib/productCardImage';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Check, ChevronLeft, ChevronRight, ImageIcon, Minus, Package, Plus, Scale, Share2, ShoppingCart, Trash2, X } from 'lucide-react';
+import { Check, ImageIcon, Minus, Package, Plus, Scale, Share2, ShoppingCart, Trash2, X } from 'lucide-react';
 import TopNavBar from '@/components/layout/TopNavBar';
 import MainLayout from '@/components/layout/MainLayout';
-import ProductCard from '@/components/ui/ProductCard';
 import ProductStructuredData from '@/components/seo/ProductStructuredData';
 import BreadcrumbStructuredData from '@/components/seo/BreadcrumbStructuredData';
 import SEOHead from '@/components/seo/SEOHead';
@@ -24,6 +22,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/useCart';
 import { Product, getRelatedProducts, getCompanyById, Company } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
+
+const ProductSuggestions = React.lazy(() => import('@/components/product/ProductSuggestions'));
 
 const money = (value: number) => Number(value || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 });
 
@@ -57,8 +57,6 @@ const ProductDetail = () => {
   const setSheetOffset = (x: number) => {
     sheetStage.current?.style.setProperty('--product-swipe-x', `${x}px`);
   };
-  const previousPreview = browse && browseIndex > 0 ? browse.previews.find(p => p.path === browse.paths[browseIndex - 1]) : null;
-  const nextPreview = browse && canSwipeNext ? browse.previews.find(p => p.path === browse.paths[browseIndex + 1]) : null;
   const nextCategory = !canSwipeNext ? browse?.nextCategory : undefined;
   const requestedBulk = searchParams.get('unit') === 'bulk';
   const requestedVariantId = searchParams.get('variant');
@@ -76,6 +74,11 @@ const ProductDetail = () => {
   );
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [extrasForId, setExtrasForId] = useState<string | null>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const mobileExtraTriggerRef = useRef<HTMLDivElement>(null);
+  const desktopExtraTriggerRef = useRef<HTMLDivElement>(null);
+  const shouldLoadExtras = extrasForId === id;
   const [fullResolutionProductId, setFullResolutionProductId] = useState<string | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -285,8 +288,31 @@ const ProductDetail = () => {
     return () => cancelAnimationFrame(frame);
   }, [product, sheetVisible]);
 
+  // Only begin secondary network work once the user gets near the bottom of
+  // the sheet (or the lower section on desktop). The hero renders independently.
   useEffect(() => {
-    if (!product) return;
+    if (!product || !id || shouldLoadExtras) return;
+    const target = isMobile ? mobileExtraTriggerRef.current : desktopExtraTriggerRef.current;
+    if (!target) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setExtrasForId(id);
+      return;
+    }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        setExtrasForId(id);
+        observer.disconnect();
+      }
+    }, {
+      root: isMobile ? mobileScrollRef.current : null,
+      rootMargin: '140px 0px',
+    });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [id, product, isMobile, shouldLoadExtras]);
+
+  useEffect(() => {
+    if (!product || !shouldLoadExtras) return;
     let active = true;
     const relatedKey = detailRelatedKey(product);
     const companyKey = product.company_id ? detailCompanyKey(product.company_id) : null;
@@ -320,7 +346,7 @@ const ProductDetail = () => {
       }
     }, isMobile ? 320 : 0);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [product, queryClient, isMobile]);
+  }, [product, queryClient, isMobile, shouldLoadExtras]);
 
   // Use the small card image for the entrance animation; load full resolution
   // only after the sheet has settled, never before the user sees name/price.
@@ -461,17 +487,51 @@ const ProductDetail = () => {
     setTouchStartX(null);
   };
 
-  if ((loading && !cachedProduct) || (product !== null && product.id !== id)) {
+  const pendingPreview = browse?.previews.find(preview => preview.path === location.pathname + location.search);
+  if (!cachedProduct && (loading || (!loadError && loadedProduct?.id !== id))) {
     return (
       <DetailShell>
         <div className="hidden md:block">
           <TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} />
-          <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader size="md" /></div>
+          <div role="status" aria-label="جاري تجهيز تفاصيل المنتج" className="mx-auto max-w-5xl px-6 pt-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="aspect-square animate-pulse rounded-[28px] bg-slate-100" />
+              <div className="space-y-5 rounded-[28px] bg-white p-7">
+                <div className="h-6 w-2/3 animate-pulse rounded-lg bg-slate-100" />
+                <div className="h-4 w-1/3 animate-pulse rounded-lg bg-slate-100" />
+                <div className="h-10 w-1/2 animate-pulse rounded-lg bg-slate-100" />
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 px-3 pt-7 pb-1 md:hidden">
-          <div role="status" aria-live="polite" className="flex h-[calc(100dvh-36px)] w-full max-w-[600px] flex-col items-center justify-center rounded-[32px] bg-white">
-            <BrandLoader size="md" />
-            <span className="mt-4 text-sm font-bold text-[#005931]">جاري عرض المنتج…</span>
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/50 pt-5 md:hidden">
+          <div role="status" aria-live="polite" aria-label="جاري تجهيز تفاصيل المنتج" dir="rtl"
+            className="flex h-[calc(100dvh-20px)] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8]">
+            <div className="flex h-14 shrink-0 items-center justify-between bg-white px-5">
+              <div className="h-9 w-9 rounded-full bg-slate-100" />
+              <span className="text-sm font-bold text-slate-600">تفاصيل المنتج</span>
+              <div className="h-9 w-9 rounded-full bg-slate-100" />
+            </div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-hidden p-3">
+              <div className="flex h-[min(35dvh,280px)] items-center justify-center rounded-[24px] bg-white p-7">
+                {pendingPreview?.image
+                  ? <img src={productCardImage(pendingPreview.image)} alt="" decoding="async" className="h-full w-full object-contain" />
+                  : <div className="h-44 w-44 animate-pulse rounded-3xl bg-slate-100" />}
+              </div>
+              <div className="space-y-3 rounded-[24px] bg-white p-5">
+                {pendingPreview?.name
+                  ? <h1 className="text-xl font-black text-slate-900">{pendingPreview.name}</h1>
+                  : <div className="h-6 w-4/5 animate-pulse rounded-lg bg-slate-100" />}
+                <div className="h-3 w-1/3 animate-pulse rounded-md bg-slate-100" />
+                {pendingPreview?.price
+                  ? <div className="text-2xl font-black text-[#005931]">{pendingPreview.price} ج.م</div>
+                  : <div className="h-9 w-1/2 animate-pulse rounded-lg bg-slate-100" />}
+                <div className="h-5 w-1/4 animate-pulse rounded-full bg-slate-100" />
+              </div>
+            </div>
+            <div className="shrink-0 border-t border-slate-100 bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
+              <div className="h-14 animate-pulse rounded-2xl bg-emerald-100" />
+            </div>
           </div>
         </div>
       </DetailShell>
