@@ -1,7 +1,7 @@
 import { getMarketplaceStore, getMarketplaceStoreProduct } from '@/lib/marketplace';
 import { getProductById, type Product } from '@/lib/supabase';
 import type { QueryClient } from '@tanstack/react-query';
-import { productCardImage } from '@/lib/productCardImage';
+import { prepareFullProductImage, prepareProductImage } from '@/lib/productImagePipeline';
 
 /**
  * Small, address/merchant-scoped read cache. This is presentation data only:
@@ -49,25 +49,15 @@ export function registerBrowsableProduct(path: string, product: Product): void {
   }
 }
 
-const warmedImages = new Map<string, HTMLImageElement>();
-function warmImage(source: string | null | undefined): void {
-  if (!source || typeof Image === 'undefined' || warmedImages.has(source)) return;
-  const image = new Image();
-  image.decoding = 'async';
-  image.src = source;
-  warmedImages.set(source, image);
-  // Keep outstanding image elements alive until the browser finishes the fetch.
-  // Limit both decoded images and concurrent retained elements on long journeys.
-  while (warmedImages.size > 48) warmedImages.delete(warmedImages.keys().next().value!);
-}
-
 function warmFirstImage(product: Product, fullResolution: boolean, bulk = false): void {
   const source = bulk
     ? product.bulk_image_url || product.image_urls?.[0]
     : product.image_urls?.[0];
   if (!source) return;
-  warmImage(productCardImage(source));
-  if (fullResolution) warmImage(source);
+  // Unlike assigning Image.src, this awaits decode() in a bounded shared
+  // cache: the thumbnail is genuinely ready for the carousel compositor.
+  void prepareProductImage(source);
+  if (fullResolution) void prepareFullProductImage(source);
 }
 
 /**
