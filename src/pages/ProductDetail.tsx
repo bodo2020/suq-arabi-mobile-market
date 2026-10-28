@@ -42,10 +42,16 @@ const ProductDetail = () => {
   const canSwipePrevious = browseIndex > 0;
   const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
   const sheetTouch = useRef<{ x: number; y: number; gallery: boolean } | null>(null);
+  const sheetStage = useRef<HTMLDivElement>(null);
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [swipeX, setSwipeX] = useState(0);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetDragging, setSheetDragging] = useState(false);
   const [swipeAnimating, setSwipeAnimating] = useState(false);
   const [swipeLocked, setSwipeLocked] = useState(false);
+  const setSheetOffset = (x: number) => {
+    sheetStage.current?.style.setProperty('--product-swipe-x', `${x}px`);
+  };
   const previousPreview = browse && browseIndex > 0 ? browse.previews.find(p => p.path === browse.paths[browseIndex - 1]) : null;
   const nextPreview = browse && canSwipeNext ? browse.previews.find(p => p.path === browse.paths[browseIndex + 1]) : null;
   const nextCategory = !canSwipeNext ? browse?.nextCategory : undefined;
@@ -64,6 +70,7 @@ const ProductDetail = () => {
       : null
   );
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -84,17 +91,23 @@ const ProductDetail = () => {
   }, []);
 
   const closeSheet = () => {
-    if (browse) navigate(-1);
-    else navigate('/');
+    if (closeTimer.current) return;
+    setSheetVisible(false);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      if (browse) navigate(-1);
+      else navigate('/');
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260);
   };
 
   useEffect(() => {
-    setSwipeX(0);
+    setSheetOffset(0);
     setSwipeAnimating(false);
     setSwipeLocked(false);
   }, [id, location.search]);
   useEffect(() => () => {
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
 
   const browseProduct = (offset: -1 | 1) => {
@@ -106,9 +119,10 @@ const ProductDetail = () => {
     // details sheet should paint from the existing card snapshot immediately.
     if (next) seedProductBrowseCache(queryClient, browse.paths, browseIndex + offset);
     setSwipeLocked(true);
+    setSheetDragging(false);
     setSwipeAnimating(true);
     sheetTouch.current = null;
-    setSwipeX(offset === 1 ? -Math.min(window.innerWidth * .9, 660) : Math.min(window.innerWidth * .9, 660));
+    setSheetOffset(offset === 1 ? -Math.min(window.innerWidth * .9, 660) : Math.min(window.innerWidth * .9, 660));
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     swipeTimer.current = setTimeout(() => {
       swipeTimer.current = null;
@@ -131,6 +145,7 @@ const ProductDetail = () => {
       gallery: Boolean((event.target as HTMLElement).closest('[data-product-gallery]')),
     };
     setSwipeAnimating(false);
+    setSheetDragging(true);
   };
 
   const moveSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -141,12 +156,15 @@ const ProductDetail = () => {
     const dy = touch.clientY - start.y;
     if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
     const allowed = dx < 0 ? (canSwipeNext || Boolean(nextCategory)) : canSwipePrevious;
-    setSwipeX(allowed ? Math.max(-window.innerWidth * .75, Math.min(window.innerWidth * .75, dx)) : dx * .12);
+    // Touch moves update a CSS variable directly; React doesn't re-render
+    // the image, cart controls and recommendations at every pointer frame.
+    setSheetOffset(allowed ? Math.max(-window.innerWidth * .75, Math.min(window.innerWidth * .75, dx)) : dx * .12);
   };
 
   const finishSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const start = sheetTouch.current;
     sheetTouch.current = null;
+    setSheetDragging(false);
     const end = event.changedTouches[0];
     if (!start || !end || weightOpen || swipeLocked) return;
     const dx = end.clientX - start.x;
@@ -163,7 +181,7 @@ const ProductDetail = () => {
       }
     }
     setSwipeAnimating(true);
-    setSwipeX(0);
+    setSheetOffset(0);
   };
 
   const weighted = product ? isWeightedProduct(product) : false;
@@ -223,7 +241,7 @@ const ProductDetail = () => {
     setSelectedImageIndex(0);
     // Restore the already-warmed supplementary sections before the route paints.
     setRelatedProducts(cached
-      ? queryClient.getQueryData<Product[]>(detailRelatedKey(cached.id, cached.main_category_id)) || []
+      ? queryClient.getQueryData<Product[]>(detailRelatedKey(cached)) || []
       : []);
     setCompany(cached?.company_id
       ? queryClient.getQueryData<Company>(detailCompanyKey(cached.company_id)) || null
@@ -252,36 +270,50 @@ const ProductDetail = () => {
     warmAdjacentProductPages(queryClient, browse.paths, browseIndex);
   }, [browse, browseIndex, queryClient]);
 
+  // Reveal the sheet from the bottom once a preview or canonical product is
+  // available. Data fetching never controls the opening animation.
+  useEffect(() => {
+    if (!product || sheetVisible) return;
+    const frame = requestAnimationFrame(() => setSheetVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, [Boolean(product), sheetVisible]);
+
   useEffect(() => {
     if (!product) return;
     let active = true;
-    const relatedKey = detailRelatedKey(product.id, product.main_category_id);
+    const relatedKey = detailRelatedKey(product);
     const companyKey = product.company_id ? detailCompanyKey(product.company_id) : null;
-    setRelatedProducts(queryClient.getQueryData<Product[]>(relatedKey) || []);
+    const cachedRelated = queryClient.getQueryData<Product[]>(relatedKey);
+    setRelatedProducts(cachedRelated || []);
+    setRelatedLoading(!cachedRelated);
     setCompany(companyKey ? queryClient.getQueryData<Company>(companyKey) || null : null);
 
-    const loadExtras = async () => {
-      const [related, companyData] = await Promise.allSettled([
-        queryClient.fetchQuery({
-          queryKey: relatedKey,
-          queryFn: () => getRelatedProducts(product.id, product.main_category_id),
-          staleTime: PRODUCT_DETAIL_STALE_MS,
-          gcTime: PRODUCT_DETAIL_GC_MS,
-        }),
-        companyKey ? queryClient.fetchQuery({
+    // Keep networking out of the first animation frames. Every request is
+    // non-blocking, and late results from a prior product are ignored.
+    const timer = window.setTimeout(() => {
+      void queryClient.fetchQuery({
+        queryKey: relatedKey,
+        queryFn: () => getRelatedProducts(product),
+        staleTime: PRODUCT_DETAIL_STALE_MS,
+        gcTime: PRODUCT_DETAIL_GC_MS,
+      }).then(related => {
+        if (active) setRelatedProducts(related);
+      }).catch(() => {
+        if (active) setRelatedProducts([]);
+      }).finally(() => {
+        if (active) setRelatedLoading(false);
+      });
+      if (companyKey) {
+        void queryClient.fetchQuery({
           queryKey: companyKey,
           queryFn: () => getCompanyById(product.company_id),
           staleTime: PRODUCT_DETAIL_STALE_MS,
           gcTime: PRODUCT_DETAIL_GC_MS,
-        }) : Promise.resolve(null),
-      ]);
-      if (!active) return;
-      if (related.status === 'fulfilled') setRelatedProducts((related.value || []) as Product[]);
-      if (companyData.status === 'fulfilled') setCompany(companyData.value as Company | null);
-    };
-    void loadExtras();
-    return () => { active = false; };
-  }, [product, queryClient]);
+        }).then(data => { if (active) setCompany(data); }).catch(() => {});
+      }
+    }, isMobile ? 320 : 0);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [product?.id, product?.marketplace_branch_id, product?.delivery_branch_id, queryClient, isMobile]);
 
   const images = useMemo(() => {
     if (!product) return [];
@@ -551,7 +583,7 @@ const ProductDetail = () => {
       <div className="hidden md:block"><TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} /></div>
 
       {/* Handheld immersive product browsing: the desktop detail route stays intact. */}
-      <div className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/65 px-0 pt-7 pb-1 md:hidden">
+      <div ref={sheetStage} className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/65 px-0 pt-7 pb-1 md:hidden" style={{ '--product-swipe-x': '0px' } as React.CSSProperties}>
         {/* Adjacent cards remain visible while the active product slides. */}
         {([
           { preview: previousPreview, direction: -1 as const, side: 'left' as const },
@@ -564,7 +596,7 @@ const ProductDetail = () => {
             disabled={swipeLocked}
             aria-label={`عرض ${direction === -1 ? 'المنتج السابق' : 'المنتج التالي'}: ${preview.name}`}
             className={`absolute bottom-[5%] left-1/2 z-[1] flex h-[83%] w-[84vw] max-w-[560px] flex-col overflow-hidden rounded-[29px] border border-white/50 bg-white px-3 pt-14 text-right opacity-95 shadow-2xl disabled:opacity-60 ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
-            style={{ transform: `translate3d(calc(${side === 'left' ? '-150% - 10px' : '50% + 10px'} + ${swipeX}px),0,0)` }}
+            style={{ transform: `translate3d(calc(${side === 'left' ? '-150% - 10px' : '50% + 10px'} + var(--product-swipe-x, 0px)),0,0)` }}
           >
             <div className="flex h-[45%] w-full items-center justify-center rounded-3xl bg-[#f6f8f7]">
               <img src={preview.image || '/placeholder.svg'} alt="" draggable={false} className="h-full w-full object-contain p-7" />
@@ -580,7 +612,7 @@ const ProductDetail = () => {
             disabled={swipeLocked}
             aria-label={`الانتقال إلى ${nextCategory.name}`}
             className={`absolute bottom-[5%] left-1/2 z-[1] flex h-[83%] w-[84vw] max-w-[560px] flex-col items-center justify-center rounded-[29px] bg-[#005931] p-6 text-center text-white shadow-2xl ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
-            style={{ transform: `translate3d(calc(50% + 10px + ${swipeX}px),0,0)` }}
+            style={{ transform: 'translate3d(calc(50% + 10px + var(--product-swipe-x, 0px)),0,0)' }}
           >
             <span className="text-xs font-bold text-brand-yellow">القسم التالي</span>
             <strong className="mt-2 text-xl">{nextCategory.name}</strong>
@@ -591,8 +623,8 @@ const ProductDetail = () => {
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`relative z-10 flex h-[calc(100dvh-36px)] w-[84vw] max-w-[560px] flex-col overflow-hidden rounded-[32px] bg-[#f6f8f7] shadow-[0_22px_70px_rgba(0,0,0,.22)] will-change-transform ${swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : ''}`}
-          style={{ transform: `translate3d(${swipeX}px,0,0)` }}
+          className={`relative z-10 flex h-[calc(100dvh-36px)] w-[84vw] max-w-[560px] flex-col overflow-hidden rounded-[32px] bg-[#f6f8f7] shadow-[0_22px_70px_rgba(0,0,0,.22)] will-change-transform ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[190ms] ease-out' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
+          style={{ transform: `translate3d(var(--product-swipe-x, 0px), ${sheetVisible ? '0px' : '105dvh'}, 0)` }}
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-5 pt-5">
             <button type="button" className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"><X size={23} /></button>
@@ -608,7 +640,7 @@ const ProductDetail = () => {
             onTouchStart={startSheetSwipe}
             onTouchMove={moveSheetSwipe}
             onTouchEnd={finishSheetSwipe}
-            onTouchCancel={() => { sheetTouch.current = null; setSwipeAnimating(true); setSwipeX(0); }}
+            onTouchCancel={() => { sheetTouch.current = null; setSheetDragging(false); setSwipeAnimating(true); setSheetOffset(0); }}
           >
             <div data-product-gallery className="relative flex h-[min(43vh,340px)] items-center justify-center overflow-hidden rounded-[26px] bg-white">
               {bulkMode && !bulkImageUrl ? (
@@ -678,12 +710,17 @@ const ProductDetail = () => {
               <p className="mt-2 text-sm leading-7 text-slate-600">طريقة البيع: {weighted ? 'بالوزن' : bulkMode ? bulkUnitType : 'بالقطعة'} · الوحدة: {unitDescription}</p>
               {company && <button type="button" className="mt-2 text-sm font-bold text-[#005931]" onClick={() => navigate(`/company/${company.id}`)}>اكتشف منتجات {company.name}</button>}
             </div>
-            {relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)).length > 0 && (
+            {(relatedLoading || relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)).length > 0) && (
               <section data-product-recommendations className="rounded-[24px] bg-white p-3.5" aria-label="منتجات مقترحة">
                 <div className="mb-3 px-1">
                   <h2 className="text-base font-black text-slate-950">منتجات مقترحة ليك</h2>
                   <p className="mt-1 text-xs font-medium text-slate-500">اختار منتج تاني وكمل تصفحك</p>
                 </div>
+                {relatedLoading && relatedProducts.length === 0 && (
+                  <div className="flex gap-2.5" aria-label="جاري تجهيز الاقتراحات">
+                    {[0, 1, 2].map(index => <div key={index} className="h-40 w-[136px] shrink-0 animate-pulse rounded-2xl bg-slate-100" />)}
+                  </div>
+                )}
                 <div dir="rtl" className="hide-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-2">
                   {relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)).slice(0, 8).map(item => (
                     <div key={item.id} className="w-[136px] shrink-0 snap-start sm:w-[156px]">
@@ -823,7 +860,7 @@ const ProductDetail = () => {
           </Accordion>
         </section>
 
-        {relatedProducts.length > 0 && (
+        {(relatedLoading || relatedProducts.length > 0) && (
           <section className="mt-5">
             <div className="mb-3 flex items-end justify-between px-1"><div><h2 className="text-xl font-black text-slate-950">منتجات مشابهة</h2><p className="mt-0.5 text-xs font-medium text-slate-400">ممكن تعجبك كمان</p></div></div>
             <div className="flex snap-x gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:overflow-visible" style={{ scrollbarWidth: 'none' }}>
