@@ -59,6 +59,9 @@ export function animateProductCardSheet(
   mode: 'open' | 'close',
 ): Animation | null {
   if (typeof window === 'undefined' || typeof sheet.animate !== 'function' || prefersReducedProductMotion()) return null;
+  // FLIP geometry is based on offsetLeft/offsetTop, so the compositor must
+  // scale around that same top-left origin (not the browser's center default).
+  sheet.style.transformOrigin = 'top left';
   const width = sheet.offsetWidth;
   const height = sheet.offsetHeight;
   if (width < 20 || height < 20) return null;
