@@ -153,6 +153,10 @@ const ProductDetail = () => {
       ? animateProductCardSheet(sheetCardRef.current, origin, 'close')
       : null;
     if (animation) {
+      sheetStage.current?.animate(
+        [{ backgroundColor: 'rgba(15,23,42,0.5)' }, { backgroundColor: 'rgba(15,23,42,0)' }],
+        { duration: 260, easing: 'ease-out', fill: 'forwards' },
+      );
       void animation.finished.then(finish, finish);
       closeTimer.current = setTimeout(finish, 410);
     } else {
@@ -181,7 +185,7 @@ const ProductDetail = () => {
     sheetStage.current?.style.setProperty('--product-dismiss-y', `${dy}px`);
   };
 
-  const onHeaderPointerEnd = (event: React.PointerEvent<HTMLElement>) => {
+  const onHeaderPointerEnd = (event: React.PointerEvent<HTMLElement>, cancelled = false) => {
     const gesture = dismissGesture.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     dismissGesture.current = null;
@@ -192,7 +196,7 @@ const ProductDetail = () => {
     const dy = dismissOffset.current;
     dismissOffset.current = 0;
     const elapsed = Math.max(1, Date.now() - gesture.at);
-    if (dy > 110 || (dy > 45 && dy / elapsed > .65)) {
+    if (!cancelled && (dy > 110 || (dy > 45 && dy / elapsed > .65))) {
       closeSheet();
       return;
     }
@@ -436,6 +440,10 @@ const ProductDetail = () => {
     const animation = origin ? animateProductCardSheet(card, origin, 'open') : null;
     if (animation) {
       entranceAnimation.current = animation;
+      sheetStage.current?.animate(
+        [{ backgroundColor: 'rgba(15,23,42,0)' }, { backgroundColor: 'rgba(15,23,42,0.5)' }],
+        { duration: 310, easing: 'ease-out', fill: 'both' },
+      );
       setSheetVisible(true);
     } else {
       const frame = requestAnimationFrame(() => setSheetVisible(true));
@@ -836,7 +844,7 @@ const ProductDetail = () => {
             onPointerDown={onHeaderPointerDown}
             onPointerMove={onHeaderPointerMove}
             onPointerUp={onHeaderPointerEnd}
-            onPointerCancel={onHeaderPointerEnd}
+            onPointerCancel={event => onHeaderPointerEnd(event, true)}
             aria-label="اسحب لأسفل لإغلاق تفاصيل المنتج"
           >
             <div data-product-drag-handle className="mx-auto mb-2 flex h-4 w-20 items-center justify-center" aria-hidden="true">
