@@ -95,8 +95,8 @@ export function prepareProductBrowseImages(
 ): void {
   if (activeIndex < 0) return;
   const imagesByPath = new Map(previews.map(preview => [preview.path, preview.image]));
-  const near = [activeIndex - 1, activeIndex + 1];
-  const far = [activeIndex - 2, activeIndex + 2];
+  const near = [activeIndex - 1, activeIndex + 1, activeIndex - 2, activeIndex + 2];
+  const far = [activeIndex - 3, activeIndex + 3, activeIndex - 4, activeIndex + 4];
   const prepare = (index: number) => {
     const path = paths[index];
     const src = path ? imagesByPath.get(path) : undefined;
