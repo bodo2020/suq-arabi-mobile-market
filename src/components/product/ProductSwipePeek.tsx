@@ -21,9 +21,11 @@ type Props = {
 function ProductSwipePeek({ side, preview, product, locked, transitioning, onOpen }: Props) {
   if (!preview) return null;
   const bulk = new URLSearchParams(preview.path.split('?')[1] || '').get('unit') === 'bulk';
-  const image = bulk
-    ? product?.bulk_image_url || product?.image_urls?.[0] || preview.image
-    : product?.image_urls?.[0] || preview.image;
+  // Never swap the URL of a visible side card merely because its background
+  // detail request completed. The exact catalog URL is already being decoded.
+  const image = preview.image || (bulk
+    ? product?.bulk_image_url || product?.image_urls?.[0]
+    : product?.image_urls?.[0]) || '';
   const title = bulk ? product?.bulk_name || product?.name || preview.name : product?.name || preview.name;
   const price = product
     ? (bulk ? Number(product.bulk_price || 0) : productUnitPrice(product)).toLocaleString('ar-EG', { maximumFractionDigits: 2 })
@@ -46,7 +48,21 @@ function ProductSwipePeek({ side, preview, product, locked, transitioning, onOpe
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3">
         <div className="flex h-[min(34dvh,270px)] shrink-0 items-center justify-center rounded-[24px] bg-white p-5">
           {image
-            ? <img src={productCardImage(image)} alt="" decoding="async" draggable={false} className="h-full w-full object-contain" />
+            ? <img
+                src={productCardImage(image)}
+                alt=""
+                loading="eager"
+                decoding="async"
+                draggable={false}
+                className="h-full w-full object-contain"
+                onError={event => {
+                  // Some stores have no generated 320px sibling.
+                  if (event.currentTarget.src !== image) {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = image;
+                  }
+                }}
+              />
             : <div className="h-32 w-32 rounded-3xl bg-slate-100" />}
         </div>
         <div className="rounded-[24px] bg-white px-4 py-5" dir="rtl">
