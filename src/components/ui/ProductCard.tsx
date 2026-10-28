@@ -90,7 +90,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
     registerBrowsableProduct(detailHref, product);
     const index = browseState.productBrowse.paths.indexOf(detailHref);
     seedProductBrowseCache(queryClient, browseState.productBrowse.paths, index);
-    navigate(detailHref, { state: browseState });
+    const inheritedBackground = (location.state as { backgroundLocation?: typeof location } | null)?.backgroundLocation;
+    const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+    const backgroundLocation = inheritedBackground ||
+      (mobile && !location.pathname.startsWith('/product/') ? location : undefined);
+    navigate(detailHref, {
+      state: { ...browseState, ...(backgroundLocation ? { backgroundLocation } : {}) },
+      // Don't stack nested sheets when tapping a recommendation inside a sheet.
+      replace: Boolean(inheritedBackground),
+    });
   };
 
   const selectedWeight = weighted
