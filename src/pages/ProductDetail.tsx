@@ -667,7 +667,9 @@ const ProductDetail = () => {
           style={{ transform: `translate3d(var(--product-swipe-x, 0px), ${sheetVisible ? '0px' : '105dvh'}, 0)` }}
         >
           <header className="relative z-20 shrink-0 rounded-t-[30px] bg-white px-4 pb-2 pt-3">
-            <div className="mx-auto mb-2 h-1 w-11 rounded-full bg-slate-200" aria-hidden="true" />
+            <button type="button" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج" className="mx-auto mb-2 flex h-3 w-14 items-center justify-center">
+              <span className="h-1 w-11 rounded-full bg-slate-200" aria-hidden="true" />
+            </button>
             <div className="flex items-center justify-between gap-2">
               <button type="button" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-800 active:scale-95">
