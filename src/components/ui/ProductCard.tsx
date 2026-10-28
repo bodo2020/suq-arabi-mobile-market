@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { collectProductBrowseState } from '@/lib/productBrowsing';
+import { captureProductCardOrigin } from '@/lib/productSheetMotion';
+import { observeProductCardImage, prepareProductBrowseImages } from '@/lib/productImagePipeline';
 import { registerBrowsableProduct, seedProductBrowseCache } from '@/lib/productDetailCache';
 import { Bell, BellRing, Loader2, Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
 import { Product } from '@/lib/supabase';
@@ -47,6 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const queryClient = useQueryClient();
   const location = useLocation();
   const [reminderPending, setReminderPending] = useState(false);
+  const cardRef = React.useRef<HTMLElement>(null);
 
   const weighted = isWeightedProduct(product);
   const weightStep = weighted ? productWeightStepGrams(product) : 0;
@@ -82,6 +85,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
     scheduleDetailWarmup();
   }, [detailHref, product]);
 
+  useEffect(() => {
+    if (!cardRef.current) return;
+    return observeProductCardImage(cardRef.current, imageSrc);
+  }, [imageSrc]);
+
   const openDetails = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     event.preventDefault();
@@ -90,12 +98,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
     registerBrowsableProduct(detailHref, product);
     const index = browseState.productBrowse.paths.indexOf(detailHref);
     seedProductBrowseCache(queryClient, browseState.productBrowse.paths, index);
+    // Begin image decode before routing, while the listing images are already
+    // on screen and likely present in the browser's HTTP cache.
+    prepareProductBrowseImages(browseState.productBrowse.previews, browseState.productBrowse.paths, index);
+    const productCardOrigin = captureProductCardOrigin(event.currentTarget, detailHref);
     const inheritedBackground = (location.state as { backgroundLocation?: typeof location } | null)?.backgroundLocation;
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
     const backgroundLocation = inheritedBackground ||
       (mobile && !location.pathname.startsWith('/product/') ? location : undefined);
     navigate(detailHref, {
-      state: { ...browseState, ...(backgroundLocation ? { backgroundLocation } : {}) },
+      state: {
+        ...browseState,
+        ...(backgroundLocation ? { backgroundLocation } : {}),
+        ...(mobile && productCardOrigin ? { productCardOrigin } : {}),
+      },
       // Don't stack nested sheets when tapping a recommendation inside a sheet.
       replace: Boolean(inheritedBackground),
     });
@@ -185,6 +201,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <article
+      ref={cardRef}
       className={`group/card relative flex h-full min-w-0 flex-col rounded-[18px] bg-white p-1.5 shadow-[0_3px_14px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] transition-[transform,box-shadow,opacity] duration-200 hover:-translate-y-0.5 hover:shadow-[0_9px_24px_rgba(0,89,49,0.09)] active:scale-[0.995] sm:rounded-[22px] sm:p-2.5 ${unavailable ? 'opacity-[0.82]' : ''}`}
       dir="rtl"
       data-product-card="v3-compact"
