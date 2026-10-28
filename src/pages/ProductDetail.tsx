@@ -67,6 +67,11 @@ const ProductDetail = () => {
   const [swipeAnimating, setSwipeAnimating] = useState(false);
   const [swipeLocked, setSwipeLocked] = useState(false);
   const [neighborRevision, setNeighborRevision] = useState(0);
+  // Keep the incoming *same DOM card* painted over the new detail content for
+  // a brief handoff. It fades away only after the next route is committed.
+  // This removes the flash of product content rebuilding on every swipe.
+  const [handoffPath, setHandoffPath] = useState<string | null>(null);
+  const [handoffExiting, setHandoffExiting] = useState(false);
   // All three mounted cards share exactly one translation. Updating the
   // stage's CSS variable moves the *entire sheets*, not their product content.
   // This avoids per-touch React renders and keeps drag 1:1 with the finger.
@@ -93,21 +98,32 @@ const ProductDetail = () => {
 
   const [loadedProduct, setProduct] = useState<Product | null>(null);
   const queryClient = useQueryClient();
-  // Keep exactly the two adjacent preview cards mounted; canonical data
-  // seamlessly upgrades each preview when its background prefetch finishes.
-  const neighbors = useMemo(() => {
-    const resolve = (direction: -1 | 1) => {
-      const path = browse && browseIndex >= 0 ? browse.paths[browseIndex + direction] : undefined;
-      const preview = path ? browse?.previews.find(item => item.path === path) || null : null;
-      if (!path || typeof window === 'undefined') return { preview, product: null };
+  // A virtual 7-slot rail keeps the *entire catalog order* while mounting
+  // only the 3 preceding + active + 3 following sheets. Keys are product paths:
+  // when the user moves forward, overlapping DOM cards (including decoded
+  // images) retain identity and move to their new position, not remount.
+  const rail = useMemo(() => {
+    if (!browse || browseIndex < 0 || typeof window === 'undefined') return [];
+    const previews = new Map(browse.previews.map(preview => [preview.path, preview]));
+    const slides: {
+      path: string;
+      offset: number;
+      preview: (typeof browse.previews)[number];
+      product: Product | null;
+    }[] = [];
+    for (let offset = -3; offset <= 3; offset++) {
+      const path = browse.paths[browseIndex + offset];
+      const preview = path ? previews.get(path) : undefined;
+      if (!path || !preview) continue;
+      let cached: Product | null = null;
       try {
         const url = new URL(path, window.location.origin);
         const productId = decodeURIComponent(url.pathname.slice('/product/'.length));
-        const product = getCachedDetailProduct(queryClient, productId, url.searchParams.get('store'));
-        return { preview, product };
-      } catch { return { preview, product: null }; }
-    };
-    return { previous: resolve(-1), next: resolve(1) };
+        cached = getCachedDetailProduct(queryClient, productId, url.searchParams.get('store'));
+      } catch { /* Keep the catalog preview even if a malformed URL slips in. */ }
+      slides.push({ path, offset, preview, product: cached });
+    }
+    return slides;
   }, [browse, browseIndex, neighborRevision, queryClient]);
   // Prefetched data is available during the first render after a swipe, so no
   // in-between loading sheet is shown. Fallback to the current request's state.
@@ -135,6 +151,15 @@ const ProductDetail = () => {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const { addToCart, items, updateQuantity, removeFromCart, isInitialized } = useCart();
   const { toast } = useToast();
+
+  // Fade the incoming preview away only once React Router has committed the
+  // selected product. The selected preview is kept in the same keyed rail.
+  useEffect(() => {
+    if (!handoffPath || location.pathname + location.search !== handoffPath) return;
+    const frame = requestAnimationFrame(() => setHandoffExiting(true));
+    const timer = window.setTimeout(() => setHandoffPath(null), 240);
+    return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); };
+  }, [handoffPath, location.pathname, location.search]);
 
   // Lock the background document only on handheld product sheets.
   useEffect(() => {
@@ -277,8 +302,15 @@ const ProductDetail = () => {
     sheetTouch.current = null;
     setCarouselMotion(true);
     const navigateTo = () => {
-      if (next) navigate(next, { replace: true, state: location.state });
-      else navigate(destination);
+      if (next) {
+        // Preserve the incoming slide already at the center of the viewport.
+        // The same keyed DOM element covers React's detail update, then fades.
+        setHandoffPath(next);
+        setHandoffExiting(false);
+        navigate(next, { replace: true, state: location.state });
+      } else {
+        navigate(destination);
+      }
     };
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       navigateTo();
@@ -871,10 +903,22 @@ const ProductDetail = () => {
 
       {/* Three-card carousel: neighbors stay mounted and follow the same GPU transform. */}
       <div ref={sheetStage} className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/50 px-0 pt-5 md:hidden" style={{ '--product-swipe-x': '0px' } as React.CSSProperties}>
-        <ProductSwipePeek side="left" preview={neighbors.previous.preview} product={neighbors.previous.product}
-          locked={swipeLocked} visible={sheetVisible} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(-1)} />
-        <ProductSwipePeek side="right" preview={neighbors.next.preview} product={neighbors.next.product}
-          locked={swipeLocked} visible={sheetVisible} transitioning={!sheetDragging && swipeAnimating} onOpen={() => browseProduct(1)} />
+        {rail.map(slide => (
+          <ProductSwipePeek
+            key={slide.path}
+            offset={slide.offset}
+            preview={slide.preview}
+            product={slide.product}
+            locked={swipeLocked || Math.abs(slide.offset) !== 1}
+            visible={sheetVisible && (slide.offset !== 0 || handoffPath === slide.path)}
+            handoff={slide.offset === 0 && handoffPath === slide.path}
+            handoffExiting={handoffExiting}
+            transitioning={!sheetDragging && swipeAnimating}
+            onOpen={() => {
+              if (slide.offset === -1 || slide.offset === 1) browseProduct(slide.offset);
+            }}
+          />
+        ))}
         <section
           ref={sheetCardRef}
           data-product-center-card
