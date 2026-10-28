@@ -20,7 +20,7 @@ const trimEntries = () => {
 };
 
 export const isProductImageReady = (source: string): boolean =>
-  Boolean(source && entries.get(productCardImage(source))?.ready);
+  Boolean(source && (entries.get(productCardImage(source))?.ready || entries.get(source)?.ready));
 
 function decodeImage(url: string): Promise<boolean> {
   if (typeof Image === 'undefined' || !url) return Promise.resolve(false);
