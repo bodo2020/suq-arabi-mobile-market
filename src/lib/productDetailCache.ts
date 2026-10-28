@@ -99,22 +99,20 @@ export function seedProductBrowseCache(
       if (!store && snapshot.product.commerce_source === 'marketplace') continue;
       const key = detailProductKey(productId, store);
       if (!client.getQueryData(key)) {
-        // Show the card immediately. Only the selected product is considered
-        // stale, so its canonical detail is refreshed silently in the sheet
-        // while neighboring records stay ready for instant swipes.
+        // The snapshot is display-only. Every selected item is eligible
+        // for silent canonical price/stock revalidation before checkout.
         client.setQueryData(key, snapshot.product, {
           updatedAt: Date.now() - PRODUCT_DETAIL_STALE_MS - 1,
         });
       }
-      warmFirstImage(snapshot.product, offset <= 1, url.searchParams.get('unit') === 'bulk');
+      warmFirstImage(snapshot.product, false, url.searchParams.get('unit') === 'bulk');
     }
   }
 }
 
 /**
- * Warm the immediate previous/next products plus one more on each side.
- * React Query de-duplicates in-flight requests and retains visits for an hour.
- * All requests remain scoped to the selected merchant/store.
+ * Warm only card-sized images around the shopper. Do not saturate the network
+ * with full-resolution images or secondary requests during gestures.
  */
 export function warmAdjacentProductPages(
   client: QueryClient, paths: string[], currentIndex: number,
@@ -130,6 +128,6 @@ export function warmAdjacentProductPages(
     if (url.origin !== window.location.origin) continue;
     const id = decodeURIComponent(url.pathname.slice('/product/'.length));
     const product = getCachedDetailProduct(client, id, url.searchParams.get('store'));
-    if (product) warmFirstImage(product, Math.abs(index - currentIndex) === 1, url.searchParams.get('unit') === 'bulk');
+    if (product) warmFirstImage(product, false, url.searchParams.get('unit') === 'bulk');
   }
 }
