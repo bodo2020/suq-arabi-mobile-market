@@ -7,7 +7,7 @@ import { getBranchCatalog } from '@/lib/supabase';
  */
 const relatedTerms: Array<{ triggers: string[]; complements: string[] }> = [
   { triggers: ['مكرون', 'اسباجت'], complements: ['صلص', 'جبن'] },
-  { triggers: ['قهو', 'نسكافيه', 'بن '], complements: ['سكر', 'بسكويت'] },
+  { triggers: ['قهو', 'نسكافيه', 'بن محوج', 'بن سادة'], complements: ['سكر', 'بسكويت'] },
   { triggers: ['شاي'], complements: ['سكر', 'بسكويت'] },
   { triggers: ['حليب', 'لبن'], complements: ['كورنفلكس', 'بسكويت'] },
   { triggers: ['ارز', 'رز '], complements: ['زيت', 'صلص'] },
