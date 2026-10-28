@@ -50,7 +50,7 @@ const ProductDetail = () => {
     : (browse?.paths.findIndex(path => path.split('?')[0] === location.pathname) ?? -1);
   const canSwipePrevious = browseIndex > 0;
   const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
-  const sheetTouch = useRef<{ x: number; y: number; at: number; gallery: boolean } | null>(null);
+  const sheetTouch = useRef<{ x: number; y: number; at: number; axis: 'pending' | 'vertical' | 'horizontal' } | null>(null);
   const sheetStage = useRef<HTMLDivElement>(null);
   const sheetCardRef = useRef<HTMLElement>(null);
   const hasEnteredRef = useRef(false);
@@ -67,8 +67,24 @@ const ProductDetail = () => {
   const [swipeAnimating, setSwipeAnimating] = useState(false);
   const [swipeLocked, setSwipeLocked] = useState(false);
   const [neighborRevision, setNeighborRevision] = useState(0);
+  // All three mounted cards share exactly one translation. Updating the
+  // stage's CSS variable moves the *entire sheets*, not their product content.
+  // This avoids per-touch React renders and keeps drag 1:1 with the finger.
   const setSheetOffset = (x: number) => {
     sheetStage.current?.style.setProperty('--product-swipe-x', `${x}px`);
+  };
+  const setCarouselMotion = (animate: boolean) => {
+    const cards = sheetStage.current?.querySelectorAll<HTMLElement>(
+      '[data-product-center-card], [data-product-swipe-card]',
+    );
+    // Apply the transition before writing the transform variable. Relying on
+    // a delayed React class update caused some swipes to jump straight to
+    // the next product without moving the sheets.
+    cards?.forEach(card => {
+      card.style.transition = animate && !prefersReducedProductMotion()
+        ? 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)'
+        : 'none';
+    });
   };
   const nextCategory = !canSwipeNext ? browse?.nextCategory : undefined;
   const requestedBulk = searchParams.get('unit') === 'bulk';
@@ -133,6 +149,10 @@ const ProductDetail = () => {
     closingRef.current = true;
     // Don't let a pending carousel snap navigate after the sheet is closing.
     pendingSwipeNavigation.current = null;
+    // A finished FLIP animation with fill:'both' otherwise keeps overriding
+    // the CSS transform used for every carousel swipe.
+    entranceAnimation.current?.cancel();
+    entranceAnimation.current = null;
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
 
@@ -211,6 +231,8 @@ const ProductDetail = () => {
   // Suppressing the reset transition avoids the old "slide back" flash.
   useLayoutEffect(() => {
     const cards = sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-swipe-card], [data-product-center-card]');
+    // Recenter the three *complete card elements* synchronously before
+    // routing paints the newly selected product.
     cards?.forEach(card => { card.style.transition = 'none'; });
     setSheetOffset(0);
     setSwipeAnimating(false);
@@ -249,6 +271,7 @@ const ProductDetail = () => {
     setSheetDragging(false);
     setSwipeAnimating(true);
     sheetTouch.current = null;
+    setCarouselMotion(true);
     const navigateTo = () => {
       if (next) navigate(next, { replace: true, state: location.state });
       else navigate(destination);
@@ -271,58 +294,71 @@ const ProductDetail = () => {
     // A fallback for hidden-tab and cancelled transitions; the normal path is
     // the center card's transform transitionend event.
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
-    swipeTimer.current = setTimeout(completeSwipeNavigation, 310);
+    swipeTimer.current = setTimeout(completeSwipeNavigation, 400);
   };
 
   const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
-    if (!touch || weightOpen || swipeLocked) return;
+    if (!touch || weightOpen || swipeLocked || closingRef.current || !sheetVisible) return;
     const target = event.target as HTMLElement;
+    // Preserve normal vertical scrolling and nested recommendation rails.
     if (target.closest('[data-product-recommendations]')) return;
-    if (!target.closest('[data-product-gallery]') && target.closest('button,a,input,textarea,select,[role="button"]')) return;
+    if (target.closest('button,a,input,textarea,select,[role="button"],summary')) return;
     sheetTouch.current = {
       x: touch.clientX,
       y: touch.clientY,
       at: Date.now(),
-      gallery: Boolean(target.closest('[data-product-gallery]')),
+      axis: 'pending',
     };
-    setSwipeAnimating(false);
-    setSheetDragging(true);
+    setCarouselMotion(false);
   };
 
   const moveSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const start = sheetTouch.current;
     const touch = event.touches[0];
-    if (!start || !touch || (start.gallery && images.length > 1) || weightOpen || swipeLocked) return;
+    if (!start || !touch || weightOpen || swipeLocked) return;
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
-    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+    if (start.axis === 'pending') {
+      if (Math.abs(dx) < 9 && Math.abs(dy) < 9) return;
+      start.axis = Math.abs(dx) >= Math.abs(dy) * 1.2 ? 'horizontal' : 'vertical';
+      if (start.axis === 'horizontal') {
+        setSheetDragging(true);
+        setSwipeAnimating(false);
+      }
+    }
+    if (start.axis !== 'horizontal') return;
+    // The main photo belongs to this card: swiping across it moves the
+    // *entire product* as well. Additional images are still available by
+    // tapping the gallery indicators; gallery swipes no longer trap a card.
     const allowed = dx < 0 ? (canSwipeNext || Boolean(nextCategory)) : canSwipePrevious;
-    setSheetOffset(allowed ? Math.max(-window.innerWidth * .85, Math.min(window.innerWidth * .85, dx)) : dx * .12);
+    const max = Math.min(window.innerWidth * .92, 700);
+    const distance = allowed ? Math.max(-max, Math.min(max, dx)) : dx * .12;
+    setSheetOffset(distance);
   };
 
   const finishSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const start = sheetTouch.current;
     sheetTouch.current = null;
-    setSheetDragging(false);
     const end = event.changedTouches[0];
-    if (!start || !end || weightOpen || swipeLocked) return;
+    if (!start || !end || weightOpen || swipeLocked || start.axis !== 'horizontal') return;
     const dx = end.clientX - start.x;
     const dy = end.clientY - start.y;
-    if (start.gallery && images.length > 1) {
-      if (Math.abs(dx) >= 45 && Math.abs(dx) >= Math.abs(dy) * 1.4) goToImage(dx < 0 ? 1 : -1);
-      return;
-    }
     const elapsed = Math.max(1, Date.now() - start.at);
-    const fastFlick = Math.abs(dx) >= 26 && Math.abs(dx) / elapsed >= .55;
-    if ((Math.abs(dx) >= 65 || fastFlick) && Math.abs(dx) >= Math.abs(dy) * 1.35) {
+    const fastFlick = Math.abs(dx) >= 27 && Math.abs(dx) / elapsed >= .5;
+    const cardWidth = sheetCardRef.current?.getBoundingClientRect().width || window.innerWidth * .78;
+    const enoughDistance = Math.abs(dx) >= Math.min(85, cardWidth * .22);
+    if ((enoughDistance || fastFlick) && Math.abs(dx) >= Math.abs(dy) * 1.2) {
       const offset = dx < 0 ? 1 : -1;
       if ((offset === 1 && (canSwipeNext || nextCategory)) || (offset === -1 && canSwipePrevious)) {
         browseProduct(offset);
         return;
       }
     }
+    // Cancelled/incomplete flick: every card eases back to its original slot.
+    setSheetDragging(false);
     setSwipeAnimating(true);
+    setCarouselMotion(true);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
     swipeFrame.current = requestAnimationFrame(() => {
       swipeFrame.current = null;
@@ -440,6 +476,14 @@ const ProductDetail = () => {
     const animation = origin ? animateProductCardSheet(card, origin, 'open') : null;
     if (animation) {
       entranceAnimation.current = animation;
+      // WAAPI fill:'both' is required during FLIP but must be released when
+      // opening finishes; otherwise its transform permanently wins over the
+      // carousel's CSS --product-swipe-x and the screen appears stationary.
+      void animation.finished.then(() => {
+        if (entranceAnimation.current !== animation) return;
+        entranceAnimation.current = null;
+        animation.cancel();
+      }).catch(() => {});
       sheetStage.current?.animate(
         [{ backgroundColor: 'rgba(15,23,42,0)' }, { backgroundColor: 'rgba(15,23,42,0.5)' }],
         { duration: 310, easing: 'ease-out', fill: 'both' },
@@ -873,6 +917,7 @@ const ProductDetail = () => {
               sheetTouch.current = null;
               setSheetDragging(false);
               setSwipeAnimating(true);
+              setCarouselMotion(true);
               if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
               swipeFrame.current = requestAnimationFrame(() => {
                 swipeFrame.current = null;
