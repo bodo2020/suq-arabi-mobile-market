@@ -64,6 +64,8 @@ function decodeImage(url: string): Promise<boolean> {
 
 /** Resolve a ready thumbnail, falling back to the original if the generated
  * 320px sibling does not exist (some marketplace images have no sibling). */
+export const prepareFullProductImage = (source: string): Promise<boolean> => decodeImage(source);
+
 export async function prepareProductImage(source: string): Promise<boolean> {
   if (!source) return false;
   const thumb = productCardImage(source);
