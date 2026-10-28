@@ -320,7 +320,7 @@ const ProductDetail = () => {
       }
     }, isMobile ? 320 : 0);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [product?.id, product?.marketplace_branch_id, product?.delivery_branch_id, queryClient, isMobile]);
+  }, [product, queryClient, isMobile]);
 
   // Use the small card image for the entrance animation; load full resolution
   // only after the sheet has settled, never before the user sees name/price.
