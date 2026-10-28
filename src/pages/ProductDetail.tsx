@@ -133,7 +133,7 @@ const ProductDetail = () => {
   // Route changes re-center the newly selected card *before the browser paints*.
   // Suppressing the reset transition avoids the old "slide back" flash.
   useLayoutEffect(() => {
-    const cards = sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-swipe-card]');
+    const cards = sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-swipe-card], [data-product-center-card]');
     cards?.forEach(card => { card.style.transition = 'none'; });
     setSheetOffset(0);
     setSwipeAnimating(false);
@@ -656,7 +656,7 @@ const ProductDetail = () => {
       ) : (
         <div className="flex items-center gap-2 md:flex-col md:items-stretch md:gap-3">
           {!bulkMode && (
-            <div className="flex h-12 w-[124px] shrink-0 items-center justify-between rounded-2xl border border-slate-200 bg-white md:w-full">
+            <div className="flex h-12 w-[104px] shrink-0 items-center justify-between rounded-2xl border border-slate-200 bg-white md:w-full">
               <button type="button" onClick={() => setQuantity(value => Math.max(1, value - 1))} className="flex h-12 w-9 shrink-0 items-center justify-center md:w-12" aria-label="تقليل الكمية"><Minus size={17} /></button>
               <strong className="text-sm font-black">{money(quantity)}</strong>
               <button type="button" onClick={() => setQuantity(value => Math.min(maxRegularQuantity, value + 1))} disabled={quantity >= maxRegularQuantity} className="flex h-12 w-9 shrink-0 items-center justify-center disabled:opacity-30 md:w-12" aria-label="زيادة الكمية"><Plus size={17} /></button>
