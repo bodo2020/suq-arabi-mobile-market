@@ -245,7 +245,11 @@ const ProductDetail = () => {
       }
     }
     setSwipeAnimating(true);
-    setSheetOffset(0);
+    if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
+    swipeFrame.current = requestAnimationFrame(() => {
+      swipeFrame.current = null;
+      setSheetOffset(0);
+    });
   };
 
   const weighted = product ? isWeightedProduct(product) : false;
@@ -760,7 +764,16 @@ const ProductDetail = () => {
             onTouchStart={startSheetSwipe}
             onTouchMove={moveSheetSwipe}
             onTouchEnd={finishSheetSwipe}
-            onTouchCancel={() => { sheetTouch.current = null; setSheetDragging(false); setSwipeAnimating(true); setSheetOffset(0); }}
+            onTouchCancel={() => {
+              sheetTouch.current = null;
+              setSheetDragging(false);
+              setSwipeAnimating(true);
+              if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
+              swipeFrame.current = requestAnimationFrame(() => {
+                swipeFrame.current = null;
+                setSheetOffset(0);
+              });
+            }}
           >
             <div data-product-gallery className="relative flex h-[min(34dvh,270px)] items-center justify-center overflow-hidden rounded-[24px] border border-slate-100 bg-white">
               {bulkMode && !bulkImageUrl ? (
