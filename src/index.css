@@ -405,3 +405,5 @@ html.native-platform [role="button"] {
    transparent PNG/WebP retain their alpha. No food scene imagery is used. */
 .smart-product-cutout { object-fit: contain; mix-blend-mode: multiply; background: transparent; }
 .ala-mazagak-group-card img { object-fit: contain; background: transparent; mix-blend-mode: multiply; }
+
+.ala-mazagak-product-rail img { object-fit: contain; background: transparent; mix-blend-mode: multiply; }
