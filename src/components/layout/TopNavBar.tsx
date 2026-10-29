@@ -210,10 +210,10 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               onClick={openAddress}
               aria-label={addressLabel ? `تغيير عنوان التوصيل: ${addressLabel}` : 'تحديد عنوان التوصيل'}
               title={addressLabel || 'حدد عنوان التوصيل'}
-              className="inline-flex h-11 max-w-[38%] shrink-0 items-center gap-1 rounded-full px-1.5 text-[#005931] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
+              className="inline-flex h-11 min-w-0 max-w-[38%] shrink-0 items-center gap-1 rounded-full px-1.5 text-[#005931] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
             >
               <MapPin size={17} className="shrink-0" aria-hidden="true" />
-              <span className="min-w-0 truncate text-[12px] font-bold">{addressLoading ? 'جاري التحميل' : addressLabel || 'التوصيل'}</span>
+              <span dir="auto" className="min-w-0 truncate text-[12px] font-bold">{addressLoading ? 'جاري التحميل' : addressLabel || 'التوصيل'}</span>
               <ChevronDown size={13} className="shrink-0 text-[#618272]" aria-hidden="true" />
             </button>
           </div>
