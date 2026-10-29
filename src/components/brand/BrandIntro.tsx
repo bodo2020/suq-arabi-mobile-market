@@ -1,24 +1,28 @@
 import { useEffect, useState } from 'react';
 import BrandMark from './BrandMark';
 
-/** A one-time nonblocking brand reveal per app session. Android's native
- * system splash remains static; this runs only after the WebView mounts. */
+/** A one-time, nonblocking brand reveal per app session. The native Android
+ * system splash remains static; this only animates after the WebView mounts. */
 export default function BrandIntro() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
+  const [visible, setVisible] = useState(() => {
     if (typeof window === 'undefined' ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
     try {
-      if (sessionStorage.getItem('super-marko-intro-v1')) return;
+      if (sessionStorage.getItem('super-marko-intro-v1')) return false;
       sessionStorage.setItem('super-marko-intro-v1', '1');
+      return true;
     } catch {
-      return; // Restricted browser storage should never block app startup.
+      return false; // Disabled browser storage must not block startup.
     }
-    setVisible(true);
+  });
+
+  // The timeout is always recreated after React StrictMode effect cleanup,
+  // rather than leaving an orphaned overlay on the first development mount.
+  useEffect(() => {
+    if (!visible) return;
     const timer = window.setTimeout(() => setVisible(false), 880);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [visible]);
 
   if (!visible) return null;
   return (
