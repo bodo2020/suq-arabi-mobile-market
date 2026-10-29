@@ -39,3 +39,33 @@
 .cart-primary svg, .checkout-submit svg { color: var(--checkout-gold); }
 .checkout-header { background: #fff; }
 .checkout-steps li.current span { box-shadow: 0 0 0 3px var(--checkout-cream); }
+
+
+/* Adaptive transactional header: same Super Marko mark, no search/cart distractions. */
+.checkout-header__context {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  line-height: 1.35;
+}
+.checkout-header__context strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #192b23;
+  font-size: 16px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.checkout-header__context > span { color: #64756c; font-size: 11px; }
+.checkout-header .brand-mark img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal; }
+.checkout-header .checkout-back { flex-shrink: 0; color: #005931; }
+@media (max-width: 767px) {
+  .checkout-header__context strong { font-size: 15px; }
+  .checkout-header .checkout-back { min-width: 40px; }
+}
