@@ -6,6 +6,7 @@ import {
   cartItemIdentity,
   marketplaceBranchIds,
   type CartAddResult,
+  type SmartBundleLine,
 } from './cartTypes';
 import { useCartSync } from './cartSupabaseSync';
 
@@ -66,6 +67,43 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 'added';
   }, [isInitialized, items]);
 
+  const addBundleToCart = useCallback((lines: SmartBundleLine[]): 'added' | 'not_ready' | 'conflict' => {
+    if (!isInitialized) return 'not_ready';
+    if (lines.length === 0 || lines.length > 30) return 'conflict';
+    const aggregate = new Map<string, { product: SmartBundleLine['product']; quantity: number }>();
+    for (const line of lines) {
+      const p = line.product;
+      if (!p?.id || (p.commerce_source && p.commerce_source !== 'owned') ||
+          !Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 99 ||
+          !Number.isFinite(Number(p.price)) || Number(p.price) < 0) return 'conflict';
+      const existing = aggregate.get(p.id);
+      aggregate.set(p.id, { product: p, quantity: (existing?.quantity || 0) + line.quantity });
+    }
+    // All-or-nothing validation, including existing basket quantities.
+    for (const { product, quantity } of aggregate.values()) {
+      const existing = items.find(i => i.product.id === product.id && !i.is_bulk && i.commerce_source !== 'marketplace');
+      const limit = Math.floor(Number(product.quantity || 0));
+      if (!Number.isFinite(limit) || limit < quantity + (existing?.quantity || 0)) return 'conflict';
+      if (product.unit_of_measure === 'weight') return 'conflict'; // Weighted items need a dedicated gram selector.
+    }
+    const newLines = [...aggregate.values()];
+    setItems(current => {
+      const next = [...current];
+      for (const { product, quantity } of newLines) {
+        const index = next.findIndex(i => i.product.id === product.id && !i.is_bulk && i.commerce_source !== 'marketplace');
+        if (index < 0) {
+          next.push({
+            product: { ...product, bulk_quantity: product.bulk_quantity || 1 },
+            quantity, is_bulk: false, commerce_source: 'owned',
+          });
+        } else next[index] = { ...next[index], quantity: next[index].quantity + quantity };
+      }
+      return next;
+    });
+    window.dispatchEvent(new Event('super-marko:cart-added'));
+    return 'added';
+  }, [isInitialized, items]);
+
   const removeFromCart = useCallback((productId: string, is_bulk?: boolean, listingId?: string | null) => {
     if (!isInitialized) return;
     setItems(currentItems => currentItems.filter(item => {
@@ -111,6 +149,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       items,
       cart: { items },
       addToCart,
+      addBundleToCart,
       removeFromCart,
       updateQuantity,
       clearCart,
