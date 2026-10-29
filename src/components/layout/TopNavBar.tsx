@@ -108,7 +108,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
                 </button>
               )}
               <Link to="/" className="min-w-0" aria-label="سوبر ماركو، الرئيسية">
-                <BrandWordmark className="brand-name--home" />
+                <BrandWordmark className={showBackButton ? "brand-name--home brand-name--categories" : "brand-name--home"} />
               </Link>
             </div>
             <div className={`flex min-w-0 ${showBackButton ? 'max-w-[49%]' : 'max-w-[55%]'} flex-col items-end gap-2 text-left`}>
