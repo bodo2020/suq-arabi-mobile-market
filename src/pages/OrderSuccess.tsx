@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BellRing, CheckCircle, Home, PackageSearch, Copy, CheckCheck, ShieldCheck, Store } from 'lucide-react';
+import { BellRing, Home, PackageSearch, Copy, CheckCheck, ShieldCheck, Store } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
