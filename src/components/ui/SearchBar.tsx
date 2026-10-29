@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Barcode, Search } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Barcode, Search, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -37,6 +37,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [query, setQuery] = useState(initialQuery);
   const [typedSuggestion, setTypedSuggestion] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const lastFocusedKey = useRef<string | null>(null);
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -87,6 +90,22 @@ const SearchBar: React.FC<SearchBarProps> = ({
     return () => clearTimeout(timer);
   }, [animatedSuggestions, readOnly]);
 
+  // Focus the real editable search on intentional navigation from a header.
+  // Deep links with search results don't unexpectedly pop the keyboard.
+  useEffect(() => {
+    const request = (location.state as { focusSearch?: boolean } | null)?.focusSearch;
+    const key = location.key;
+    if (readOnly || !request || lastFocusedKey.current === key || location.pathname !== '/search') return;
+    lastFocusedKey.current = key;
+    inputRef.current?.focus({ preventScroll: true });
+  }, [location.key, location.pathname, location.state, readOnly]);
+
+  const clearSearch = () => {
+    setQuery('');
+    if (location.pathname === '/search' && location.search) navigate('/search', { replace: true });
+    inputRef.current?.focus({ preventScroll: true });
+  };
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (readOnly) return;
@@ -123,6 +142,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
             aria-hidden="true"
           />
           <input
+            ref={inputRef}
             type="search"
             aria-label="البحث عن المنتجات"
             enterKeyHint="search"
@@ -153,6 +173,16 @@ const SearchBar: React.FC<SearchBarProps> = ({
             </span>
           )}
         </div>
+        {!readOnly && query && (
+          <button
+            type="button"
+            aria-label="مسح نص البحث"
+            onClick={clearSearch}
+            className="flex h-10 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-emerald-50"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        )}
         {showBarcode && (
           <button
             type="button"
