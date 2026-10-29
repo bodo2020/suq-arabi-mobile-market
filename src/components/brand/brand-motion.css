@@ -69,6 +69,30 @@
   animation: brand-wordmark-arrive 440ms 180ms both;
 }
 .brand-intro--refresh .brand-name--intro { animation-delay: 200ms; }
+.brand-pull-refresh {
+  position: fixed;
+  z-index: 90;
+  top: calc(var(--safe-area-top, 0px) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 164px;
+  padding: 8px 16px;
+  border: 1px solid #d9ece0;
+  border-radius: 22px;
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 8px 24px rgba(0,65,36,.1);
+  color: #005931;
+  font-family: 'Thmanyah', 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.brand-pull-refresh .brand-loader { width: 25px; height: 34px; }
 .brand-cart-feedback {
   position: fixed;
   bottom: calc(94px + env(safe-area-inset-bottom,0px));
