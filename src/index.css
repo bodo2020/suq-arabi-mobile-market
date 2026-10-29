@@ -389,6 +389,8 @@ html.native-platform [role="button"] {
 }
 .brand-name--home .brand-name__super { color: #005931; }
 .brand-name--home .brand-name__marko { color: #cf9700; }
+/* Keep the categories back icon and delivery information on one row on narrow phones. */
+.brand-name--categories { font-size: clamp(.75rem, 3.6vw, 1.1rem); }
 @media (max-width: 360px) {
   .brand-name--header { font-size: .72rem; padding: .2em .25em; }
 }
