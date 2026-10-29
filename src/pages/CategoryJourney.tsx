@@ -41,13 +41,12 @@ const jumpTo = (element: HTMLElement | null, smooth = true) => {
 
 /** A permanently mounted category section. Its content is only fetched near the viewport. */
 const JourneyCategory = React.memo(function JourneyCategory({
-  category, index, orderedCategories, eager, boundaryPull, onChips,
+  category, index, orderedCategories, eager, onChips,
 }: {
   category: MainCategory;
   index: number;
   orderedCategories: MainCategory[];
   eager: boolean;
-  boundaryPull: -1 | 0 | 1;
   onChips: (categoryId: string, chips: Chip[]) => void;
 }) {
   const containerRef = useRef<HTMLElement | null>(null);
@@ -166,9 +165,6 @@ export default function CategoryJourney() {
   const [activeSubcategory, setActiveSubcategory] = useState('');
   const [subChips, setSubChips] = useState<Record<string, Chip[]>>({});
   const [visibleIndex, setVisibleIndex] = useState(0);
-  const [boundaryCue, setBoundaryCue] = useState<{ id: string; direction: -1 | 1 } | null>(null);
-  const previousVisibleIndex = useRef<number | null>(null);
-  const cueTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const subRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const railRef = useRef<HTMLDivElement | null>(null);
   const scrollStartedFor = useRef<string | null>(null);
@@ -243,13 +239,6 @@ export default function CategoryJourney() {
       }
       const current = categories[currentIndex];
       if (!current) return;
-      if (previousVisibleIndex.current !== null && previousVisibleIndex.current !== currentIndex) {
-        const direction = (currentIndex > previousVisibleIndex.current ? 1 : -1) as -1 | 1;
-        setBoundaryCue({ id: current.id, direction });
-        if (cueTimer.current) clearTimeout(cueTimer.current);
-        cueTimer.current = setTimeout(() => setBoundaryCue(null), 160);
-      }
-      previousVisibleIndex.current = currentIndex;
       setVisibleIndex(prev => prev === currentIndex ? prev : currentIndex);
       setActiveCategory(prev => prev === current.id ? prev : current.id);
 
@@ -269,7 +258,6 @@ export default function CategoryJourney() {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('scroll', requestScroll);
       window.removeEventListener('resize', requestScroll);
-      if (cueTimer.current) clearTimeout(cueTimer.current);
     };
   }, [categories, isReady]);
 
@@ -361,7 +349,6 @@ export default function CategoryJourney() {
               index={index}
               orderedCategories={categories}
               eager={Math.abs(index - Math.max(initialIndex, 0)) <= 1}
-              boundaryPull={boundaryCue?.id === category.id ? boundaryCue.direction : 0}
               onChips={onChips}
             />
           ))}
