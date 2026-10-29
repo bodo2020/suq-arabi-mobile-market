@@ -17,7 +17,7 @@ interface TopNavBarProps {
   pageTitle?: string;
   showBackButton?: boolean;
   onBack?: () => void;
-  // The home header owns its delivery selector; other pages keep the compact navbar.
+  // Home and main categories share one mobile hero; other routes stay compact.
   homeHero?: boolean;
   addressLabel?: string;
   addressLoading?: boolean;
@@ -55,7 +55,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const cartCount = getTotalItems();
   const headerRef = React.useRef<HTMLElement | null>(null);
   const searchPage = location.pathname === '/search';
-  const showHomeHero = homeHero && location.pathname === '/' && !hideSearch && !showBackButton;
+  const showHomeHero = homeHero && (location.pathname === '/' || location.pathname === '/categories') && !hideSearch;
   const focus = () => {
     if (onSearchFocus) onSearchFocus();
     else if (!searchPage) navigate('/search');
