@@ -23,8 +23,9 @@ const Index = () => {
     <MainLayout>
       <StoreStructuredData />
       <TopNavBar
+        variant="hero"
         homeHero
-        onSearchFocus={() => navigate('/search')}
+        onSearchFocus={() => navigate('/search', { state: { focusSearch: true } })}
         addressLabel={addressLabel}
         addressLoading={addressLoading}
         deliveryEstimateMinutes={deliveryEstimateMinutes}
