@@ -608,9 +608,11 @@ const ProductDetail = () => {
   // Use the small card image for the entrance animation; load full resolution
   // only after the sheet has settled, never before the user sees name/price.
   useEffect(() => {
+    // The catalog preview must remain light while canonical details are pending.
+    if (!product || isPreviewOnly) return;
     const timer = window.setTimeout(() => setFullResolutionProductId(id || null), isMobile ? 500 : 0);
     return () => window.clearTimeout(timer);
-  }, [id, isMobile]);
+  }, [id, isMobile, isPreviewOnly, Boolean(serverProduct)]);
 
   const images = useMemo(() => {
     if (!product) return [];
