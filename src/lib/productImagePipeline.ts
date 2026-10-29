@@ -85,29 +85,42 @@ export async function prepareProductImage(source: string): Promise<boolean> {
 }
 
 /**
- * Prioritize previous and next before the user swipes. Second neighbors can be
- * prepared once the first pair has started; don't download entire categories.
+ * Warm the immediate neighbors first. Cancel speculative batches from an old
+ * swipe so a rapid series does not download every product in the rail.
  */
+let browsePrepareGeneration = 0;
+let browsePrepareTimers: ReturnType<typeof setTimeout>[] = [];
 export function prepareProductBrowseImages(
   previews: ProductPreview[],
   paths: string[],
   activeIndex: number,
 ): void {
+  browsePrepareGeneration += 1;
+  browsePrepareTimers.forEach(clearTimeout);
+  browsePrepareTimers = [];
   if (activeIndex < 0) return;
+  const currentGeneration = browsePrepareGeneration;
   const imagesByPath = new Map(previews.map(preview => [preview.path, preview.image]));
-  const near = [activeIndex - 1, activeIndex + 1, activeIndex - 2, activeIndex + 2];
-  const far = [activeIndex - 3, activeIndex + 3, activeIndex - 4, activeIndex + 4];
   const prepare = (index: number) => {
+    if (currentGeneration !== browsePrepareGeneration) return;
     const path = paths[index];
     const src = path ? imagesByPath.get(path) : undefined;
     if (src) void prepareProductImage(src);
   };
-  near.forEach(prepare);
-  // Don't make large batches of speculative requests on a metered connection.
+  // Decode both directions now, rather than waiting for the next gesture.
+  [activeIndex - 1, activeIndex + 1].forEach(prepare);
+  const schedule = (indexes: number[], delay: number) => {
+    browsePrepareTimers.push(setTimeout(() => {
+      if (currentGeneration === browsePrepareGeneration) indexes.forEach(prepare);
+    }, delay));
+  };
   const connection = (typeof navigator !== 'undefined'
-    ? (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+    ? (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection
     : undefined);
-  if (!connection?.saveData) far.forEach(prepare);
+  schedule([activeIndex - 2, activeIndex + 2], 120);
+  if (!connection?.saveData && connection?.effectiveType !== 'slow-2g' && connection?.effectiveType !== '2g') {
+    schedule([activeIndex - 3, activeIndex + 3, activeIndex - 4, activeIndex + 4], 450);
+  }
 }
 
 /**
