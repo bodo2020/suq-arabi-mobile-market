@@ -1,13 +1,12 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BellRing, Home, PackageSearch, Copy, CheckCheck, ShieldCheck, Store } from 'lucide-react';
+import { BellRing, Check, Home, PackageSearch, Copy, CheckCheck, ShieldCheck, Store } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import OrderEtaPanel from '@/components/orders/OrderEtaPanel';
 import BrandMark from '@/components/brand/BrandMark';
-import { Check } from 'lucide-react';
 import { getMyOrderEta } from '@/lib/orderEta';
 import { getMyOrderDeliveryPin } from '@/lib/deliveryPin';
 
