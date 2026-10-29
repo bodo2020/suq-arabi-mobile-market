@@ -5,7 +5,7 @@ import path from 'node:path';
 // The supplied Super Marko badge, compressed as a lossless 384px PNG.
 // Store the source in text form so GitHub's contents API can version it.
 // Unlike the old logo, this is the same official icon used by the web UI.
-const sourcePath = 'resources/super-marko/launcher-512.base64.txt';
+const sourcePath = 'resources/super-marko/launcher-384.base64.txt';
 const expectedSha256 = '15ad94e9a34a52bdc85643dc3b1e53dae21b63d9ee615e82eeae42fcf3ca94be';
 const outputs = [
   'resources/android-brand/super-marko-logo.png',
