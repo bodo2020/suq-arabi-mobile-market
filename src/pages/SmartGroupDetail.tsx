@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Check, ChevronDown, CircleHelp, Minus, Plus, ShoppingBag, ExternalLink, Users, Save } from 'lucide-react';
+import { BookOpen, ChevronDown, CircleHelp, Minus, Plus, ShoppingBag, ExternalLink, Users, Save } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -9,11 +9,10 @@ import { useBranch } from '@/contexts/BranchContext';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 import { type Product } from '@/lib/supabase';
-import { isWeightedProduct } from '@/lib/productPurchase';
+import { isWeightedProduct, productWeightStepGrams } from '@/lib/productPurchase';
 import {
   availableSmartProduct, getSmartGroupBundle, getSmartGroups, shoppingDb,
   moneyEGP, proposedPackCount, quantityText, smartProductPrice,
-  type SmartGroupSlot,
 } from '@/lib/smartShopping';
 import { useToast } from '@/hooks/use-toast';
 
@@ -289,11 +288,11 @@ export default function SmartGroupDetail() {
                             </label>
                             <div className="flex items-center rounded-xl bg-[#f6f8f7]">
                               <button type="button" aria-label={`تقليل كمية ${slot.label}`}
-                                onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.max(weighted ? 1 : 1,count-(weighted?250:1))}))}
+                                onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.max(weighted ? 1 : 1,count-(weighted && picked ? productWeightStepGrams(picked) : 1))}))}
                                 className="flex h-10 w-9 items-center justify-center text-[#005931]"><Minus size={17}/></button>
                               <span className="min-w-8 px-1 text-center text-xs font-bold">{count.toLocaleString('ar-EG')}{weighted?'جم':''}</span>
                               <button type="button" aria-label={`زيادة كمية ${slot.label}`}
-                                onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.min(weighted?100000:30,count+(weighted?250:1))}))}
+                                onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.min(weighted?100000:30,count+(weighted && picked ? productWeightStepGrams(picked) : 1))}))}
                                 className="flex h-10 w-9 items-center justify-center text-[#005931]"><Plus size={17}/></button>
                             </div>
                           </div>
