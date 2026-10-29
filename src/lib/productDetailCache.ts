@@ -146,7 +146,7 @@ export async function prefetchAdjacentProductDetails(
   if (connection?.saveData) return;
 
   const warm = async (path: string | undefined): Promise<void> => {
-    if (!path || !/^\\/product\\/[^/?#]+/.test(path)) return;
+    if (!path || !/^\/product\/[^/?#]+/.test(path)) return;
     const url = new URL(path, window.location.origin);
     if (url.origin !== window.location.origin) return;
     let id: string;
