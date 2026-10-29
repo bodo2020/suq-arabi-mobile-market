@@ -191,7 +191,7 @@ const ChangePhone = () => {
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="تغيير رقم الهاتف" />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="تغيير رقم الهاتف" showBackButton onBack={() => navigate('/account')} />
       <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
         <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
           <div className="mb-6 flex items-start gap-3">

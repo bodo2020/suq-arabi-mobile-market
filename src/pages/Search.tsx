@@ -2,7 +2,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Barcode, Search as SearchIcon, X } from 'lucide-react';
+import { Barcode, Search as SearchIcon, X } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { getProductListWithVariants } from '@/utils/productUtils';
 
 type AvailabilityFilter = 'all' | 'available' | 'unavailable';
@@ -66,7 +65,6 @@ const Search = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
 
   const allVariants = useMemo(
     () => getProductListWithVariants(products) as SearchDisplayProduct[],
@@ -323,6 +321,9 @@ const Search = () => {
 
       <div className="py-0">
         <TopNavBar
+          variant="search"
+          showBackButton
+          onBack={handleBack}
           searchPlaceholder="دور باسم المنتج أو الباركود..."
           searchProps={{
             initialQuery: query,
@@ -336,19 +337,7 @@ const Search = () => {
         <div className="pb-10 pt-4 sm:pt-6">
           <div className="w-full px-3 sm:px-4">
             <div className="mx-auto max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
-              {!isMobile && (
-                <div className="mb-5 flex items-center">
-                  <button
-                    onClick={handleBack}
-                    className="rounded-full p-2 transition-colors hover:bg-gray-100"
-                    aria-label="الرجوع"
-                  >
-                    <ArrowRight size={24} className="text-[#005931]" />
-                  </button>
-                  <h1 className="flex-1 text-center text-xl font-black text-slate-950">البحث</h1>
-                  <div className="w-10" />
-                </div>
-              )}
+
 
               {showScanner && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">

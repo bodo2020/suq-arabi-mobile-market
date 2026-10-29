@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Clock3, MapPin, Search, ShoppingCart, Store } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
 import ProductCard from '@/components/ui/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -23,13 +24,14 @@ export default function MarketplaceStore() {
   const marketplaceItems = useMemo(() => items.filter(item => item.commerce_source === 'marketplace'), [items]);
 
 
-  if (storeQuery.isLoading) return <MainLayout><div className="flex min-h-[70vh] items-center justify-center"><BrandLoader size="lg" /></div></MainLayout>;
+  if (storeQuery.isLoading) return <MainLayout><TopNavBar variant="title" hideSearch pageTitle="المتجر" showBackButton onBack={() => navigate('/stores')} /><div className="flex min-h-[70vh] items-center justify-center"><BrandLoader size="lg" /></div></MainLayout>;
   const store = storeQuery.data;
-  if (!store) return <MainLayout><main className="mx-auto max-w-xl px-4 py-16 text-center" dir="rtl"><Store className="mx-auto h-12 w-12 text-primary" /><h1 className="mt-4 text-xl font-black">المتجر غير متاح لعنوانك الحالي</h1><p className="mt-2 text-sm text-gray-500">ممكن يكون خارج نطاق التوصيل أو متوقف مؤقتًا.</p><Button className="mt-5" onClick={() => navigate('/stores')}>عرض المتاجر المتاحة</Button></main></MainLayout>;
+  if (!store) return <MainLayout><TopNavBar variant="title" hideSearch pageTitle="المتجر" showBackButton onBack={() => navigate('/stores')} /><main className="mx-auto max-w-xl px-4 py-16 text-center" dir="rtl"><Store className="mx-auto h-12 w-12 text-primary" /><h1 className="mt-4 text-xl font-black">المتجر غير متاح لعنوانك الحالي</h1><p className="mt-2 text-sm text-gray-500">ممكن يكون خارج نطاق التوصيل أو متوقف مؤقتًا.</p><Button className="mt-5" onClick={() => navigate('/stores')}>عرض المتاجر المتاحة</Button></main></MainLayout>;
 
   return <MainLayout>
+    <TopNavBar variant="title" hideSearch pageTitle={store.merchant_name || 'المتجر'} showBackButton onBack={() => navigate('/stores')} />
     <main className="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:px-4" dir="rtl">
-      <div className="mb-5 flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowRight /></Button><div className="min-w-0 flex-1"><p className="text-xs font-bold text-primary">متجر شريك</p><h1 className="truncate text-2xl font-black">{store.merchant_name}</h1><p className="truncate text-sm text-gray-500">{store.branch_name}</p></div><Button variant="outline" onClick={() => navigate('/cart')}><ShoppingCart size={17} />السلة{marketplaceItems.length ? ` (${marketplaceItems.length})` : ''}</Button></div>
+      <div className="mb-5 flex items-center gap-3"><div className="min-w-0 flex-1"><p className="text-xs font-bold text-primary">متجر شريك</p><h1 className="truncate text-2xl font-black">{store.merchant_name}</h1><p className="truncate text-sm text-gray-500">{store.branch_name}</p></div><Button variant="outline" onClick={() => navigate('/cart')}><ShoppingCart size={17} />السلة{marketplaceItems.length ? ` (${marketplaceItems.length})` : ''}</Button></div>
 
       <section className="mb-6 rounded-3xl border border-green-100 bg-gradient-to-l from-green-50 to-white p-5">
         <div className="grid gap-3 text-sm sm:grid-cols-4"><span className="flex items-center gap-2"><MapPin size={17} className="text-primary" />{store.zone_name}</span><span className="flex items-center gap-2"><Clock3 size={17} className="text-primary" />{store.estimated_time || (store.estimated_delivery_minutes ? `${store.estimated_delivery_minutes} دقيقة` : 'حسب المنطقة')}</span><span>التوصيل: <strong>{store.delivery_fee > 0 ? `${money(store.delivery_fee)} ج.م` : 'مجاني'}</strong></span><span>الحد الأدنى: <strong>{money(store.min_order_amount)} ج.م</strong></span></div>

@@ -143,7 +143,7 @@ const Notifications = () => {
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="الإشعارات" showBackButton />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="الإشعارات" showBackButton />
       <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
         {authLoading ? (
           <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل الإشعارات" /></div>

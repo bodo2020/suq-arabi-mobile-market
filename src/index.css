@@ -63,6 +63,10 @@ html.native-android #root {
 .main-content {
   padding-top: calc(var(--top-nav-height, 68px) + var(--top-nav-gap, 12px));
 }
+/* Standalone success screens must not inherit a previous route's header height. */
+.app-main-layout:not(:has([data-customer-header])) {
+  padding-top: var(--safe-area-top);
+}
 
 @layer base {
   :root {

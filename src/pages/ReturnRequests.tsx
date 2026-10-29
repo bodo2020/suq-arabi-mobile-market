@@ -61,7 +61,7 @@ const ReturnRequests = () => {
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="طلبات الاسترجاع" />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="طلبات الاسترجاع" showBackButton onBack={() => navigate('/account')} />
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         {authLoading ? (

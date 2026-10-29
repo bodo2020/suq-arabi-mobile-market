@@ -1,14 +1,21 @@
 import React from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Home, Grid, User, Heart, ShoppingCart, Package, MapPin, Zap } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowRight, Grid, Heart, Home, Package } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
-import BrandWordmark from '@/components/brand/BrandWordmark';
-import BrandMark from '@/components/brand/BrandMark';
 import CustomerNotificationBell from '@/components/CustomerNotificationBell';
+import HeaderBrand from './header/HeaderBrand';
+import HeaderDelivery from './header/HeaderDelivery';
+import HeaderActions from './header/HeaderActions';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 
+/** A page asks for a *purpose*, not a pile of visual hide/show flags.
+ * Legacy flags remain supported while the rest of the app migrates.
+ */
+export type CustomerHeaderVariant = 'hero' | 'catalog' | 'search' | 'title';
+
 interface TopNavBarProps {
+  variant?: CustomerHeaderVariant;
   searchPlaceholder?: string;
   onSearchFocus?: () => void;
   searchProps?: Partial<React.ComponentProps<typeof SearchBar>>;
@@ -18,7 +25,6 @@ interface TopNavBarProps {
   pageTitle?: string;
   showBackButton?: boolean;
   onBack?: () => void;
-  // Home and main categories share one mobile hero; other routes stay compact.
   homeHero?: boolean;
   addressLabel?: string;
   addressLoading?: boolean;
@@ -34,6 +40,7 @@ const desktopLinks = [
 ];
 
 const TopNavBar: React.FC<TopNavBarProps> = ({
+  variant,
   searchPlaceholder = 'دور على منتج أو قسم…',
   onSearchFocus,
   searchProps = {},
@@ -53,145 +60,136 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const location = useLocation();
   const { getTotalItems } = useCart();
   const { user } = useUser();
-  const cartCount = getTotalItems();
   const headerRef = React.useRef<HTMLElement | null>(null);
-  const searchPage = location.pathname === '/search';
-  const showHomeHero = homeHero && (location.pathname === '/' || location.pathname === '/categories') && !hideSearch;
-  const focus = () => {
-    if (onSearchFocus) onSearchFocus();
-    else if (!searchPage) navigate('/search');
-  };
-  const eta = Number.isFinite(deliveryEstimateMinutes) && Number(deliveryEstimateMinutes) > 0
-    ? Math.round(Number(deliveryEstimateMinutes))
-    : null;
 
+  const pageIsSearch = location.pathname === '/search';
+  const canShowHero = location.pathname === '/' || location.pathname === '/categories';
+  const mode: CustomerHeaderVariant = variant ||
+    (homeHero && canShowHero && !hideSearch ? 'hero' :
+      pageIsSearch ? 'search' : hideSearch ? 'title' : 'catalog');
+  const isHero = mode === 'hero';
+  const isSearch = mode === 'search';
+  const isTitle = mode === 'title';
+  const needsBack = showBackButton || isSearch;
+  const goBack = () => {
+    if (onBack) onBack();
+    else if (window.history.length > 1) navigate(-1);
+    else navigate('/');
+  };
+  const openSearch = () => {
+    if (onSearchFocus) onSearchFocus();
+    else if (!pageIsSearch) navigate('/search');
+  };
+  const openAddress = onAddressClick || (() => navigate('/address-manager'));
+  const showBrandOnCompact = !isSearch && !isTitle;
+  const showSearch = !isTitle && !hideSearch;
+  const signedIn = Boolean(user);
+
+  // Always measure the actual fixed header. Switching search, keyboard,
+  // orientation or delivery address never leaves page content under it.
   React.useLayoutEffect(() => {
     const header = headerRef.current;
     if (!header) return;
-
-    const publishHeight = () => {
+    const update = () => {
       const height = Math.ceil(header.getBoundingClientRect().height);
       document.documentElement.style.setProperty('--top-nav-height', `${height}px`);
     };
-    publishHeight();
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(publishHeight) : null;
+    update();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
     observer?.observe(header);
-    window.addEventListener('resize', publishHeight);
-    window.addEventListener('orientationchange', publishHeight);
+    window.addEventListener('orientationchange', update);
     return () => {
       observer?.disconnect();
-      window.removeEventListener('resize', publishHeight);
-      window.removeEventListener('orientationchange', publishHeight);
+      window.removeEventListener('orientationchange', update);
     };
-  }, [hideLogo, hideSearch, pageTitle, showBackButton, user, showHomeHero]);
+  }, [mode, pageTitle, needsBack]);
+
+  const search = (appearance: 'hero' | 'category' | 'default') => (
+    <SearchBar
+      placeholder={searchPlaceholder}
+      {...searchProps}
+      readOnly={isSearch ? false : true}
+      animatedSuggestions={appearance === 'hero' && !isSearch}
+      appearance={appearance}
+      showBarcode={isSearch || appearance !== 'hero'}
+      onFocus={isSearch ? undefined : openSearch}
+    />
+  );
 
   return (
     <header
       ref={headerRef}
-      className={`native-safe-top fixed inset-x-0 top-0 z-50 text-primary ${
-        showHomeHero
-          ? 'border-b border-[#d6eee0] bg-gradient-to-b from-[#e6f9ee] via-[#f1fbf5] to-white md:bg-white'
-          : 'border-b border-emerald-100 bg-white/95 shadow-sm backdrop-blur-xl'
+      data-customer-header={mode}
+      className={`native-safe-top fixed inset-x-0 top-0 z-50 border-b text-[#005931] ${
+        isHero ? 'border-[#d6eee0] bg-gradient-to-b from-[#e6f9ee] via-[#f1fbf5] to-white md:bg-white' :
+          'border-emerald-100 bg-white'
       }`}
     >
-      {showHomeHero && (
-        <div className="mx-auto max-w-7xl px-4 pb-4 pt-3 sm:px-5 md:hidden">
-          <div className="flex min-h-[70px] items-start justify-between gap-2">
+      {isHero && (
+        <div className="mx-auto max-w-7xl px-3 pb-3 pt-3 sm:px-5 md:hidden">
+          <div className="flex min-h-[66px] items-start justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1 pt-2">
-              {showBackButton && (
-                <button
-                  type="button"
-                  onClick={onBack || (() => navigate(-1))}
-                  aria-label="رجوع"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/90 text-[#005931] shadow-sm active:bg-[#e0f3e9]"
-                >
+              {needsBack && (
+                <button type="button" onClick={goBack} aria-label="رجوع" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 active:bg-emerald-50">
                   <ArrowRight size={19} />
                 </button>
               )}
-              <Link to="/" className="flex min-w-0 items-center gap-1.5" aria-label="سوبر ماركو، الرئيسية">
-                <BrandMark variant="mark" className="h-[34px] w-[26px] sm:h-[39px] sm:w-[29px]" />
-                <BrandWordmark className={showBackButton ? 'brand-name--home brand-name--categories' : 'brand-name--home'} />
-              </Link>
+              <HeaderBrand category={needsBack} />
             </div>
-            <div className={`flex min-w-0 ${showBackButton ? 'max-w-[49%]' : 'max-w-[55%]'} flex-col items-end gap-2 text-left`}>
-              <div className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-2xl border border-[#c4e5d2] bg-white/85 px-3 py-1.5 text-xs font-extrabold text-[#005931] shadow-[0_2px_10px_rgba(0,89,49,.04)]">
-                <Zap size={17} className="shrink-0 text-[#dda500]" fill="currentColor" strokeWidth={1.8} />
-                <span className="truncate">{eta ? `توصيل خلال ${eta} دقيقة` : 'توصيل سريع لحد بابك'}</span>
-              </div>
-              <button
-                type="button"
-                onClick={onAddressClick || (() => navigate('/address-manager'))}
-                className="flex max-w-full items-center gap-1 rounded-lg px-1 py-1 text-xs font-semibold text-[#29624b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
-                title={addressLabel || 'حدد عنوان التوصيل'}
-                aria-label={addressLabel ? `تغيير عنوان التوصيل: ${addressLabel}` : 'تحديد عنوان التوصيل'}
-              >
-                <MapPin size={15} className="shrink-0 text-[#005931]" />
-                <span className="min-w-0 truncate" dir="auto">
-                  {addressLoading ? 'جاري تحميل عنوانك…' : addressLabel || 'حدد عنوان التوصيل'}
-                </span>
-                <ChevronDown size={14} className="shrink-0" />
-              </button>
+            <div className={`min-w-0 ${needsBack ? 'max-w-[50%]' : 'max-w-[55%]'}`}>
+              <HeaderDelivery
+                addressLabel={addressLabel}
+                addressLoading={addressLoading}
+                onAddressClick={openAddress}
+                deliveryEstimateMinutes={deliveryEstimateMinutes}
+                compact={needsBack}
+              />
             </div>
           </div>
-          <div className="mt-3">
-            <SearchBar
-              placeholder={searchPlaceholder}
-              readOnly
-              onFocus={focus}
-              appearance="hero"
-              animatedSuggestions
-              showBarcode={false}
-            />
-          </div>
+          <div className="mt-2">{search('hero')}</div>
         </div>
       )}
 
-      <div className={showHomeHero ? 'hidden md:block' : 'block'}>
-        <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-4">
-          <div className="flex min-h-11 items-center gap-2.5">
-            {showBackButton && (
-              <button
-                onClick={onBack || (() => navigate(-1))}
-                aria-label="رجوع"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-cream active:scale-95"
-              ><ArrowRight size={21} /></button>
+      <div className={isHero ? 'hidden md:block' : 'block'}>
+        <div className="mx-auto max-w-7xl px-3 py-2 sm:px-4">
+          <div className="flex min-h-11 items-center gap-2">
+            {needsBack && (
+              <button type="button" onClick={goBack} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 active:bg-emerald-100">
+                <ArrowRight size={21} />
+              </button>
             )}
-            {!hideLogo && (
-              <Link to="/" aria-label="الرئيسية" className="flex shrink-0 items-center gap-1 rounded-xl active:scale-95">
-                <BrandMark variant="mark" className="h-8 w-6" />
-                <BrandWordmark className="brand-name--header" />
-              </Link>
+            {showBrandOnCompact && (
+              <span className={`shrink-0 ${hideLogo ? 'md:hidden' : ''}`}>
+                <span className="md:hidden"><HeaderBrand compact iconOnly /></span>
+                <span className="hidden md:inline-flex"><HeaderBrand compact iconOnly={hideLogo} /></span>
+              </span>
             )}
-            {pageTitle && hideSearch
-              ? <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold">{pageTitle}</h1>
-              : !hideSearch && (
-                <div className="min-w-0 flex-1 md:max-w-2xl">
-                  <SearchBar
-                    placeholder={searchPlaceholder}
-                    onFocus={focus}
-                    readOnly={!searchPage}
-                    {...searchProps}
-                  />
-                </div>
-              )}
-            {user && <CustomerNotificationBell />}
-            <div className="mr-auto hidden items-center gap-1 md:flex">
-              {!hideCart && (
-                <Link to="/cart" className="relative flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-brand-cream">
-                  <ShoppingCart size={19} />
-                  السلة
-                  {cartCount > 0 && <span className="rounded-full bg-white px-1.5 text-xs text-primary">{cartCount}</span>}
-                </Link>
-              )}
-              <Link to={user ? '/account' : '/phone-login'} className="flex h-11 items-center gap-2 rounded-xl px-3 font-semibold hover:bg-brand-cream">
-                <User size={19} />{user ? 'حسابي' : 'دخول'}
-              </Link>
-            </div>
+            {isTitle ? (
+              <>
+                <h1 className="min-w-0 flex-1 truncate text-center text-base font-extrabold text-slate-900 sm:text-lg">
+                  {pageTitle || 'سوبر ماركو'}
+                </h1>
+                <HeaderBrand compact iconOnly />
+              </>
+            ) : showSearch ? (
+              <div className="min-w-0 flex-1 md:max-w-2xl">
+                {search(isSearch ? 'default' : 'category')}
+              </div>
+            ) : null}
+            {!isSearch && !isTitle && signedIn && <CustomerNotificationBell />}
+            {!isTitle && !isSearch && <HeaderActions cartCount={getTotalItems()} signedIn={signedIn} showCart={!hideCart} />}
           </div>
           <nav className="mt-2 hidden items-center gap-1 border-t border-gray-100 pt-2 md:flex" aria-label="التنقل الرئيسي">
-            {desktopLinks.filter(item => !item.authOnly || user).map(({ to, label, icon: Icon }) => (
-              <Link key={to} to={to} aria-current={location.pathname === to ? 'page' : undefined} className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ${location.pathname === to ? 'bg-brand-cream font-bold' : 'text-gray-600 hover:bg-brand-cream'}`}>
-                <Icon size={17} />{label}
+            {desktopLinks.filter(item => !item.authOnly || signedIn).map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                aria-current={location.pathname === to ? 'page' : undefined}
+                className={`flex min-h-8 items-center gap-2 rounded-xl px-3 text-sm transition-colors ${
+                  location.pathname === to ? 'bg-emerald-50 font-bold text-[#005931]' : 'text-slate-600 hover:bg-emerald-50'
+                }`}
+              >
+                <Icon size={16} aria-hidden="true" />{label}
               </Link>
             ))}
           </nav>

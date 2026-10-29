@@ -91,7 +91,7 @@ const Account = () => {
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="حسابي" />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="حسابي" />
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
         {authLoading ? (
           <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل حسابك" /></div>
