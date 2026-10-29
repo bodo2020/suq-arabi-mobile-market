@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, ChevronDown, CircleHelp, Minus, Plus, ShoppingBag, ExternalLink, Users, Save } from 'lucide-react';
+import { BookOpen, CircleHelp, Minus, Plus, ShoppingBag, ExternalLink, Users, Save, Images } from 'lucide-react';
+import SmartProductChoiceCard from '@/components/smart/SmartProductChoiceCard';
+import SmartAlternativesDialog from '@/components/smart/SmartAlternativesDialog';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -46,6 +48,10 @@ export default function SmartGroupDetail() {
   const [checked,setChecked] = useState<Record<string,boolean>>({});
   const [selected,setSelected] = useState<Record<string,string>>({});
   const [packs,setPacks] = useState<Record<string,number>>({});
+  // Per ingredient/category: any mix of real product SKUs, rather than
+  // forcing four identical snack bags on a four-person watch party.
+  const [mixSelected,setMixSelected] = useState<Record<string,Record<string,number>>>({});
+  const [pickerSlot,setPickerSlot] = useState<string | null>(null);
   const [adding,setAdding] = useState(false);
   const [loadingList,setLoadingList] = useState(false);
   const [saving,setSaving] = useState(false);
@@ -94,20 +100,38 @@ export default function SmartGroupDetail() {
     const defaultIncluded = isPersonalList ? false : !slot.optional || budget === 'large' || (budget === 'medium' && group?.kind === 'occasion' && slot.position === 3);
     const enabled = checked[slot.slot_id] ?? defaultIncluded;
     const calculated = picked ? proposedPackCount(slot,picked,people,group?.base_servings || 4) : null;
+    const mixTarget = Math.max(1,Math.ceil(slot.amount * people / (group?.base_servings || 4)));
+    const mix = mixSelected[slot.slot_id] || {};
+    const mixCount = Object.values(mix).reduce((sum,n) => sum+Math.max(0,n),0);
+    const chosenMix = candidates
+      .filter(product => Number(mix[product.id] || 0)>0)
+      .map(product => ({product,quantity:mix[product.id]}));
     const count = packs[slot.slot_id] ?? calculated ?? 1;
     const weighted = picked ? isWeightedProduct(picked) : false;
-    return { slot, picked, enabled, weighted, count: Math.max(1, Math.min(weighted ? 100000 : 30, count)), uncertain: calculated === null };
-  }), [slots, selected, checked, packs, people, budget, group?.base_servings, group?.kind, isPersonalList]);
+    return { slot, picked, enabled, weighted,
+      count: Math.max(1, Math.min(weighted ? 100000 : 30, count)),
+      uncertain: calculated === null, mixTarget, mixCount, chosenMix };
+  }), [slots, selected, checked, packs, mixSelected, people, budget, group?.base_servings, group?.kind, isPersonalList]);
 
   const summary = useMemo(() => {
     const active = lines.filter(line => line.enabled);
+    if (group?.kind === 'occasion') {
+      return {
+        total: active.reduce((sum,line) => sum+line.chosenMix.reduce(
+          (n,item) => n+smartProductPrice(item.product)*item.quantity,0),0),
+        products: active.reduce((n,line)=>n+line.chosenMix.reduce(
+          (quantity,item)=>quantity+item.quantity,0),0),
+        missing: active.reduce((n,line)=>n+Math.max(0,line.mixTarget-line.mixCount),0),
+        uncertain: 0,
+      };
+    }
     return {
       total: active.reduce((sum,line) => sum + (line.picked ? smartProductPrice(line.picked) * line.count / (line.weighted ? 1000 : 1) : 0),0),
       products: active.filter(line => line.picked).length,
       missing: active.filter(line => !line.picked).length,
       uncertain: active.filter(line => line.uncertain).length,
     };
-  }, [lines]);
+  }, [lines,group?.kind]);
 
   const saveList = async () => {
     if (!isPersonalList || !group) return;
@@ -128,12 +152,29 @@ export default function SmartGroupDetail() {
     } finally {setSaving(false);}
   };
 
+  const changeMix = (slotId: string, product: Product, delta: number, target: number) => {
+    if (!availableSmartProduct(product)) return;
+    setMixSelected(current => {
+      const groupMix = current[slotId] || {};
+      const now = Math.max(0,Number(groupMix[product.id] || 0));
+      const total = Object.values(groupMix).reduce((sum,count)=>sum+Math.max(0,count),0);
+      const maxStock = Math.max(0,Math.floor(Number(product.quantity || 0)));
+      if (delta>0 && (total >= target || now >= maxStock)) return current;
+      const next = {...groupMix,[product.id]:Math.max(0,now+delta)};
+      if (next[product.id]===0) delete next[product.id];
+      return {...current,[slotId]:next};
+    });
+  };
+
   const addGroup = async () => {
     if (!isInitialized) return toast({title:'استنى ثانية لحد ما السلة تجهز'});
     if (adding) return;
     const chosen = lines.filter(line => line.enabled);
     if (!chosen.length) return toast({title:'اختار حاجات تضيفها'});
-    if (chosen.some(line => !line.picked)) return toast({title:'فيه مكونات ناقصة',description:'شيل المكونات اللي مش متوفرة أو استنى لما ترجع.'});
+    if (group?.kind==='occasion' && summary.missing>0)
+      return toast({title:'كمّل تشكيلتك الأول',description:'اختار المنتجات اللي ناقصة في كل مجموعة.'});
+    if (group?.kind!=='occasion' && chosen.some(line => !line.picked))
+      return toast({title:'فيه مكونات ناقصة',description:'شيل المكونات اللي مش متوفرة أو استنى لما ترجع.'});
     setAdding(true);
     try {
       // Refresh stock and prices immediately before committing a multi-product
@@ -142,11 +183,20 @@ export default function SmartGroupDetail() {
       if (fresh.error || !fresh.data) throw new Error('REFRESH_FAILED');
       const cartLines: { product:Product; quantity:number; unit_of_measure?:'weight' }[] = [];
       for (const line of chosen) {
-        const newer = fresh.data.find(slot => slot.slot_id === line.slot.slot_id)
-          ?.products.find(product => product.id === line.picked?.id);
+        const freshSlot = fresh.data.find(slot => slot.slot_id===line.slot.slot_id);
+        if (group?.kind==='occasion') {
+          for (const entry of line.chosenMix) {
+            const newer = freshSlot?.products.find(product => product.id===entry.product.id);
+            if (!newer || !availableSmartProduct(newer) ||
+              smartProductPrice(newer)!==smartProductPrice(entry.product) ||
+              Number(newer.quantity || 0) < entry.quantity) throw new Error('PRODUCT_CHANGED');
+            cartLines.push({product:newer,quantity:entry.quantity});
+          }
+          continue;
+        }
+        const newer = freshSlot?.products.find(product => product.id===line.picked?.id);
         if (!newer || !availableSmartProduct(newer) ||
-          smartProductPrice(newer) !== smartProductPrice(line.picked!))
-          throw new Error('PRODUCT_CHANGED');
+          smartProductPrice(newer)!==smartProductPrice(line.picked!)) throw new Error('PRODUCT_CHANGED');
         cartLines.push({product:newer,quantity:line.count,
           ...(isWeightedProduct(newer) ? {unit_of_measure:'weight' as const} : {})});
       }
@@ -202,7 +252,7 @@ export default function SmartGroupDetail() {
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {[2,4,6,8].map(n => (
-                    <button key={n} type="button" onClick={() => {setPeople(n);setPacks({});}}
+                    <button key={n} type="button" onClick={() => {setPeople(n);setPacks({});setMixSelected({});}}
                       aria-pressed={people === n}
                       className={`min-h-11 rounded-2xl text-sm font-bold ${people === n ? 'bg-[#005931] text-white' : 'bg-[#f6f8f7] text-slate-700'}`}>
                       {n.toLocaleString('ar-EG')}
