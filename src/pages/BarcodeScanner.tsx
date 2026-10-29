@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Scan, RefreshCw } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import TopNavBar from '@/components/layout/TopNavBar';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -156,19 +157,8 @@ const BarcodeScanner = () => {
 
   return (
     <MainLayout>
+      <TopNavBar variant="title" hideSearch pageTitle="ماسح الباركود" showBackButton onBack={handleBack} />
       <div className="py-4">
-        {/* Header with back button */}
-        <div className="flex items-center mb-6">
-          <button
-            onClick={handleBack}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="الرجوع"
-          >
-            <ArrowRight size={24} className="text-primary" />
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center text-primary">ماسح الباركود</h1>
-          <div className="w-10"></div> {/* Spacer for alignment */}
-        </div>
 
         <div className="flex flex-col items-center px-4">
           <Card className="w-full max-w-md shadow-lg border-2 border-primary/10">
