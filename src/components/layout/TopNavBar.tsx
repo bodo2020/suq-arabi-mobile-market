@@ -111,7 +111,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       readOnly={isSearch ? false : true}
       animatedSuggestions={appearance === 'hero' && !isSearch}
       appearance={appearance}
-      showBarcode={isSearch || appearance !== 'hero'}
+      showBarcode={true}
       onFocus={isSearch ? undefined : openSearch}
     />
   );
