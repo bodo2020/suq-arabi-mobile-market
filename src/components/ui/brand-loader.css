@@ -35,8 +35,8 @@
 }
 .brand-loader__particle {
   position: absolute;
-  width: clamp(2px, .35em, 4px);
-  height: clamp(2px, .35em, 4px);
+  width: clamp(1.5px, 6%, 4px);
+  height: clamp(1.5px, 6%, 4px);
   border-radius: 1px;
   background: #005931;
   opacity: 0;
