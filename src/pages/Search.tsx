@@ -1,550 +1,367 @@
-import BrandLoader from '@/components/ui/BrandLoader';
-
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Barcode, Search as SearchIcon, X } from 'lucide-react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowUpLeft, Clock3, Search as SearchIcon, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
 import SEOHead from '@/components/seo/SEOHead';
-import { getProducts, type Product } from '@/lib/supabase';
+import BrandLoader from '@/components/ui/BrandLoader';
+import SearchBarcodeScanner from '@/components/search/SearchBarcodeScanner';
+import { Button } from '@/components/ui/button';
+import { type Product } from '@/lib/supabase';
 import {
   searchBranchProductByBarcodeIncludingUnavailable,
   searchBranchProductsIncludingUnavailable,
 } from '@/lib/searchCatalog';
+import { normalizeArabicSearch, relevanceScore } from '@/lib/arabicSearch';
 import { useToast } from '@/hooks/use-toast';
-import { Html5Qrcode } from 'html5-qrcode';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { getProductListWithVariants } from '@/utils/productUtils';
 
 type AvailabilityFilter = 'all' | 'available' | 'unavailable';
+type SearchDisplayProduct = Product & { displayType?: 'regular' | 'bulk'; variantKey?: string };
+const quickIdeas = ['لبن', 'جبنة', 'مكرونة', 'منظفات', 'شاي', 'سناكس'];
 
-type SearchDisplayProduct = Product & {
-  displayType?: 'regular' | 'bulk';
-  variantKey?: string;
+const available = (p: SearchDisplayProduct) => {
+  const quantity = Math.max(0, Number(p.quantity || 0));
+  return p.displayType === 'bulk'
+    ? Boolean(p.bulk_enabled) && Number(p.bulk_quantity || 0) > 0 && quantity >= Number(p.bulk_quantity)
+    : quantity > 0;
 };
+const currentPrice = (p: SearchDisplayProduct) =>
+  p.displayType === 'bulk' ? Number(p.bulk_price || 0)
+  : Number(p.offer_price || 0) > 0 && Number(p.offer_price) < Number(p.price)
+    ? Number(p.offer_price) : Number(p.price);
+const hasOffer = (p: SearchDisplayProduct) =>
+  p.displayType !== 'bulk' && Number(p.offer_price || 0) > 0 && Number(p.offer_price) < Number(p.price);
 
-const isProductAvailable = (product: SearchDisplayProduct) => {
-  const stock = Math.max(0, Number(product.quantity || 0));
-  if (product.displayType === 'bulk') {
-    const pack = Math.max(0, Number(product.bulk_quantity || 0));
-    return Boolean(product.bulk_enabled) && pack > 0 && stock >= pack;
-  }
-  return stock > 0;
-};
-
-const productDisplayPrice = (product: SearchDisplayProduct) => {
-  if (product.displayType === 'bulk') return Number(product.bulk_price || 0);
-  const offer = Number(product.offer_price || 0);
-  const price = Number(product.price || 0);
-  return offer > 0 && offer < price ? offer : price;
-};
-
-const productHasOffer = (product: SearchDisplayProduct) => {
-  if (product.displayType === 'bulk') return false;
-  const offer = Number(product.offer_price || 0);
-  const price = Number(product.price || 0);
-  return offer > 0 && offer < price;
-};
-
-const Search = () => {
+export default function Search() {
   const [searchParams] = useSearchParams();
-  const query = (searchParams.get('q') || '').trim();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [popularProducts, setPopularProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>('all');
-  const [onlyOffers, setOnlyOffers] = useState(false);
-  const [sortOrder, setSortOrder] = useState<'relevance' | 'low' | 'high'>('relevance');
-  const [searchError, setSearchError] = useState(false);
-  const [retry, setRetry] = useState(0);
-  const [showScanner, setShowScanner] = useState(false);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const query = (searchParams.get('q') || '').trim();
+  const [draft, setDraft] = useState(query);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
+  const [recent, setRecent] = useState<string[]>([]);
+  const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>('all');
+  const [onlyOffers, setOnlyOffers] = useState(false);
+  const [sort, setSort] = useState<'relevance' | 'low' | 'high'>('relevance');
+  const [showScanner, setShowScanner] = useState(false);
+  const [findingBarcode, setFindingBarcode] = useState(false);
+  const lastAutoScan = useRef<string | null>(null);
 
-  const allVariants = useMemo(
-    () => getProductListWithVariants(products) as SearchDisplayProduct[],
-    [products],
-  );
+  const draftKey = normalizeArabicSearch(draft);
+  const queryKey = normalizeArabicSearch(query);
+  const changingQuery = Boolean(draftKey && draftKey !== queryKey);
 
-  const availabilityCounts = useMemo(() => {
-    let available = 0;
-    let unavailable = 0;
-    allVariants.forEach(product => {
-      if (isProductAvailable(product)) available += 1;
-      else unavailable += 1;
-    });
-    return { total: allVariants.length, available, unavailable };
-  }, [allVariants]);
-
-  const visibleProducts = useMemo(() => {
-    const variants = allVariants.filter(product => {
-      const available = isProductAvailable(product);
-      if (availabilityFilter === 'available' && !available) return false;
-      if (availabilityFilter === 'unavailable' && available) return false;
-      if (onlyOffers && !productHasOffer(product)) return false;
-      return true;
-    });
-
-    variants.sort((a, b) => {
-      const aAvailable = isProductAvailable(a);
-      const bAvailable = isProductAvailable(b);
-      if (aAvailable !== bAvailable) return aAvailable ? -1 : 1;
-      if (sortOrder === 'low') return productDisplayPrice(a) - productDisplayPrice(b);
-      if (sortOrder === 'high') return productDisplayPrice(b) - productDisplayPrice(a);
-      return 0;
-    });
-
-    return variants;
-  }, [allVariants, availabilityFilter, onlyOffers, sortOrder]);
+  useEffect(() => { setDraft(query); }, [query]);
 
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('recentSearches') || '[]');
-      if (Array.isArray(saved)) {
-        setRecentSearches(saved.filter(search => typeof search === 'string').slice(0, 6));
-      }
-    } catch {
-      // Browsing still works when local storage is unavailable.
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const fetchPopularProducts = async () => {
-      try {
-        const allProducts = await getProducts();
-        if (!active) return;
-        const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
-        setPopularProducts(shuffled.slice(0, 8));
-      } catch (error) {
-        console.error('Error fetching popular products:', error);
-      }
-    };
-    void fetchPopularProducts();
-    return () => { active = false; };
+      if (Array.isArray(saved)) setRecent(saved.filter(item => typeof item === 'string').slice(0, 7));
+    } catch { /* Search is usable without local storage. */ }
   }, []);
 
   useEffect(() => {
     if (!query) return;
-    setRecentSearches(current => {
-      const updated = [query, ...current.filter(item => item !== query)].slice(0, 6);
-      try { localStorage.setItem('recentSearches', JSON.stringify(updated)); } catch { /* Optional history. */ }
-      return updated;
+    setRecent(current => {
+      const next = [query, ...current.filter(item => normalizeArabicSearch(item) !== queryKey)].slice(0, 7);
+      try { localStorage.setItem('recentSearches', JSON.stringify(next)); } catch { /* optional */ }
+      return next;
     });
-  }, [query]);
-
-  useEffect(() => {
-    return () => {
-      if (!scannerRef.current) return;
-      try {
-        if (scannerRef.current.isScanning) {
-          scannerRef.current.stop().catch(error => console.error('Error stopping scanner:', error));
-        }
-      } finally {
-        scannerRef.current = null;
-      }
-    };
-  }, []);
+  }, [query, queryKey]);
 
   useEffect(() => {
     let active = true;
     setProducts([]);
-    setSearchError(false);
-    setLoading(Boolean(query));
+    setError('');
     setAvailabilityFilter('all');
     setOnlyOffers(false);
-    setSortOrder('relevance');
-
+    setSort('relevance');
+    setLoading(Boolean(query));
     if (query) {
-      searchBranchProductsIncludingUnavailable(query)
-        .then(results => {
-          if (active) setProducts(results);
+      searchBranchProductsIncludingUnavailable(query, 180, true)
+        .then(rows => { if (active) setProducts(rows); })
+        .catch(e => {
+          if (!active) return;
+          console.error('Smart product search failed', e);
+          setError(String(e?.message || e));
         })
-        .catch(error => {
-          console.error('Error searching products:', error);
-          if (active) setSearchError(true);
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
+        .finally(() => { if (active) setLoading(false); });
     }
-
     return () => { active = false; };
   }, [query, retry]);
 
-  const handleBack = () => {
-    if (showScanner) {
-      stopBarcodeScanner();
+  // Debounced, abort-by-generation suggestions while the user is typing.
+  // Avoid opening a full product grid or loading the camera bundle on every key.
+  useEffect(() => {
+    if (!changingQuery || draftKey.length < 2) {
+      setSuggestions([]);
+      setSuggesting(false);
       return;
     }
-    navigate(-1);
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setSuggesting(true);
+      searchBranchProductsIncludingUnavailable(draft, 8, false)
+        .then(rows => { if (active) setSuggestions(rows.slice(0, 5)); })
+        .catch(() => { if (active) setSuggestions([]); })
+        .finally(() => { if (active) setSuggesting(false); });
+    }, 230);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [draft, draftKey, changingQuery]);
+
+  const variants = useMemo(() => getProductListWithVariants(products) as SearchDisplayProduct[], [products]);
+  const counts = useMemo(() => ({
+    all: variants.length,
+    available: variants.filter(available).length,
+    unavailable: variants.filter(p => !available(p)).length,
+  }), [variants]);
+  const visible = useMemo(() => {
+    const rows = variants.filter(p =>
+      (availabilityFilter === 'all' || (availabilityFilter === 'available' ? available(p) : !available(p))) &&
+      (!onlyOffers || hasOffer(p)),
+    );
+    rows.sort((a, b) => {
+      if (sort === 'low') return currentPrice(a) - currentPrice(b);
+      if (sort === 'high') return currentPrice(b) - currentPrice(a);
+      const relevance = relevanceScore(b, query) - relevanceScore(a, query);
+      if (relevance) return relevance;
+      return Number(available(b)) - Number(available(a));
+    });
+    return rows;
+  }, [variants, availabilityFilter, onlyOffers, sort, query]);
+
+  const submitTerm = (term: string) => {
+    const value = term.trim();
+    if (!value) return;
+    setDraft(value);
+    navigate('/search?q=' + encodeURIComponent(value));
+  };
+  const goBack = () => {
+    if (showScanner) { setShowScanner(false); return; }
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/');
   };
 
-  const handleSearchClick = (search: string) => {
-    navigate(`/search?q=${encodeURIComponent(search)}`);
-  };
-
-  const handleClearHistory = () => {
-    setRecentSearches([]);
-    try { localStorage.removeItem('recentSearches'); } catch { /* Optional history. */ }
-  };
-
-  const handleBarcodeDetected = async (barcode: string) => {
-    try {
-      const product = await searchBranchProductByBarcodeIncludingUnavailable(barcode);
-
-      if (scannerRef.current?.isScanning) await scannerRef.current.stop();
-      setShowScanner(false);
-      scannerRef.current = null;
-
-      if (product) {
-        toast({
-          title: Number(product.quantity || 0) > 0 ? 'تم العثور على المنتج' : 'المنتج موجود لكنه غير متوفر حاليًا',
-          description: product.name,
-        });
-        navigate(`/product/${product.id}`);
-        return;
-      }
-
-      toast({
-        title: 'المنتج غير موجود',
-        description: 'لم نتمكن من العثور على منتج بهذا الباركود',
-        variant: 'destructive',
-      });
-    } catch (error) {
-      console.error('Error processing barcode:', error);
-      if (scannerRef.current?.isScanning) {
-        try { await scannerRef.current.stop(); } catch (stopError) { console.error('Error stopping scanner:', stopError); }
-      }
-      setShowScanner(false);
-      scannerRef.current = null;
-      toast({
-        title: 'خطأ في البحث',
-        description: 'حدث خطأ أثناء البحث عن المنتج',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const startBarcodeScanner = () => {
+  // Header barcode tap from home, categories or catalog opens the *same*
+  // in-search scanner rather than a differently styled legacy scanner page.
+  useEffect(() => {
+    const state = location.state as { openScanner?: boolean } | null;
+    if (!state?.openScanner || lastAutoScan.current === location.key) return;
+    lastAutoScan.current = location.key;
     setShowScanner(true);
+    navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [location.key, location.pathname, location.search, location.state, navigate]);
 
-    window.setTimeout(() => {
-      try {
-        const barcodeScanner = new Html5Qrcode('barcode-reader');
-        scannerRef.current = barcodeScanner;
-
-        barcodeScanner.start(
-          { facingMode: 'environment' },
-          {
-            fps: 12,
-            qrbox: { width: 280, height: 120 },
-            aspectRatio: 1.777778,
-          },
-          decodedText => { void handleBarcodeDetected(decodedText); },
-          () => undefined,
-        ).catch(error => {
-          console.error('Failed to start scanner:', error);
-          toast({
-            title: 'فشل تشغيل ماسح الباركود',
-            description: 'تأكد من السماح للتطبيق باستخدام الكاميرا',
-            variant: 'destructive',
-          });
-          setShowScanner(false);
-          scannerRef.current = null;
-        });
-      } catch (error) {
-        console.error('Error creating scanner instance:', error);
-        toast({
-          title: 'فشل تشغيل ماسح الباركود',
-          description: 'حدث خطأ أثناء تهيئة الكاميرا',
-          variant: 'destructive',
-        });
-        setShowScanner(false);
-        scannerRef.current = null;
-      }
-    }, 120);
-  };
-
-  const stopBarcodeScanner = () => {
-    const scanner = scannerRef.current;
-    if (!scanner) {
-      setShowScanner(false);
-      return;
-    }
-
+  const onBarcode = async (barcode: string) => {
+    setFindingBarcode(true);
     try {
-      if (scanner.isScanning) {
-        scanner.stop().catch(error => console.error('Error stopping scanner:', error)).finally(() => {
-          setShowScanner(false);
-          scannerRef.current = null;
-        });
+      const found = await searchBranchProductByBarcodeIncludingUnavailable(barcode);
+      if (found) {
+        setShowScanner(false);
+        navigate('/product/' + found.id);
       } else {
         setShowScanner(false);
-        scannerRef.current = null;
+        toast({ title: 'المنتج مش موجود', description: 'الباركود ده مش مسجل في كتالوج الفرع.' });
       }
-    } catch (error) {
-      console.error('Error during scanner cleanup:', error);
+    } catch (e) {
+      console.error('Barcode search failed', e);
       setShowScanner(false);
-      scannerRef.current = null;
+      toast({ title: 'تعذر البحث بالباركود', description: 'راجع الاتصال أو عنوان التوصيل وحاول تاني.', variant: 'destructive' });
+    } finally {
+      setFindingBarcode(false);
     }
   };
-
-  const availabilityButtonClass = (value: AvailabilityFilter) =>
-    `min-h-10 rounded-full border px-3.5 text-xs font-bold transition sm:text-sm ${
-      availabilityFilter === value
-        ? 'border-[#005931] bg-[#005931] text-white shadow-sm'
-        : 'border-emerald-100 bg-white text-slate-700 hover:bg-emerald-50'
-    }`;
+  const clearHistory = () => {
+    setRecent([]);
+    try { localStorage.removeItem('recentSearches'); } catch { /* optional */ }
+  };
 
   return (
     <MainLayout>
-      {query && (
-        <SEOHead
-          title={`البحث عن "${query}" - سوبر ماركو`}
-          description={`نتائج البحث عن ${query} في سوبر ماركو`}
-          type="search"
+      {query && <SEOHead title={'البحث عن ' + query + ' - سوبر ماركو'} description={'نتائج البحث عن ' + query} type="search" />}
+      {query && products.length > 0 && <ProductListStructuredData products={products} listName={'البحث عن ' + query} />}
+      <TopNavBar
+        variant="search"
+        showBackButton
+        onBack={goBack}
+        searchPlaceholder="ابحث عن منتجات أو امسح الباركود"
+        searchProps={{
+          initialQuery: query,
+          onQueryChange: setDraft,
+          onBarcodeClick: () => setShowScanner(true),
+        }}
+        hideLogo
+      />
+      {showScanner && (
+        <SearchBarcodeScanner
+          onDetected={onBarcode}
+          onClose={() => setShowScanner(false)}
+          finding={findingBarcode}
         />
       )}
 
-      {products.length > 0 && query && (
-        <ProductListStructuredData
-          products={products}
-          listName={`نتائج البحث عن "${query}"`}
-        />
-      )}
-
-      <div className="py-0">
-        <TopNavBar
-          variant="search"
-          showBackButton
-          onBack={handleBack}
-          searchPlaceholder="دور باسم المنتج أو الباركود..."
-          searchProps={{
-            initialQuery: query,
-            onBarcodeClick: startBarcodeScanner,
-            readOnly: false,
-          }}
-          hideLogo
-          pageTitle="البحث"
-        />
-
-        <div className="pb-10 pt-4 sm:pt-6">
-          <div className="w-full px-3 sm:px-4">
-            <div className="mx-auto max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
-
-
-              {showScanner && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
-                  <Card className="w-full max-w-md overflow-hidden border-0 shadow-2xl">
-                    <CardContent className="p-0">
-                      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-[#005931]">
-                            <Barcode size={24} strokeWidth={2.3} />
-                          </div>
-                          <div>
-                            <h3 className="font-black text-slate-950">امسح باركود المنتج</h3>
-                            <p className="text-xs text-slate-500">وجّه الخطوط داخل الإطار</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={stopBarcodeScanner}
-                          className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-500"
-                          aria-label="إغلاق ماسح الباركود"
-                        >
-                          <X size={20} />
-                        </button>
-                      </div>
-
-                      <div className="p-4">
-                        <div className="relative overflow-hidden rounded-2xl bg-black">
-                          <div id="barcode-reader" className="min-h-[260px] w-full overflow-hidden" />
-                          <div className="pointer-events-none absolute inset-x-8 top-1/2 h-[2px] -translate-y-1/2 bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.95)]" />
-                          <div className="pointer-events-none absolute inset-5 rounded-xl border-2 border-white/65" />
-                        </div>
-                        <p className="mt-3 text-center text-xs leading-5 text-slate-500">
-                          قرّب الباركود التقليدي من الكاميرا وخليه أفقي وواضح.
-                        </p>
-                        <Button
-                          type="button"
-                          onClick={stopBarcodeScanner}
-                          variant="outline"
-                          className="mt-4 min-h-11 w-full border-slate-200"
-                        >
-                          إلغاء
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+      <main className="mx-auto w-full max-w-7xl px-3 pb-10 pt-3 sm:px-4 sm:pt-5">
+        {changingQuery ? (
+          <div className="overflow-hidden rounded-[22px] border border-emerald-100 bg-white shadow-[0_8px_25px_rgba(0,65,35,.05)]">
+            <button type="button" onClick={() => submitTerm(draft)} className="flex min-h-14 w-full items-center gap-3 border-b border-slate-100 px-4 text-right hover:bg-emerald-50">
+              <SearchIcon size={18} className="shrink-0 text-[#005931]" />
+              <span className="min-w-0 flex-1 truncate font-bold text-slate-900">البحث عن «{draft}»</span>
+              <ArrowUpLeft size={17} className="text-slate-400" />
+            </button>
+            <div className="px-4 py-2">
+              <p className="mb-2 text-xs font-bold text-slate-500">اقتراحات من منتجات فرعك</p>
+              {suggesting && suggestions.length === 0 && (
+                <div className="flex min-h-14 items-center gap-2 text-xs text-slate-500"><BrandLoader size="sm" /> جاري البحث…</div>
               )}
-
-              {!query && (
-                <section className="mb-6 rounded-[26px] border border-emerald-100 bg-gradient-to-l from-brand-ivory via-white to-[#edf8f2] p-5 shadow-sm sm:p-6">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-green text-brand-yellow">
-                      <SearchIcon size={22} />
-                    </div>
-                    <div>
-                      <h1 className="text-lg font-black text-slate-950 sm:text-xl">هتلاقي اللي بتدور عليه أسرع</h1>
-                      <p className="mt-1 text-sm leading-6 text-slate-600">ابحث بالاسم أو امسح الباركود، والمنتج هيظهر حتى لو غير متوفر حاليًا.</p>
-                    </div>
-                  </div>
-                </section>
+              {!suggesting && suggestions.length === 0 && (
+                <p className="py-4 text-sm text-slate-500">اضغط بحث عشان نجرب كمان التصحيح والمرادفات.</p>
               )}
-
-              {!query && recentSearches.length > 0 && (
-                <section className="mb-7">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="text-base font-black text-slate-950 sm:text-lg">آخر عمليات البحث</h2>
-                    <button
-                      type="button"
-                      onClick={handleClearHistory}
-                      className="rounded-full px-3 py-1.5 text-xs font-bold text-[#005931] hover:bg-emerald-50"
-                    >
-                      مسح الكل
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {recentSearches.map(search => (
-                      <button
-                        key={search}
-                        type="button"
-                        onClick={() => handleSearchClick(search)}
-                        className="flex min-h-10 items-center gap-1.5 rounded-full border border-emerald-100 bg-white px-3.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-emerald-50"
-                      >
-                        <SearchIcon size={14} className="text-[#005931]" />
-                        {search}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {!query && popularProducts.length > 0 && (
-                <section className="mb-7">
-                  <div className="mb-3">
-                    <h2 className="text-base font-black text-slate-950 sm:text-lg">منتجات ممكن تحتاجها</h2>
-                    <p className="mt-1 text-xs text-slate-500">اختيارات متاحة حاليًا في فرعك.</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {getProductListWithVariants(popularProducts).map(product => (
-                      <ProductCard key={product.variantKey} product={product} />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {query && (
-                <>
-                  <section className="mb-4 rounded-[22px] border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-[#005931]">نتائج البحث</p>
-                        <h2 className="mt-1 break-words text-lg font-black text-slate-950 sm:text-xl">«{query}»</h2>
-                      </div>
-                      {!loading && !searchError && (
-                        <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-center">
-                          <strong className="block text-lg font-black text-[#005931]">{availabilityCounts.total}</strong>
-                          <span className="text-[10px] font-bold text-slate-500">نتيجة</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!loading && !searchError && availabilityCounts.total > 0 && (
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:flex sm:flex-wrap sm:text-right">
-                        <div className="rounded-xl bg-emerald-50 px-3 py-2">
-                          <span className="text-xs text-slate-500">متوفر</span>
-                          <strong className="mr-1 text-sm font-black text-[#005931]">{availabilityCounts.available}</strong>
-                        </div>
-                        <div className="rounded-xl bg-slate-100 px-3 py-2">
-                          <span className="text-xs text-slate-500">غير متوفر</span>
-                          <strong className="mr-1 text-sm font-black text-slate-700">{availabilityCounts.unavailable}</strong>
-                        </div>
-                      </div>
-                    )}
-                  </section>
-
-                  <section className="mb-5 rounded-[22px] border border-slate-100 bg-white p-3 shadow-sm sm:p-4">
-                    <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1" dir="rtl">
-                      <button type="button" onClick={() => setAvailabilityFilter('all')} className={availabilityButtonClass('all')}>الكل</button>
-                      <button type="button" onClick={() => setAvailabilityFilter('available')} className={availabilityButtonClass('available')}>متوفر الآن</button>
-                      <button type="button" onClick={() => setAvailabilityFilter('unavailable')} className={availabilityButtonClass('unavailable')}>غير متوفر</button>
-                      <button
-                        type="button"
-                        onClick={() => setOnlyOffers(value => !value)}
-                        aria-pressed={onlyOffers}
-                        className={`min-h-10 shrink-0 rounded-full border px-3.5 text-xs font-bold transition sm:text-sm ${onlyOffers ? 'border-brand-yellow bg-brand-cream text-brand-green' : 'border-slate-200 bg-white text-slate-700'}`}
-                      >
-                        العروض
-                      </button>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                      <p role="status" className="text-xs font-semibold text-slate-500">{visibleProducts.length} نتيجة مع الفلاتر الحالية</p>
-                      <select
-                        aria-label="ترتيب نتائج البحث"
-                        value={sortOrder}
-                        onChange={event => setSortOrder(event.target.value as 'relevance' | 'low' | 'high')}
-                        className="min-h-10 max-w-[170px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#005931]"
-                      >
-                        <option value="relevance">الأكثر صلة</option>
-                        <option value="low">السعر: الأقل</option>
-                        <option value="high">السعر: الأعلى</option>
-                      </select>
-                    </div>
-                  </section>
-
-                  {searchError ? (
-                    <div role="alert" className="rounded-[24px] border border-red-100 bg-white p-8 text-center shadow-sm">
-                      <h3 className="font-black text-slate-900">تعذّر تحميل النتائج</h3>
-                      <p className="my-3 text-sm text-slate-500">راجع اتصالك وحاول مرة تانية.</p>
-                      <Button onClick={() => setRetry(value => value + 1)}>إعادة المحاولة</Button>
-                    </div>
-                  ) : loading ? (
-                    <div className="flex h-44 items-center justify-center rounded-[24px] bg-white">
-                      <BrandLoader size="md" className="" />
-                    </div>
-                  ) : visibleProducts.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                      {visibleProducts.map(product => (
-                        <ProductCard key={product.variantKey || `${product.displayType || 'regular'}:${product.id}`} product={product} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-white px-5 py-12 text-center">
-                      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-[#005931]">
-                        <SearchIcon size={27} />
-                      </div>
-                      <h3 className="text-lg font-black text-slate-900">مفيش نتائج بالفلاتر دي</h3>
-                      <p className="mt-1 max-w-sm text-sm leading-6 text-slate-500">جرّب تعرض الكل أو امسح فلتر العروض. المنتجات غير المتوفرة موجودة في البحث ومعلّمة بوضوح.</p>
-                      {(availabilityFilter !== 'all' || onlyOffers) && (
-                        <Button
-                          variant="outline"
-                          className="mt-4 min-h-11"
-                          onClick={() => { setAvailabilityFilter('all'); setOnlyOffers(false); }}
-                        >
-                          مسح الفلاتر
-                        </Button>
-                      )}
-                      <Button variant="ghost" className="mt-2 min-h-11 text-[#005931]" onClick={() => navigate('/categories')}>تصفح الأقسام</Button>
-                    </div>
-                  )}
-                </>
-              )}
+              {suggestions.map(product => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => navigate('/product/' + product.id)}
+                  className="flex min-h-16 w-full items-center gap-3 border-b border-slate-50 py-2 text-right last:border-b-0 hover:bg-emerald-50"
+                >
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-50">
+                    {product.image_urls?.[0]
+                      ? <img src={product.image_urls[0]} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain" />
+                      : <SearchIcon size={21} className="text-slate-300" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-slate-900">{product.name}</span>
+                    <span className="block text-xs text-slate-500">{Number(product.quantity || 0) > 0 ? 'متوفر في فرعك' : 'غير متوفر حاليًا'}</span>
+                  </span>
+                  <ArrowUpLeft size={16} className="text-slate-400" />
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-      </div>
+        ) : !query ? (
+          <div className="space-y-6 pt-2">
+            {recent.length > 0 && (
+              <section>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h1 className="flex items-center gap-2 text-base font-black text-slate-900"><Clock3 size={18} className="text-[#005931]" /> آخر عمليات البحث</h1>
+                  <button type="button" onClick={clearHistory} className="flex min-h-9 items-center gap-1 text-xs font-bold text-slate-500 hover:text-rose-600">
+                    <X size={14} /> مسح الكل
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {recent.map(item => (
+                    <button key={item} type="button" onClick={() => submitTerm(item)} className="min-h-10 rounded-full border border-emerald-100 bg-white px-4 text-sm text-slate-700 hover:bg-emerald-50">
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+            <section>
+              <h2 className="mb-3 flex items-center gap-2 text-base font-black text-slate-900">
+                <Sparkles size={18} className="text-[#005931]" /> جرّب تدور على
+              </h2>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {quickIdeas.map(item => (
+                  <button
+                    type="button"
+                    key={item}
+                    onClick={() => submitTerm(item)}
+                    className="flex min-h-12 items-center justify-between gap-2 rounded-2xl border border-emerald-100 bg-white px-4 text-right text-sm font-bold text-slate-800 hover:border-[#005931] hover:bg-emerald-50"
+                  >
+                    {item}<SearchIcon size={16} className="shrink-0 text-[#005931]" />
+                  </button>
+                ))}
+              </div>
+            </section>
+            <p className="text-center text-xs text-slate-500">بنراعي اختلاف كتابة العربي، وتقدر تلاقي المنتج بالباركود كمان.</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-[#005931]">نتائج البحث عن</p>
+                <h1 className="truncate text-lg font-black text-slate-900">«{query}»</h1>
+              </div>
+              {!loading && !error && <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-[#005931]">{counts.all} نتيجة</span>}
+            </div>
+            <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1" dir="rtl">
+              {([
+                ['all','الكل'],
+                ['available','متوفر'],
+                ['unavailable','غير متوفر'],
+              ] as const).map(([key,label]) => (
+                <button type="button" key={key} onClick={() => setAvailabilityFilter(key)}
+                  aria-pressed={availabilityFilter === key}
+                  className={'min-h-10 shrink-0 rounded-full border px-3.5 text-xs font-bold transition-colors ' +
+                    (availabilityFilter === key ? 'border-[#005931] bg-[#005931] text-white' : 'border-slate-200 bg-white text-slate-700')}>
+                  {label}
+                </button>
+              ))}
+              <button type="button" aria-pressed={onlyOffers} onClick={() => setOnlyOffers(v => !v)}
+                className={'min-h-10 shrink-0 rounded-full border px-3.5 text-xs font-bold transition-colors ' +
+                  (onlyOffers ? 'border-[#ffc120] bg-yellow-50 text-[#005931]' : 'border-slate-200 bg-white text-slate-700')}>العروض</button>
+              <span className="mx-1 h-6 w-px shrink-0 bg-slate-200" />
+              <SlidersHorizontal size={16} className="shrink-0 text-slate-400" aria-hidden="true" />
+              <select
+                aria-label="ترتيب النتائج"
+                value={sort}
+                onChange={event => setSort(event.target.value as 'relevance' | 'low' | 'high')}
+                className="min-h-10 min-w-[110px] shrink-0 rounded-xl border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700"
+              >
+                <option value="relevance">الأكثر صلة</option>
+                <option value="low">الأقل سعرًا</option>
+                <option value="high">الأعلى سعرًا</option>
+              </select>
+            </div>
+            {error ? (
+              <div role="alert" className="rounded-[22px] bg-white px-5 py-9 text-center">
+                <p className="font-bold text-slate-900">{error.includes('DELIVERY_ADDRESS_REQUIRED') ? 'حدد عنوان التوصيل الأول' : 'تعذر تحميل نتائج البحث'}</p>
+                <p className="mt-1 text-sm text-slate-500">راجع العنوان أو اتصال الإنترنت وحاول مرة تانية.</p>
+                <Button className="mt-4" onClick={() => error.includes('DELIVERY_ADDRESS_REQUIRED') ? navigate('/address-manager') : setRetry(v => v + 1)}>
+                  {error.includes('DELIVERY_ADDRESS_REQUIRED') ? 'تحديد العنوان' : 'إعادة المحاولة'}
+                </Button>
+              </div>
+            ) : loading ? (
+              <div className="flex min-h-40 items-center justify-center gap-2 rounded-[22px] bg-white" role="status">
+                <BrandLoader size="md" /><span className="text-sm text-slate-500">بنبحث في منتجات فرعك…</span>
+              </div>
+            ) : visible.length ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {visible.map(product => (
+                  <ProductCard
+                    key={product.variantKey || (product.displayType || 'regular') + ':' + product.id}
+                    product={product}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-[22px] bg-white px-5 py-10 text-center">
+                <SearchIcon size={30} className="mx-auto mb-3 text-[#005931]" />
+                <h2 className="font-black text-slate-900">ملقيناش منتجات مطابقة</h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  {counts.all ? 'جرّب تشيل الفلاتر عشان تشوف باقي النتائج.' : 'جرّب كلمة أبسط أو امسح باركود المنتج.'}
+                </p>
+                {counts.all > 0 && (
+                  <Button variant="outline" className="mt-4" onClick={() => {setAvailabilityFilter('all'); setOnlyOffers(false);}}>عرض الكل</Button>
+                )}
+                {!counts.all && <Button variant="ghost" className="mt-3 text-[#005931]" onClick={() => navigate('/categories')}>تصفح الأقسام</Button>}
+              </div>
+            )}
+          </>
+        )}
+      </main>
     </MainLayout>
   );
-};
-
-export default Search;
+}
