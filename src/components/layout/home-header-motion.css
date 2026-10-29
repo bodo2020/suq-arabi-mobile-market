@@ -1,5 +1,5 @@
-/* Homepage only. The approved wordmark remains the untouched
- * BrandWordmark/HeaderBrand; the collapse only changes header layout. */
+/* Mobile home + categories: original BrandWordmark lettering is untouched.
+ * Compact search first reveals the same wordmark, then typewriter prompts. */
 @media (max-width: 767px) {
   .home-top-nav {
     transition: background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
@@ -21,4 +21,29 @@
 @media (prefers-reduced-motion: reduce) {
   .home-top-nav { transition: none !important; }
   .home-header-expanded, .home-header-compact { animation: none !important; }
+}
+
+/* Brand letters stay exactly as authored in BrandWordmark; only the whole
+ * existing text component moves in, never clipped character-by-character. */
+.brand-name.brand-name--compact-search {
+  flex: 0 1 auto;
+  min-width: 0;
+  width: auto;
+  padding: 0;
+  border-radius: 0;
+  font-family: 'Thmanyah', 'Cairo', sans-serif;
+  font-size: clamp(.7rem, 3.1vw, .86rem);
+  line-height: 1.45;
+  font-weight: 900;
+  background: transparent;
+}
+.home-compact-brand-prompt .brand-name--compact-search {
+  animation: home-compact-wordmark-enter 650ms cubic-bezier(.18,.8,.27,1) both;
+}
+@keyframes home-compact-wordmark-enter {
+  from { opacity: 0; transform: translate3d(9px, 0, 0) scale(.96); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-compact-brand-prompt .brand-name--compact-search { animation: none !important; }
 }

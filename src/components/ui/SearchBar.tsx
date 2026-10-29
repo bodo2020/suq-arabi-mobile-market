@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ScanBarcode, Search, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import BrandWordmark from '@/components/brand/BrandWordmark';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -38,6 +39,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   const [query, setQuery] = useState(initialQuery);
   const [typedSuggestion, setTypedSuggestion] = useState('');
+  const [showCompactBrand, setShowCompactBrand] = useState(appearance === 'compact');
   const navigate = useNavigate();
   const location = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -53,13 +55,18 @@ const SearchBar: React.FC<SearchBarProps> = ({
   useEffect(() => {
     if (!animatedSuggestions || !readOnly) {
       setTypedSuggestion('');
+      setShowCompactBrand(false);
       return;
     }
     if (typeof window === 'undefined') return;
+    const isCompact = appearance === 'compact';
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShowCompactBrand(false);
       setTypedSuggestion(homeSuggestions[0]);
       return;
     }
+    setTypedSuggestion('');
+    setShowCompactBrand(isCompact);
 
     let phrase = 0;
     let length = 0;
@@ -88,9 +95,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
       }
     };
 
-    timer = setTimeout(tick, 500);
+    // Show the actual brand lettering first in compact mode, then the same
+    // typewriter suggestions as the expanded home search. No input mutation.
+    timer = setTimeout(() => {
+      setShowCompactBrand(false);
+      tick();
+    }, isCompact ? 2400 : 500);
     return () => clearTimeout(timer);
-  }, [animatedSuggestions, readOnly]);
+  }, [animatedSuggestions, readOnly, appearance]);
 
   // Focus the real editable search on intentional navigation from a header.
   // Deep links with search results don't unexpectedly pop the keyboard.
@@ -176,10 +188,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
             <span
               aria-hidden="true"
               dir="rtl"
-              className="pointer-events-none absolute inset-y-0 left-3 right-12 flex items-center overflow-hidden whitespace-nowrap text-sm font-medium text-slate-500 sm:text-base"
+              className={`pointer-events-none absolute inset-y-0 left-3 flex items-center overflow-hidden whitespace-nowrap font-medium text-slate-500 ${compact ? 'right-9 text-[13px]' : 'right-12 text-sm sm:text-base'}`}
             >
-              <span className="min-w-0 truncate">{typedSuggestion || placeholder}</span>
-              <span className="mr-1 inline-block h-[18px] w-[2px] shrink-0 animate-pulse rounded-full bg-[#005931] motion-reduce:animate-none" />
+              {compact && showCompactBrand ? (
+                <span className="home-compact-brand-prompt inline-flex min-w-0 max-w-full items-center gap-1.5 overflow-hidden whitespace-nowrap">
+                  <span className="shrink-0">ابحث في</span>
+                  <BrandWordmark className="brand-name--home brand-name--compact-search" />
+                </span>
+              ) : (
+                <>
+                  <span className="min-w-0 truncate">{typedSuggestion || placeholder}</span>
+                  <span className="mr-1 inline-block h-[18px] w-[2px] shrink-0 animate-pulse rounded-full bg-[#005931] motion-reduce:animate-none" />
+                </>
+              )}
             </span>
           )}
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Grid, Heart, Home, MapPin, Package } from 'lucide-react';
+import { ArrowRight, Grid, Heart, Home, Package } from 'lucide-react';
 import './home-header-motion.css';
 import SearchBar from '@/components/ui/SearchBar';
 import CustomerNotificationBell from '@/components/CustomerNotificationBell';
@@ -75,9 +75,9 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const isSearch = mode === 'search';
   const isTitle = mode === 'title';
   const needsBack = showBackButton || isSearch;
-  // Only the mobile homepage collapses. Category, search and checkout
-  // headers retain their existing dimensions and behavior.
-  const collapsibleHome = isHero && location.pathname === '/' && !needsBack;
+  // Only the mobile home and categories hero headers collapse; all other
+  // routes keep the original header. Categories retains its back action.
+  const collapsibleHome = isHero && (location.pathname === '/' || location.pathname === '/categories');
 
   React.useEffect(() => {
     if (!collapsibleHome) return;
@@ -152,10 +152,10 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
 
   const search = (appearance: 'hero' | 'category' | 'compact' | 'default') => (
     <SearchBar
-      placeholder={appearance === 'compact' ? 'ابحث عن منتج…' : searchPlaceholder}
+      placeholder={appearance === 'compact' ? 'ابحث في سوبر ماركو…' : searchPlaceholder}
       {...searchProps}
       readOnly={isSearch ? false : true}
-      animatedSuggestions={appearance === 'hero' && !homeCollapsed && !isSearch}
+      animatedSuggestions={(appearance === 'hero' || appearance === 'compact') && !isSearch}
       appearance={appearance}
       showBarcode={true}
       onFocus={isSearch ? undefined : openSearch}
@@ -203,19 +203,17 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       {collapsibleHome && homeCollapsed && (
         <div className="home-header-compact mx-auto max-w-7xl px-3 py-2 sm:px-5 md:hidden">
           <div className="flex h-[52px] min-w-0 items-center gap-1.5 rounded-full border border-[#b8d8c8] bg-white px-1.5 shadow-[0_4px_14px_rgba(0,89,49,.08)]">
+            {needsBack && (
+              <button
+                type="button"
+                onClick={goBack}
+                aria-label="رجوع"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#005931] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
+              >
+                <ArrowRight size={19} aria-hidden="true" />
+              </button>
+            )}
             <div className="min-w-0 flex-1">{search('compact')}</div>
-            <span className="h-6 w-px shrink-0 bg-[#dbe6df]" aria-hidden="true" />
-            <button
-              type="button"
-              onClick={openAddress}
-              aria-label={addressLabel ? `تغيير عنوان التوصيل: ${addressLabel}` : 'تحديد عنوان التوصيل'}
-              title={addressLabel || 'حدد عنوان التوصيل'}
-              className="inline-flex h-11 min-w-0 max-w-[38%] shrink-0 items-center gap-1 rounded-full px-1.5 text-[#005931] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
-            >
-              <MapPin size={17} className="shrink-0" aria-hidden="true" />
-              <span dir="auto" className="min-w-0 truncate text-[12px] font-bold">{addressLoading ? 'جاري التحميل' : addressLabel || 'التوصيل'}</span>
-              <ChevronDown size={13} className="shrink-0 text-[#618272]" aria-hidden="true" />
-            </button>
           </div>
         </div>
       )}
