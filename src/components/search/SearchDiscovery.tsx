@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Sparkles } from 'lucide-react';
+import { ChevronLeft, Sparkles, Trash2 } from 'lucide-react';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import { useBranch } from '@/contexts/BranchContext';
@@ -13,6 +13,7 @@ import { getBranchCatalog, type Product } from '@/lib/supabase';
 type SearchDiscoveryProps = {
   recent: string[];
   onSearch: (value: string) => void;
+  onClearRecent: () => void;
 };
 
 type ShoppingIdea = {
@@ -66,7 +67,7 @@ function ProductRail({ title, products, href }: { title: string; products: Produ
   );
 }
 
-export default function SearchDiscovery({ recent, onSearch }: SearchDiscoveryProps) {
+export default function SearchDiscovery({ recent, onSearch, onClearRecent }: SearchDiscoveryProps) {
   const { branch, branchLoading } = useBranch();
   const { user } = useUser();
   const navigate = useNavigate();
@@ -147,7 +148,12 @@ export default function SearchDiscovery({ recent, onSearch }: SearchDiscoveryPro
     <div className="space-y-6 pt-1">
       {recent.length > 0 && (
         <section>
-          <h2 className="mb-3 text-base font-black text-slate-950">آخر بحث</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-base font-black text-slate-950">آخر بحث</h2>
+            <button type="button" onClick={onClearRecent} aria-label="مسح سجل البحث" className="flex min-h-9 items-center gap-1.5 rounded-full px-2 text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600">
+              <Trash2 size={14} aria-hidden="true" /> مسح
+            </button>
+          </div>
           <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1" dir="rtl">
             {recent.slice(0, 6).map(term => (
               <button
