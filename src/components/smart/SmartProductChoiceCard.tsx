@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Check, Minus, Plus, ShoppingBag } from 'lucide-react';
 import type { Product } from '@/lib/supabase';
 import { moneyEGP, smartProductPrice } from '@/lib/smartShopping';
@@ -17,6 +18,7 @@ export default function SmartProductChoiceCard({
   product, selected = false, quantity = 0, onSelect, onChangeQuantity,
   maxQuantity = 99,
 }: Props) {
+  const [imageFailed,setImageFailed] = useState(false);
   const stock = Math.max(0, Math.floor(Number(product.quantity || 0)));
   const max = Math.min(stock, maxQuantity);
   const unavailable = max === 0;
@@ -31,13 +33,14 @@ export default function SmartProductChoiceCard({
           <Check size={15} strokeWidth={3} />
         </span>
       )}
-      {product.image_urls?.[0] ? (
+      {product.image_urls?.[0] && !imageFailed ? (
         <div className="mb-2 flex h-[100px] items-center justify-center rounded-xl bg-[#f6f8f7] sm:h-[120px]">
           <img
             src={product.image_urls[0]}
             alt={product.name}
             loading="lazy"
             decoding="async"
+            onError={() => setImageFailed(true)}
             className="smart-product-cutout h-full w-full object-contain p-2"
           />
         </div>
