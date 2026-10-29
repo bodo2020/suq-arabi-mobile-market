@@ -95,17 +95,18 @@ export default function SmartGroupDetail() {
 
   const slots = bundleQuery.data || [];
   const lines = useMemo(() => slots.map(slot => {
-    const candidates = slot.products.filter(availableSmartProduct);
+    const candidates = slot.products.filter(product => availableSmartProduct(product) &&
+      (group?.kind !== 'occasion' || !isWeightedProduct(product)));
     const picked = candidates.find(p => p.id === selected[slot.slot_id]) || candidates[0] || null;
-    const defaultIncluded = isPersonalList ? false : !slot.optional || budget === 'large' || (budget === 'medium' && group?.kind === 'occasion' && slot.position === 3);
+    const defaultIncluded = isPersonalList ? false : !slot.optional || (budget === 'large' && group?.kind === 'occasion');
     const enabled = checked[slot.slot_id] ?? defaultIncluded;
     const calculated = picked ? proposedPackCount(slot,picked,people,group?.base_servings || 4) : null;
     const mixTarget = Math.max(1,Math.ceil(slot.amount * people / (group?.base_servings || 4)));
     const mix = mixSelected[slot.slot_id] || {};
-    const mixCount = Object.values(mix).reduce((sum,n) => sum+Math.max(0,n),0);
     const chosenMix = candidates
       .filter(product => Number(mix[product.id] || 0)>0)
       .map(product => ({product,quantity:mix[product.id]}));
+    const mixCount = chosenMix.reduce((sum,item)=>sum+item.quantity,0);
     const count = packs[slot.slot_id] ?? calculated ?? 1;
     const weighted = picked ? isWeightedProduct(picked) : false;
     return { slot, picked, enabled, weighted,
@@ -289,7 +290,12 @@ export default function SmartGroupDetail() {
                 <h2 className="px-1 text-lg font-black text-slate-900">اللي هتحتاجه</h2>
                 <div className="space-y-2.5">
                   {lines.map(({slot,picked,enabled,count,uncertain,weighted,mixTarget,mixCount,chosenMix}) => {
-                    const candidates = slot.products.filter(availableSmartProduct);
+                    const candidates = slot.products
+                      .filter(product => availableSmartProduct(product) && (group.kind !== 'occasion' || !isWeightedProduct(product)))
+                      .sort((a,b) => group.kind !== 'occasion' ? 0 :
+                        budget === 'simple' ? smartProductPrice(a) - smartProductPrice(b) :
+                        budget === 'large' ? smartProductPrice(b) - smartProductPrice(a) :
+                        Number(Boolean(b.image_urls?.[0])) - Number(Boolean(a.image_urls?.[0])));
                     return group.kind === 'occasion' ? (
                       <section key={slot.slot_id} className="overflow-hidden rounded-[24px] bg-white p-3.5 shadow-[0_4px_14px_rgba(0,50,28,.04)]">
                         <div className="flex items-start justify-between gap-3">
