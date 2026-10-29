@@ -15,6 +15,8 @@ import { CartProvider } from './contexts/CartProvider';
 import Index from './pages/Index';
 import { Toaster } from '@/components/ui/toaster';
 import BrandLoader from '@/components/ui/BrandLoader';
+import BrandIntro from '@/components/brand/BrandIntro';
+import BrandCartFeedback from '@/components/brand/BrandCartFeedback';
 
 const PhoneLogin = lazy(() => import('./pages/PhoneLogin'));
 const PhoneVerify = lazy(() => import('./pages/PhoneVerify'));
@@ -131,6 +133,8 @@ function App() {
           <CartProvider>
             <BrowserRouter>
               <NetworkStatus />
+              <BrandIntro />
+              <BrandCartFeedback />
               <PushNotificationsBootstrap />
               <CustomerNotificationRealtimeBridge />
               <ProfileCompletionGate />
