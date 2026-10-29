@@ -16,6 +16,7 @@ import Index from './pages/Index';
 import { Toaster } from '@/components/ui/toaster';
 import BrandLoader from '@/components/ui/BrandLoader';
 import BrandIntro from '@/components/brand/BrandIntro';
+import BrandPullToRefresh from '@/components/brand/BrandPullToRefresh';
 import BrandCartFeedback from '@/components/brand/BrandCartFeedback';
 
 const PhoneLogin = lazy(() => import('./pages/PhoneLogin'));
@@ -136,6 +137,7 @@ function App() {
             <BrowserRouter>
               <NetworkStatus />
               <BrandIntro />
+              <BrandPullToRefresh />
               <BrandCartFeedback />
               <PushNotificationsBootstrap />
               <CustomerNotificationRealtimeBridge />

@@ -107,7 +107,7 @@ const upsertColor = (name, value) => {
   }
 };
 upsertColor('elmadawy_icon_background', '#005931');
-upsertColor('elmadawy_splash_background', '#F6F8F7');
+upsertColor('elmadawy_splash_background', '#FFFFFF');
 await writeFile(colorsPath, colors, 'utf8');
 
 // Remove every default Capacitor launcher bitmap so Android cannot select a stale density asset.
@@ -156,8 +156,17 @@ for (const entry of resourceDirs) {
 await rm(path.join(drawableDir, 'splash.png'), { force: true });
 await rm(path.join(drawableDir, 'splash.xml'), { force: true });
 
-// Shared splash icon and legacy launch background.
-const splashIconXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="22%">\n    <bitmap android:src="@drawable/elmadawy_logo_source" android:gravity="fill" />\n</inset>\n`;
+// The native splash is deliberately static; React animates the exact same mark
+// after WebView mount. Keep the launcher badge unchanged.
+const nativeSplashMark = `<?xml version="1.0" encoding="utf-8"?>\n<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="121dp" android:height="161dp" android:viewportWidth="121" android:viewportHeight="161">
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#005931" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M8,23.0552 V107.166 C8,116.555 15.6112,124.166 25,124.166 H84.2226" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#FFC120" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M8,22.6663 H96.0005 C105.389,22.6663 113.001,30.2775 113.001,39.6663 V148.666" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#005931" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M84.2205,124.182 L113.001,148.667" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#005931" android:strokeWidth="8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M38.3335,63.8893 C38.3335,87.2226 82.2782,89.1671 82.2782,63.8893" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#FFC120" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M82.2782,22.2364 C82.2782,-1.09694 38.3335,-3.04139 38.3335,22.2364" />
+</vector>\n`;
+await writeFile(path.join(drawableDir, 'elmadawy_splash_mark.xml'), nativeSplashMark, 'utf8');
+const splashIconXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/elmadawy_splash_mark" android:inset="22%" />\n`;
 await writeFile(path.join(drawableDir, 'elmadawy_splash_icon.xml'), splashIconXml, 'utf8');
 
 const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:drawable="@drawable/elmadawy_splash_icon" />\n</layer-list>\n`;
