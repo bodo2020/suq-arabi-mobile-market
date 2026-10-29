@@ -43,8 +43,8 @@ function ProductSwipePeek({
         : productUnitPrice(product))
     : preview.price;
 
-  // Center at -50%; side sheets are one width + 10px away.
-  const position = `${offset * 100 - 50}% + ${offset * 10}px`;
+  // Match center card's 92vw width and the exact 8px horizontal gutter.
+  const position = `${offset * 100 - 50}% ${offset < 0 ? '-' : '+'} ${Math.abs(offset) * 8}px`;
   const shown = visible && !(handoff && handoffExiting);
 
   return (
@@ -56,8 +56,8 @@ function ProductSwipePeek({
       aria-hidden={!visible}
       aria-label={`عرض تفاصيل ${title}`}
       dir="rtl"
-      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${moving ? 'will-change-transform' : ''} ${transitioning ? 'transition-[transform,opacity] duration-[220ms] ease-out' : 'transition-opacity duration-[160ms]'} ${shown ? 'opacity-100' : 'opacity-0'}`}
-      style={{ transform: `translate3d(calc(${position} + var(--product-swipe-x, 0px)), 0, 0)` }}
+      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-20px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${moving ? 'will-change-transform' : ''} ${transitioning ? 'transition-[transform,opacity] duration-[220ms] ease-out' : 'transition-opacity duration-[160ms]'} ${shown ? 'opacity-100' : 'opacity-0'}`}
+      style={{ transform: `translate3d(calc(${position} + var(--product-swipe-x, 0px)), var(--product-dismiss-y, 0px), 0)` }}
     >
       <span className="flex w-full shrink-0 flex-col rounded-t-[30px] bg-white px-4 pb-2 pt-3">
         <span className="mx-auto mb-2 flex h-4 w-20 items-center justify-center">
