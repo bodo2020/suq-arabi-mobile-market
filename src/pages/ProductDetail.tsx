@@ -55,6 +55,8 @@ const ProductDetail = () => {
   const dismissOffset = useRef(0);
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeFrame = useRef<number | null>(null);
+  const dragFrame = useRef<number | null>(null);
+  const dragOffset = useRef(0);
   const pendingSwipeNavigation = useRef<(() => void) | null>(null);
   // Stable peek callback: rendering unrelated product details won't repaint
   // adjacent cards or their already-decoded thumbnails.
@@ -78,6 +80,20 @@ const ProductDetail = () => {
   // This avoids per-touch React renders and keeps drag 1:1 with the finger.
   const setSheetOffset = (x: number) => {
     sheetStage.current?.style.setProperty('--product-swipe-x', `${x}px`);
+  };
+  // Touchmove may fire more often than the screen can paint. Coalesce drag
+  // coordinates to one compositor transform write per animation frame.
+  const cancelDragFrame = () => {
+    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+    dragFrame.current = null;
+  };
+  const scheduleSheetOffset = (x: number) => {
+    dragOffset.current = x;
+    if (dragFrame.current !== null) return;
+    dragFrame.current = requestAnimationFrame(() => {
+      dragFrame.current = null;
+      setSheetOffset(dragOffset.current);
+    });
   };
   const setCarouselMotion = (animate: boolean) => {
     const cards = sheetStage.current?.querySelectorAll<HTMLElement>(
@@ -189,6 +205,7 @@ const ProductDetail = () => {
     pendingSwipeNavigation.current = null;
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
+    cancelDragFrame();
     const finish = () => {
       closeTimer.current = null;
       if (browse) navigate(-1);
@@ -255,6 +272,7 @@ const ProductDetail = () => {
   // Route changes re-center the newly selected card *before the browser paints*.
   // Suppressing the reset transition avoids the old "slide back" flash.
   useLayoutEffect(() => {
+    cancelDragFrame();
     const cards = sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-swipe-card], [data-product-center-card]');
     // Recenter the three *complete card elements* synchronously before
     // routing paints the newly selected product.
@@ -273,6 +291,7 @@ const ProductDetail = () => {
   useEffect(() => () => {
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
+    cancelDragFrame();
     if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
 
@@ -295,6 +314,7 @@ const ProductDetail = () => {
     // Seed synchronously before the navigation so the next card never waits
     // on its own network request to show image, name or price.
     if (next) seedProductBrowseCache(queryClient, browse.paths, browseIndex + offset);
+    cancelDragFrame();
     setSwipeLocked(true);
     setSheetDragging(false);
     setSwipeAnimating(true);
@@ -318,7 +338,7 @@ const ProductDetail = () => {
     pendingSwipeNavigation.current = navigateTo;
     // Match the actual card width + gutter so the adjacent card lands at 0,
     // rather than stopping early and appearing to jump on route update.
-    const cardWidth = sheetStage.current?.querySelector<HTMLElement>('[data-product-center-card]')?.getBoundingClientRect().width
+    const cardWidth = sheetStage.current?.querySelector<HTMLElement>('[data-product-center-card]')?.clientWidth
       || Math.min(window.innerWidth * .84, 560);
     const distance = cardWidth + 10;
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
@@ -371,7 +391,7 @@ const ProductDetail = () => {
     const allowed = dx < 0 ? (canSwipeNext || Boolean(nextCategory)) : canSwipePrevious;
     const max = Math.min(window.innerWidth * .92, 700);
     const distance = allowed ? Math.max(-max, Math.min(max, dx)) : dx * .12;
-    setSheetOffset(distance);
+    scheduleSheetOffset(distance);
   };
 
   const finishSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -383,7 +403,7 @@ const ProductDetail = () => {
     const dy = end.clientY - start.y;
     const elapsed = Math.max(1, Date.now() - start.at);
     const fastFlick = Math.abs(dx) >= 27 && Math.abs(dx) / elapsed >= .5;
-    const cardWidth = sheetCardRef.current?.getBoundingClientRect().width || window.innerWidth * .78;
+    const cardWidth = sheetCardRef.current?.clientWidth || window.innerWidth * .78;
     const enoughDistance = Math.abs(dx) >= Math.min(85, cardWidth * .22);
     if ((enoughDistance || fastFlick) && Math.abs(dx) >= Math.abs(dy) * 1.2) {
       const offset = dx < 0 ? 1 : -1;
@@ -393,6 +413,7 @@ const ProductDetail = () => {
       }
     }
     // Cancelled/incomplete flick: every card eases back to its original slot.
+    cancelDragFrame();
     setSheetDragging(false);
     setSwipeAnimating(true);
     setCarouselMotion(true);
@@ -935,6 +956,7 @@ const ProductDetail = () => {
             onTouchMove={moveSheetSwipe}
             onTouchEnd={finishSheetSwipe}
             onTouchCancel={() => {
+              cancelDragFrame();
               sheetTouch.current = null;
               setSheetDragging(false);
               setSwipeAnimating(true);
