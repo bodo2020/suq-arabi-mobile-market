@@ -288,9 +288,58 @@ export default function SmartGroupDetail() {
               <>
                 <h2 className="px-1 text-lg font-black text-slate-900">اللي هتحتاجه</h2>
                 <div className="space-y-2.5">
-                  {lines.map(({slot,picked,enabled,count,uncertain,weighted}) => {
+                  {lines.map(({slot,picked,enabled,count,uncertain,weighted,mixTarget,mixCount,chosenMix}) => {
                     const candidates = slot.products.filter(availableSmartProduct);
-                    return (
+                    return group.kind === 'occasion' ? (
+                      <section key={slot.slot_id} className="overflow-hidden rounded-[24px] bg-white p-3.5 shadow-[0_4px_14px_rgba(0,50,28,.04)]">
+                        <div className="flex items-start justify-between gap-3">
+                          <label className="flex min-w-0 items-start gap-2.5">
+                            <input type="checkbox" checked={enabled}
+                              onChange={e=>setChecked(v=>({...v,[slot.slot_id]:e.target.checked}))}
+                              aria-label={`اختيار مجموعة ${slot.label}`}
+                              className="mt-1 h-5 w-5 shrink-0 accent-[#005931]" />
+                            <span>
+                              <span className="block text-base font-black text-slate-900">{slot.label}</span>
+                              <span className="block text-xs text-slate-500">{slot.optional?'اختياري':'اختار اللي يعجبك'}</span>
+                            </span>
+                          </label>
+                          {enabled && <span className="shrink-0 rounded-xl bg-emerald-50 px-3 py-1.5 text-sm font-black text-[#005931]" dir="ltr">
+                            {mixCount}/{mixTarget}
+                          </span>}
+                        </div>
+                        {enabled && (
+                          <>
+                            <div className="mt-3 flex gap-1" dir="ltr" role="progressbar"
+                              aria-label={`تشكيلة ${slot.label}`} aria-valuenow={mixCount}
+                              aria-valuemin={0} aria-valuemax={mixTarget}>
+                              {Array.from({length:Math.min(mixTarget,12)}).map((_,i)=>(
+                                <span key={i} className={`h-1.5 flex-1 rounded-full ${i<mixCount?'bg-[#005931]':'bg-slate-200'}`}/>
+                              ))}
+                            </div>
+                            {candidates.length ? (
+                              <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                                {candidates.map(product=>(
+                                  <SmartProductChoiceCard key={product.id} product={product}
+                                    quantity={mixSelected[slot.slot_id]?.[product.id] || 0}
+                                    maxQuantity={mixTarget}
+                                    onChangeQuantity={delta=>changeMix(slot.slot_id,product,delta,mixTarget)}
+                                  />
+                                ))}
+                              </div>
+                            ) : <p className="mt-3 text-sm text-rose-600">مفيش منتجات متاحة دلوقتي</p>}
+                            <div className="mt-3 flex items-center justify-between text-xs">
+                              <span className={mixCount===mixTarget?'font-bold text-[#005931]':'text-slate-500'}>
+                                {mixCount===mixTarget ? 'تشكيلتك جاهزة ✓' :
+                                  `اختار ${Math.max(0,mixTarget-mixCount).toLocaleString('ar-EG')} كمان`}
+                              </span>
+                              <strong className="text-[#005931]">
+                                {moneyEGP(chosenMix.reduce((t,item)=>t+smartProductPrice(item.product)*item.quantity,0))} ج
+                              </strong>
+                            </div>
+                          </>
+                        )}
+                      </section>
+                    ) : (
                       <div key={slot.slot_id} className="rounded-2xl bg-white p-3">
                         <div className="flex items-start gap-3">
                           <input type="checkbox" checked={enabled}
@@ -322,20 +371,23 @@ export default function SmartGroupDetail() {
                         </div>
                         {enabled && picked && (
                           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
-                            <label className="relative flex min-w-[120px] flex-1 items-center text-xs font-semibold text-slate-700">
-                              <select value={picked.id}
-                                aria-label={`اختيار بديل ${slot.label}`}
-                                onChange={e => {
-                                  setSelected(v => ({...v,[slot.slot_id]:e.target.value}));
-                                  setPacks(v => {const next={...v};delete next[slot.slot_id];return next;});
-                                }}
-                                className="min-h-10 w-full appearance-none rounded-xl bg-[#f6f8f7] py-2 pl-7 pr-2 text-xs">
-                                {candidates.map(product => (
-                                  <option key={product.id} value={product.id}>{product.name}</option>
-                                ))}
-                              </select>
-                              <ChevronDown size={15} className="pointer-events-none absolute left-2 text-[#005931]"/>
-                            </label>
+                            <button type="button"
+                              onClick={() => setPickerSlot(slot.slot_id)}
+                              className="flex min-h-10 min-w-[126px] flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-[#f6f8f7] px-3 text-xs font-bold text-[#005931]">
+                              <Images size={16} aria-hidden="true" />
+                              {candidates.length>1?'شوف البدائل':'شوف المنتج'}
+                            </button>
+                            <SmartAlternativesDialog
+                              open={pickerSlot===slot.slot_id}
+                              onOpenChange={open=>setPickerSlot(open?slot.slot_id:null)}
+                              ingredient={slot.label}
+                              products={candidates}
+                              currentId={picked.id}
+                              onPick={product=>{
+                                setSelected(v=>({...v,[slot.slot_id]:product.id}));
+                                setPacks(v=>{const next={...v};delete next[slot.slot_id];return next;});
+                              }}
+                            />
                             <div className="flex items-center rounded-xl bg-[#f6f8f7]">
                               <button type="button" aria-label={`تقليل كمية ${slot.label}`}
                                 onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.max(weighted ? 1 : 1,count-(weighted && picked ? productWeightStepGrams(picked) : 1))}))}
@@ -367,7 +419,7 @@ export default function SmartGroupDetail() {
                 <div className="sticky bottom-3 z-30 rounded-2xl border border-emerald-100 bg-white/95 p-3 shadow-lg">
                   <div className="mb-2 flex items-center justify-between">
                     <div><p className="text-xs text-slate-500">{summary.products} منتجات</p>
-                    <p className="text-xs text-slate-500">{summary.missing ? `${summary.missing} مش متوفر` : ''}</p></div>
+                    <p className="text-xs text-slate-500">{summary.missing ? group.kind==='occasion' ? `${summary.missing} اختيار ناقص` : `${summary.missing} مش متوفر` : ''}</p></div>
                     <span className="text-xl font-black text-[#005931]">{moneyEGP(summary.total)} ج</span>
                   </div>
                   <button type="button" onClick={() => void addGroup()}
