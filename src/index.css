@@ -378,6 +378,17 @@ html.native-platform [role="button"] {
 .brand-name__super { color: #fff; }
 .brand-name__marko { color: #FFC120; }
 .brand-name--header { font-size: clamp(.75rem, 2.7vw, 1.05rem); padding: .25em .35em; border-radius: 9px; }
+/* Home header: original Super Marko wordmark with our own green/yellow palette. */
+.brand-name--home {
+  padding: 0;
+  border-radius: 0;
+  font-size: clamp(1.05rem, 4.5vw, 1.65rem);
+  line-height: 1.5;
+  color: #005931;
+  background: transparent;
+}
+.brand-name--home .brand-name__super { color: #005931; }
+.brand-name--home .brand-name__marko { color: #cf9700; }
 @media (max-width: 360px) {
   .brand-name--header { font-size: .72rem; padding: .2em .25em; }
 }
