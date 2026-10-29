@@ -33,7 +33,7 @@ function ProductRail({ title, products, href }: { title: string; products: Produ
         <h2 className="text-lg font-black text-slate-950">{title}</h2>
         {href && <Link to={href} aria-label={`عرض كل ${title}`} className="flex h-9 w-9 items-center justify-center rounded-full text-[#005931] transition-colors hover:bg-emerald-50"><ChevronLeft size={19} /></Link>}
       </div>
-      <div className="hide-scrollbar -mx-3 flex snap-x snap-proximity gap-2.5 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0" dir="rtl">
+      <div className="ala-mazagak-product-rail hide-scrollbar -mx-3 flex snap-x snap-proximity gap-2.5 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0" dir="rtl">
         {products.slice(0, 10).map(product => (
           <div key={product.id} className="w-[148px] min-w-0 shrink-0 snap-start sm:w-[180px]">
             <ProductCard product={product} />
