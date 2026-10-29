@@ -1,56 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import StoreStructuredData from '@/components/seo/StoreStructuredData';
 import DynamicHomeSections from '@/components/sections/DynamicHomeSections';
 import UnifiedCatalogSection from '@/components/sections/UnifiedCatalogSection';
-import { supabase } from '@/lib/supabase';
-import { useUser } from '@/contexts/UserContext';
-import { readGuestAddress } from '@/lib/deliveryAddress';
+import { useCustomerDeliveryHeader } from '@/hooks/useCustomerDeliveryHeader';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, authLoading } = useUser();
-  const [guestAddress, setGuestAddress] = useState(() => readGuestAddress());
-
-  useEffect(() => {
-    const refresh = () => setGuestAddress(readGuestAddress());
-    window.addEventListener('guest-address-changed', refresh);
-    window.addEventListener('storage', refresh);
-    return () => {
-      window.removeEventListener('guest-address-changed', refresh);
-      window.removeEventListener('storage', refresh);
-    };
-  }, []);
-
-  const addressQuery = useQuery({
-    queryKey: ['home-default-address', user?.id],
-    enabled: !!user && !authLoading,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customer_addresses')
-        .select('address,latitude,longitude')
-        .eq('user_id', user!.id)
-        .eq('is_default', true)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 0,
-  });
-
-  const address = user ? addressQuery.data?.address || '' : guestAddress?.address || '';
-
-  const openAddress = () => {
-    if (!user && !guestAddress) {
-      navigate('/add-address?returnTo=%2F');
-      return;
-    }
-    navigate('/address-manager');
-  };
+  const {
+    address,
+    addressLabel,
+    addressLoading,
+    addressError,
+    deliveryEstimateMinutes,
+    openAddress,
+  } = useCustomerDeliveryHeader('/');
 
   return (
     <MainLayout>
@@ -58,9 +25,9 @@ const Index = () => {
       <TopNavBar
         homeHero
         onSearchFocus={() => navigate('/search')}
-        addressLabel={user && addressQuery.isError ? 'تعذّر تحميل العنوان — اضغط للمراجعة' : address}
-        addressLoading={authLoading || Boolean(user && addressQuery.isLoading)}
-        deliveryEstimateMinutes={!user ? guestAddress?.estimated_time : null}
+        addressLabel={addressLabel}
+        addressLoading={addressLoading}
+        deliveryEstimateMinutes={deliveryEstimateMinutes}
         onAddressClick={openAddress}
       />
       <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
@@ -72,9 +39,9 @@ const Index = () => {
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-cream text-brand-green"><MapPin size={19} /></span>
           <span className="shrink-0 text-xs text-gray-500">التوصيل إلى</span>
             <strong className="min-w-0 truncate text-sm font-bold text-primary">
-              {authLoading || (user && addressQuery.isLoading)
+              {addressLoading
                 ? 'جاري تحميل عنوانك…'
-                : user && addressQuery.isError
+                : addressError
                   ? 'تعذّر تحميل العنوان — اضغط للمراجعة'
                   : address || 'حدد عنوانك على الخريطة'}
             </strong>

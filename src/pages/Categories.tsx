@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import { useCustomerDeliveryHeader } from '@/hooks/useCustomerDeliveryHeader';
 import CategoryItem from '@/components/ui/CategoryItem';
 import CategorySkeleton from '@/components/ui/CategorySkeleton';
 import { MainCategory, getCategories } from '@/lib/supabase';
@@ -11,6 +12,7 @@ const Categories = () => {
   const [categories, setCategories] = useState<MainCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { addressLabel, addressLoading, deliveryEstimateMinutes, openAddress } = useCustomerDeliveryHeader('/categories');
 
   useEffect(() => {
     let active = true;
@@ -30,15 +32,19 @@ const Categories = () => {
 
   return (
     <MainLayout>
-      {/* Match the original compact categories gallery: search/navigation at
-          the top, followed by cards without an oversized header/filter panel. */}
+      {/* Match the home hero on mobile while keeping the compact desktop navbar. */}
       <TopNavBar
+        homeHero
         hideLogo
         showBackButton
         onBack={() => navigate(-1)}
         searchPlaceholder="دور على منتج أو قسم…"
         onSearchFocus={() => navigate('/search')}
         searchProps={{ appearance: 'category' }}
+        addressLabel={addressLabel}
+        addressLoading={addressLoading}
+        deliveryEstimateMinutes={deliveryEstimateMinutes}
+        onAddressClick={openAddress}
       />
       <div className="mx-auto w-full max-w-7xl px-3 pb-24 pt-2 sm:px-5">
         <h1 className="sr-only">الأقسام</h1>
