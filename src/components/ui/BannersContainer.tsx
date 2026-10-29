@@ -58,7 +58,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
     }, { threshold: 0.01 });
     observer.observe(bannerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [banners.length]);
 
   const handleBannerClick = (banner: BannerItem) => {
     const hasTarget = Boolean(
