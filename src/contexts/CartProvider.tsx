@@ -62,6 +62,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? { ...item, quantity: item.quantity + product.quantity }
         : item);
     });
+    window.dispatchEvent(new Event('super-marko:cart-added'));
     return 'added';
   }, [isInitialized, items]);
 
