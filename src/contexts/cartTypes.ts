@@ -30,7 +30,8 @@ export type CartItem = BaseCartItem & {
 export type CartAddResult = 'added' | 'conflict' | 'limit' | 'not_ready';
 export type SmartBundleLine = {
   product: Product; // Contains the branch's actual stock, not a requested quantity.
-  quantity: number; // Number of sealed packs to add.
+  quantity: number; // Whole items, or grams for weighed goods.
+  unit_of_measure?: 'weight';
 };
 
 export const cartSourceIdentity = (item: CartItem) => item.commerce_source === 'marketplace'
