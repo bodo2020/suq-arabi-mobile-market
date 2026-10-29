@@ -55,11 +55,18 @@ const Index = () => {
   return (
     <MainLayout>
       <StoreStructuredData />
-      <TopNavBar onSearchFocus={() => navigate('/search')} />
+      <TopNavBar
+        homeHero
+        onSearchFocus={() => navigate('/search')}
+        addressLabel={address}
+        addressLoading={authLoading || Boolean(user && addressQuery.isLoading)}
+        deliveryEstimateMinutes={!user ? guestAddress?.estimated_time : null}
+        onAddressClick={openAddress}
+      />
       <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
         <button
           onClick={openAddress}
-          className="mb-5 flex w-full items-center gap-2 rounded-2xl border border-emerald-100 bg-white px-3 py-2 text-right transition hover:bg-brand-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="mb-5 hidden w-full items-center gap-2 rounded-2xl md:flex border border-emerald-100 bg-white px-3 py-2 text-right transition hover:bg-brand-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           aria-label={address ? 'تغيير عنوان التوصيل' : 'إضافة عنوان توصيل'}
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-cream text-brand-green"><MapPin size={19} /></span>
