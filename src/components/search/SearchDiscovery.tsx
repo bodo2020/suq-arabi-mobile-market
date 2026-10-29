@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Sparkles } from 'lucide-react';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
@@ -46,13 +47,13 @@ function matchingIdea(product: Product, keys: readonly string[]) {
   return keys.some(term => name.includes(term) || (bulk && bulk.includes(term)));
 }
 
-function ProductRail({ title, products }: { title: string; products: Product[] }) {
+function ProductRail({ title, products, href }: { title: string; products: Product[]; href?: string }) {
   if (!products.length) return null;
   return (
     <section className="min-w-0">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-lg font-black text-slate-950">{title}</h2>
-        <ChevronLeft size={19} className="text-[#005931]" aria-hidden="true" />
+        {href && <Link to={href} aria-label={`عرض كل ${title}`} className="flex h-9 w-9 items-center justify-center rounded-full text-[#005931] transition-colors hover:bg-emerald-50"><ChevronLeft size={19} /></Link>}
       </div>
       <div className="hide-scrollbar -mx-3 flex snap-x snap-proximity gap-2.5 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0" dir="rtl">
         {products.slice(0, 10).map(product => (
@@ -68,6 +69,7 @@ function ProductRail({ title, products }: { title: string; products: Product[] }
 export default function SearchDiscovery({ recent, onSearch }: SearchDiscoveryProps) {
   const { branch, branchLoading } = useBranch();
   const { user } = useUser();
+  const navigate = useNavigate();
   const [activeIdea, setActiveIdea] = useState<string | null>(null);
   const branchId = branch?.delivery_branch_id;
 
@@ -92,7 +94,7 @@ export default function SearchDiscovery({ recent, onSearch }: SearchDiscoveryPro
     retry: false,
   });
 
-  const products = catalog.data || [];
+  const products = useMemo(() => catalog.data || [], [catalog.data]);
   const recommendations = useMemo(() => {
     const inStock = products.filter(available);
     const byId = new Map(inStock.map(product => [product.id, product]));
@@ -178,7 +180,13 @@ export default function SearchDiscovery({ recent, onSearch }: SearchDiscoveryPro
         </section>
       )}
 
-      {catalog.isLoading || branchLoading ? (
+      {!branchId && !branchLoading ? (
+        <div className="rounded-2xl bg-white p-4 text-center">
+          <button type="button" onClick={() => navigate('/address-manager')} className="min-h-11 rounded-full bg-[#005931] px-5 text-sm font-bold text-white">
+            تحديد عنوان التوصيل
+          </button>
+        </div>
+      ) : catalog.isLoading || branchLoading ? (
         <section aria-label="جاري تحميل المنتجات المقترحة">
           <div className="mb-3 h-6 w-36 rounded-lg bg-slate-100" />
           <div className="flex gap-2.5 overflow-hidden">
@@ -221,7 +229,7 @@ export default function SearchDiscovery({ recent, onSearch }: SearchDiscoveryPro
 
           {selectedIdea && <ProductRail title={selectedIdea.title} products={selectedIdea.matches} />}
           <ProductRail title="مقترح ليك" products={recommendations} />
-          <ProductRail title="أفضل العروض" products={offers} />
+          <ProductRail title="أفضل العروض" products={offers} href="/offers" />
         </>
       )}
     </div>
