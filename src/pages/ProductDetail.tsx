@@ -99,12 +99,22 @@ const ProductDetail = () => {
     const cards = sheetStage.current?.querySelectorAll<HTMLElement>(
       '[data-product-center-card], [data-product-swipe-card]',
     );
-    // Apply the transition before writing the transform variable. Relying on
-    // a delayed React class update caused some swipes to jump straight to
-    // the next product without moving the sheets.
+    // Apply the transition before the shared X variable changes.
     cards?.forEach(card => {
       card.style.transition = animate && !prefersReducedProductMotion()
         ? 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)'
+        : 'none';
+    });
+  };
+  // Use the exact same Y transition for center and both neighbors.
+  // A single --product-dismiss-y variable moves all three as one stack.
+  const setDismissMotion = (animate: boolean, duration = 220) => {
+    const cards = sheetStage.current?.querySelectorAll<HTMLElement>(
+      '[data-product-center-card], [data-product-swipe-card]',
+    );
+    cards?.forEach(card => {
+      card.style.transition = animate && !prefersReducedProductMotion()
+        ? `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`
         : 'none';
     });
   };
@@ -215,19 +225,17 @@ const ProductDetail = () => {
       finish();
       return;
     }
-    // Short fade + translation replaces repainting the backdrop and
-    // scaling a detailed full-screen surface down to a catalog tile.
-    const card = sheetCardRef.current;
-    if (card) {
-      card.style.transition = 'transform 165ms ease-out, opacity 165ms ease-out';
-      card.style.opacity = '0';
-    }
+    // Keep all three sheets moving together while the backdrop and sheets
+    // fade as one layer. No expensive full-screen resize or shadow animation.
+    setDismissMotion(true, 185);
     const stage = sheetStage.current;
     if (stage) {
       const current = Number.parseFloat(stage.style.getPropertyValue('--product-dismiss-y')) || 0;
-      stage.style.setProperty('--product-dismiss-y', `${Math.max(current, 42)}px`);
+      stage.style.transition = 'opacity 185ms ease-out';
+      stage.style.opacity = '0';
+      stage.style.setProperty('--product-dismiss-y', `${Math.max(current + 64, 72)}px`);
     }
-    closeTimer.current = setTimeout(finish, 175);
+    closeTimer.current = setTimeout(finish, 195);
   };
 
   const onHeaderPointerDown = (event: React.PointerEvent<HTMLElement>) => {
@@ -235,7 +243,7 @@ const ProductDetail = () => {
     if ((event.target as HTMLElement).closest('button, a, input, textarea')) return;
     dismissGesture.current = { pointerId: event.pointerId, y: event.clientY, at: Date.now() };
     dismissOffset.current = 0;
-    sheetCardRef.current?.style.setProperty('transition', 'none');
+    setDismissMotion(false);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -254,7 +262,6 @@ const ProductDetail = () => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    sheetCardRef.current?.style.removeProperty('transition');
     const dy = dismissOffset.current;
     dismissOffset.current = 0;
     const elapsed = Math.max(1, Date.now() - gesture.at);
@@ -262,11 +269,15 @@ const ProductDetail = () => {
       closeSheet();
       return;
     }
-    // A short drag springs back; keep React out of individual pointer frames.
-    const card = sheetCardRef.current;
-    if (card) card.style.transition = 'transform 240ms cubic-bezier(0.2,0.8,0.2,1)';
+    // A short drag springs all three cards back together.
+    setDismissMotion(true, 220);
     requestAnimationFrame(() => sheetStage.current?.style.setProperty('--product-dismiss-y', '0px'));
-    window.setTimeout(() => { if (!closingRef.current) card?.style.removeProperty('transition'); }, 250);
+    window.setTimeout(() => {
+      if (closingRef.current || dismissGesture.current) return;
+      sheetStage.current?.querySelectorAll<HTMLElement>(
+        '[data-product-center-card], [data-product-swipe-card]',
+      ).forEach(card => card.style.removeProperty('transition'));
+    }, 245);
   };
 
   // Route changes re-center the newly selected card *before the browser paints*.
@@ -339,8 +350,8 @@ const ProductDetail = () => {
     // Match the actual card width + gutter so the adjacent card lands at 0,
     // rather than stopping early and appearing to jump on route update.
     const cardWidth = sheetStage.current?.querySelector<HTMLElement>('[data-product-center-card]')?.clientWidth
-      || Math.min(window.innerWidth * .84, 560);
-    const distance = cardWidth + 10;
+      || Math.min(window.innerWidth * .92, 680);
+    const distance = cardWidth + 8;
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
     swipeFrame.current = requestAnimationFrame(() => {
       swipeFrame.current = null;
@@ -403,7 +414,7 @@ const ProductDetail = () => {
     const dy = end.clientY - start.y;
     const elapsed = Math.max(1, Date.now() - start.at);
     const fastFlick = Math.abs(dx) >= 27 && Math.abs(dx) / elapsed >= .5;
-    const cardWidth = sheetCardRef.current?.clientWidth || window.innerWidth * .78;
+    const cardWidth = sheetCardRef.current?.clientWidth || window.innerWidth * .92;
     const enoughDistance = Math.abs(dx) >= Math.min(85, cardWidth * .22);
     if ((enoughDistance || fastFlick) && Math.abs(dx) >= Math.abs(dy) * 1.2) {
       const offset = dx < 0 ? 1 : -1;
@@ -920,7 +931,7 @@ const ProductDetail = () => {
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${sheetDragging ? 'will-change-transform transition-none' : swipeAnimating ? 'will-change-transform transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-[transform,opacity] duration-[190ms] ease-out'}`}
+          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${sheetDragging ? 'will-change-transform transition-none' : swipeAnimating ? 'will-change-transform transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-[transform,opacity] duration-[190ms] ease-out'}`}
           style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible ? '0px' : '28px'} + var(--product-dismiss-y, 0px)), 0)`, opacity: sheetVisible ? 1 : 0 }}
           onTransitionEnd={event => {
             if (event.currentTarget !== event.target || event.propertyName !== 'transform') return;
