@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Barcode, Search, X } from 'lucide-react';
+import { ScanBarcode, Search, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SearchBarProps {
@@ -7,6 +7,7 @@ interface SearchBarProps {
   backgroundImage?: string;
   initialQuery?: string;
   onBarcodeClick?: () => void;
+  onQueryChange?: (value: string) => void;
   onFocus?: () => void;
   readOnly?: boolean;
   appearance?: 'default' | 'category' | 'hero';
@@ -28,6 +29,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   backgroundImage: _backgroundImage,
   initialQuery = '',
   onBarcodeClick,
+  onQueryChange,
   onFocus,
   readOnly = false,
   appearance = 'default',
@@ -102,6 +104,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const clearSearch = () => {
     setQuery('');
+    onQueryChange?.('');
     if (location.pathname === '/search' && location.search) navigate('/search', { replace: true });
     inputRef.current?.focus({ preventScroll: true });
   };
@@ -117,7 +120,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     event.preventDefault();
     event.stopPropagation();
     if (onBarcodeClick) onBarcodeClick();
-    else navigate('/barcode-scanner');
+    else navigate('/search', { state: { openScanner: true } });
   };
 
   const hero = appearance === 'hero';
@@ -131,7 +134,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           ? 'h-[54px] rounded-full border-[#b8d8c8] bg-white shadow-[0_4px_18px_rgba(0,89,49,.07)] sm:h-[58px]'
           : category
             ? 'rounded-full border-emerald-200 bg-white shadow-[0_2px_8px_rgba(0,89,49,.02)]'
-            : 'rounded-xl border-emerald-100 bg-white focus-within:bg-white'
+            : 'rounded-full border-emerald-100 bg-white focus-within:bg-white'
       }`}>
         <div className="relative flex min-w-0 flex-1 items-center">
           <Search
@@ -147,7 +150,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
             aria-label="البحث عن المنتجات"
             enterKeyHint="search"
             value={query}
-            onChange={event => { if (!readOnly) setQuery(event.target.value); }}
+            onChange={event => {
+              if (readOnly) return;
+              setQuery(event.target.value);
+              onQueryChange?.(event.target.value);
+            }}
             onFocus={readOnly ? undefined : onFocus}
             onClick={readOnly ? onFocus : undefined}
             onKeyDown={event => {
@@ -189,9 +196,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onClick={handleBarcodeClick}
             aria-label="مسح باركود المنتج"
             title="مسح باركود المنتج"
-            className="group flex h-11 w-12 shrink-0 items-center justify-center border-r border-emerald-100 bg-brand-cream text-brand-green transition-colors hover:bg-brand-yellow/25 active:bg-brand-yellow/35"
+            className="mx-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#005931] transition-colors hover:bg-emerald-50 active:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
           >
-            <Barcode size={23} strokeWidth={2.2} className="text-[#005931] transition-transform group-active:scale-95" />
+            <ScanBarcode size={22} strokeWidth={1.85} aria-hidden="true" />
           </button>
         )}
       </div>
