@@ -1,4 +1,5 @@
 .brand-loader {
+  position: relative;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -6,20 +7,57 @@
   vertical-align: middle;
   width: 40px;
   height: 48px;
+  pointer-events: none;
 }
 .brand-loader--sm { width: 19px; height: 25px; }
 .brand-loader--md { width: 34px; height: 45px; }
 .brand-loader--lg { width: 62px; height: 84px; }
 .brand-loader__mark {
+  position: relative;
+  z-index: 1;
   width: 70%;
   height: 100%;
-  /* Only pulse when a request lasts beyond the quick interaction window. */
-  animation: brand-load-soft 1800ms ease-in-out 450ms infinite;
 }
-@keyframes brand-load-soft {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .72; transform: scale(.97); }
+/* Reuse the five original mark paths and reconstruct them on each cycle. */
+.brand-loader .brand-mark__stroke {
+  stroke-dasharray: 100;
+  animation: brand-refresh-trace 1850ms cubic-bezier(.22,.8,.28,1) infinite;
+}
+.brand-loader .brand-mark__stroke--1 { animation-delay: 0ms; }
+.brand-loader .brand-mark__stroke--2 { animation-delay: 110ms; }
+.brand-loader .brand-mark__stroke--3 { animation-delay: 250ms; }
+.brand-loader .brand-mark__stroke--4 { animation-delay: 350ms; }
+.brand-loader .brand-mark__stroke--5 { animation-delay: 260ms; }
+.brand-loader__particles {
+  position: absolute;
+  inset: -11%;
+  pointer-events: none;
+}
+.brand-loader__particle {
+  position: absolute;
+  width: clamp(2px, .35em, 4px);
+  height: clamp(2px, .35em, 4px);
+  border-radius: 1px;
+  background: #005931;
+  opacity: 0;
+  animation: brand-refresh-particle 1850ms ease-in-out infinite;
+}
+.brand-loader__particle--1 { top: 11%; left: 14%; animation-delay: 0ms; }
+.brand-loader__particle--2 { top: 5%; right: 12%; background: #FFC120; animation-delay: 220ms; }
+.brand-loader__particle--3 { top: 30%; right: 0; animation-delay: 430ms; }
+.brand-loader__particle--4 { bottom: 26%; left: 0; background: #FFC120; animation-delay: 160ms; }
+.brand-loader__particle--5 { bottom: 7%; right: 13%; animation-delay: 530ms; }
+.brand-loader__particle--6 { bottom: 6%; left: 13%; background: #FFC120; animation-delay: 360ms; }
+@keyframes brand-refresh-trace {
+  0%, 9% { stroke-dashoffset: 100; opacity: .68; }
+  51%, 69% { stroke-dashoffset: 0; opacity: 1; }
+  96%, 100% { stroke-dashoffset: -100; opacity: .35; }
+}
+@keyframes brand-refresh-particle {
+  0%, 12%, 90%, 100% { opacity: 0; transform: translate3d(0,5px,0) scale(.65) rotate(0deg); }
+  38%, 65% { opacity: .7; transform: translate3d(0,-2px,0) scale(1) rotate(35deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .brand-loader__mark { animation: none; }
+  .brand-loader .brand-mark__stroke { animation: none !important; stroke-dashoffset: 0; opacity: 1; }
+  .brand-loader__particles { display: none; }
 }

@@ -33,24 +33,42 @@
   display: grid;
   place-items: center;
   pointer-events: none;
-  background: #f6f8f7;
-  animation: brand-intro-exit 860ms ease-out both;
+  background: #fff;
+  animation: brand-intro-exit 1900ms ease-out both;
 }
+.brand-intro--refresh { animation-duration: 1350ms; }
 .brand-intro__stack {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  animation: brand-intro-arrive 380ms ease-out both;
+  gap: 14px;
+  animation: brand-intro-arrive 360ms ease-out both;
 }
-.brand-intro__mark { width: 124px; height: 124px; }
-.brand-intro__title {
-  color: #005931;
-  font-family: Cairo, sans-serif;
-  font-size: 21px;
-  font-weight: 900;
-  letter-spacing: 0;
+.brand-intro__mark { width: 96px; height: 128px; }
+.brand-intro__mark .brand-mark__stroke { animation-duration: 900ms; }
+.brand-intro__mark .brand-mark__stroke--2 { animation-delay: 100ms; }
+.brand-intro__mark .brand-mark__stroke--3 { animation-delay: 240ms; }
+.brand-intro__mark .brand-mark__stroke--4 { animation-delay: 410ms; }
+.brand-intro__mark .brand-mark__stroke--5 { animation-delay: 310ms; }
+/* The homepage's actual BrandWordmark provides the exact lettering, stretching
+ * and two-color treatment; do not replace this with manually typed text. */
+.brand-intro .brand-name--intro {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: clamp(1.35rem, 5.5vw, 1.9rem);
+  line-height: 1.5;
+  animation: brand-wordmark-arrive 620ms 690ms both;
 }
+.brand-intro__refresh-loader.brand-loader { width: 82px; height: 108px; }
+.brand-intro__refresh-caption {
+  font-family: 'Thmanyah', 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #357359;
+  animation: brand-wordmark-arrive 440ms 180ms both;
+}
+.brand-intro--refresh .brand-name--intro { animation-delay: 200ms; }
 .brand-cart-feedback {
   position: fixed;
   bottom: calc(94px + env(safe-area-inset-bottom,0px));
@@ -93,8 +111,12 @@
   to { opacity: 1; transform: translate3d(0,0,0) scale(1); }
 }
 @keyframes brand-intro-exit {
-  0%, 64% { opacity: 1; }
+  0%, 82% { opacity: 1; }
   100% { opacity: 0; }
+}
+@keyframes brand-wordmark-arrive {
+  from { opacity: 0; transform: translate3d(0,9px,0); }
+  to { opacity: 1; transform: translate3d(0,0,0); }
 }
 @keyframes brand-cart-pop {
   0% { transform: scale(.83); opacity: .7; }
@@ -115,7 +137,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .brand-mark--pop, .brand-mark--reveal .brand-mark__stroke,
-  .brand-intro, .brand-intro__stack, .brand-cart-feedback,
+  .brand-intro, .brand-intro__stack, .brand-intro .brand-name--intro, .brand-intro__refresh-caption, .brand-cart-feedback,
   .brand-order-success__check, .brand-empty-mark {
     animation: none !important;
   }
