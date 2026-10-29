@@ -136,14 +136,15 @@ const ProductDetail = () => {
   // A browse card is sufficient to paint a smooth incoming sheet, even when
   // the canonical detail request is still in flight. Never use it for checkout.
   const isPreviewOnly = !serverProduct && Boolean(isMobile && browseIndex >= 0 && id && pendingPreview);
-  const product: Product | null = serverProduct || (isPreviewOnly ? {
+  const previewDisplayProduct = useMemo<Product | null>(() => isPreviewOnly ? ({
     id: id!,
     name: pendingPreview!.name || 'المنتج',
     image_urls: pendingPreview!.image ? [pendingPreview!.image] : [],
     price: 0,
     quantity: 0,
     unit_of_measure: 'قطعة',
-  } as Product : null);
+  } as Product) : null, [id, isPreviewOnly, pendingPreview?.name, pendingPreview?.image]);
+  const product: Product | null = serverProduct || previewDisplayProduct;
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [extrasForId, setExtrasForId] = useState<string | null>(null);
@@ -1042,7 +1043,7 @@ const ProductDetail = () => {
             <section className="rounded-[24px] border border-slate-100 bg-white px-4 pb-4 pt-4">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${unavailable ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-[#005931]'}`}>
-                  {isPreviewOnly ? 'جاري تحديث بيانات المنتج' : unavailable ? 'غير متوفر حاليًا' : 'متوفر للطلب'}
+                  {isPreviewOnly ? (loadError ? 'تعذر تحميل التفاصيل — تقدر تكمّل التقليب' : 'جاري تحديث بيانات المنتج') : unavailable ? 'غير متوفر حاليًا' : 'متوفر للطلب'}
                 </span>
                 {limitedStock && <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">كمية محدودة</span>}
                 {bulkMode && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-[#005931]">جملة</span>}
