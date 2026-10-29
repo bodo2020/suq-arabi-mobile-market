@@ -13,6 +13,7 @@ type Props = {
   handoff: boolean;
   handoffExiting: boolean;
   transitioning: boolean;
+  moving: boolean;
   onOpen: (offset: number) => void;
 };
 
@@ -25,7 +26,7 @@ const money = (amount: number) =>
  * a swipe settles. Keeping matching hero geometry avoids a loading flash.
  */
 function ProductSwipePeek({
-  offset, preview, product, locked, visible, handoff, handoffExiting, transitioning, onOpen,
+  offset, preview, product, locked, visible, handoff, handoffExiting, transitioning, moving, onOpen,
 }: Props) {
   if (!preview) return null;
   const bulk = new URLSearchParams(preview.path.split('?')[1] || '').get('unit') === 'bulk';
@@ -55,7 +56,7 @@ function ProductSwipePeek({
       aria-hidden={!visible}
       aria-label={`عرض تفاصيل ${title}`}
       dir="rtl"
-      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${transitioning ? 'will-change-transform transition-[transform,opacity] duration-[220ms] ease-out' : 'transition-opacity duration-[160ms]'} ${shown ? 'opacity-100' : 'opacity-0'}`}
+      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${moving ? 'will-change-transform' : ''} ${transitioning ? 'transition-[transform,opacity] duration-[220ms] ease-out' : 'transition-opacity duration-[160ms]'} ${shown ? 'opacity-100' : 'opacity-0'}`}
       style={{ transform: `translate3d(calc(${position} + var(--product-swipe-x, 0px)), 0, 0)` }}
     >
       <span className="flex w-full shrink-0 flex-col rounded-t-[30px] bg-white px-4 pb-2 pt-3">
