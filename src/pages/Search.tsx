@@ -183,6 +183,11 @@ export default function Search() {
       setFindingBarcode(false);
     }
   };
+  const clearHistory = () => {
+    setRecent([]);
+    try { localStorage.removeItem('recentSearches'); } catch { /* optional */ }
+  };
+
   return (
     <MainLayout hideBottomNav>
       {query && <SEOHead title={'البحث عن ' + query + ' - سوبر ماركو'} description={'نتائج البحث عن ' + query} type="search" />}
@@ -244,7 +249,7 @@ export default function Search() {
             </div>
           </div>
         ) : !query ? (
-          <SearchDiscovery recent={recent} onSearch={submitTerm} />
+          <SearchDiscovery recent={recent} onSearch={submitTerm} onClearRecent={clearHistory} />
         ) : (
           <>
             <div className="mb-3 flex items-center justify-between gap-2">
