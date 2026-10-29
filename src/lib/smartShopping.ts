@@ -1,5 +1,6 @@
 import { supabase, type Product } from '@/lib/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isWeightedProduct, productWeightStepGrams } from '@/lib/productPurchase';
 // Generated Database types are updated by Supabase separately; new additive
 // smart-shopping schema is accessed with a runtime-safe client cast.
 export const shoppingDb = supabase as unknown as SupabaseClient<any>;
@@ -87,6 +88,11 @@ export function declaredPackSize(p: Product, unit: SmartGroupSlot['unit']): numb
 }
 
 export function proposedPackCount(slot: SmartGroupSlot, product: Product, people: number, base: number): number | null {
+  if (isWeightedProduct(product)) {
+    const step = productWeightStepGrams(product);
+    const grams = slot.unit === 'g' ? slot.amount * people / base : step;
+    return Math.max(step, Math.ceil(grams / step) * step);
+  }
   if (slot.unit === 'pack') return Math.max(1, Math.ceil(slot.amount * people / base));
   const size = declaredPackSize(product, slot.unit);
   if (!size) return null;
