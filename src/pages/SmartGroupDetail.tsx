@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, Check, ChevronDown, CircleHelp, Minus, Plus, ShoppingBag, ExternalLink, Users, Save } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -9,6 +9,7 @@ import { useBranch } from '@/contexts/BranchContext';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 import { supabase, type Product } from '@/lib/supabase';
+import { isWeightedProduct } from '@/lib/weightProducts';
 import {
   availableSmartProduct, getSmartGroupBundle, getSmartGroups,
   moneyEGP, proposedPackCount, quantityText, smartProductPrice,
@@ -25,6 +26,7 @@ const safeEntries = (value: unknown): SavedEntry[] =>
 export default function SmartGroupDetail() {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user } = useUser();
   const { branch, branchLoading } = useBranch();
@@ -50,8 +52,13 @@ export default function SmartGroupDetail() {
   const [saving,setSaving] = useState(false);
 
   useEffect(() => {
-    if (group) setPeople(group.base_servings);
-  }, [group?.id]);
+    if (!group) return;
+    const suggested = location.state as { people?:number; budget?:string }|null;
+    const count = Number(suggested?.people);
+    setPeople([2,4,6,8].includes(count) ? count : group.base_servings);
+    if (suggested?.budget === 'simple' || suggested?.budget === 'medium' || suggested?.budget === 'large')
+      setBudget(suggested.budget);
+  }, [group?.id, location.key]);
 
   const isPersonalList = group?.kind === 'list';
   const savedKey = 'super-marko-smart-list-v1:' + slug;
@@ -142,7 +149,7 @@ export default function SmartGroupDetail() {
           throw new Error('PRODUCT_CHANGED');
         // Packaging needs an explicit shopper-confirmed count if size isn't
         // derivable; never pretend loose produce is a sealed package.
-        if (newer.unit_of_measure === 'weight') throw new Error('WEIGHTED_PRODUCT');
+        if (isWeightedProduct(newer)) throw new Error('WEIGHTED_PRODUCT');
         cartLines.push({product:newer,quantity:line.count});
       }
       const result = addBundleToCart(cartLines);
