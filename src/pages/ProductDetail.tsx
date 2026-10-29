@@ -909,6 +909,7 @@ const ProductDetail = () => {
             handoff={slide.offset === 0 && handoffPath === slide.path}
             handoffExiting={handoffExiting}
             transitioning={!sheetDragging && swipeAnimating}
+            moving={sheetDragging || swipeAnimating}
             onOpen={onPeekOpen}
           />
         ))}
@@ -922,7 +923,17 @@ const ProductDetail = () => {
           className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${sheetDragging ? 'will-change-transform transition-none' : swipeAnimating ? 'will-change-transform transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-[transform,opacity] duration-[190ms] ease-out'}`}
           style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible ? '0px' : '28px'} + var(--product-dismiss-y, 0px)), 0)`, opacity: sheetVisible ? 1 : 0 }}
           onTransitionEnd={event => {
-            if (event.currentTarget === event.target && event.propertyName === 'transform') completeSwipeNavigation();
+            if (event.currentTarget !== event.target || event.propertyName !== 'transform') return;
+            if (pendingSwipeNavigation.current) {
+              completeSwipeNavigation();
+            } else if (swipeAnimating) {
+              // An aborted flick springs back. Release its GPU layers instead
+              // of retaining will-change and a transform transition forever.
+              setSwipeAnimating(false);
+              sheetStage.current?.querySelectorAll<HTMLElement>(
+                '[data-product-swipe-card], [data-product-center-card]',
+              ).forEach(card => card.style.removeProperty('transition'));
+            }
           }}
         >
           <header
