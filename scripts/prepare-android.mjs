@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const manifestPath = 'android/app/src/main/AndroidManifest.xml';
 const stylesPath = 'android/app/src/main/res/values/styles.xml';
-const brandLogoPath = 'resources/android-brand/elmadawy-logo.png';
+const brandLogoPath = 'resources/android-brand/super-marko-logo.png';
 const resRoot = 'android/app/src/main/res';
 
 const requiredPermissions = [
@@ -163,4 +163,4 @@ await writeFile(path.join(drawableDir, 'elmadawy_splash_icon.xml'), splashIconXm
 const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:drawable="@drawable/elmadawy_splash_icon" />\n</layer-list>\n`;
 await writeFile(path.join(drawableDir, 'elmadawy_splash.xml'), splashBackgroundXml, 'utf8');
 
-console.log('Android brand assets verified and applied: Elmadawy launcher icon, adaptive icon, splash screen and notification permission are active.');
+console.log('Android brand assets verified and applied: Super Marko launcher icon, adaptive icon, splash screen and notification permission are active.');

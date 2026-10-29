@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Home, Grid, User, Heart, ShoppingCart, Package, MapPin, Zap } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
 import BrandWordmark from '@/components/brand/BrandWordmark';
+import BrandMark from '@/components/brand/BrandMark';
 import CustomerNotificationBell from '@/components/CustomerNotificationBell';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
@@ -107,7 +108,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
                   <ArrowRight size={19} />
                 </button>
               )}
-              <Link to="/" className="min-w-0" aria-label="سوبر ماركو، الرئيسية">
+              <Link to="/" className="flex min-w-0 items-center gap-1.5" aria-label="سوبر ماركو، الرئيسية">
+                <BrandMark variant="mark" className="h-[34px] w-[26px] sm:h-[39px] sm:w-[29px]" />
                 <BrandWordmark className={showBackButton ? 'brand-name--home brand-name--categories' : 'brand-name--home'} />
               </Link>
             </div>
@@ -155,7 +157,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               ><ArrowRight size={21} /></button>
             )}
             {!hideLogo && (
-              <Link to="/" aria-label="الرئيسية" className="shrink-0 rounded-xl active:scale-95">
+              <Link to="/" aria-label="الرئيسية" className="flex shrink-0 items-center gap-1 rounded-xl active:scale-95">
+                <BrandMark variant="mark" className="h-8 w-6" />
                 <BrandWordmark className="brand-name--header" />
               </Link>
             )}
