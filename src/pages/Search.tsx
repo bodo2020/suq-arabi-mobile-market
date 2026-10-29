@@ -2,7 +2,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Barcode, Search as SearchIcon, X } from 'lucide-react';
+import { Barcode, Search as SearchIcon, X } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { getProductListWithVariants } from '@/utils/productUtils';
 
 type AvailabilityFilter = 'all' | 'available' | 'unavailable';
@@ -66,7 +65,6 @@ const Search = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
 
   const allVariants = useMemo(
     () => getProductListWithVariants(products) as SearchDisplayProduct[],
