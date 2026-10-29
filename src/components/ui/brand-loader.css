@@ -1,9 +1,25 @@
-.brand-loader { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; vertical-align: middle; min-width: 112px; min-height: 48px; color: hsl(var(--primary)); }
-.brand-loader__name { display: block; white-space: nowrap; animation: brand-load 1.4s ease-in-out infinite; }
-.brand-loader__name .brand-name { font-size: 1rem; }
-.brand-loader--sm { min-width: 72px; min-height: 24px; }
-.brand-loader--sm .brand-name { font-size: .7rem; }
-.brand-loader--lg { min-width: 156px; min-height: 80px; }
-.brand-loader--lg .brand-name { font-size: 1.45rem; }
-@keyframes brand-load { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .brand-loader__name { animation: none; } }
+.brand-loader {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  width: 40px;
+  height: 48px;
+}
+.brand-loader--sm { width: 19px; height: 25px; }
+.brand-loader--md { width: 34px; height: 45px; }
+.brand-loader--lg { width: 62px; height: 84px; }
+.brand-loader__mark {
+  width: 70%;
+  height: 100%;
+  /* Only pulse when a request lasts beyond the quick interaction window. */
+  animation: brand-load-soft 1800ms ease-in-out 450ms infinite;
+}
+@keyframes brand-load-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .72; transform: scale(.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader__mark { animation: none; }
+}
