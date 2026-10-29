@@ -75,7 +75,7 @@ begin
     cross join lateral (
       select
         public.customer_search_arabic_key_v1(p.name) as name_key,
-        public.customer_search_arabic_key_v1(coalesce(bv.name,p.bulk_name,'')) as variant_key,
+        public.customer_search_arabic_key_v1(coalesce(bv.name,'')) as variant_key,
         public.customer_search_arabic_key_v1(coalesce(p.manufacturer_name,'')) as maker_key
     ) n
     where p.catalog_scope='elmadawy'
