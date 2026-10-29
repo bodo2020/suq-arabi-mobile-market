@@ -140,7 +140,7 @@ const BannerProducts = () => {
       />
       {products.length > 0 && <ProductListStructuredData products={products} listName={title} />}
 
-      <TopNavBar hideLogo hideSearch hideCart pageTitle={title} showBackButton onBack={() => navigate(-1)} />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle={title} showBackButton onBack={() => navigate(-1)} />
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {loading ? (
