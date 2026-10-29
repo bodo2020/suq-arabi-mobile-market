@@ -6,6 +6,8 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import OrderEtaPanel from '@/components/orders/OrderEtaPanel';
+import BrandMark from '@/components/brand/BrandMark';
+import { Check } from 'lucide-react';
 import { getMyOrderEta } from '@/lib/orderEta';
 import { getMyOrderDeliveryPin } from '@/lib/deliveryPin';
 
@@ -55,8 +57,9 @@ const OrderSuccess = () => {
     <MainLayout>
       <div className="mx-auto flex min-h-[75vh] max-w-lg items-center px-4 py-8" dir="rtl">
         <section className="w-full rounded-3xl border border-green-100 bg-white p-6 text-center shadow-sm sm:p-8">
-          <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-green-50 text-primary">
-            <CheckCircle size={48} />
+          <span className="relative mx-auto flex h-20 w-20 items-center justify-center">
+            <BrandMark variant="badge" motion="pop" className="brand-order-success__badge" />
+            <span className="brand-order-success__check"><Check size={17} strokeWidth={3} /></span>
           </span>
 
           <h1 className="mt-5 text-2xl font-bold">طلبك وصلنا بنجاح</h1>
