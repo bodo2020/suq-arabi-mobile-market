@@ -382,7 +382,7 @@ html.native-platform [role="button"] {
 .brand-name--home {
   padding: 0;
   border-radius: 0;
-  font-size: clamp(1.05rem, 4.5vw, 1.65rem);
+  font-size: clamp(1rem, 4.1vw, 1.55rem);
   line-height: 1.5;
   color: #005931;
   background: transparent;
