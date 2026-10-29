@@ -83,7 +83,7 @@ const CompanyProducts = () => {
       />
       {products.length > 0 && company && <ProductListStructuredData products={products} listName={`منتجات ${company.name}`} />}
 
-      <TopNavBar hideLogo hideSearch hideCart pageTitle={company?.name || 'الشركة'} showBackButton onBack={() => navigate(-1)} />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle={company?.name || 'الشركة'} showBackButton onBack={() => navigate(-1)} />
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {loading ? (
