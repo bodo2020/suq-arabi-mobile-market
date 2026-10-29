@@ -56,6 +56,12 @@ const ProductDetail = () => {
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeFrame = useRef<number | null>(null);
   const pendingSwipeNavigation = useRef<(() => void) | null>(null);
+  // Stable peek callback: rendering unrelated product details won't repaint
+  // adjacent cards or their already-decoded thumbnails.
+  const browseActionRef = useRef<(offset: -1 | 1) => void>(() => {});
+  const onPeekOpen = React.useCallback((offset: number) => {
+    if (offset === -1 || offset === 1) browseActionRef.current(offset);
+  }, []);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closingRef = useRef(false);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -325,6 +331,8 @@ const ProductDetail = () => {
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     swipeTimer.current = setTimeout(completeSwipeNavigation, 330);
   };
+
+  browseActionRef.current = browseProduct;
 
   const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
@@ -875,14 +883,12 @@ const ProductDetail = () => {
             offset={slide.offset}
             preview={slide.preview}
             product={slide.product}
-            locked={swipeLocked || Math.abs(slide.offset) !== 1}
+            locked={swipeLocked || weightOpen || Math.abs(slide.offset) !== 1}
             visible={sheetVisible && (slide.offset !== 0 || handoffPath === slide.path)}
             handoff={slide.offset === 0 && handoffPath === slide.path}
             handoffExiting={handoffExiting}
             transitioning={!sheetDragging && swipeAnimating}
-            onOpen={() => {
-              if (slide.offset === -1 || slide.offset === 1) browseProduct(slide.offset);
-            }}
+            onOpen={onPeekOpen}
           />
         ))}
         <section
