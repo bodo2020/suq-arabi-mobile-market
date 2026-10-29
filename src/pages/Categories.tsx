@@ -34,12 +34,13 @@ const Categories = () => {
     <MainLayout>
       {/* Match the home hero on mobile while keeping the compact desktop navbar. */}
       <TopNavBar
+        variant="hero"
         homeHero
         hideLogo
         showBackButton
         onBack={() => navigate(-1)}
         searchPlaceholder="دور على منتج أو قسم…"
-        onSearchFocus={() => navigate('/search')}
+        onSearchFocus={() => navigate('/search', { state: { focusSearch: true } })}
         searchProps={{ appearance: 'category' }}
         addressLabel={addressLabel}
         addressLoading={addressLoading}
