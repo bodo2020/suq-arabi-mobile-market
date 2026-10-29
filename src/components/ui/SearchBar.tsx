@@ -10,7 +10,7 @@ interface SearchBarProps {
   onQueryChange?: (value: string) => void;
   onFocus?: () => void;
   readOnly?: boolean;
-  appearance?: 'default' | 'category' | 'hero';
+  appearance?: 'default' | 'category' | 'hero' | 'compact';
   animatedSuggestions?: boolean;
   showBarcode?: boolean;
 }
@@ -125,6 +125,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const hero = appearance === 'hero';
   const category = appearance === 'category';
+  const compact = appearance === 'compact';
   const showTyping = animatedSuggestions && readOnly && !query;
 
   return (
@@ -132,15 +133,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
       <div className={`relative flex items-center overflow-hidden border transition-colors focus-within:border-[#005931] ${
         hero
           ? 'h-[54px] rounded-full border-[#b8d8c8] bg-white shadow-[0_4px_18px_rgba(0,89,49,.07)] sm:h-[58px]'
-          : category
-            ? 'rounded-full border-emerald-200 bg-white shadow-[0_2px_8px_rgba(0,89,49,.02)]'
-            : 'rounded-full border-emerald-100 bg-white focus-within:bg-white'
+          : compact
+            ? 'h-[48px] rounded-full border-transparent bg-transparent shadow-none'
+            : category
+              ? 'rounded-full border-emerald-200 bg-white shadow-[0_2px_8px_rgba(0,89,49,.02)]'
+              : 'rounded-full border-emerald-100 bg-white focus-within:bg-white'
       }`}>
         <div className="relative flex min-w-0 flex-1 items-center">
           <Search
             size={hero ? 22 : 20}
             className={`pointer-events-none absolute z-10 ${
-              hero || category ? 'right-4 text-[#005931]' : 'right-3 text-gray-400'
+              hero || category ? 'right-4 text-[#005931]' : compact ? 'right-2 text-[#005931]' : 'right-3 text-gray-400'
             }`}
             aria-hidden="true"
           />
@@ -166,7 +169,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
             placeholder={showTyping ? '' : placeholder}
             readOnly={readOnly}
             className={`min-w-0 w-full bg-transparent pl-3 text-gray-900 outline-none placeholder:text-gray-500 ${
-              hero ? 'py-4 pr-12 text-base' : 'py-3 pr-10 text-sm'
+              hero ? 'py-4 pr-12 text-base' : compact ? 'py-2.5 pr-9 text-[13px]' : 'py-3 pr-10 text-sm'
             } ${readOnly ? 'cursor-pointer' : ''}`}
           />
           {showTyping && (
@@ -196,7 +199,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onClick={handleBarcodeClick}
             aria-label="مسح باركود المنتج"
             title="مسح باركود المنتج"
-            className="mx-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#005931] transition-colors hover:bg-emerald-50 active:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
+            className={`${compact ? 'mx-0.5 h-10 w-10' : 'mx-1.5 h-10 w-10'} flex shrink-0 items-center justify-center rounded-full text-[#005931] transition-colors hover:bg-emerald-50 active:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]`}
           >
             <ScanBarcode size={22} strokeWidth={1.85} aria-hidden="true" />
           </button>

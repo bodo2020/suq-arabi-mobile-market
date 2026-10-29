@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Grid, Heart, Home, Package } from 'lucide-react';
+import { ArrowRight, ChevronDown, Grid, Heart, Home, MapPin, Package } from 'lucide-react';
+import './home-header-motion.css';
 import SearchBar from '@/components/ui/SearchBar';
 import CustomerNotificationBell from '@/components/CustomerNotificationBell';
 import HeaderBrand from './header/HeaderBrand';
@@ -61,6 +62,9 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const { getTotalItems } = useCart();
   const { user } = useUser();
   const headerRef = React.useRef<HTMLElement | null>(null);
+  const expandedHeaderHeightRef = React.useRef(0);
+  const scrollFrameRef = React.useRef<number | null>(null);
+  const [homeCollapsed, setHomeCollapsed] = React.useState(false);
 
   const pageIsSearch = location.pathname === '/search';
   const canShowHero = location.pathname === '/' || location.pathname === '/categories';
@@ -71,6 +75,40 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const isSearch = mode === 'search';
   const isTitle = mode === 'title';
   const needsBack = showBackButton || isSearch;
+  // Only the mobile homepage collapses. Category, search and checkout
+  // headers retain their existing dimensions and behavior.
+  const collapsibleHome = isHero && location.pathname === '/' && !needsBack;
+
+  React.useEffect(() => {
+    if (!collapsibleHome) return;
+    const update = () => {
+      scrollFrameRef.current = null;
+      if (window.innerWidth >= 768) {
+        setHomeCollapsed(false);
+        return;
+      }
+      const offset = Math.max(window.scrollY, document.scrollingElement?.scrollTop || 0);
+      // Hysteresis prevents header chatter when the user pauses at the boundary.
+      setHomeCollapsed(previous => previous ? offset > 36 : offset >= 112);
+    };
+    const scheduleUpdate = () => {
+      if (scrollFrameRef.current === null) {
+        scrollFrameRef.current = window.requestAnimationFrame(update);
+      }
+    };
+    update(); // Restored scroll position / browser Back.
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
+    };
+  }, [collapsibleHome]);
+
   const goBack = () => {
     if (onBack) onBack();
     else if (window.history.length > 1) navigate(-1);
@@ -92,7 +130,15 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
     if (!header) return;
     const update = () => {
       const height = Math.ceil(header.getBoundingClientRect().height);
-      document.documentElement.style.setProperty('--top-nav-height', `${height}px`);
+      // Keep the original homepage content offset stable while its fixed
+      // header changes size. Otherwise the page jumps and re-triggers scroll.
+      if (collapsibleHome && window.innerWidth < 768) {
+        if (!homeCollapsed) expandedHeaderHeightRef.current = height;
+        const reserved = Math.max(height, expandedHeaderHeightRef.current);
+        document.documentElement.style.setProperty('--top-nav-height', `${reserved}px`);
+      } else {
+        document.documentElement.style.setProperty('--top-nav-height', `${height}px`);
+      }
     };
     update();
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
@@ -102,14 +148,14 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       observer?.disconnect();
       window.removeEventListener('orientationchange', update);
     };
-  }, [mode, pageTitle, needsBack]);
+  }, [mode, pageTitle, needsBack, collapsibleHome, homeCollapsed]);
 
-  const search = (appearance: 'hero' | 'category' | 'default') => (
+  const search = (appearance: 'hero' | 'category' | 'compact' | 'default') => (
     <SearchBar
-      placeholder={searchPlaceholder}
+      placeholder={appearance === 'compact' ? 'ابحث عن منتج…' : searchPlaceholder}
       {...searchProps}
       readOnly={isSearch ? false : true}
-      animatedSuggestions={appearance === 'hero' && !isSearch}
+      animatedSuggestions={appearance === 'hero' && !homeCollapsed && !isSearch}
       appearance={appearance}
       showBarcode={true}
       onFocus={isSearch ? undefined : openSearch}
@@ -120,13 +166,17 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
     <header
       ref={headerRef}
       data-customer-header={mode}
+      data-home-collapsed={collapsibleHome ? String(homeCollapsed) : undefined}
       className={`native-safe-top fixed inset-x-0 top-0 z-50 border-b text-[#005931] ${
-        isHero ? 'border-[#d6eee0] bg-gradient-to-b from-[#e6f9ee] via-[#f1fbf5] to-white md:bg-white' :
-          'border-emerald-100 bg-white'
+        collapsibleHome ? 'home-top-nav' : ''
+      } ${
+        isHero && !(collapsibleHome && homeCollapsed)
+          ? 'border-[#d6eee0] bg-gradient-to-b from-[#e6f9ee] via-[#f1fbf5] to-white md:bg-white'
+          : 'border-emerald-100 bg-white'
       }`}
     >
-      {isHero && (
-        <div className="mx-auto max-w-7xl px-3 pb-3 pt-3 sm:px-5 md:hidden">
+      {isHero && !(collapsibleHome && homeCollapsed) && (
+        <div className={`mx-auto max-w-7xl px-3 pb-3 pt-3 sm:px-5 md:hidden ${collapsibleHome ? 'home-header-expanded' : ''}`}>
           <div className="flex min-h-[66px] items-start justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1 pt-2">
               {needsBack && (
@@ -147,6 +197,26 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
             </div>
           </div>
           <div className="mt-2">{search('hero')}</div>
+        </div>
+      )}
+
+      {collapsibleHome && homeCollapsed && (
+        <div className="home-header-compact mx-auto max-w-7xl px-3 py-2 sm:px-5 md:hidden">
+          <div className="flex h-[52px] min-w-0 items-center gap-1.5 rounded-full border border-[#b8d8c8] bg-white px-1.5 shadow-[0_4px_14px_rgba(0,89,49,.08)]">
+            <div className="min-w-0 flex-1">{search('compact')}</div>
+            <span className="h-6 w-px shrink-0 bg-[#dbe6df]" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={openAddress}
+              aria-label={addressLabel ? `تغيير عنوان التوصيل: ${addressLabel}` : 'تحديد عنوان التوصيل'}
+              title={addressLabel || 'حدد عنوان التوصيل'}
+              className="inline-flex h-11 max-w-[38%] shrink-0 items-center gap-1 rounded-full px-1.5 text-[#005931] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
+            >
+              <MapPin size={17} className="shrink-0" aria-hidden="true" />
+              <span className="min-w-0 truncate text-[12px] font-bold">{addressLoading ? 'جاري التحميل' : addressLabel || 'التوصيل'}</span>
+              <ChevronDown size={13} className="shrink-0 text-[#618272]" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       )}
 
