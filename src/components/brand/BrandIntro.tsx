@@ -15,7 +15,6 @@ function initialIntroMode(): IntroMode {
   const isReload = navigation?.type === 'reload';
   try {
     const seen = sessionStorage.getItem('super-marko-intro-v2');
-    if (!seen) sessionStorage.setItem('super-marko-intro-v2', '1');
     if (isReload) return 'refresh';
     return seen ? null : 'intro';
   } catch {
@@ -31,6 +30,11 @@ export default function BrandIntro() {
   // Always recreate the timer after StrictMode cleanup.
   useEffect(() => {
     if (!mode) return;
+    try {
+      window.sessionStorage.setItem('super-marko-intro-v2', '1');
+    } catch {
+      // Restricted storage must not interrupt the animation.
+    }
     const timer = window.setTimeout(() => setMode(null), mode === 'intro' ? 1900 : 1350);
     return () => window.clearTimeout(timer);
   }, [mode]);
