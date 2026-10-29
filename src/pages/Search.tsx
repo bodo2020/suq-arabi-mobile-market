@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowUpLeft, Clock3, Search as SearchIcon, SlidersHorizontal, Sparkles, X } from 'lucide-react';
+import { ArrowUpLeft, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
@@ -8,6 +8,7 @@ import ProductListStructuredData from '@/components/seo/ProductListStructuredDat
 import SEOHead from '@/components/seo/SEOHead';
 import BrandLoader from '@/components/ui/BrandLoader';
 import SearchBarcodeScanner from '@/components/search/SearchBarcodeScanner';
+import SearchDiscovery from '@/components/search/SearchDiscovery';
 import { Button } from '@/components/ui/button';
 import { type Product } from '@/lib/supabase';
 import {
@@ -20,8 +21,6 @@ import { getProductListWithVariants } from '@/utils/productUtils';
 
 type AvailabilityFilter = 'all' | 'available' | 'unavailable';
 type SearchDisplayProduct = Product & { displayType?: 'regular' | 'bulk'; variantKey?: string };
-const quickIdeas = ['لبن', 'جبنة', 'مكرونة', 'منظفات', 'شاي', 'سناكس'];
-
 const available = (p: SearchDisplayProduct) => {
   const quantity = Math.max(0, Number(p.quantity || 0));
   return p.displayType === 'bulk'
@@ -190,14 +189,14 @@ export default function Search() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout hideBottomNav>
       {query && <SEOHead title={'البحث عن ' + query + ' - سوبر ماركو'} description={'نتائج البحث عن ' + query} type="search" />}
       {query && products.length > 0 && <ProductListStructuredData products={products} listName={'البحث عن ' + query} />}
       <TopNavBar
         variant="search"
         showBackButton
         onBack={goBack}
-        searchPlaceholder="ابحث عن منتجات أو امسح الباركود"
+        searchPlaceholder="ابحث عن منتج..."
         searchProps={{
           initialQuery: query,
           onQueryChange: setDraft,
@@ -222,12 +221,11 @@ export default function Search() {
               <ArrowUpLeft size={17} className="text-slate-400" />
             </button>
             <div className="px-4 py-2">
-              <p className="mb-2 text-xs font-bold text-slate-500">اقتراحات من منتجات فرعك</p>
+              {(suggesting || suggestions.length > 0) && (
+                <p className="mb-2 text-xs font-bold text-slate-500">اقتراحات</p>
+              )}
               {suggesting && suggestions.length === 0 && (
                 <div className="flex min-h-14 items-center gap-2 text-xs text-slate-500"><BrandLoader size="sm" /> جاري البحث…</div>
-              )}
-              {!suggesting && suggestions.length === 0 && (
-                <p className="py-4 text-sm text-slate-500">اضغط بحث عشان نجرب كمان التصحيح والمرادفات.</p>
               )}
               {suggestions.map(product => (
                 <button
@@ -251,43 +249,7 @@ export default function Search() {
             </div>
           </div>
         ) : !query ? (
-          <div className="space-y-6 pt-2">
-            {recent.length > 0 && (
-              <section>
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h1 className="flex items-center gap-2 text-base font-black text-slate-900"><Clock3 size={18} className="text-[#005931]" /> آخر عمليات البحث</h1>
-                  <button type="button" onClick={clearHistory} className="flex min-h-9 items-center gap-1 text-xs font-bold text-slate-500 hover:text-rose-600">
-                    <X size={14} /> مسح الكل
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {recent.map(item => (
-                    <button key={item} type="button" onClick={() => submitTerm(item)} className="min-h-10 rounded-full border border-emerald-100 bg-white px-4 text-sm text-slate-700 hover:bg-emerald-50">
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
-            <section>
-              <h2 className="mb-3 flex items-center gap-2 text-base font-black text-slate-900">
-                <Sparkles size={18} className="text-[#005931]" /> جرّب تدور على
-              </h2>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {quickIdeas.map(item => (
-                  <button
-                    type="button"
-                    key={item}
-                    onClick={() => submitTerm(item)}
-                    className="flex min-h-12 items-center justify-between gap-2 rounded-2xl border border-emerald-100 bg-white px-4 text-right text-sm font-bold text-slate-800 hover:border-[#005931] hover:bg-emerald-50"
-                  >
-                    {item}<SearchIcon size={16} className="shrink-0 text-[#005931]" />
-                  </button>
-                ))}
-              </div>
-            </section>
-            <p className="text-center text-xs text-slate-500">بنراعي اختلاف كتابة العربي، وتقدر تلاقي المنتج بالباركود كمان.</p>
-          </div>
+          <SearchDiscovery recent={recent} onSearch={submitTerm} onClearRecent={clearHistory} />
         ) : (
           <>
             <div className="mb-3 flex items-center justify-between gap-2">
