@@ -323,6 +323,9 @@ const Search = () => {
 
       <div className="py-0">
         <TopNavBar
+          variant="search"
+          showBackButton
+          onBack={handleBack}
           searchPlaceholder="دور باسم المنتج أو الباركود..."
           searchProps={{
             initialQuery: query,
@@ -336,19 +339,7 @@ const Search = () => {
         <div className="pb-10 pt-4 sm:pt-6">
           <div className="w-full px-3 sm:px-4">
             <div className="mx-auto max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl">
-              {!isMobile && (
-                <div className="mb-5 flex items-center">
-                  <button
-                    onClick={handleBack}
-                    className="rounded-full p-2 transition-colors hover:bg-gray-100"
-                    aria-label="الرجوع"
-                  >
-                    <ArrowRight size={24} className="text-[#005931]" />
-                  </button>
-                  <h1 className="flex-1 text-center text-xl font-black text-slate-950">البحث</h1>
-                  <div className="w-10" />
-                </div>
-              )}
+
 
               {showScanner && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
