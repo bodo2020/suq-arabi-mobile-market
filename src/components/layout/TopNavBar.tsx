@@ -169,7 +169,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
                 <h1 className="min-w-0 flex-1 truncate text-center text-base font-extrabold text-slate-900 sm:text-lg">
                   {pageTitle || 'سوبر ماركو'}
                 </h1>
-                <HeaderBrand compact iconOnly className="md:hidden" />
+                <HeaderBrand compact iconOnly />
               </>
             ) : showSearch ? (
               <div className="min-w-0 flex-1 md:max-w-2xl">
@@ -177,7 +177,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               </div>
             ) : null}
             {!isSearch && !isTitle && signedIn && <CustomerNotificationBell />}
-            <HeaderActions cartCount={getTotalItems()} signedIn={signedIn} showCart={!hideCart && !isSearch && !isTitle} />
+            {!isTitle && !isSearch && <HeaderActions cartCount={getTotalItems()} signedIn={signedIn} showCart={!hideCart} />}
           </div>
           <nav className="mt-2 hidden items-center gap-1 border-t border-gray-100 pt-2 md:flex" aria-label="التنقل الرئيسي">
             {desktopLinks.filter(item => !item.authOnly || signedIn).map(({ to, label, icon: Icon }) => (
