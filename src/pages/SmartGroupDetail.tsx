@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, ChevronDown, CircleHelp, Minus, Plus, ShoppingBag, ExternalLink, Users, Save } from 'lucide-react';
+import { BookOpen, CircleHelp, Minus, Plus, ShoppingBag, ExternalLink, Users, Save, Images } from 'lucide-react';
+import SmartProductChoiceCard from '@/components/smart/SmartProductChoiceCard';
+import SmartAlternativesDialog from '@/components/smart/SmartAlternativesDialog';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -46,6 +48,10 @@ export default function SmartGroupDetail() {
   const [checked,setChecked] = useState<Record<string,boolean>>({});
   const [selected,setSelected] = useState<Record<string,string>>({});
   const [packs,setPacks] = useState<Record<string,number>>({});
+  // Per ingredient/category: any mix of real product SKUs, rather than
+  // forcing four identical snack bags on a four-person watch party.
+  const [mixSelected,setMixSelected] = useState<Record<string,Record<string,number>>>({});
+  const [pickerSlot,setPickerSlot] = useState<string | null>(null);
   const [adding,setAdding] = useState(false);
   const [loadingList,setLoadingList] = useState(false);
   const [saving,setSaving] = useState(false);
@@ -89,25 +95,44 @@ export default function SmartGroupDetail() {
 
   const slots = bundleQuery.data || [];
   const lines = useMemo(() => slots.map(slot => {
-    const candidates = slot.products.filter(availableSmartProduct);
+    const candidates = slot.products.filter(product => availableSmartProduct(product) &&
+      (group?.kind !== 'occasion' || !isWeightedProduct(product)));
     const picked = candidates.find(p => p.id === selected[slot.slot_id]) || candidates[0] || null;
-    const defaultIncluded = isPersonalList ? false : !slot.optional || budget === 'large' || (budget === 'medium' && group?.kind === 'occasion' && slot.position === 3);
+    const defaultIncluded = isPersonalList ? false : !slot.optional || (budget === 'large' && group?.kind === 'occasion');
     const enabled = checked[slot.slot_id] ?? defaultIncluded;
     const calculated = picked ? proposedPackCount(slot,picked,people,group?.base_servings || 4) : null;
+    const mixTarget = Math.max(1,Math.ceil(slot.amount * people / (group?.base_servings || 4)));
+    const mix = mixSelected[slot.slot_id] || {};
+    const chosenMix = candidates
+      .filter(product => Number(mix[product.id] || 0)>0)
+      .map(product => ({product,quantity:mix[product.id]}));
+    const mixCount = chosenMix.reduce((sum,item)=>sum+item.quantity,0);
     const count = packs[slot.slot_id] ?? calculated ?? 1;
     const weighted = picked ? isWeightedProduct(picked) : false;
-    return { slot, picked, enabled, weighted, count: Math.max(1, Math.min(weighted ? 100000 : 30, count)), uncertain: calculated === null };
-  }), [slots, selected, checked, packs, people, budget, group?.base_servings, group?.kind, isPersonalList]);
+    return { slot, picked, enabled, weighted,
+      count: Math.max(1, Math.min(weighted ? 100000 : 30, count)),
+      uncertain: calculated === null, mixTarget, mixCount, chosenMix };
+  }), [slots, selected, checked, packs, mixSelected, people, budget, group?.base_servings, group?.kind, isPersonalList]);
 
   const summary = useMemo(() => {
     const active = lines.filter(line => line.enabled);
+    if (group?.kind === 'occasion') {
+      return {
+        total: active.reduce((sum,line) => sum+line.chosenMix.reduce(
+          (n,item) => n+smartProductPrice(item.product)*item.quantity,0),0),
+        products: active.reduce((n,line)=>n+line.chosenMix.reduce(
+          (quantity,item)=>quantity+item.quantity,0),0),
+        missing: active.reduce((n,line)=>n+Math.max(0,line.mixTarget-line.mixCount),0),
+        uncertain: 0,
+      };
+    }
     return {
       total: active.reduce((sum,line) => sum + (line.picked ? smartProductPrice(line.picked) * line.count / (line.weighted ? 1000 : 1) : 0),0),
       products: active.filter(line => line.picked).length,
       missing: active.filter(line => !line.picked).length,
       uncertain: active.filter(line => line.uncertain).length,
     };
-  }, [lines]);
+  }, [lines,group?.kind]);
 
   const saveList = async () => {
     if (!isPersonalList || !group) return;
@@ -128,12 +153,29 @@ export default function SmartGroupDetail() {
     } finally {setSaving(false);}
   };
 
+  const changeMix = (slotId: string, product: Product, delta: number, target: number) => {
+    if (!availableSmartProduct(product)) return;
+    setMixSelected(current => {
+      const groupMix = current[slotId] || {};
+      const now = Math.max(0,Number(groupMix[product.id] || 0));
+      const total = Object.values(groupMix).reduce((sum,count)=>sum+Math.max(0,count),0);
+      const maxStock = Math.max(0,Math.floor(Number(product.quantity || 0)));
+      if (delta>0 && (total >= target || now >= maxStock)) return current;
+      const next = {...groupMix,[product.id]:Math.max(0,now+delta)};
+      if (next[product.id]===0) delete next[product.id];
+      return {...current,[slotId]:next};
+    });
+  };
+
   const addGroup = async () => {
     if (!isInitialized) return toast({title:'استنى ثانية لحد ما السلة تجهز'});
     if (adding) return;
     const chosen = lines.filter(line => line.enabled);
     if (!chosen.length) return toast({title:'اختار حاجات تضيفها'});
-    if (chosen.some(line => !line.picked)) return toast({title:'فيه مكونات ناقصة',description:'شيل المكونات اللي مش متوفرة أو استنى لما ترجع.'});
+    if (group?.kind==='occasion' && summary.missing>0)
+      return toast({title:'كمّل تشكيلتك الأول',description:'اختار المنتجات اللي ناقصة في كل مجموعة.'});
+    if (group?.kind!=='occasion' && chosen.some(line => !line.picked))
+      return toast({title:'فيه مكونات ناقصة',description:'شيل المكونات اللي مش متوفرة أو استنى لما ترجع.'});
     setAdding(true);
     try {
       // Refresh stock and prices immediately before committing a multi-product
@@ -142,11 +184,20 @@ export default function SmartGroupDetail() {
       if (fresh.error || !fresh.data) throw new Error('REFRESH_FAILED');
       const cartLines: { product:Product; quantity:number; unit_of_measure?:'weight' }[] = [];
       for (const line of chosen) {
-        const newer = fresh.data.find(slot => slot.slot_id === line.slot.slot_id)
-          ?.products.find(product => product.id === line.picked?.id);
+        const freshSlot = fresh.data.find(slot => slot.slot_id===line.slot.slot_id);
+        if (group?.kind==='occasion') {
+          for (const entry of line.chosenMix) {
+            const newer = freshSlot?.products.find(product => product.id===entry.product.id);
+            if (!newer || !availableSmartProduct(newer) ||
+              smartProductPrice(newer)!==smartProductPrice(entry.product) ||
+              Number(newer.quantity || 0) < entry.quantity) throw new Error('PRODUCT_CHANGED');
+            cartLines.push({product:newer,quantity:entry.quantity});
+          }
+          continue;
+        }
+        const newer = freshSlot?.products.find(product => product.id===line.picked?.id);
         if (!newer || !availableSmartProduct(newer) ||
-          smartProductPrice(newer) !== smartProductPrice(line.picked!))
-          throw new Error('PRODUCT_CHANGED');
+          smartProductPrice(newer)!==smartProductPrice(line.picked!)) throw new Error('PRODUCT_CHANGED');
         cartLines.push({product:newer,quantity:line.count,
           ...(isWeightedProduct(newer) ? {unit_of_measure:'weight' as const} : {})});
       }
@@ -202,7 +253,7 @@ export default function SmartGroupDetail() {
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {[2,4,6,8].map(n => (
-                    <button key={n} type="button" onClick={() => {setPeople(n);setPacks({});}}
+                    <button key={n} type="button" onClick={() => {setPeople(n);setPacks({});setMixSelected({});}}
                       aria-pressed={people === n}
                       className={`min-h-11 rounded-2xl text-sm font-bold ${people === n ? 'bg-[#005931] text-white' : 'bg-[#f6f8f7] text-slate-700'}`}>
                       {n.toLocaleString('ar-EG')}
@@ -238,9 +289,63 @@ export default function SmartGroupDetail() {
               <>
                 <h2 className="px-1 text-lg font-black text-slate-900">اللي هتحتاجه</h2>
                 <div className="space-y-2.5">
-                  {lines.map(({slot,picked,enabled,count,uncertain,weighted}) => {
-                    const candidates = slot.products.filter(availableSmartProduct);
-                    return (
+                  {lines.map(({slot,picked,enabled,count,uncertain,weighted,mixTarget,mixCount,chosenMix}) => {
+                    const candidates = slot.products
+                      .filter(product => availableSmartProduct(product) && (group.kind !== 'occasion' || !isWeightedProduct(product)))
+                      .sort((a,b) => group.kind !== 'occasion' ? 0 :
+                        budget === 'simple' ? smartProductPrice(a) - smartProductPrice(b) :
+                        budget === 'large' ? smartProductPrice(b) - smartProductPrice(a) :
+                        Number(Boolean(b.image_urls?.[0])) - Number(Boolean(a.image_urls?.[0])));
+                    return group.kind === 'occasion' ? (
+                      <section key={slot.slot_id} className="overflow-hidden rounded-[24px] bg-white p-3.5 shadow-[0_4px_14px_rgba(0,50,28,.04)]">
+                        <div className="flex items-start justify-between gap-3">
+                          <label className="flex min-w-0 items-start gap-2.5">
+                            <input type="checkbox" checked={enabled}
+                              onChange={e=>setChecked(v=>({...v,[slot.slot_id]:e.target.checked}))}
+                              aria-label={`اختيار مجموعة ${slot.label}`}
+                              className="mt-1 h-5 w-5 shrink-0 accent-[#005931]" />
+                            <span>
+                              <span className="block text-base font-black text-slate-900">{slot.label}</span>
+                              <span className="block text-xs text-slate-500">{slot.optional?'اختياري':'اختار اللي يعجبك'}</span>
+                            </span>
+                          </label>
+                          {enabled && <span className="shrink-0 rounded-xl bg-emerald-50 px-3 py-1.5 text-sm font-black text-[#005931]" dir="ltr">
+                            {mixCount}/{mixTarget}
+                          </span>}
+                        </div>
+                        {enabled && (
+                          <>
+                            <div className="mt-3 flex gap-1" dir="ltr" role="progressbar"
+                              aria-label={`تشكيلة ${slot.label}`} aria-valuenow={mixCount}
+                              aria-valuemin={0} aria-valuemax={mixTarget}>
+                              {Array.from({length:Math.min(mixTarget,12)}).map((_,i)=>(
+                                <span key={i} className={`h-1.5 flex-1 rounded-full ${i<mixCount?'bg-[#005931]':'bg-slate-200'}`}/>
+                              ))}
+                            </div>
+                            {candidates.length ? (
+                              <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                                {candidates.map(product=>(
+                                  <SmartProductChoiceCard key={product.id} product={product}
+                                    quantity={mixSelected[slot.slot_id]?.[product.id] || 0}
+                                    maxQuantity={mixTarget}
+                                    onChangeQuantity={delta=>changeMix(slot.slot_id,product,delta,mixTarget)}
+                                  />
+                                ))}
+                              </div>
+                            ) : <p className="mt-3 text-sm text-rose-600">مفيش منتجات متاحة دلوقتي</p>}
+                            <div className="mt-3 flex items-center justify-between text-xs">
+                              <span className={mixCount===mixTarget?'font-bold text-[#005931]':'text-slate-500'}>
+                                {mixCount===mixTarget ? 'تشكيلتك جاهزة ✓' :
+                                  `اختار ${Math.max(0,mixTarget-mixCount).toLocaleString('ar-EG')} كمان`}
+                              </span>
+                              <strong className="text-[#005931]">
+                                {moneyEGP(chosenMix.reduce((t,item)=>t+smartProductPrice(item.product)*item.quantity,0))} ج
+                              </strong>
+                            </div>
+                          </>
+                        )}
+                      </section>
+                    ) : (
                       <div key={slot.slot_id} className="rounded-2xl bg-white p-3">
                         <div className="flex items-start gap-3">
                           <input type="checkbox" checked={enabled}
@@ -272,20 +377,23 @@ export default function SmartGroupDetail() {
                         </div>
                         {enabled && picked && (
                           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
-                            <label className="relative flex min-w-[120px] flex-1 items-center text-xs font-semibold text-slate-700">
-                              <select value={picked.id}
-                                aria-label={`اختيار بديل ${slot.label}`}
-                                onChange={e => {
-                                  setSelected(v => ({...v,[slot.slot_id]:e.target.value}));
-                                  setPacks(v => {const next={...v};delete next[slot.slot_id];return next;});
-                                }}
-                                className="min-h-10 w-full appearance-none rounded-xl bg-[#f6f8f7] py-2 pl-7 pr-2 text-xs">
-                                {candidates.map(product => (
-                                  <option key={product.id} value={product.id}>{product.name}</option>
-                                ))}
-                              </select>
-                              <ChevronDown size={15} className="pointer-events-none absolute left-2 text-[#005931]"/>
-                            </label>
+                            <button type="button"
+                              onClick={() => setPickerSlot(slot.slot_id)}
+                              className="flex min-h-10 min-w-[126px] flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-[#f6f8f7] px-3 text-xs font-bold text-[#005931]">
+                              <Images size={16} aria-hidden="true" />
+                              {candidates.length>1?'شوف البدائل':'شوف المنتج'}
+                            </button>
+                            <SmartAlternativesDialog
+                              open={pickerSlot===slot.slot_id}
+                              onOpenChange={open=>setPickerSlot(open?slot.slot_id:null)}
+                              ingredient={slot.label}
+                              products={candidates}
+                              currentId={picked.id}
+                              onPick={product=>{
+                                setSelected(v=>({...v,[slot.slot_id]:product.id}));
+                                setPacks(v=>{const next={...v};delete next[slot.slot_id];return next;});
+                              }}
+                            />
                             <div className="flex items-center rounded-xl bg-[#f6f8f7]">
                               <button type="button" aria-label={`تقليل كمية ${slot.label}`}
                                 onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.max(weighted ? 1 : 1,count-(weighted && picked ? productWeightStepGrams(picked) : 1))}))}
@@ -317,7 +425,7 @@ export default function SmartGroupDetail() {
                 <div className="sticky bottom-3 z-30 rounded-2xl border border-emerald-100 bg-white/95 p-3 shadow-lg">
                   <div className="mb-2 flex items-center justify-between">
                     <div><p className="text-xs text-slate-500">{summary.products} منتجات</p>
-                    <p className="text-xs text-slate-500">{summary.missing ? `${summary.missing} مش متوفر` : ''}</p></div>
+                    <p className="text-xs text-slate-500">{summary.missing ? group.kind==='occasion' ? `${summary.missing} اختيار ناقص` : `${summary.missing} مش متوفر` : ''}</p></div>
                     <span className="text-xl font-black text-[#005931]">{moneyEGP(summary.total)} ج</span>
                   </div>
                   <button type="button" onClick={() => void addGroup()}
