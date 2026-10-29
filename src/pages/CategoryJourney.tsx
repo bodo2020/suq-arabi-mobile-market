@@ -301,19 +301,19 @@ export default function CategoryJourney() {
   }, [activeCategory, categories, client]);
 
   if (categoriesQuery.isLoading || (categories.length > 0 && !isReady)) return (
-    <MainLayout><TopNavBar variant="catalog" hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} searchProps={{ appearance: 'category' }} />
+    <MainLayout><TopNavBar variant="catalog" hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search', { state: { focusSearch: true } })} searchProps={{ appearance: 'category' }} />
       <div className="flex min-h-[60vh] items-center justify-center"><BrandLoader /></div>
     </MainLayout>
   );
   if (categoriesQuery.isError || !categories.length) return (
-    <MainLayout><TopNavBar variant="catalog" hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} searchProps={{ appearance: 'category' }} />
+    <MainLayout><TopNavBar variant="catalog" hideLogo showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search', { state: { focusSearch: true } })} searchProps={{ appearance: 'category' }} />
       <div className="p-6 text-center"><PackageSearch className="mx-auto mb-3 text-[#005931]" size={28} /><p>الأقسام مش متاحة حاليًا.</p></div>
     </MainLayout>
   );
 
   return (
     <MainLayout>
-      <TopNavBar variant="catalog" hideLogo showBackButton onBack={() => navigate('/categories')} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} searchProps={{ appearance: 'category' }} />
+      <TopNavBar variant="catalog" hideLogo showBackButton onBack={() => navigate('/categories')} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search', { state: { focusSearch: true } })} searchProps={{ appearance: 'category' }} />
       {/* Fixed to the viewport: scrolled products pass behind translucent glass. */}
       <div
         className="fixed inset-x-0 z-[45] border-y border-emerald-100/70 bg-white py-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
