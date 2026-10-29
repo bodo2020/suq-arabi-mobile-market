@@ -96,13 +96,14 @@ export default function SmartGroupDetail() {
     const enabled = checked[slot.slot_id] ?? defaultIncluded;
     const calculated = picked ? proposedPackCount(slot,picked,people,group?.base_servings || 4) : null;
     const count = packs[slot.slot_id] ?? calculated ?? 1;
-    return { slot, picked, enabled, count: Math.max(1, Math.min(30, count)), uncertain: calculated === null };
+    const weighted = picked ? isWeightedProduct(picked) : false;
+    return { slot, picked, enabled, weighted, count: Math.max(1, Math.min(weighted ? 100000 : 30, count)), uncertain: calculated === null };
   }), [slots, selected, checked, packs, people, budget, group?.base_servings, group?.kind, isPersonalList]);
 
   const summary = useMemo(() => {
     const active = lines.filter(line => line.enabled);
     return {
-      total: active.reduce((sum,line) => sum + (line.picked ? smartProductPrice(line.picked) * line.count : 0),0),
+      total: active.reduce((sum,line) => sum + (line.picked ? smartProductPrice(line.picked) * line.count / (line.weighted ? 1000 : 1) : 0),0),
       products: active.filter(line => line.picked).length,
       missing: active.filter(line => !line.picked).length,
       uncertain: active.filter(line => line.uncertain).length,
@@ -140,17 +141,15 @@ export default function SmartGroupDetail() {
       // cart addition. Stop if the chosen product disappeared or prices changed.
       const fresh = await bundleQuery.refetch();
       if (fresh.error || !fresh.data) throw new Error('REFRESH_FAILED');
-      const cartLines: { product:Product; quantity:number }[] = [];
+      const cartLines: { product:Product; quantity:number; unit_of_measure?:'weight' }[] = [];
       for (const line of chosen) {
         const newer = fresh.data.find(slot => slot.slot_id === line.slot.slot_id)
           ?.products.find(product => product.id === line.picked?.id);
         if (!newer || !availableSmartProduct(newer) ||
           smartProductPrice(newer) !== smartProductPrice(line.picked!))
           throw new Error('PRODUCT_CHANGED');
-        // Packaging needs an explicit shopper-confirmed count if size isn't
-        // derivable; never pretend loose produce is a sealed package.
-        if (isWeightedProduct(newer)) throw new Error('WEIGHTED_PRODUCT');
-        cartLines.push({product:newer,quantity:line.count});
+        cartLines.push({product:newer,quantity:line.count,
+          ...(isWeightedProduct(newer) ? {unit_of_measure:'weight' as const} : {})});
       }
       const result = addBundleToCart(cartLines);
       if (result !== 'added') throw new Error('CART_CONFLICT');
@@ -160,8 +159,7 @@ export default function SmartGroupDetail() {
       const code = (e as Error).message;
       toast({
         title: code === 'PRODUCT_CHANGED' ? 'سعر أو توافر منتج اتغير' :
-          code === 'WEIGHTED_PRODUCT' ? 'فيه منتج بيتباع بالوزن' :
-            code === 'CART_CONFLICT' ? 'راجع كميات المنتجات' : 'حصلت مشكلة في تحديث المنتجات',
+          code === 'CART_CONFLICT' ? 'راجع كميات المنتجات' : 'حصلت مشكلة في تحديث المنتجات',
         description:'راجع الاختيارات وحاول تاني.',
         variant:'destructive',
       });
@@ -241,7 +239,7 @@ export default function SmartGroupDetail() {
               <>
                 <h2 className="px-1 text-lg font-black text-slate-900">اللي هتحتاجه</h2>
                 <div className="space-y-2.5">
-                  {lines.map(({slot,picked,enabled,count,uncertain}) => {
+                  {lines.map(({slot,picked,enabled,count,uncertain,weighted}) => {
                     const candidates = slot.products.filter(availableSmartProduct);
                     return (
                       <div key={slot.slot_id} className="rounded-2xl bg-white p-3">
@@ -269,7 +267,7 @@ export default function SmartGroupDetail() {
                               {picked ? picked.name : 'مش متوفر في الفرع'}
                             </p>
                             {picked && <p className="mt-1 font-black text-[#005931]">
-                              {moneyEGP(smartProductPrice(picked) * count)} ج
+                              {moneyEGP(smartProductPrice(picked) * count / (weighted ? 1000 : 1))} ج
                             </p>}
                           </div>
                         </div>
@@ -291,11 +289,11 @@ export default function SmartGroupDetail() {
                             </label>
                             <div className="flex items-center rounded-xl bg-[#f6f8f7]">
                               <button type="button" aria-label={`تقليل كمية ${slot.label}`}
-                                onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.max(1,count-1)}))}
+                                onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.max(weighted ? 1 : 1,count-(weighted?250:1))}))}
                                 className="flex h-10 w-9 items-center justify-center text-[#005931]"><Minus size={17}/></button>
-                              <span className="w-7 text-center text-sm font-bold">{count.toLocaleString('ar-EG')}</span>
+                              <span className="min-w-8 px-1 text-center text-xs font-bold">{count.toLocaleString('ar-EG')}{weighted?'جم':''}</span>
                               <button type="button" aria-label={`زيادة كمية ${slot.label}`}
-                                onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.min(30,count+1)}))}
+                                onClick={() => setPacks(v => ({...v,[slot.slot_id]:Math.min(weighted?100000:30,count+(weighted?250:1))}))}
                                 className="flex h-10 w-9 items-center justify-center text-[#005931]"><Plus size={17}/></button>
                             </div>
                           </div>
