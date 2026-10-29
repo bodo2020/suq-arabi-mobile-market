@@ -175,8 +175,12 @@ export async function prefetchAdjacentProductDetails(
 
   // The next gesture needs +/-1 first; don't compete with it by fetching
   // +/-2 and high-resolution photos at the same time.
-  await Promise.all([paths[currentIndex + 1], paths[currentIndex - 1]].map(warm));
-  if (connection?.effectiveType === '2g' || connection?.effectiveType === 'slow-2g') return;
-  await new Promise<void>(resolve => window.setTimeout(resolve, 140));
-  await Promise.all([paths[currentIndex + 2], paths[currentIndex - 2]].map(warm));
+  const immediate = Promise.all([paths[currentIndex + 1], paths[currentIndex - 1]].map(warm));
+  if (connection?.effectiveType === '2g' || connection?.effectiveType === 'slow-2g') {
+    await immediate;
+    return;
+  }
+  // Do not let a slow first request starve the following cards forever.
+  await new Promise<void>(resolve => window.setTimeout(resolve, 180));
+  await Promise.all([immediate, ...[paths[currentIndex + 2], paths[currentIndex - 2]].map(warm)]);
 }
