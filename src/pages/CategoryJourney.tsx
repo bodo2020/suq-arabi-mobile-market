@@ -97,10 +97,10 @@ const JourneyCategory = React.memo(function JourneyCategory({
       ref={containerRef}
       id={`journey-category-${category.id}`}
       data-journey-category={category.id}
-      className={`min-h-[270px] scroll-mt-40 pb-8 transition-[opacity,transform] duration-300 motion-reduce:transition-none ${near ? "translate-y-0 opacity-100" : "translate-y-2 opacity-90"}`}
+      className="min-h-[270px] scroll-mt-40 pb-8"
     >
       <h2
-        className={`mb-4 px-1 text-xl font-black text-[#005931] sm:text-2xl transition-transform duration-300 [transition-timing-function:cubic-bezier(0.2,0.8,0.3,1.2)] motion-reduce:transform-none ${boundaryPull === 1 ? 'translate-x-2' : boundaryPull === -1 ? '-translate-x-2' : 'translate-x-0'}`}
+        className="mb-4 px-1 text-xl font-black text-[#005931] sm:text-2xl"
       >
         {category.name}
       </h2>
@@ -118,7 +118,7 @@ const JourneyCategory = React.memo(function JourneyCategory({
         </div>
       ) : (
         <div
-          className="space-y-7 motion-safe:animate-fade-in"
+          className="space-y-7"
           data-category-product-sections
           data-next-category-path={next ? `/category/${next.id}` : undefined}
           data-next-category-name={next?.name}
@@ -328,7 +328,7 @@ export default function CategoryJourney() {
       <TopNavBar hideLogo showBackButton onBack={() => navigate('/categories')} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search')} searchProps={{ appearance: 'category' }} />
       {/* Fixed to the viewport: scrolled products pass behind translucent glass. */}
       <div
-        className="fixed inset-x-0 z-[45] border-y border-emerald-100/70 bg-white/60 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur-xl backdrop-saturate-150"
+        className="fixed inset-x-0 z-[45] border-y border-emerald-100/70 bg-white py-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.05)]50"
         style={{ top: 'var(--top-nav-height, 68px)', WebkitBackdropFilter: 'blur(18px) saturate(150%)' }}
       >
         <div className="mx-auto w-full max-w-7xl">
@@ -342,7 +342,7 @@ export default function CategoryJourney() {
                   type="button"
                   onClick={() => jumpTo(document.getElementById(`journey-sub-${chip.categoryId}-${chip.id}`))}
                   aria-pressed={selected}
-                  className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white/85 text-[#005931]'}`}
+                  className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-colors duration-150 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white/85 text-[#005931]'}`}
                 >
                   <span>{chip.name}</span>
                   <span className={`text-[10px] tabular-nums ${selected ? 'text-brand-yellow' : 'text-slate-500'}`}>{chip.count}</span>
