@@ -9,7 +9,7 @@ import { useBranch } from '@/contexts/BranchContext';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 import { supabase, type Product } from '@/lib/supabase';
-import { isWeightedProduct } from '@/lib/weightProducts';
+import { isWeightedProduct } from '@/lib/productPurchase';
 import {
   availableSmartProduct, getSmartGroupBundle, getSmartGroups,
   moneyEGP, proposedPackCount, quantityText, smartProductPrice,
