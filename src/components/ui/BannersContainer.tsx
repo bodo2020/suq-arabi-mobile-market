@@ -21,6 +21,8 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const navigate = useNavigate();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef(true);
 
   const stopRotation = () => {
     if (intervalRef.current) {
@@ -33,8 +35,13 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
     stopRotation();
     if (banners.length > 1) {
       intervalRef.current = setInterval(() => {
+        // Don't animate a hidden hero while the shopper scrolls, switches tabs,
+        // or opens a product sheet over the still-mounted catalog.
+        if (document.hidden || !isVisibleRef.current ||
+          document.body.dataset.productSheetOpen === 'true' ||
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         setCurrentSlide(prev => (prev + 1) % banners.length);
-      }, 4000);
+      }, 5000);
     }
   };
 
@@ -43,6 +50,15 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
     startRotation();
     return stopRotation;
   }, [banners.length]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined' || !bannerRef.current) return;
+    const observer = new IntersectionObserver(entries => {
+      isVisibleRef.current = entries.some(entry => entry.isIntersecting);
+    }, { threshold: 0.01 });
+    observer.observe(bannerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleBannerClick = (banner: BannerItem) => {
     const hasTarget = Boolean(
@@ -61,6 +77,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
 
   return (
     <div
+      ref={bannerRef}
       className="relative w-full overflow-hidden rounded-3xl"
       onMouseEnter={stopRotation}
       onMouseLeave={startRotation}
@@ -68,7 +85,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
       onBlurCapture={startRotation}
     >
       <div
-        className="flex transition-transform duration-500 ease-in-out"
+        className="flex transition-transform duration-[320ms] ease-out motion-reduce:transition-none"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         {banners.map(banner => (
@@ -124,7 +141,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
                 type="button"
                 key={banner.id}
                 onClick={() => setCurrentSlide(index)}
-                className={`h-2.5 rounded-full transition-all ${currentSlide === index ? 'w-7 bg-white shadow-lg' : 'w-2.5 bg-white/60 hover:bg-white/80'}`}
+                className={`h-2.5 rounded-full transition-[width,background-color] duration-150 ${currentSlide === index ? 'w-7 bg-white shadow-lg' : 'w-2.5 bg-white/60 hover:bg-white/80'}`}
                 aria-label={`الانتقال إلى البانر ${index + 1}`}
               />
             ))}
