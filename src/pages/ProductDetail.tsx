@@ -3,9 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
 import { prepareProductBrowseImages } from '@/lib/productImagePipeline';
-import {
-  animateProductCardSheet, findCurrentProductCardOrigin, prefersReducedProductMotion, readProductCardOrigin,
-} from '@/lib/productSheetMotion';
+import { prefersReducedProductMotion } from '@/lib/productSheetMotion';
 import ProductSwipePeek from '@/components/product/ProductSwipePeek';
 import { productCardImage } from '@/lib/productCardImage';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -53,8 +51,6 @@ const ProductDetail = () => {
   const sheetTouch = useRef<{ x: number; y: number; at: number; axis: 'pending' | 'vertical' | 'horizontal' } | null>(null);
   const sheetStage = useRef<HTMLDivElement>(null);
   const sheetCardRef = useRef<HTMLElement>(null);
-  const hasEnteredRef = useRef(false);
-  const entranceAnimation = useRef<Animation | null>(null);
   const dismissGesture = useRef<{ pointerId: number; y: number; at: number } | null>(null);
   const dismissOffset = useRef(0);
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,10 +93,7 @@ const ProductDetail = () => {
 
   const [loadedProduct, setProduct] = useState<Product | null>(null);
   const queryClient = useQueryClient();
-  // A virtual 7-slot rail keeps the *entire catalog order* while mounting
-  // only the 3 preceding + active + 3 following sheets. Keys are product paths:
-  // when the user moves forward, overlapping DOM cards (including decoded
-  // images) retain identity and move to their new position, not remount.
+  // Only the current and two adjacent sheets render; other items stay in cache.
   const rail = useMemo(() => {
     if (!browse || browseIndex < 0 || typeof window === 'undefined') return [];
     const previews = new Map(browse.previews.map(preview => [preview.path, preview]));
@@ -110,7 +103,7 @@ const ProductDetail = () => {
       preview: (typeof browse.previews)[number];
       product: Product | null;
     }[] = [];
-    for (let offset = -3; offset <= 3; offset++) {
+    for (let offset = -1; offset <= 1; offset++) {
       const path = browse.paths[browseIndex + offset];
       const preview = path ? previews.get(path) : undefined;
       if (!path || !preview) continue;
@@ -173,56 +166,45 @@ const ProductDetail = () => {
     return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); };
   }, [handoffPath, location.pathname, location.search]);
 
-  // Lock the background document only on handheld product sheets.
+  // Pause background banner work while a catalog sheet is open.
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 767px)');
     const previous = document.body.style.overflow;
-    if (media.matches) document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previous; };
-  }, []);
+    if (isMobile) document.body.style.overflow = 'hidden';
+    if (inCatalogOverlay) document.body.dataset.productSheetOpen = 'true';
+    return () => {
+      document.body.style.overflow = previous;
+      if (inCatalogOverlay) delete document.body.dataset.productSheetOpen;
+    };
+  }, [isMobile, inCatalogOverlay]);
 
   const closeSheet = () => {
     if (closingRef.current) return;
     closingRef.current = true;
-    // Don't let a pending carousel snap navigate after the sheet is closing.
     pendingSwipeNavigation.current = null;
-    // A finished FLIP animation with fill:'both' otherwise keeps overriding
-    // the CSS transform used for every carousel swipe.
-    entranceAnimation.current?.cancel();
-    entranceAnimation.current = null;
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
-
-    let finished = false;
     const finish = () => {
-      if (finished) return;
-      finished = true;
-      if (closeTimer.current) clearTimeout(closeTimer.current);
       closeTimer.current = null;
       if (browse) navigate(-1);
-      else navigate('/');
+      else navigate('/', { replace: true });
     };
-    const path = location.pathname + location.search;
-    const origin = inCatalogOverlay
-      ? findCurrentProductCardOrigin(path, readProductCardOrigin(location.state, path))
-      : null;
-    const animation = origin && sheetCardRef.current
-      ? animateProductCardSheet(sheetCardRef.current, origin, 'close')
-      : null;
-    if (animation) {
-      sheetStage.current?.animate(
-        [{ backgroundColor: 'rgba(15,23,42,0.5)' }, { backgroundColor: 'rgba(15,23,42,0)' }],
-        { duration: 260, easing: 'ease-out', fill: 'forwards' },
-      );
-      void animation.finished.then(finish, finish);
-      closeTimer.current = setTimeout(finish, 410);
-    } else {
-      // Deep links or catalog cards no longer on screen retain a natural
-      // downward bottom-sheet exit instead of shrinking to a wrong product.
-      if (sheetStage.current) sheetStage.current.style.setProperty('--product-dismiss-y', '0px');
-      setSheetVisible(false);
-      closeTimer.current = setTimeout(finish, prefersReducedProductMotion() ? 0 : 260);
+    if (prefersReducedProductMotion()) {
+      finish();
+      return;
     }
+    // Short fade + translation replaces repainting the backdrop and
+    // scaling a detailed full-screen surface down to a catalog tile.
+    const card = sheetCardRef.current;
+    if (card) {
+      card.style.transition = 'transform 165ms ease-out, opacity 165ms ease-out';
+      card.style.opacity = '0';
+    }
+    const stage = sheetStage.current;
+    if (stage) {
+      const current = Number.parseFloat(stage.style.getPropertyValue('--product-dismiss-y')) || 0;
+      stage.style.setProperty('--product-dismiss-y', `${Math.max(current, 42)}px`);
+    }
+    closeTimer.current = setTimeout(finish, 175);
   };
 
   const onHeaderPointerDown = (event: React.PointerEvent<HTMLElement>) => {
@@ -286,7 +268,6 @@ const ProductDetail = () => {
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    entranceAnimation.current?.cancel();
   }, []);
 
   const completeSwipeNavigation = () => {
@@ -302,8 +283,6 @@ const ProductDetail = () => {
     if (!browse || browseIndex < 0 || weightOpen || swipeLocked || closingRef.current) return;
     // An unfinished opening FLIP must not keep the center card locked while
     // tapping an adjacent peek or flicking immediately after opening.
-    entranceAnimation.current?.cancel();
-    entranceAnimation.current = null;
     const next = browse.paths[browseIndex + offset];
     const destination = next || (offset === 1 ? browse.nextCategory?.path : undefined);
     if (!destination) return;
@@ -360,8 +339,6 @@ const ProductDetail = () => {
       at: Date.now(),
       axis: 'pending',
     };
-    entranceAnimation.current?.cancel();
-    entranceAnimation.current = null;
     setCarouselMotion(false);
   };
 
@@ -503,7 +480,7 @@ const ProductDetail = () => {
     if (!browse || browseIndex < 0 || !isMobile) return;
     prepareProductBrowseImages(browse.previews, browse.paths, browseIndex);
     warmAdjacentProductPages(queryClient, browse.paths, browseIndex);
-    // Prefetch data in the shared cache without re-rendering seven full sheets
+    // Prefetch data without re-rendering visible sheets
     // in the middle of the gesture. New cache entries are consumed on the next
     // selected index; the catalog preview already paints adjacent cards.
     const timer = window.setTimeout(() => {
@@ -512,38 +489,12 @@ const ProductDetail = () => {
     return () => window.clearTimeout(timer);
   }, [browse, browseIndex, queryClient, isMobile]);
 
-  // First entrance is a shared-element FLIP from the tapped catalog tile.
-  // This layout effect runs before paint so an offscreen -> center flash
-  // cannot occur. Direct links retain the normal bottom-sheet entrance.
+  // Lightweight 28px entrance uses compositor-only transform/opacity.
   useLayoutEffect(() => {
-    if (!product || !isMobile || hasEnteredRef.current || closingRef.current) return;
-    const card = sheetCardRef.current;
-    if (!card) return;
-    hasEnteredRef.current = true;
-    const origin = inCatalogOverlay
-      ? readProductCardOrigin(location.state, location.pathname + location.search)
-      : null;
-    const animation = origin ? animateProductCardSheet(card, origin, 'open') : null;
-    if (animation) {
-      entranceAnimation.current = animation;
-      // WAAPI fill:'both' is required during FLIP but must be released when
-      // opening finishes; otherwise its transform permanently wins over the
-      // carousel's CSS --product-swipe-x and the screen appears stationary.
-      void animation.finished.then(() => {
-        if (entranceAnimation.current !== animation) return;
-        entranceAnimation.current = null;
-        animation.cancel();
-      }).catch(() => {});
-      sheetStage.current?.animate(
-        [{ backgroundColor: 'rgba(15,23,42,0)' }, { backgroundColor: 'rgba(15,23,42,0.5)' }],
-        { duration: 310, easing: 'ease-out', fill: 'both' },
-      );
-      setSheetVisible(true);
-    } else {
-      const frame = requestAnimationFrame(() => setSheetVisible(true));
-      return () => cancelAnimationFrame(frame);
-    }
-  }, [Boolean(product), isMobile]);
+    if (!product || !isMobile || sheetVisible || closingRef.current) return;
+    const frame = requestAnimationFrame(() => setSheetVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, [Boolean(product), isMobile, sheetVisible]);
 
   // Only begin secondary network work once the user gets near the bottom of
   // the sheet (or the lower section on desktop). The hero renders independently.
@@ -941,8 +892,8 @@ const ProductDetail = () => {
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
-          style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible || (inCatalogOverlay && Boolean(readProductCardOrigin(location.state, location.pathname + location.search))) ? '0px' : '105dvh'} + var(--product-dismiss-y, 0px)), 0)` }}
+          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${sheetDragging ? 'will-change-transform transition-none' : swipeAnimating ? 'will-change-transform transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-[transform,opacity] duration-[190ms] ease-out'}`}
+          style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible ? '0px' : '28px'} + var(--product-dismiss-y, 0px)), 0)`, opacity: sheetVisible ? 1 : 0 }}
           onTransitionEnd={event => {
             if (event.currentTarget === event.target && event.propertyName === 'transform') completeSwipeNavigation();
           }}
@@ -1086,18 +1037,6 @@ const ProductDetail = () => {
                   <p className="whitespace-pre-line px-4 pb-4 text-sm leading-7 text-slate-600">{product.description}</p>
                 </details>
               )}
-              <details className="group" onToggle={event => {
-                if (event.currentTarget.open && id) setExtrasForId(id);
-              }}>
-                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-4 text-sm font-extrabold text-slate-900">
-                  <span>معلومات إضافية</span>
-                  <span className="text-lg text-slate-400 group-open:rotate-45">+</span>
-                </summary>
-                <div className="space-y-3 px-4 pb-4 text-xs leading-6 text-slate-600">
-                  <p>طريقة البيع: {weighted ? 'بالوزن' : bulkMode ? bulkUnitType : 'بالقطعة'} · الوحدة: {unitDescription}</p>
-                  {company && <button type="button" className="font-extrabold text-[#005931]" onClick={() => navigate(`/company/${company.id}`)}>اكتشف منتجات {company.name}</button>}
-                </div>
-              </details>
             </div>
             <div ref={mobileExtraTriggerRef} className="h-px" aria-hidden="true" />
             {shouldLoadExtras && (
