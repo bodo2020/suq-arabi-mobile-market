@@ -1,4 +1,8 @@
 import { supabase, type Product } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+// Generated Database types are updated by Supabase separately; new additive
+// smart-shopping schema is accessed with a runtime-safe client cast.
+export const shoppingDb = supabase as unknown as SupabaseClient<any>;
 
 export type SmartGroupKind = 'recipe' | 'occasion' | 'list';
 export type SmartGroup = {
@@ -22,7 +26,7 @@ export type SmartGroupSlot = {
 };
 
 export async function getSmartGroups(): Promise<SmartGroup[]> {
-  const { data, error } = await supabase
+  const { data, error } = await shoppingDb
     .from('smart_shopping_groups')
     .select('id,slug,kind,title_ar,subtitle_ar,source_url,base_servings,position')
     .eq('published', true)
@@ -32,7 +36,7 @@ export async function getSmartGroups(): Promise<SmartGroup[]> {
 }
 
 export async function getSmartGroupBundle(slug: string, branchId: string): Promise<SmartGroupSlot[]> {
-  const { data, error } = await supabase.rpc('get_customer_smart_group_bundle_v1', {
+  const { data, error } = await shoppingDb.rpc('get_customer_smart_group_bundle_v1', {
     p_slug: slug,
     p_branch_id: branchId,
   });
