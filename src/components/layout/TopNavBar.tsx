@@ -17,7 +17,7 @@ interface TopNavBarProps {
   pageTitle?: string;
   showBackButton?: boolean;
   onBack?: () => void;
-  // The home header owns its delivery selector; other pages keep the compact navbar.
+  // The home and categories headers share the delivery selector and search style.
   homeHero?: boolean;
   addressLabel?: string;
   addressLoading?: boolean;
@@ -55,7 +55,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const cartCount = getTotalItems();
   const headerRef = React.useRef<HTMLElement | null>(null);
   const searchPage = location.pathname === '/search';
-  const showHomeHero = homeHero && location.pathname === '/' && !hideSearch && !showBackButton;
+  const showHomeHero = homeHero && !hideSearch;
   const focus = () => {
     if (onSearchFocus) onSearchFocus();
     else if (!searchPage) navigate('/search');
@@ -96,10 +96,22 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       {showHomeHero && (
         <div className="mx-auto max-w-7xl px-4 pb-4 pt-3 sm:px-5 md:hidden">
           <div className="flex min-h-[70px] items-start justify-between gap-2">
-            <Link to="/" className="min-w-0 shrink-0 pt-2" aria-label="سوبر ماركو، الرئيسية">
-              <BrandWordmark className="brand-name--home" />
-            </Link>
-            <div className="flex min-w-0 max-w-[55%] flex-col items-end gap-2 text-left">
+            <div className="flex min-w-0 items-center gap-1 pt-2">
+              {showBackButton && (
+                <button
+                  type="button"
+                  onClick={onBack || (() => navigate(-1))}
+                  aria-label="رجوع"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/90 text-[#005931] shadow-sm active:bg-[#e0f3e9]"
+                >
+                  <ArrowRight size={19} />
+                </button>
+              )}
+              <Link to="/" className="min-w-0" aria-label="سوبر ماركو، الرئيسية">
+                <BrandWordmark className="brand-name--home" />
+              </Link>
+            </div>
+            <div className={`flex min-w-0 ${showBackButton ? 'max-w-[49%]' : 'max-w-[55%]'} flex-col items-end gap-2 text-left`}>
               <div className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-2xl border border-[#c4e5d2] bg-white/85 px-3 py-1.5 text-xs font-extrabold text-[#005931] shadow-[0_2px_10px_rgba(0,89,49,.04)]">
                 <Zap size={17} className="shrink-0 text-[#dda500]" fill="currentColor" strokeWidth={1.8} />
                 <span className="truncate">{eta ? `توصيل خلال ${eta} دقيقة` : 'توصيل سريع لحد بابك'}</span>
