@@ -1,0 +1,24 @@
+/* Homepage only. The approved wordmark remains the untouched
+ * BrandWordmark/HeaderBrand; the collapse only changes header layout. */
+@media (max-width: 767px) {
+  .home-top-nav {
+    transition: background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
+  }
+  .home-top-nav[data-home-collapsed='true'] {
+    box-shadow: 0 5px 18px rgba(0, 65, 36, .08);
+  }
+  .home-header-expanded {
+    animation: home-header-enter 240ms cubic-bezier(.2,.8,.25,1) both;
+  }
+  .home-header-compact {
+    animation: home-header-enter 240ms cubic-bezier(.2,.8,.25,1) both;
+  }
+}
+@keyframes home-header-enter {
+  from { opacity: .7; transform: translate3d(0, -8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-top-nav { transition: none !important; }
+  .home-header-expanded, .home-header-compact { animation: none !important; }
+}
