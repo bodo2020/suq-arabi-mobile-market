@@ -20,6 +20,13 @@ export default function BrandPullToRefresh() {
     pathname.startsWith('/stores') || pathname === '/orders' ||
     pathname === '/favorites' || pathname === '/notifications';
 
+  // A new route must never inherit a spinner from the previous page.
+  useEffect(() => {
+    setPull(0);
+    setRefreshing(false);
+    refreshingRef.current = false;
+  }, [pathname]);
+
   useEffect(() => {
     if (!enabled || !document.documentElement.classList.contains('native-platform')) return;
     let startX: number | null = null;
