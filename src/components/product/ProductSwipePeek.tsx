@@ -13,7 +13,7 @@ type Props = {
   handoff: boolean;
   handoffExiting: boolean;
   transitioning: boolean;
-  onOpen: () => void;
+  onOpen: (offset: number) => void;
 };
 
 const money = (amount: number) =>
@@ -50,7 +50,7 @@ function ProductSwipePeek({
     <button
       type="button"
       data-product-swipe-card
-      onClick={onOpen}
+      onClick={() => onOpen(offset)}
       disabled={locked || !visible}
       aria-hidden={!visible}
       aria-label={`عرض تفاصيل ${title}`}
