@@ -66,7 +66,6 @@ const ProductDetail = () => {
   const [sheetDragging, setSheetDragging] = useState(false);
   const [swipeAnimating, setSwipeAnimating] = useState(false);
   const [swipeLocked, setSwipeLocked] = useState(false);
-  const [neighborRevision, setNeighborRevision] = useState(0);
   // Keep the incoming *same DOM card* painted over the new detail content for
   // a brief handoff. It fades away only after the next route is committed.
   // This removes the flash of product content rebuilding on every swipe.
@@ -87,7 +86,7 @@ const ProductDetail = () => {
     // the next product without moving the sheets.
     cards?.forEach(card => {
       card.style.transition = animate && !prefersReducedProductMotion()
-        ? 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)'
+        ? 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)'
         : 'none';
     });
   };
@@ -124,15 +123,27 @@ const ProductDetail = () => {
       slides.push({ path, offset, preview, product: cached });
     }
     return slides;
-  }, [browse, browseIndex, neighborRevision, queryClient]);
+  }, [browse, browseIndex, queryClient]);
   // Prefetched data is available during the first render after a swipe, so no
   // in-between loading sheet is shown. Fallback to the current request's state.
   const cachedProduct = getCachedDetailProduct(queryClient, id, requestedStoreId);
-  const product = cachedProduct || (
+  const serverProduct = cachedProduct || (
     loadedProduct?.id === id && (!requestedStoreId || loadedProduct.marketplace_branch_id === requestedStoreId)
       ? loadedProduct
       : null
   );
+  const pendingPreview = browse?.previews.find(preview => preview.path === location.pathname + location.search);
+  // A browse card is sufficient to paint a smooth incoming sheet, even when
+  // the canonical detail request is still in flight. Never use it for checkout.
+  const isPreviewOnly = !serverProduct && Boolean(isMobile && browseIndex >= 0 && id && pendingPreview);
+  const product: Product | null = serverProduct || (isPreviewOnly ? {
+    id: id!,
+    name: pendingPreview!.name || 'المنتج',
+    image_urls: pendingPreview!.image ? [pendingPreview!.image] : [],
+    price: 0,
+    quantity: 0,
+    unit_of_measure: 'قطعة',
+  } as Product : null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [extrasForId, setExtrasForId] = useState<string | null>(null);
@@ -260,6 +271,8 @@ const ProductDetail = () => {
     // routing paints the newly selected product.
     cards?.forEach(card => { card.style.transition = 'none'; });
     setSheetOffset(0);
+    if (mobileScrollRef.current) mobileScrollRef.current.scrollTop = 0;
+    setSelectedImageIndex(0);
     setSwipeAnimating(false);
     setSwipeLocked(false);
     const frame = requestAnimationFrame(() => {
@@ -330,7 +343,7 @@ const ProductDetail = () => {
     // A fallback for hidden-tab and cancelled transitions; the normal path is
     // the center card's transform transitionend event.
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
-    swipeTimer.current = setTimeout(completeSwipeNavigation, 400);
+    swipeTimer.current = setTimeout(completeSwipeNavigation, 330);
   };
 
   const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -430,7 +443,7 @@ const ProductDetail = () => {
   const regularCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && !item.is_bulk && item.unit_of_measure !== 'weight');
   const weightedCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && !item.is_bulk && item.unit_of_measure === 'weight');
   const bulkCartItem = items.find(item => item.product.id === id && (item.marketplace_listing_id || null) === listingId && item.is_bulk);
-  const activeCartItem = bulkMode ? bulkCartItem : weighted ? weightedCartItem : regularCartItem;
+  const activeCartItem = isPreviewOnly ? undefined : bulkMode ? bulkCartItem : weighted ? weightedCartItem : regularCartItem;
   const currentWeight = weighted && product
     ? Math.min(maxWeight || weightStep, Math.max(1, Math.round(Number(weightedCartItem?.quantity || detailWeight || weightStep))))
     : 0;
@@ -448,7 +461,7 @@ const ProductDetail = () => {
   const discount = !bulkMode && regularPrice > unitPrice && unitPrice > 0
     ? Math.round((1 - unitPrice / regularPrice) * 100)
     : 0;
-  const unavailable = bulkMode ? maxBulkQuantity <= 0 : weighted ? maxWeight <= 0 : maxRegularQuantity <= 0;
+  const unavailable = isPreviewOnly || (bulkMode ? maxBulkQuantity <= 0 : weighted ? maxWeight <= 0 : maxRegularQuantity <= 0);
   const limitedStock = !weighted && !unavailable && (bulkMode ? maxBulkQuantity : maxRegularQuantity) <= 5;
 
   useEffect(() => {
@@ -489,15 +502,13 @@ const ProductDetail = () => {
     if (!browse || browseIndex < 0 || !isMobile) return;
     prepareProductBrowseImages(browse.previews, browse.paths, browseIndex);
     warmAdjacentProductPages(queryClient, browse.paths, browseIndex);
-    // Give the active product and its lightweight hero first priority, then
-    // upgrade only the two adjacent cards from their server-backed cache.
-    let active = true;
+    // Prefetch data in the shared cache without re-rendering seven full sheets
+    // in the middle of the gesture. New cache entries are consumed on the next
+    // selected index; the catalog preview already paints adjacent cards.
     const timer = window.setTimeout(() => {
-      void prefetchAdjacentProductDetails(queryClient, browse.paths, browseIndex, () => {
-        if (active) setNeighborRevision(value => value + 1);
-      });
-    }, 300);
-    return () => { active = false; window.clearTimeout(timer); };
+      void prefetchAdjacentProductDetails(queryClient, browse.paths, browseIndex);
+    }, 90);
+    return () => window.clearTimeout(timer);
   }, [browse, browseIndex, queryClient, isMobile]);
 
   // First entrance is a shared-element FLIP from the tapped catalog tile.
@@ -536,7 +547,7 @@ const ProductDetail = () => {
   // Only begin secondary network work once the user gets near the bottom of
   // the sheet (or the lower section on desktop). The hero renders independently.
   useEffect(() => {
-    if (!product || !id || shouldLoadExtras) return;
+    if (!product || isPreviewOnly || !id || shouldLoadExtras) return;
     const target = isMobile ? mobileExtraTriggerRef.current : desktopExtraTriggerRef.current;
     if (!target) return;
     if (typeof IntersectionObserver === 'undefined') {
@@ -554,10 +565,10 @@ const ProductDetail = () => {
     });
     observer.observe(target);
     return () => observer.disconnect();
-  }, [id, product, isMobile, shouldLoadExtras]);
+  }, [id, product, isMobile, shouldLoadExtras, isPreviewOnly]);
 
   useEffect(() => {
-    if (!product || !shouldLoadExtras) return;
+    if (!product || isPreviewOnly || !shouldLoadExtras) return;
     let active = true;
     const relatedKey = detailRelatedKey(product);
     const companyKey = product.company_id ? detailCompanyKey(product.company_id) : null;
@@ -591,20 +602,22 @@ const ProductDetail = () => {
       }
     }, isMobile ? 320 : 0);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [product, queryClient, isMobile, shouldLoadExtras]);
+  }, [product, queryClient, isMobile, shouldLoadExtras, isPreviewOnly]);
 
   // Use the small card image for the entrance animation; load full resolution
   // only after the sheet has settled, never before the user sees name/price.
   useEffect(() => {
-    const timer = window.setTimeout(() => setFullResolutionProductId(id || null), isMobile ? 320 : 0);
+    const timer = window.setTimeout(() => setFullResolutionProductId(id || null), isMobile ? 500 : 0);
     return () => window.clearTimeout(timer);
   }, [id, isMobile]);
 
   const images = useMemo(() => {
     if (!product) return [];
+    if (isPreviewOnly) return product.image_urls?.filter(Boolean) || [];
     if (bulkMode) return bulkImageUrl ? [bulkImageUrl] : [];
     return product.image_urls?.filter(Boolean) || [];
-  }, [product, bulkMode, bulkImageUrl]);
+  }, [product, bulkMode, bulkImageUrl, isPreviewOnly]);
+  const activeImageIndex = Math.min(selectedImageIndex, Math.max(0, images.length - 1));
 
   const structuredProduct = useMemo(() => {
     if (!product || !bulkMode) return product;
@@ -732,8 +745,7 @@ const ProductDetail = () => {
     setTouchStartX(null);
   };
 
-  const pendingPreview = browse?.previews.find(preview => preview.path === location.pathname + location.search);
-  if (!cachedProduct && (loading || (!loadError && loadedProduct?.id !== id))) {
+  if (!product && (loading || (!loadError && loadedProduct?.id !== id))) {
     return (
       <DetailShell>
         <div className="hidden md:block">
@@ -783,9 +795,9 @@ const ProductDetail = () => {
     );
   }
 
-  const invalidBulkPage = Boolean(product && requestedBulk && (!bulkAvailable || !variantMatches));
+  const invalidBulkPage = Boolean(product && !isPreviewOnly && requestedBulk && (!bulkAvailable || !variantMatches));
 
-  if (!product || (loadError && !cachedProduct) || invalidBulkPage) {
+  if (!product || (loadError && !cachedProduct && !isPreviewOnly) || invalidBulkPage) {
     return (
       <DetailShell>
         <TopNavBar hideLogo hideSearch pageTitle={requestedBulk ? 'تفاصيل الجملة' : 'تفاصيل المنتج'} showBackButton onBack={() => navigate(-1)} />
@@ -892,7 +904,7 @@ const ProductDetail = () => {
         image={images[0]}
         type="product"
       />
-      {structuredProduct && <ProductStructuredData product={structuredProduct} />}
+      {structuredProduct && !isPreviewOnly && <ProductStructuredData product={structuredProduct} />}
       <BreadcrumbStructuredData items={[
         { name: 'الرئيسية', url: '/' },
         { name: bulkMode ? 'منتجات الجملة' : 'المنتجات', url: bulkMode ? '/bulk-products' : '/categories' },
@@ -903,7 +915,7 @@ const ProductDetail = () => {
 
       {/* Three-card carousel: neighbors stay mounted and follow the same GPU transform. */}
       <div ref={sheetStage} className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/50 px-0 pt-5 md:hidden" style={{ '--product-swipe-x': '0px' } as React.CSSProperties}>
-        {rail.map(slide => (
+        {rail.filter(slide => Math.abs(slide.offset) <= 1).map(slide => (
           <ProductSwipePeek
             key={slide.path}
             offset={slide.offset}
@@ -926,7 +938,7 @@ const ProductDetail = () => {
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[230ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
+          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
           style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible || (inCatalogOverlay && Boolean(readProductCardOrigin(location.state, location.pathname + location.search))) ? '0px' : '105dvh'} + var(--product-dismiss-y, 0px)), 0)` }}
           onTransitionEnd={event => {
             if (event.currentTarget === event.target && event.propertyName === 'transform') completeSwipeNavigation();
@@ -958,7 +970,6 @@ const ProductDetail = () => {
           </header>
           <div
             ref={mobileScrollRef}
-            key={`product-sheet-${id}`}
             className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain px-3 pb-5 pt-3"
             onTouchStart={startSheetSwipe}
             onTouchMove={moveSheetSwipe}
@@ -980,15 +991,15 @@ const ProductDetail = () => {
                 <div className="flex h-40 w-40 items-center justify-center rounded-[30px] bg-[#005931] text-6xl font-black text-white">{packNumber}</div>
               ) : images.length > 0 ? (
                 <>
-                  {productCardImage(images[selectedImageIndex]) !== images[selectedImageIndex] && (
+                  {productCardImage(images[activeImageIndex]) !== images[activeImageIndex] && (
                     <img
-                      src={productCardImage(images[selectedImageIndex])}
+                      src={productCardImage(images[activeImageIndex])}
                       alt=""
                       aria-hidden="true"
                       draggable={false}
                       className="absolute inset-0 h-full w-full object-contain px-7 py-5"
                       onError={event => {
-                        const fallback = images[selectedImageIndex];
+                        const fallback = images[activeImageIndex];
                         if (event.currentTarget.src !== fallback) {
                           event.currentTarget.onerror = null;
                           event.currentTarget.src = fallback;
@@ -996,10 +1007,10 @@ const ProductDetail = () => {
                       }}
                     />
                   )}
-                  {(fullResolutionProductId === id || productCardImage(images[selectedImageIndex]) === images[selectedImageIndex]) && (
+                  {(fullResolutionProductId === id || productCardImage(images[activeImageIndex]) === images[activeImageIndex]) && (
                     <img
                       className="relative h-full w-full object-contain px-7 py-5"
-                      src={images[selectedImageIndex] || '/placeholder.svg'}
+                      src={images[activeImageIndex] || '/placeholder.svg'}
                       alt={displayName}
                       decoding="async"
                       draggable={false}
@@ -1031,7 +1042,7 @@ const ProductDetail = () => {
             <section className="rounded-[24px] border border-slate-100 bg-white px-4 pb-4 pt-4">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${unavailable ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-[#005931]'}`}>
-                  {unavailable ? 'غير متوفر حاليًا' : 'متوفر للطلب'}
+                  {isPreviewOnly ? 'جاري تحديث بيانات المنتج' : unavailable ? 'غير متوفر حاليًا' : 'متوفر للطلب'}
                 </span>
                 {limitedStock && <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">كمية محدودة</span>}
                 {bulkMode && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-[#005931]">جملة</span>}
@@ -1039,7 +1050,7 @@ const ProductDetail = () => {
               <h1 className="text-[21px] font-black leading-[1.45] text-slate-950">{displayName}</h1>
               <p className="mt-1 text-xs font-medium text-slate-500">{weighted ? 'يباع بالوزن · ' : ''}{unitDescription}</p>
               <div className="mt-4 flex flex-wrap items-end gap-x-2 gap-y-1 border-t border-slate-100 pt-4">
-                <strong className="text-[31px] font-black leading-none tracking-tight text-[#005931]">{money(displayPrice)}</strong>
+                <strong className="text-[31px] font-black leading-none tracking-tight text-[#005931]">{isPreviewOnly ? pendingPreview?.price || '—' : money(displayPrice)}</strong>
                 <span className="pb-0.5 text-sm font-black text-[#005931]">ج.م</span>
                 {discount > 0 && <del className="mr-auto pb-0.5 text-xs font-medium text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del>}
               </div>
@@ -1119,7 +1130,7 @@ const ProductDetail = () => {
                 </div>
               ) : images.length > 0 ? (
                 <img
-                  src={images[selectedImageIndex] || '/placeholder.svg'}
+                  src={images[activeImageIndex] || '/placeholder.svg'}
                   alt={displayName}
                   className="h-full w-full object-contain p-6 sm:p-8"
                   onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
