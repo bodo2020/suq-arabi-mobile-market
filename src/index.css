@@ -398,3 +398,12 @@ html.native-platform [role="button"] {
 @media (max-width: 360px) {
   .brand-name--header { font-size: .72rem; padding: .2em .25em; }
 }
+
+
+/* Search recommendations: only individual catalog product photos.
+   White-matte product photos blend into the app background; already-cut-out
+   transparent PNG/WebP retain their alpha. No food scene imagery is used. */
+.smart-product-cutout { object-fit: contain; mix-blend-mode: multiply; background: transparent; }
+.ala-mazagak-group-card img { object-fit: contain; background: transparent; mix-blend-mode: multiply; }
+
+.ala-mazagak-product-rail img { object-fit: contain; background: transparent; mix-blend-mode: multiply; }

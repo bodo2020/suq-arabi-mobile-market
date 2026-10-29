@@ -6,6 +6,7 @@ import {
   cartItemIdentity,
   marketplaceBranchIds,
   type CartAddResult,
+  type SmartBundleLine,
 } from './cartTypes';
 import { useCartSync } from './cartSupabaseSync';
 
@@ -66,6 +67,57 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 'added';
   }, [isInitialized, items]);
 
+  const addBundleToCart = useCallback((lines: SmartBundleLine[]): 'added' | 'not_ready' | 'conflict' => {
+    if (!isInitialized) return 'not_ready';
+    if (!lines.length || lines.length > 30) return 'conflict';
+    const aggregate = new Map<string, {
+      product: SmartBundleLine['product']; quantity: number; unit_of_measure?: 'weight';
+    }>();
+    for (const line of lines) {
+      const p = line.product;
+      const weighted = line.unit_of_measure === 'weight';
+      const key = `${p?.id}:${weighted ? 'weight' : 'unit'}`;
+      if (!p?.id || (p.commerce_source && p.commerce_source !== 'owned') ||
+        !Number.isInteger(line.quantity) || line.quantity < 1 ||
+        line.quantity > (weighted ? 100000 : 99) ||
+        !Number.isFinite(Number(p.price)) || Number(p.price) < 0) return 'conflict';
+      const existing = aggregate.get(key);
+      aggregate.set(key, {
+        product:p, quantity:(existing?.quantity || 0) + line.quantity,
+        unit_of_measure:weighted ? 'weight' : undefined,
+      });
+    }
+    // One atomic state update; no partially added bundles when stock is short.
+    for (const {product,quantity,unit_of_measure} of aggregate.values()) {
+      const weighed = unit_of_measure === 'weight';
+      const existing = items.find(item =>
+        item.product.id === product.id &&
+        !item.is_bulk && item.commerce_source !== 'marketplace' &&
+        (item.unit_of_measure === 'weight') === weighed);
+      const available = Math.floor(Number(product.quantity || 0) * (weighed ? 1000 : 1));
+      if (!Number.isFinite(available) || available < quantity + (existing?.quantity || 0))
+        return 'conflict';
+    }
+    const accepted = [...aggregate.values()];
+    setItems(current => {
+      const next = [...current];
+      for (const {product,quantity,unit_of_measure} of accepted) {
+        const index = next.findIndex(item =>
+          item.product.id === product.id && !item.is_bulk &&
+          item.commerce_source !== 'marketplace' &&
+          (item.unit_of_measure === 'weight') === (unit_of_measure === 'weight'));
+        if (index < 0) next.push({
+          product:{...product,bulk_quantity:product.bulk_quantity || 1},
+          quantity,is_bulk:false,unit_of_measure,commerce_source:'owned',
+        });
+        else next[index] = {...next[index],quantity:next[index].quantity+quantity};
+      }
+      return next;
+    });
+    window.dispatchEvent(new Event('super-marko:cart-added'));
+    return 'added';
+  }, [isInitialized,items]);
+
   const removeFromCart = useCallback((productId: string, is_bulk?: boolean, listingId?: string | null) => {
     if (!isInitialized) return;
     setItems(currentItems => currentItems.filter(item => {
@@ -111,6 +163,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       items,
       cart: { items },
       addToCart,
+      addBundleToCart,
       removeFromCart,
       updateQuantity,
       clearCart,

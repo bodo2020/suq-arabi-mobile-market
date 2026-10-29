@@ -30,6 +30,7 @@ const CategoryProducts = lazy(() => import('./pages/CategoryProducts'));
 const SubcategoryDetail = lazy(() => import('./pages/SubcategoryDetail'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Search = lazy(() => import('./pages/Search'));
+const SmartGroupDetail = lazy(() => import('./pages/SmartGroupDetail'));
 const Offers = lazy(() => import('./pages/Offers'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Payment = lazy(() => import('./pages/Payment'));
@@ -88,6 +89,7 @@ function CustomerRoutes() {
                       <Route path="/category/:categoryId/subcategory/:subcategoryId" element={<SubcategoryDetail />} />
                       <Route path="/product/:id" element={<ProductDetail />} />
                       <Route path="/search" element={<Search />} />
+                      <Route path="/ala-mazagak/:slug" element={<SmartGroupDetail />} />
                       <Route path="/cart" element={<Cart />} />
                       <Route path="/payment" element={<Payment />} />
                       <Route path="/marketplace-payment" element={<MarketplacePayment />} />
