@@ -48,7 +48,7 @@ const BulkProducts = () => {
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="منتجات الجملة" showBackButton onBack={() => navigate(-1)} />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="منتجات الجملة" showBackButton onBack={() => navigate(-1)} />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <section className="mb-5 rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-6">
           <div className="flex items-center gap-3">
