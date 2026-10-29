@@ -163,7 +163,7 @@ const Favorites = () => {
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="المفضلة" />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="المفضلة" />
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
         <div className="mb-6 rounded-3xl bg-green-50 p-5 sm:p-7">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-primary"><Heart size={25} />حاجات بتحبها</h1>
