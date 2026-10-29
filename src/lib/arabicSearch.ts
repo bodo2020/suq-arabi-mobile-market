@@ -25,7 +25,7 @@ const aliases: Record<string, string[]> = {
   'زبادي': ['يوجرت'],
   'يوجرت': ['زبادي'],
   'برسيل': ['برسيل', 'persil'],
-  'نسكافيه': ['n escafe', 'نسكافية'],
+  'نسكافيه': ['nescafe', 'نسكافية'],
 };
 
 export function searchAlternates(term: string): string[] {
@@ -57,8 +57,9 @@ export function rankSearchProducts<T extends RankedProduct>(products: T[], query
   return [...products].sort((a, b) => {
     const diff = relevanceScore(b,query) - relevanceScore(a,query);
     if (diff) return diff;
-    const stockDiff = Number(b.quantity || 0) - Number(a.quantity || 0);
-    if ((stockDiff > 0) !== (stockDiff < 0)) return Number(stockDiff > 0) - Number(stockDiff < 0);
+    const bHasStock = Number(b.quantity || 0) > 0;
+    const aHasStock = Number(a.quantity || 0) > 0;
+    if (bHasStock !== aHasStock) return bHasStock ? 1 : -1;
     return a.name.localeCompare(b.name, 'ar');
   });
 }
