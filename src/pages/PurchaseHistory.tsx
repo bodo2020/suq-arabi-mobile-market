@@ -231,7 +231,7 @@ export default function PurchaseHistory() {
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="مشترياتي" />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="مشترياتي" showBackButton onBack={() => navigate('/account')} />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         {!session ? (
           <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
