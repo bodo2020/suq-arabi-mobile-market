@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Sparkles, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChefHat, ClipboardList, Tv, Trash2, BookOpen } from 'lucide-react';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import { useBranch } from '@/contexts/BranchContext';
 import { useUser } from '@/contexts/UserContext';
 import { normalizeArabicSearch } from '@/lib/arabicSearch';
+import { getSmartGroups } from '@/lib/smartShopping';
+import MarcoAiPrompt from '@/components/search/MarcoAiPrompt';
 import { getHomeRecommendationIds } from '@/lib/homePage';
 import { getBranchCatalog, type Product } from '@/lib/supabase';
 
@@ -16,37 +18,12 @@ type SearchDiscoveryProps = {
   onClearRecent: () => void;
 };
 
-type ShoppingIdea = {
-  title: string;
-  terms: readonly string[];
-};
-
-const ideas: ShoppingIdea[] = [
-  { title: 'فطار الجمعة', terms: ['جبنة', 'بيض', 'لبن', 'توست', 'عسل', 'مربى', 'شاي'] },
-  { title: 'مكرونة بشاميل', terms: ['مكرونة', 'لبن', 'دقيق', 'زبدة', 'لحمة مفرومة', 'جبنة'] },
-  { title: 'حلويات سريعة', terms: ['بسكويت', 'شوكولاتة', 'كريمة', 'قشطة', 'كيك', 'كاكاو'] },
-  { title: 'مقاضي البيت', terms: ['رز', 'أرز', 'سكر', 'زيت', 'شاي', 'مكرونة'] },
-  { title: 'سناكس وسهرة', terms: ['شيبسي', 'شيبس', 'عصير', 'مكسرات', 'بسكويت', 'فشار'] },
-  { title: 'تنضيف البيت', terms: ['مسحوق', 'منظف', 'صابون', 'كلور', 'مناديل', 'سائل'] },
-];
-
 const available = (product: Product) => Number(product.quantity || 0) > 0;
 const isOffer = (product: Product) => {
   const price = Number(product.price || 0);
   const offer = Number(product.offer_price || 0);
   return available(product) && price > 0 && offer > 0 && offer < price;
 };
-
-const normalizedTerms = ideas.map(idea => ({
-  ...idea,
-  keys: idea.terms.map(normalizeArabicSearch),
-}));
-
-function matchingIdea(product: Product, keys: readonly string[]) {
-  const name = normalizeArabicSearch(product.name || '');
-  const bulk = normalizeArabicSearch(product.bulk_name || '');
-  return keys.some(term => name.includes(term) || (bulk && bulk.includes(term)));
-}
 
 function ProductRail({ title, products, href }: { title: string; products: Product[]; href?: string }) {
   if (!products.length) return null;
@@ -71,7 +48,6 @@ export default function SearchDiscovery({ recent, onSearch, onClearRecent }: Sea
   const { branch, branchLoading } = useBranch();
   const { user } = useUser();
   const navigate = useNavigate();
-  const [activeIdea, setActiveIdea] = useState<string | null>(null);
   const branchId = branch?.delivery_branch_id;
 
   // One cached, address-scoped catalog request drives all product rails.
@@ -96,6 +72,12 @@ export default function SearchDiscovery({ recent, onSearch, onClearRecent }: Sea
   });
 
   const products = useMemo(() => catalog.data || [], [catalog.data]);
+  const smartGroups = useQuery({
+    queryKey:['ala-mazagak-groups-v1'],
+    queryFn:getSmartGroups,
+    staleTime:300_000,
+    refetchOnWindowFocus:false,
+  });
   const recommendations = useMemo(() => {
     const inStock = products.filter(available);
     const byId = new Map(inStock.map(product => [product.id, product]));
@@ -128,14 +110,6 @@ export default function SearchDiscovery({ recent, onSearch, onClearRecent }: Sea
       return second - first;
     }).slice(0, 10), [products]);
 
-  const matchedIdeas = useMemo(() => normalizedTerms
-    .map(idea => ({
-      ...idea,
-      matches: products.filter(product => available(product) && matchingIdea(product, idea.keys)),
-    }))
-    .filter(idea => idea.matches.length >= 2), [products]);
-
-  const selectedIdea = matchedIdeas.find(idea => idea.title === activeIdea);
   const queryChips = useMemo(() => {
     // Use actual catalog names to avoid suggestions that lead nowhere.
     const terms = ['لبن', 'جبنة', 'مكرونة', 'تونة', 'شاي', 'منظفات', 'عصير', 'بسكويت'];
@@ -209,31 +183,35 @@ export default function SearchDiscovery({ recent, onSearch, onClearRecent }: Sea
         </div>
       ) : (
         <>
-          {matchedIdeas.length > 0 && (
-            <section className="-mx-3 bg-gradient-to-l from-[#ecf7f0] to-[#f7f4ff] px-3 py-4 sm:mx-0 sm:rounded-2xl">
-              <h2 className="mb-3 flex items-center gap-2 text-lg font-black text-[#005931]">
-                <Sparkles size={19} strokeWidth={1.8} aria-hidden="true" />
-                مقترحات ذكية
-              </h2>
-              <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1" dir="rtl">
-                {matchedIdeas.map(idea => (
-                  <button
-                    key={idea.title}
-                    type="button"
-                    aria-pressed={selectedIdea?.title === idea.title}
-                    onClick={() => setActiveIdea(previous => previous === idea.title ? null : idea.title)}
-                    className={`min-h-11 shrink-0 rounded-2xl border px-4 text-sm font-bold transition-colors ${selectedIdea?.title === idea.title
-                      ? 'border-[#005931] bg-[#005931] text-white'
-                      : 'border-white bg-white text-[#35594a]'}`}
-                  >
-                    {idea.title}
-                  </button>
-                ))}
+          {Boolean(smartGroups.data?.length) && (
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <BookOpen size={19} className="text-[#005931]" aria-hidden="true" />
+                <h2 className="text-lg font-black text-[#005931]">على مزاجك</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {smartGroups.data!.map(group => {
+                  const Icon = group.kind === 'recipe' ? ChefHat : group.kind === 'occasion' ? Tv : ClipboardList;
+                  return (
+                    <Link
+                      key={group.id}
+                      to={`/ala-mazagak/${group.slug}`}
+                      className="flex min-h-[132px] flex-col justify-between rounded-[22px] border border-[#dcebe1] bg-[#eaf6ee] p-3.5 transition-colors active:bg-[#daf0e1]"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 text-[#005931]">
+                        <Icon size={22} strokeWidth={1.8} />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-extrabold leading-5 text-[#005931]">{group.title_ar}</h3>
+                        <p className="mt-0.5 line-clamp-2 text-xs text-[#517363]">{group.subtitle_ar}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </section>
           )}
-
-          {selectedIdea && <ProductRail title={selectedIdea.title} products={selectedIdea.matches} />}
+          <MarcoAiPrompt />
           <ProductRail title="مقترح ليك" products={recommendations} />
           <ProductRail title="أفضل العروض" products={offers} href="/offers" />
         </>
