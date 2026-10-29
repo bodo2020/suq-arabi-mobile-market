@@ -90,11 +90,7 @@ export default function SearchBarcodeScanner({ onDetected, onClose, finding = fa
                 <RefreshCcw size={16} className="ml-2" /> إعادة تشغيل الكاميرا
               </Button>
             </div>
-          ) : (
-            <p className="mt-3 text-center text-xs leading-5 text-slate-500">
-              تقدر تمسح الباركود من غير ما تكتب اسم المنتج.
-            </p>
-          )}
+          ) : null}
           <Button variant="outline" className="mt-4 min-h-11 w-full rounded-2xl" onClick={onClose}>إلغاء</Button>
         </div>
       </div>
