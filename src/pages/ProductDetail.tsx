@@ -612,7 +612,7 @@ const ProductDetail = () => {
     if (!product || isPreviewOnly) return;
     const timer = window.setTimeout(() => setFullResolutionProductId(id || null), isMobile ? 500 : 0);
     return () => window.clearTimeout(timer);
-  }, [id, isMobile, isPreviewOnly, Boolean(serverProduct)]);
+  }, [id, isMobile, isPreviewOnly, serverProduct]);
 
   const images = useMemo(() => {
     if (!product) return [];
