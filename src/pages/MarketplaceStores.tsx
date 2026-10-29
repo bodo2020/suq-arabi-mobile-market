@@ -31,10 +31,10 @@ export default function MarketplaceStores() {
   });
 
   return <MainLayout>
-    <TopNavBar onSearchFocus={() => navigate('/search')} />
+    <TopNavBar variant="catalog" showBackButton onBack={() => navigate(-1)} searchPlaceholder="دور على منتج أو متجر…" onSearchFocus={() => navigate('/search', { state: { focusSearch: true } })} />
     <main className="mx-auto max-w-6xl px-3 pb-12 pt-4 sm:px-4" dir="rtl">
       <div className="mb-6 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="رجوع"><ArrowRight /></Button>
+        
         <div><p className="text-xs font-bold text-primary">Marketplace</p><h1 className="text-2xl font-black">متاجر قريبة منك</h1><p className="mt-1 text-sm text-gray-500">النتائج حسب عنوان التوصيل الحالي، وكل طلب من متجر واحد.</p></div>
       </div>
 
