@@ -161,11 +161,13 @@ html.native-android #root {
 }
 
 .product-card {
-  @apply bg-white rounded-xl p-3 shadow-sm relative border border-transparent transition-all duration-200 ease-out;
+  @apply bg-white rounded-xl p-3 shadow-sm relative border border-transparent transition-colors duration-150 ease-out;
 }
 
-.product-card:hover {
-  @apply shadow-lg border-primary/15 -translate-y-0.5;
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover {
+    @apply border-primary/15;
+  }
 }
 
 .product-card .favorite-btn {
@@ -237,10 +239,10 @@ html.native-platform [role="button"] {
 
 /* Mobile navigation bar */
 .bottom-nav {
-  @apply fixed bottom-3 left-3 right-3 z-50 flex h-[68px] items-center justify-around rounded-2xl border border-gray-100 bg-white/95 px-1 shadow-[0_10px_35px_rgba(0,50,28,.16)] backdrop-blur-xl;
+  @apply fixed bottom-3 left-3 right-3 z-50 flex h-[68px] items-center justify-around rounded-2xl border border-gray-100 bg-white px-1 shadow-[0_6px_18px_rgba(0,50,28,.12)];
   bottom: calc(0.75rem + var(--safe-area-bottom));
 }
-.bottom-nav-item { @apply flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-gray-500 transition-all; }
+.bottom-nav-item { @apply flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-gray-500 transition-colors duration-150; }
 .bottom-nav-item.active { @apply text-primary; }
 .bottom-nav-item.active > span:first-child {
   background: hsl(var(--brand-yellow-soft));
@@ -269,8 +271,6 @@ html.native-platform [role="button"] {
   border-radius: 16px;
   padding: 11px 12px;
   box-shadow: 0 12px 34px rgba(10, 44, 28, .22);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 .network-status--offline {

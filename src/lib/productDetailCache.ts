@@ -40,7 +40,7 @@ const visibleSnapshots = new Map<string, { product: Product; savedAt: number }>(
 // Preserve a long catalog journey while the sheet stays open. Display-only
 // snapshots never authorize checkout prices, quantities or stock.
 const SNAPSHOT_TTL_MS = 20 * 60_000;
-const MAX_SNAPSHOTS = 5000;
+const MAX_SNAPSHOTS = 480;
 
 export function registerBrowsableProduct(path: string, product: Product): void {
   if (!/^\/product\/[^/?#]+/.test(path)) return;
@@ -134,6 +134,8 @@ export function warmAdjacentProductPages(
  * The full ordered journey is already known; only the small rolling
  * window needs canonical validation. No recommendation requests on swipe.
  */
+let adjacentPrefetchGeneration = 0;
+
 export async function prefetchAdjacentProductDetails(
   client: QueryClient,
   paths: string[],
@@ -141,12 +143,13 @@ export async function prefetchAdjacentProductDetails(
   onReady?: () => void,
 ): Promise<void> {
   if (currentIndex < 0 || typeof window === 'undefined') return;
+  const generation = ++adjacentPrefetchGeneration;
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
   // Respect a user preference to save mobile data.
   if (connection?.saveData) return;
 
   const warm = async (path: string | undefined): Promise<void> => {
-    if (!path || !/^\/product\/[^/?#]+/.test(path)) return;
+    if (generation !== adjacentPrefetchGeneration || !path || !/^\/product\/[^/?#]+/.test(path)) return;
     const url = new URL(path, window.location.origin);
     if (url.origin !== window.location.origin) return;
     let id: string;
@@ -182,5 +185,9 @@ export async function prefetchAdjacentProductDetails(
   }
   // Do not let a slow first request starve the following cards forever.
   await new Promise<void>(resolve => window.setTimeout(resolve, 180));
+  if (generation !== adjacentPrefetchGeneration) {
+    await immediate;
+    return;
+  }
   await Promise.all([immediate, ...[paths[currentIndex + 2], paths[currentIndex - 2]].map(warm)]);
 }

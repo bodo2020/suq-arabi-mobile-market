@@ -219,12 +219,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
               originalSrc={imageSrc}
               alt={displayName}
               preloadMargin="800px 0px"
-              className="h-full w-full object-contain transition-transform duration-300 motion-safe:group-hover/card:scale-[1.04]"
+              className="h-full w-full object-contain motion-safe:md:transition-transform motion-safe:md:duration-150 motion-safe:md:group-hover/card:scale-[1.02]"
             />
           </div>
         </Link>
 
-        <div className="absolute left-1 top-1 z-20 flex h-7 w-7 scale-90 items-center justify-center rounded-full bg-white/95 shadow-[0_3px_10px_rgba(15,23,42,0.09)] backdrop-blur-sm sm:left-2 sm:top-2 sm:h-9 sm:w-9 sm:scale-100">
+        <div className="absolute left-1 top-1 z-20 flex h-7 w-7 scale-90 items-center justify-center rounded-full bg-white/95 shadow-[0_3px_10px_rgba(15,23,42,0.09)] sm:left-2 sm:top-2 sm:h-9 sm:w-9 sm:scale-100">
           <FavoriteButton productId={product.id} variantId={variantId} size="sm" />
         </div>
 

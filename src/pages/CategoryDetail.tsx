@@ -221,7 +221,7 @@ const CategoryDetail = () => {
         {visibleSubcategories.length > 0 && (
           <div ref={chipAnchorRef} className="relative mb-5 h-[58px]">
             <div
-              className={`${chipsPinned ? 'fixed inset-x-0 z-[45]' : 'absolute inset-x-0 top-0 z-40'} border-y border-emerald-100/70 bg-white/96 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur-xl`}
+              className={`${chipsPinned ? 'fixed inset-x-0 z-[45]' : 'absolute inset-x-0 top-0 z-40'} border-y border-emerald-100/70 bg-white py-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.05)]`}
               style={chipsPinned ? { top: 'var(--top-nav-height, 68px)' } : undefined}
             >
               <div className="mx-auto w-full max-w-7xl">
@@ -235,7 +235,7 @@ const CategoryDetail = () => {
                         ref={node => { chipRefs.current[subcategory.id] = node; }}
                         type="button"
                         onClick={() => scrollToSection(subcategory.id)}
-                        className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-all duration-300 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'scale-[1.03] border-[#005931] bg-[#005931] text-white shadow-[0_6px_16px_rgba(0,89,49,0.18)]' : 'border-emerald-100 bg-white text-slate-700'}`}
+                        className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-bold transition-colors duration-150 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${selected ? 'border-[#005931] bg-[#005931] text-white shadow-sm' : 'border-emerald-100 bg-white text-slate-700'}`}
                         aria-pressed={selected}
                       >
                         {subcategory.image_url && (

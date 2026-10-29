@@ -3,9 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
 import { prepareProductBrowseImages } from '@/lib/productImagePipeline';
-import {
-  animateProductCardSheet, findCurrentProductCardOrigin, prefersReducedProductMotion, readProductCardOrigin,
-} from '@/lib/productSheetMotion';
+import { prefersReducedProductMotion } from '@/lib/productSheetMotion';
 import ProductSwipePeek from '@/components/product/ProductSwipePeek';
 import { productCardImage } from '@/lib/productCardImage';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -53,13 +51,19 @@ const ProductDetail = () => {
   const sheetTouch = useRef<{ x: number; y: number; at: number; axis: 'pending' | 'vertical' | 'horizontal' } | null>(null);
   const sheetStage = useRef<HTMLDivElement>(null);
   const sheetCardRef = useRef<HTMLElement>(null);
-  const hasEnteredRef = useRef(false);
-  const entranceAnimation = useRef<Animation | null>(null);
   const dismissGesture = useRef<{ pointerId: number; y: number; at: number } | null>(null);
   const dismissOffset = useRef(0);
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeFrame = useRef<number | null>(null);
+  const dragFrame = useRef<number | null>(null);
+  const dragOffset = useRef(0);
   const pendingSwipeNavigation = useRef<(() => void) | null>(null);
+  // Stable peek callback: rendering unrelated product details won't repaint
+  // adjacent cards or their already-decoded thumbnails.
+  const browseActionRef = useRef<(offset: -1 | 1) => void>(() => {});
+  const onPeekOpen = React.useCallback((offset: number) => {
+    if (offset === -1 || offset === 1) browseActionRef.current(offset);
+  }, []);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closingRef = useRef(false);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -77,16 +81,40 @@ const ProductDetail = () => {
   const setSheetOffset = (x: number) => {
     sheetStage.current?.style.setProperty('--product-swipe-x', `${x}px`);
   };
+  // Touchmove may fire more often than the screen can paint. Coalesce drag
+  // coordinates to one compositor transform write per animation frame.
+  const cancelDragFrame = () => {
+    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+    dragFrame.current = null;
+  };
+  const scheduleSheetOffset = (x: number) => {
+    dragOffset.current = x;
+    if (dragFrame.current !== null) return;
+    dragFrame.current = requestAnimationFrame(() => {
+      dragFrame.current = null;
+      setSheetOffset(dragOffset.current);
+    });
+  };
   const setCarouselMotion = (animate: boolean) => {
     const cards = sheetStage.current?.querySelectorAll<HTMLElement>(
       '[data-product-center-card], [data-product-swipe-card]',
     );
-    // Apply the transition before writing the transform variable. Relying on
-    // a delayed React class update caused some swipes to jump straight to
-    // the next product without moving the sheets.
+    // Apply the transition before the shared X variable changes.
     cards?.forEach(card => {
       card.style.transition = animate && !prefersReducedProductMotion()
         ? 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)'
+        : 'none';
+    });
+  };
+  // Use the exact same Y transition for center and both neighbors.
+  // A single --product-dismiss-y variable moves all three as one stack.
+  const setDismissMotion = (animate: boolean, duration = 220) => {
+    const cards = sheetStage.current?.querySelectorAll<HTMLElement>(
+      '[data-product-center-card], [data-product-swipe-card]',
+    );
+    cards?.forEach(card => {
+      card.style.transition = animate && !prefersReducedProductMotion()
+        ? `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`
         : 'none';
     });
   };
@@ -97,10 +125,7 @@ const ProductDetail = () => {
 
   const [loadedProduct, setProduct] = useState<Product | null>(null);
   const queryClient = useQueryClient();
-  // A virtual 7-slot rail keeps the *entire catalog order* while mounting
-  // only the 3 preceding + active + 3 following sheets. Keys are product paths:
-  // when the user moves forward, overlapping DOM cards (including decoded
-  // images) retain identity and move to their new position, not remount.
+  // Only the current and two adjacent sheets render; other items stay in cache.
   const rail = useMemo(() => {
     if (!browse || browseIndex < 0 || typeof window === 'undefined') return [];
     const previews = new Map(browse.previews.map(preview => [preview.path, preview]));
@@ -110,7 +135,7 @@ const ProductDetail = () => {
       preview: (typeof browse.previews)[number];
       product: Product | null;
     }[] = [];
-    for (let offset = -3; offset <= 3; offset++) {
+    for (let offset = -1; offset <= 1; offset++) {
       const path = browse.paths[browseIndex + offset];
       const preview = path ? previews.get(path) : undefined;
       if (!path || !preview) continue;
@@ -173,56 +198,44 @@ const ProductDetail = () => {
     return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); };
   }, [handoffPath, location.pathname, location.search]);
 
-  // Lock the background document only on handheld product sheets.
+  // Pause background banner work while a catalog sheet is open.
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 767px)');
     const previous = document.body.style.overflow;
-    if (media.matches) document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previous; };
-  }, []);
+    if (isMobile) document.body.style.overflow = 'hidden';
+    if (inCatalogOverlay) document.body.dataset.productSheetOpen = 'true';
+    return () => {
+      document.body.style.overflow = previous;
+      if (inCatalogOverlay) delete document.body.dataset.productSheetOpen;
+    };
+  }, [isMobile, inCatalogOverlay]);
 
   const closeSheet = () => {
     if (closingRef.current) return;
     closingRef.current = true;
-    // Don't let a pending carousel snap navigate after the sheet is closing.
     pendingSwipeNavigation.current = null;
-    // A finished FLIP animation with fill:'both' otherwise keeps overriding
-    // the CSS transform used for every carousel swipe.
-    entranceAnimation.current?.cancel();
-    entranceAnimation.current = null;
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
-
-    let finished = false;
+    cancelDragFrame();
     const finish = () => {
-      if (finished) return;
-      finished = true;
-      if (closeTimer.current) clearTimeout(closeTimer.current);
       closeTimer.current = null;
       if (browse) navigate(-1);
-      else navigate('/');
+      else navigate('/', { replace: true });
     };
-    const path = location.pathname + location.search;
-    const origin = inCatalogOverlay
-      ? findCurrentProductCardOrigin(path, readProductCardOrigin(location.state, path))
-      : null;
-    const animation = origin && sheetCardRef.current
-      ? animateProductCardSheet(sheetCardRef.current, origin, 'close')
-      : null;
-    if (animation) {
-      sheetStage.current?.animate(
-        [{ backgroundColor: 'rgba(15,23,42,0.5)' }, { backgroundColor: 'rgba(15,23,42,0)' }],
-        { duration: 260, easing: 'ease-out', fill: 'forwards' },
-      );
-      void animation.finished.then(finish, finish);
-      closeTimer.current = setTimeout(finish, 410);
-    } else {
-      // Deep links or catalog cards no longer on screen retain a natural
-      // downward bottom-sheet exit instead of shrinking to a wrong product.
-      if (sheetStage.current) sheetStage.current.style.setProperty('--product-dismiss-y', '0px');
-      setSheetVisible(false);
-      closeTimer.current = setTimeout(finish, prefersReducedProductMotion() ? 0 : 260);
+    if (prefersReducedProductMotion()) {
+      finish();
+      return;
     }
+    // Keep all three sheets moving together while the backdrop and sheets
+    // fade as one layer. No expensive full-screen resize or shadow animation.
+    setDismissMotion(true, 185);
+    const stage = sheetStage.current;
+    if (stage) {
+      const current = Number.parseFloat(stage.style.getPropertyValue('--product-dismiss-y')) || 0;
+      stage.style.transition = 'opacity 185ms ease-out';
+      stage.style.opacity = '0';
+      stage.style.setProperty('--product-dismiss-y', `${Math.max(current + 64, 72)}px`);
+    }
+    closeTimer.current = setTimeout(finish, 195);
   };
 
   const onHeaderPointerDown = (event: React.PointerEvent<HTMLElement>) => {
@@ -230,7 +243,7 @@ const ProductDetail = () => {
     if ((event.target as HTMLElement).closest('button, a, input, textarea')) return;
     dismissGesture.current = { pointerId: event.pointerId, y: event.clientY, at: Date.now() };
     dismissOffset.current = 0;
-    sheetCardRef.current?.style.setProperty('transition', 'none');
+    setDismissMotion(false);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -249,7 +262,6 @@ const ProductDetail = () => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    sheetCardRef.current?.style.removeProperty('transition');
     const dy = dismissOffset.current;
     dismissOffset.current = 0;
     const elapsed = Math.max(1, Date.now() - gesture.at);
@@ -257,16 +269,21 @@ const ProductDetail = () => {
       closeSheet();
       return;
     }
-    // A short drag springs back; keep React out of individual pointer frames.
-    const card = sheetCardRef.current;
-    if (card) card.style.transition = 'transform 240ms cubic-bezier(0.2,0.8,0.2,1)';
+    // A short drag springs all three cards back together.
+    setDismissMotion(true, 220);
     requestAnimationFrame(() => sheetStage.current?.style.setProperty('--product-dismiss-y', '0px'));
-    window.setTimeout(() => { if (!closingRef.current) card?.style.removeProperty('transition'); }, 250);
+    window.setTimeout(() => {
+      if (closingRef.current || dismissGesture.current) return;
+      sheetStage.current?.querySelectorAll<HTMLElement>(
+        '[data-product-center-card], [data-product-swipe-card]',
+      ).forEach(card => card.style.removeProperty('transition'));
+    }, 245);
   };
 
   // Route changes re-center the newly selected card *before the browser paints*.
   // Suppressing the reset transition avoids the old "slide back" flash.
   useLayoutEffect(() => {
+    cancelDragFrame();
     const cards = sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-swipe-card], [data-product-center-card]');
     // Recenter the three *complete card elements* synchronously before
     // routing paints the newly selected product.
@@ -285,8 +302,8 @@ const ProductDetail = () => {
   useEffect(() => () => {
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
+    cancelDragFrame();
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    entranceAnimation.current?.cancel();
   }, []);
 
   const completeSwipeNavigation = () => {
@@ -302,14 +319,13 @@ const ProductDetail = () => {
     if (!browse || browseIndex < 0 || weightOpen || swipeLocked || closingRef.current) return;
     // An unfinished opening FLIP must not keep the center card locked while
     // tapping an adjacent peek or flicking immediately after opening.
-    entranceAnimation.current?.cancel();
-    entranceAnimation.current = null;
     const next = browse.paths[browseIndex + offset];
     const destination = next || (offset === 1 ? browse.nextCategory?.path : undefined);
     if (!destination) return;
     // Seed synchronously before the navigation so the next card never waits
     // on its own network request to show image, name or price.
     if (next) seedProductBrowseCache(queryClient, browse.paths, browseIndex + offset);
+    cancelDragFrame();
     setSwipeLocked(true);
     setSheetDragging(false);
     setSwipeAnimating(true);
@@ -333,9 +349,9 @@ const ProductDetail = () => {
     pendingSwipeNavigation.current = navigateTo;
     // Match the actual card width + gutter so the adjacent card lands at 0,
     // rather than stopping early and appearing to jump on route update.
-    const cardWidth = sheetStage.current?.querySelector<HTMLElement>('[data-product-center-card]')?.getBoundingClientRect().width
-      || Math.min(window.innerWidth * .84, 560);
-    const distance = cardWidth + 10;
+    const cardWidth = sheetStage.current?.querySelector<HTMLElement>('[data-product-center-card]')?.clientWidth
+      || Math.min(window.innerWidth * .92, 680);
+    const distance = cardWidth + 8;
     if (swipeFrame.current !== null) cancelAnimationFrame(swipeFrame.current);
     swipeFrame.current = requestAnimationFrame(() => {
       swipeFrame.current = null;
@@ -346,6 +362,8 @@ const ProductDetail = () => {
     if (swipeTimer.current) clearTimeout(swipeTimer.current);
     swipeTimer.current = setTimeout(completeSwipeNavigation, 330);
   };
+
+  browseActionRef.current = browseProduct;
 
   const startSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
@@ -360,8 +378,6 @@ const ProductDetail = () => {
       at: Date.now(),
       axis: 'pending',
     };
-    entranceAnimation.current?.cancel();
-    entranceAnimation.current = null;
     setCarouselMotion(false);
   };
 
@@ -386,7 +402,7 @@ const ProductDetail = () => {
     const allowed = dx < 0 ? (canSwipeNext || Boolean(nextCategory)) : canSwipePrevious;
     const max = Math.min(window.innerWidth * .92, 700);
     const distance = allowed ? Math.max(-max, Math.min(max, dx)) : dx * .12;
-    setSheetOffset(distance);
+    scheduleSheetOffset(distance);
   };
 
   const finishSheetSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -398,7 +414,7 @@ const ProductDetail = () => {
     const dy = end.clientY - start.y;
     const elapsed = Math.max(1, Date.now() - start.at);
     const fastFlick = Math.abs(dx) >= 27 && Math.abs(dx) / elapsed >= .5;
-    const cardWidth = sheetCardRef.current?.getBoundingClientRect().width || window.innerWidth * .78;
+    const cardWidth = sheetCardRef.current?.clientWidth || window.innerWidth * .92;
     const enoughDistance = Math.abs(dx) >= Math.min(85, cardWidth * .22);
     if ((enoughDistance || fastFlick) && Math.abs(dx) >= Math.abs(dy) * 1.2) {
       const offset = dx < 0 ? 1 : -1;
@@ -408,6 +424,7 @@ const ProductDetail = () => {
       }
     }
     // Cancelled/incomplete flick: every card eases back to its original slot.
+    cancelDragFrame();
     setSheetDragging(false);
     setSwipeAnimating(true);
     setCarouselMotion(true);
@@ -503,7 +520,7 @@ const ProductDetail = () => {
     if (!browse || browseIndex < 0 || !isMobile) return;
     prepareProductBrowseImages(browse.previews, browse.paths, browseIndex);
     warmAdjacentProductPages(queryClient, browse.paths, browseIndex);
-    // Prefetch data in the shared cache without re-rendering seven full sheets
+    // Prefetch data without re-rendering visible sheets
     // in the middle of the gesture. New cache entries are consumed on the next
     // selected index; the catalog preview already paints adjacent cards.
     const timer = window.setTimeout(() => {
@@ -512,38 +529,12 @@ const ProductDetail = () => {
     return () => window.clearTimeout(timer);
   }, [browse, browseIndex, queryClient, isMobile]);
 
-  // First entrance is a shared-element FLIP from the tapped catalog tile.
-  // This layout effect runs before paint so an offscreen -> center flash
-  // cannot occur. Direct links retain the normal bottom-sheet entrance.
+  // Lightweight 28px entrance uses compositor-only transform/opacity.
   useLayoutEffect(() => {
-    if (!product || !isMobile || hasEnteredRef.current || closingRef.current) return;
-    const card = sheetCardRef.current;
-    if (!card) return;
-    hasEnteredRef.current = true;
-    const origin = inCatalogOverlay
-      ? readProductCardOrigin(location.state, location.pathname + location.search)
-      : null;
-    const animation = origin ? animateProductCardSheet(card, origin, 'open') : null;
-    if (animation) {
-      entranceAnimation.current = animation;
-      // WAAPI fill:'both' is required during FLIP but must be released when
-      // opening finishes; otherwise its transform permanently wins over the
-      // carousel's CSS --product-swipe-x and the screen appears stationary.
-      void animation.finished.then(() => {
-        if (entranceAnimation.current !== animation) return;
-        entranceAnimation.current = null;
-        animation.cancel();
-      }).catch(() => {});
-      sheetStage.current?.animate(
-        [{ backgroundColor: 'rgba(15,23,42,0)' }, { backgroundColor: 'rgba(15,23,42,0.5)' }],
-        { duration: 310, easing: 'ease-out', fill: 'both' },
-      );
-      setSheetVisible(true);
-    } else {
-      const frame = requestAnimationFrame(() => setSheetVisible(true));
-      return () => cancelAnimationFrame(frame);
-    }
-  }, [Boolean(product), isMobile]);
+    if (!product || !isMobile || sheetVisible || closingRef.current) return;
+    const frame = requestAnimationFrame(() => setSheetVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, [Boolean(product), isMobile, sheetVisible]);
 
   // Only begin secondary network work once the user gets near the bottom of
   // the sheet (or the lower section on desktop). The hero renders independently.
@@ -924,14 +915,13 @@ const ProductDetail = () => {
             offset={slide.offset}
             preview={slide.preview}
             product={slide.product}
-            locked={swipeLocked || Math.abs(slide.offset) !== 1}
+            locked={swipeLocked || weightOpen || Math.abs(slide.offset) !== 1}
             visible={sheetVisible && (slide.offset !== 0 || handoffPath === slide.path)}
             handoff={slide.offset === 0 && handoffPath === slide.path}
             handoffExiting={handoffExiting}
             transitioning={!sheetDragging && swipeAnimating}
-            onOpen={() => {
-              if (slide.offset === -1 || slide.offset === 1) browseProduct(slide.offset);
-            }}
+            moving={sheetDragging || swipeAnimating}
+            onOpen={onPeekOpen}
           />
         ))}
         <section
@@ -941,10 +931,20 @@ const ProductDetail = () => {
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[78vw] max-w-[560px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_18px_70px_rgba(0,0,0,.18)] will-change-transform motion-reduce:transition-none ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-transform duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]'}`}
-          style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible || (inCatalogOverlay && Boolean(readProductCardOrigin(location.state, location.pathname + location.search))) ? '0px' : '105dvh'} + var(--product-dismiss-y, 0px)), 0)` }}
+          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${sheetDragging ? 'will-change-transform transition-none' : swipeAnimating ? 'will-change-transform transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-[transform,opacity] duration-[190ms] ease-out'}`}
+          style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible ? '0px' : '28px'} + var(--product-dismiss-y, 0px)), 0)`, opacity: sheetVisible ? 1 : 0 }}
           onTransitionEnd={event => {
-            if (event.currentTarget === event.target && event.propertyName === 'transform') completeSwipeNavigation();
+            if (event.currentTarget !== event.target || event.propertyName !== 'transform') return;
+            if (pendingSwipeNavigation.current) {
+              completeSwipeNavigation();
+            } else if (swipeAnimating) {
+              // An aborted flick springs back. Release its GPU layers instead
+              // of retaining will-change and a transform transition forever.
+              setSwipeAnimating(false);
+              sheetStage.current?.querySelectorAll<HTMLElement>(
+                '[data-product-swipe-card], [data-product-center-card]',
+              ).forEach(card => card.style.removeProperty('transition'));
+            }
           }}
         >
           <header
@@ -978,6 +978,7 @@ const ProductDetail = () => {
             onTouchMove={moveSheetSwipe}
             onTouchEnd={finishSheetSwipe}
             onTouchCancel={() => {
+              cancelDragFrame();
               sheetTouch.current = null;
               setSheetDragging(false);
               setSwipeAnimating(true);
@@ -1086,18 +1087,6 @@ const ProductDetail = () => {
                   <p className="whitespace-pre-line px-4 pb-4 text-sm leading-7 text-slate-600">{product.description}</p>
                 </details>
               )}
-              <details className="group" onToggle={event => {
-                if (event.currentTarget.open && id) setExtrasForId(id);
-              }}>
-                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-4 text-sm font-extrabold text-slate-900">
-                  <span>معلومات إضافية</span>
-                  <span className="text-lg text-slate-400 group-open:rotate-45">+</span>
-                </summary>
-                <div className="space-y-3 px-4 pb-4 text-xs leading-6 text-slate-600">
-                  <p>طريقة البيع: {weighted ? 'بالوزن' : bulkMode ? bulkUnitType : 'بالقطعة'} · الوحدة: {unitDescription}</p>
-                  {company && <button type="button" className="font-extrabold text-[#005931]" onClick={() => navigate(`/company/${company.id}`)}>اكتشف منتجات {company.name}</button>}
-                </div>
-              </details>
             </div>
             <div ref={mobileExtraTriggerRef} className="h-px" aria-hidden="true" />
             {shouldLoadExtras && (
