@@ -145,11 +145,7 @@ export async function prefetchAdjacentProductDetails(
   // Respect a user preference to save mobile data.
   if (connection?.saveData) return;
 
-  const neighbors = [
-    paths[currentIndex + 1], paths[currentIndex - 1],
-    paths[currentIndex + 2], paths[currentIndex - 2],
-  ];
-  await Promise.all(neighbors.map(async path => {
+  const warm = async (path: string | undefined): Promise<void> => {
     if (!path || !/^\/product\/[^/?#]+/.test(path)) return;
     const url = new URL(path, window.location.origin);
     if (url.origin !== window.location.origin) return;
@@ -167,16 +163,24 @@ export async function prefetchAdjacentProductDetails(
         retry: false,
       });
       const product = getCachedDetailProduct(client, id, store);
-      if (product) {
-        // Neighbor thumbnails are prioritized; full resolution can begin on
-        // normal connections while the shopper is viewing the current card.
-        const allowLarge = connection?.effectiveType !== '2g' && connection?.effectiveType !== 'slow-2g';
-        warmFirstImage(product, allowLarge, url.searchParams.get('unit') === 'bulk');
-      }
+      // Decode the small swipe thumbnail only. Loading four full-resolution
+      // photos alongside the gestures saturated the network and GPU memory.
+      if (product) warmFirstImage(product, false, url.searchParams.get('unit') === 'bulk');
     } catch {
-      // Presentation snapshots remain available offline/when fetch fails.
+      // Keep display-only catalog snapshots available when a request fails.
     } finally {
       onReady?.();
     }
-  }));
+  };
+
+  // The next gesture needs +/-1 first; don't compete with it by fetching
+  // +/-2 and high-resolution photos at the same time.
+  const immediate = Promise.all([paths[currentIndex + 1], paths[currentIndex - 1]].map(warm));
+  if (connection?.effectiveType === '2g' || connection?.effectiveType === 'slow-2g') {
+    await immediate;
+    return;
+  }
+  // Do not let a slow first request starve the following cards forever.
+  await new Promise<void>(resolve => window.setTimeout(resolve, 180));
+  await Promise.all([immediate, ...[paths[currentIndex + 2], paths[currentIndex - 2]].map(warm)]);
 }
