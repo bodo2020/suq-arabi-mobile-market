@@ -8,10 +8,10 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { useBranch } from '@/contexts/BranchContext';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
-import { supabase, type Product } from '@/lib/supabase';
+import { type Product } from '@/lib/supabase';
 import { isWeightedProduct } from '@/lib/productPurchase';
 import {
-  availableSmartProduct, getSmartGroupBundle, getSmartGroups,
+  availableSmartProduct, getSmartGroupBundle, getSmartGroups, shoppingDb,
   moneyEGP, proposedPackCount, quantityText, smartProductPrice,
   type SmartGroupSlot,
 } from '@/lib/smartShopping';
@@ -72,7 +72,7 @@ export default function SmartGroupDetail() {
         const guest = localStorage.getItem(savedKey);
         if (guest) entries = safeEntries(JSON.parse(guest));
         if (user?.id) {
-          const { data, error } = await supabase
+          const { data, error } = await shoppingDb
             .from('customer_smart_lists').select('entries')
             .eq('user_id',user.id).eq('list_key',slug).maybeSingle();
           if (!error && data?.entries) entries = safeEntries(data.entries);
@@ -117,7 +117,7 @@ export default function SmartGroupDetail() {
     try {
       localStorage.setItem(savedKey, JSON.stringify(entries));
       if (user?.id) {
-        const { error } = await supabase.from('customer_smart_lists').upsert({
+        const { error } = await shoppingDb.from('customer_smart_lists').upsert({
           user_id:user.id,list_key:slug,entries,updated_at:new Date().toISOString(),
         }, { onConflict:'user_id,list_key' });
         if (error) throw error;
