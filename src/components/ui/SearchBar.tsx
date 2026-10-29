@@ -61,7 +61,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     let erasing = false;
     let timer: ReturnType<typeof setTimeout>;
     const tick = () => {
-      if (document.hidden) {
+      if (document.hidden || document.body.dataset.productSheetOpen === 'true') {
         timer = setTimeout(tick, 800);
         return;
       }
@@ -130,6 +130,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onChange={event => { if (!readOnly) setQuery(event.target.value); }}
             onFocus={readOnly ? undefined : onFocus}
             onClick={readOnly ? onFocus : undefined}
+            onKeyDown={event => {
+              if (readOnly && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                onFocus?.();
+              }
+            }}
             placeholder={showTyping ? '' : placeholder}
             readOnly={readOnly}
             className={`min-w-0 w-full bg-transparent pl-3 text-gray-900 outline-none placeholder:text-gray-500 ${
