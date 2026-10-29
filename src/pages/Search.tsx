@@ -108,8 +108,9 @@ export default function Search() {
       return;
     }
     let active = true;
+    setSuggestions([]);
+    setSuggesting(true);
     const timer = window.setTimeout(() => {
-      setSuggesting(true);
       searchBranchProductsIncludingUnavailable(draft, 8, false)
         .then(rows => { if (active) setSuggestions(rows.slice(0, 5)); })
         .catch(() => { if (active) setSuggestions([]); })
