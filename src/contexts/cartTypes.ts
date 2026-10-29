@@ -28,6 +28,10 @@ export type CartItem = BaseCartItem & {
 };
 
 export type CartAddResult = 'added' | 'conflict' | 'limit' | 'not_ready';
+export type SmartBundleLine = {
+  product: Product; // Contains the branch's actual stock, not a requested quantity.
+  quantity: number; // Number of sealed packs to add.
+};
 
 export const cartSourceIdentity = (item: CartItem) => item.commerce_source === 'marketplace'
   ? `marketplace:${item.merchant_id || ''}:${item.marketplace_branch_id || ''}`
@@ -58,6 +62,7 @@ export type CartContextType = {
   items: CartItem[];
   cart: { items: CartItem[] };
   addToCart: (product: CommerceProductInput) => CartAddResult;
+  addBundleToCart: (lines: SmartBundleLine[]) => 'added' | 'not_ready' | 'conflict';
   removeFromCart: (productId: string, is_bulk?: boolean, listingId?: string | null) => void;
   updateQuantity: (productId: string, quantity: number, is_bulk?: boolean, listingId?: string | null) => void;
   clearCart: () => void;
