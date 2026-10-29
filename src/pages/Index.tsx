@@ -58,7 +58,7 @@ const Index = () => {
       <TopNavBar
         homeHero
         onSearchFocus={() => navigate('/search')}
-        addressLabel={address}
+        addressLabel={user && addressQuery.isError ? 'تعذّر تحميل العنوان — اضغط للمراجعة' : address}
         addressLoading={authLoading || Boolean(user && addressQuery.isLoading)}
         deliveryEstimateMinutes={!user ? guestAddress?.estimated_time : null}
         onAddressClick={openAddress}
