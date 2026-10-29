@@ -98,7 +98,7 @@ const EditAccount = () => {
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="تعديل بياناتي" />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="تعديل بياناتي" showBackButton onBack={() => navigate('/account')} />
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
         {loading ? <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل بيانات الحساب" /></div> : <div className="space-y-5">
           <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
