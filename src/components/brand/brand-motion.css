@@ -1,0 +1,123 @@
+.brand-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: 0;
+}
+.brand-mark--mark { aspect-ratio: 121 / 161; }
+.brand-mark--badge { aspect-ratio: 321 / 320; }
+.brand-mark img, .brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  overflow: visible;
+}
+.brand-mark--pop { animation: brand-cart-pop 210ms cubic-bezier(.2,.85,.25,1) both; }
+.brand-mark--reveal .brand-mark__stroke {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: brand-stroke-reveal 440ms cubic-bezier(.22,.9,.3,1) forwards;
+}
+.brand-mark--reveal .brand-mark__stroke--2 { animation-delay: 55ms; }
+.brand-mark--reveal .brand-mark__stroke--3 { animation-delay: 115ms; }
+.brand-mark--reveal .brand-mark__stroke--4 { animation-delay: 205ms; }
+.brand-mark--reveal .brand-mark__stroke--5 { animation-delay: 165ms; }
+
+.brand-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: #f6f8f7;
+  animation: brand-intro-exit 860ms ease-out both;
+}
+.brand-intro__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: brand-intro-arrive 380ms ease-out both;
+}
+.brand-intro__mark { width: 124px; height: 124px; }
+.brand-intro__title {
+  color: #005931;
+  font-family: Cairo, sans-serif;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+.brand-cart-feedback {
+  position: fixed;
+  bottom: calc(94px + env(safe-area-inset-bottom,0px));
+  right: 15px;
+  z-index: 180;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid #d5e9dc;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(0,50,28,.1);
+  color: #005931;
+  font-size: 12px;
+  font-weight: 800;
+  animation: brand-cart-feedback-appear 520ms ease-out both;
+}
+.brand-cart-feedback__mark { width: 35px; height: 35px; }
+.brand-order-success__badge { width: 80px; height: 80px; }
+.brand-order-success__check {
+  position: absolute;
+  bottom: -5px;
+  left: -8px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #ffc120;
+  color: #005931;
+  animation: brand-check-appear 330ms 170ms ease-out both;
+}
+.brand-empty-mark { width: 80px; height: 80px; animation: brand-intro-arrive 300ms ease-out both; }
+@keyframes brand-stroke-reveal { to { stroke-dashoffset: 0; } }
+@keyframes brand-intro-arrive {
+  from { opacity: 0; transform: translate3d(0,10px,0) scale(.93); }
+  to { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+}
+@keyframes brand-intro-exit {
+  0%, 64% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes brand-cart-pop {
+  0% { transform: scale(.83); opacity: .7; }
+  70% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes brand-cart-feedback-appear {
+  0% { opacity: 0; transform: translate3d(0,8px,0); }
+  25%, 75% { opacity: 1; transform: translate3d(0,0,0); }
+  100% { opacity: 0; transform: translate3d(0,-4px,0); }
+}
+@keyframes brand-check-appear {
+  from { opacity: 0; transform: scale(.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (min-width: 768px) {
+  .brand-cart-feedback { bottom: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-mark--pop, .brand-mark--reveal .brand-mark__stroke,
+  .brand-intro, .brand-intro__stack, .brand-cart-feedback,
+  .brand-order-success__check, .brand-empty-mark {
+    animation: none !important;
+  }
+  .brand-mark--reveal .brand-mark__stroke { stroke-dashoffset: 0; }
+}
