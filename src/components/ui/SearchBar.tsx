@@ -117,8 +117,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <div className="relative flex min-w-0 flex-1 items-center">
           <Search
             size={hero ? 22 : 20}
-            className={`pointer-events-none absolute right-4 z-10 ${
-              hero || category ? 'text-[#005931]' : 'right-3 text-gray-400'
+            className={`pointer-events-none absolute z-10 ${
+              hero || category ? 'right-4 text-[#005931]' : 'right-3 text-gray-400'
             }`}
             aria-hidden="true"
           />
@@ -128,15 +128,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
             enterKeyHint="search"
             value={query}
             onChange={event => { if (!readOnly) setQuery(event.target.value); }}
-            onFocus={onFocus}
-            onClick={event => {
-              if (readOnly) event.currentTarget.blur();
-              if (readOnly) onFocus?.();
-            }}
+            onFocus={readOnly ? undefined : onFocus}
+            onClick={readOnly ? onFocus : undefined}
             placeholder={showTyping ? '' : placeholder}
             readOnly={readOnly}
             className={`min-w-0 w-full bg-transparent pl-3 text-gray-900 outline-none placeholder:text-gray-500 ${
-              hero ? 'py-4 pr-13 text-base' : 'py-3 pr-10 text-sm'
+              hero ? 'py-4 pr-12 text-base' : 'py-3 pr-10 text-sm'
             } ${readOnly ? 'cursor-pointer' : ''}`}
           />
           {showTyping && (
