@@ -191,7 +191,7 @@ export default function Search() {
         variant="search"
         showBackButton
         onBack={goBack}
-        searchPlaceholder="ابحث عن منتجات أو امسح الباركود"
+        searchPlaceholder="ابحث عن منتج..."
         searchProps={{
           initialQuery: query,
           onQueryChange: setDraft,
