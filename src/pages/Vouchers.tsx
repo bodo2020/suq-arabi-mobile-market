@@ -84,12 +84,12 @@ export default function Vouchers() {
   const oldVouchers = useMemo(() => vouchers.filter(v => v.status !== 'active' || Number(v.remaining_value_egp) <= 0), [vouchers]);
 
   if (authLoading || !user || cardQuery.isLoading || vouchersQuery.isLoading) {
-    return <MainLayout><TopNavBar hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" /><div className="flex min-h-[60vh] items-center justify-center"><BrandLoader label="جاري تحميل كوبونات الخصم" /></div></MainLayout>;
+    return <MainLayout><TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" showBackButton onBack={() => navigate('/account')} /><div className="flex min-h-[60vh] items-center justify-center"><BrandLoader label="جاري تحميل كوبونات الخصم" /></div></MainLayout>;
   }
 
   return (
     <MainLayout>
-      <TopNavBar hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" />
+      <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" showBackButton onBack={() => navigate('/account')} />
       <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6" dir="rtl">
         <section className="overflow-hidden rounded-3xl bg-[#005931] p-5 text-white shadow-lg sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
