@@ -1,4 +1,4 @@
-import { localPhoneDigits } from '@/utils/authUi';
+import { localPhoneDigits, normalizeDigits } from '@/utils/authUi';
 
 export const EGYPT_DIAL_CODE = '+20';
 export const EGYPT_COUNTRY_CODE = 'EG';
