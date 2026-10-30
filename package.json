@@ -19,7 +19,8 @@
     "test:smart-search": "node scripts/smart-search.test.mjs",
     "test:egypt-phone": "node scripts/test-egypt-phone.mjs",
     "test:brand-loader": "node scripts/test-brand-loader-contrast.mjs",
-    "test:cart-empty": "node scripts/test-cart-empty-state.mjs"
+    "test:cart-empty": "node scripts/test-cart-empty-state.mjs",
+    "test:brand-motion": "node scripts/test-brand-micro-motion.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",
