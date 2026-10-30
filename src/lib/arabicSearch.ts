@@ -32,7 +32,7 @@ const alternatesCache = new Map<string, string[]>();
 /**
  * Find safe two-way Egyptian synonyms even when the term is in a longer query:
  * "لبن كامل الدسم" -> "حليب كامل الدسم".
- * Longest phrase wins. Capped to avoid too many catalog round trips.
+ * Longest phrase wins. Capped at four variants to avoid excessive catalog round trips.
  */
 export function searchAlternates(term: string): string[] {
   const normalized = normalizeArabicSearch(term);
@@ -62,9 +62,9 @@ export function searchAlternates(term: string): string[] {
     for (const synonym of match.group) {
       const variant = rewriteTerm(normalized, match.phrase, synonym);
       if (variant && variant !== normalized && !variants.includes(variant)) variants.push(variant);
-      if (variants.length >= 3) break;
+      if (variants.length >= 4) break;
     }
-    if (variants.length >= 3) break;
+    if (variants.length >= 4) break;
   }
   if (alternatesCache.size > 100) alternatesCache.clear();
   alternatesCache.set(normalized, variants);
