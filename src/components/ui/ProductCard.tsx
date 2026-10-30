@@ -243,7 +243,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <div className="absolute -bottom-4 left-1 z-30 max-w-[calc(100%-8px)] sm:-bottom-5 sm:left-2 sm:max-w-[calc(100%-16px)]">
             {weighted ? (
               item ? (
-                <div className="flex h-9 w-[98px] max-w-full items-center overflow-hidden rounded-full border border-[#dcefe5] bg-[#eef9f3] text-[#005931] shadow-[0_6px_16px_rgba(0,89,49,0.10)] sm:h-12 sm:w-auto sm:min-w-[132px]">
+                <div className="brand-card-counter flex h-9 w-[98px] max-w-full items-center overflow-hidden rounded-full border border-[#dcefe5] bg-[#eef9f3] text-[#005931] shadow-[0_6px_16px_rgba(0,89,49,0.10)] sm:h-12 sm:w-auto sm:min-w-[132px]">
                   <button type="button" onClick={decreaseWeight} disabled={!isInitialized} aria-label={selectedWeight <= weightStep ? `حذف ${displayName} من السلة` : `تقليل الوزن بمقدار ${formatWeightAmount(weightStep)}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                     {selectedWeight <= weightStep ? <Trash2 className="h-3.5 w-3.5 sm:h-[17px] sm:w-[17px]" /> : <Minus className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" />}
                   </button>
@@ -266,7 +266,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </button>
               )
             ) : item ? (
-              <div className="flex h-9 w-[94px] max-w-full items-center overflow-hidden rounded-full border border-[#dcefe5] bg-[#eef9f3] text-[#005931] shadow-[0_6px_16px_rgba(0,89,49,0.10)] sm:h-12 sm:w-auto sm:min-w-[122px]">
+              <div className="brand-card-counter flex h-9 w-[94px] max-w-full items-center overflow-hidden rounded-full border border-[#dcefe5] bg-[#eef9f3] text-[#005931] shadow-[0_6px_16px_rgba(0,89,49,0.10)] sm:h-12 sm:w-auto sm:min-w-[122px]">
                 <button type="button" onClick={decreaseRegularOrBulk} disabled={!isInitialized} aria-label={item.quantity <= 1 ? `حذف ${displayName} من السلة` : `تقليل كمية ${displayName}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                   {item.quantity <= 1 ? <Trash2 className="h-3.5 w-3.5 sm:h-[17px] sm:w-[17px]" /> : <Minus className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" />}
                 </button>
