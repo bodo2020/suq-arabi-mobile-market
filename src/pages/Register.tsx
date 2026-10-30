@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { KeyRound, ShieldCheck } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import PasswordRules from '@/components/auth/PasswordRules';
@@ -114,58 +114,54 @@ export default function Register() {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md" dir="rtl">
-        <AuthHeading title="كمّل بياناتك" />
+        <AuthHeading title="فاضل خطوة ونخلص" description="اسمك وكلمة مرورك، وبكده حسابك جاهز" />
 
         {checking ? (
           <div className="flex min-h-48 items-center justify-center"><BrandLoader label="جاري التأكد من حسابك" /></div>
         ) : (
-          <form onSubmit={completeProfile} className="auth-card space-y-5" aria-busy={busy}>
-            <div className="flex items-center gap-2 rounded-2xl bg-[#f0faf5] px-4 py-3 text-sm font-bold text-[#005931]">
-              <ShieldCheck size={18} />
-              <span>تم تأكيد رقمك</span>
-              <bdi dir="ltr" className="mr-auto font-semibold">{phone}</bdi>
+          <form onSubmit={completeProfile} className="auth-card auth-card--flow space-y-5" aria-busy={busy}>
+            <div className="auth-verified-number">
+              <CheckCircle2 size={18} aria-hidden="true" />
+              <span>رقمك اتأكد</span>
+              <bdi dir="ltr" className="auth-verified-phone">{phone}</bdi>
             </div>
 
             <div>
-              <label htmlFor="fullName" className="mb-2 block text-sm font-bold text-slate-800">اسمك</label>
+              <label htmlFor="fullName" className="auth-field-label">اسمك</label>
               <Input
                 id="fullName"
                 autoComplete="name"
-                autoFocus
                 maxLength={100}
                 value={name}
                 disabled={busy}
                 placeholder="الاسم اللي تحب نناديك بيه"
-                className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
+                className="auth-field-input"
                 onChange={event => { setName(event.target.value); setError(''); }}
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-800">
-                <KeyRound size={17} className="text-[#005931]" />
-                كلمة المرور
-              </label>
+              <label htmlFor="password" className="auth-field-label">كلمة المرور</label>
               <PasswordInput
                 id="password"
                 autoComplete="new-password"
                 value={password}
                 disabled={busy}
                 placeholder="8 أحرف أو أكثر"
-                className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
+                className="auth-field-input"
                 onChange={event => { setPassword(event.target.value); setError(''); }}
               />
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="mb-2 block text-sm font-bold text-slate-800">تأكيد كلمة المرور</label>
+              <label htmlFor="confirmPassword" className="auth-field-label">تأكيد كلمة المرور</label>
               <PasswordInput
                 id="confirmPassword"
                 autoComplete="new-password"
                 value={confirmPassword}
                 disabled={busy}
-                placeholder="اكتب كلمة المرور مرة تانية"
-                className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
+                placeholder="اكتبها تاني للتأكيد"
+                className="auth-field-input"
                 onChange={event => { setConfirmPassword(event.target.value); setError(''); }}
               />
             </div>
@@ -175,7 +171,7 @@ export default function Register() {
             {error && <p id="registration-error" role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
             <Button className="auth-primary-button" type="submit" disabled={busy || !phone}>
-              {busy ? <><BrandLoader size="sm" className="ml-2" />جاري حفظ حسابك</> : 'حفظ ومتابعة'}
+              {busy ? <><BrandLoader size="sm" className="ml-2" />جاري حفظ حسابك</> : 'إنشاء الحساب'}
             </Button>
           </form>
         )}

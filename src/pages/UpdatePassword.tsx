@@ -95,14 +95,12 @@ const UpdatePassword = () => {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md" dir="rtl">
-        <div className="mb-2 flex justify-start">
-          <button type="button" onClick={() => navigate('/phone-login')} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600" aria-label="الرجوع">
-            <ArrowRight size={22} />
-          </button>
-        </div>
-        <AuthHeading title="كلمة مرور جديدة" />
+        <button type="button" onClick={() => navigate('/phone-login')} className="auth-back-button" aria-label="الرجوع">
+          <ArrowRight size={20} />
+        </button>
+        <AuthHeading title="اختار كلمة مرور جديدة" />
 
-        <div className="auth-card">
+        <div className="auth-card auth-card--flow">
           {checkingSession ? (
             <div className="flex min-h-44 items-center justify-center">
               <BrandLoader label="جاري التأكد من جلسة الاستعادة" />
@@ -117,7 +115,7 @@ const UpdatePassword = () => {
           ) : (
             <div className="space-y-5" aria-busy={loading}>
               <div>
-                <label htmlFor="password" className="mb-2 block text-sm font-bold text-slate-800">كلمة المرور الجديدة</label>
+                <label htmlFor="password" className="auth-field-label">كلمة المرور الجديدة</label>
                 <PasswordInput
                   id="password"
                   autoComplete="new-password"
@@ -125,12 +123,11 @@ const UpdatePassword = () => {
                   disabled={loading}
                   onChange={event => { setPassword(event.target.value); setError(''); }}
                   placeholder="8 أحرف على الأقل"
-                  className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
-                  autoFocus
+                  className="auth-field-input"
                 />
               </div>
               <div>
-                <label htmlFor="confirmPassword" className="mb-2 block text-sm font-bold text-slate-800">تأكيد كلمة المرور</label>
+                <label htmlFor="confirmPassword" className="auth-field-label">تأكيد كلمة المرور</label>
                 <PasswordInput
                   id="confirmPassword"
                   autoComplete="new-password"
@@ -138,8 +135,8 @@ const UpdatePassword = () => {
                   disabled={loading}
                   onChange={event => { setConfirmPassword(event.target.value); setError(''); }}
                   onKeyDown={event => { if (event.key === 'Enter') void handleUpdatePassword(); }}
-                  placeholder="اكتب كلمة المرور مرة تانية"
-                  className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
+                  placeholder="اكتبها تاني للتأكيد"
+                  className="auth-field-input"
                 />
               </div>
               <PasswordRules password={password} confirmPassword={confirmPassword} />

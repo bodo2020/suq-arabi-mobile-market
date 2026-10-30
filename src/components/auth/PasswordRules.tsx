@@ -4,14 +4,14 @@ export default function PasswordRules({ password, confirmPassword }: { password:
   const longEnough = password.length >= 8;
   const matches = confirmPassword.length > 0 && password === confirmPassword;
   return (
-    <div className="space-y-1.5 rounded-2xl bg-[#f2f8f4] px-4 py-3 text-xs" aria-label="متطلبات كلمة المرور">
-      <div className={longEnough ? 'flex items-center gap-2 text-[#005931]' : 'flex items-center gap-2 text-slate-500'}>
+    <div className="auth-password-rules" aria-label="متطلبات كلمة المرور">
+      <div className={longEnough ? 'auth-rule auth-rule--valid' : 'auth-rule'}>
         {longEnough ? <CheckCircle2 size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}
-        8 أحرف على الأقل
+        <span>8 أحرف على الأقل</span>
       </div>
-      <div className={matches ? 'flex items-center gap-2 text-[#005931]' : 'flex items-center gap-2 text-slate-500'}>
+      <div className={matches ? 'auth-rule auth-rule--valid' : 'auth-rule'}>
         {matches ? <CheckCircle2 size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}
-        تطابق كلمة المرور وتأكيدها
+        <span>كلمتا المرور متطابقتان</span>
       </div>
     </div>
   );

@@ -2,6 +2,14 @@
 
 Branch: `feat/customer-auth-refresh-eg-20261030`
 
+## OTP and password flow presentation
+
+- OTP screens retain the approved bag-only `AuthLayout` flow header, centered short title, a single soft-white form, a clearly displayed verified target phone and a concise **تغيير الرقم** action.
+- Render six individually rounded, responsive LTR OTP slots using the existing `InputOTP` component. Keep the 60-second resend cooldown, autofill, expiry/error messaging, recovery proof and routing logic unchanged.
+- Account completion has **فاضل خطوة ونخلص**, a flat confirmation line for the verified number, then name, new password, confirmation and an unobtrusive live rules row; no nested decorative card.
+- Existing-user password entry and password recovery/reset reuse the same input styling, centered bag header and green action button.
+- Test on short/narrow Android screens (320px and 360px), focus/keyboard behavior, paste/autofill, number editing, expiry, and incorrect-password/OTP states.
+
 ## Approved login presentation (bag-first refresh)
 
 - The first phone-entry step uses `AuthLayout variant="welcome"`: original `BrandMark variant="mark"` artwork from `/brand/super-marko-mark.svg`, centered with **no badge or logo tile**.

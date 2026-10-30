@@ -107,7 +107,7 @@ export default function PhoneLogin() {
       <div className="mx-auto w-full max-w-md" dir="rtl">
         {step === 'password' && <AuthHeading title="كمّل دخولك" />}
 
-        <div className={step === 'phone' ? 'auth-card auth-card--entry' : 'auth-card'}>
+        <div className={step === 'phone' ? 'auth-card auth-card--entry' : 'auth-card auth-card--flow'}>
           {step === 'phone' ? (
             <div className="space-y-5">
               <div>
@@ -168,7 +168,7 @@ export default function PhoneLogin() {
                   onChange={event => { setPassword(event.target.value); setError(''); }}
                   onKeyDown={event => { if (event.key === 'Enter') void login(); }}
                   placeholder="اكتب كلمة المرور"
-                  className="min-h-14 rounded-2xl border-[#cbdcd1] bg-white px-4 text-base focus-visible:border-[#005931] focus-visible:ring-[#005931]/10"
+                  className="auth-field-input"
                   autoFocus
                 />
               </div>
