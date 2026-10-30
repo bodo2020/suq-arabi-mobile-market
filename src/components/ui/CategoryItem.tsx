@@ -41,7 +41,7 @@ const CategoryItem = ({ category, hideTitle = false, onClick, variant = 'default
     <Link
       to={`/category/${category.id}`}
       onClick={handleClick}
-      className="group relative flex min-w-0 flex-col overflow-hidden rounded-[26px] border border-[#d6e8dd] bg-white p-2 shadow-[0_6px_22px_rgba(0,89,49,0.035)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,89,49,0.10)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      className="brand-category-enter group relative flex min-w-0 flex-col overflow-hidden rounded-[26px] border border-[#d6e8dd] bg-white p-2 shadow-[0_6px_22px_rgba(0,89,49,0.035)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,89,49,0.10)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       aria-label={`تصفح قسم ${category.name}`}
     >
       <div className="relative aspect-square w-full overflow-hidden rounded-[20px] bg-[#f3f9eb]">
