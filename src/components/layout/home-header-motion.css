@@ -42,7 +42,7 @@
 
   .home-hero-brand {
     transform-origin: right center;
-    transform: translate3d(0, calc(var(--home-scroll-progress) * 32px), 0)
+    transform: translate3d(0, calc(var(--home-scroll-progress) * 104px), 0)
       scale(calc(1 - var(--home-scroll-progress) * .16));
     opacity: clamp(0, calc(1 - var(--home-scroll-progress) * 1.55), 1);
     will-change: transform, opacity;
