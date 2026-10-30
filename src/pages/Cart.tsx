@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, BadgePercent, Check, Package, Plus, Minus, Trash2, Scale, AlertCircle, RefreshCw, Clock3 } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
-import BrandMark from '@/components/brand/BrandMark';
+import CartEmptyState from '@/components/cart/CartEmptyState';
 import WeightSelector from '@/components/ui/WeightSelector';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/useCart';
@@ -79,12 +79,12 @@ export default function Cart() {
   );
   const deliveryEtaEnd = deliveryEtaStart + 5;
 
-  return <CheckoutLayout>
+  return <CheckoutLayout showSteps={!(isInitialized && items.length === 0)}>
     {syncError && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{syncError}</span><Button variant="outline" onClick={retrySync}>إعادة المحاولة</Button></div>}
     {(branchError || quoteError) && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{branchError || quoteError}</span><Button variant="outline" onClick={() => void retryQuote()}><RefreshCw size={16} />إعادة المراجعة</Button></div>}
 
     {!isInitialized ? <div className="cart-loading"><BrandLoader size="lg" /><span>{syncError ? 'سلتك المحفوظة لم تُحمّل بعد' : 'بنجهّز سلتك'}</span></div> : !items.length ?
-      <section className="cart-empty"><div className="cart-empty-mark"><BrandMark variant="mark" className="brand-empty-mark" /></div><h1>سلتك مستنية اختياراتك</h1><p>ضيف احتياجاتك، وهتلاقيها كلها هنا.<br />تقدر تتسوّق وتختار براحتك قبل تسجيل الدخول.</p><Button asChild className="cart-primary"><Link to="/">ابدأ التسوّق<ArrowLeft size={18} /></Link></Button></section> : <>
+      <CartEmptyState /> : <>
       <div className="cart-heading border-b border-brand-yellow/50 pb-3">
         <div><h1>سلتك، على ذوقك.</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
         <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />سلتك محفوظة</> : 'سلة الضيف جاهزة'}</div>
