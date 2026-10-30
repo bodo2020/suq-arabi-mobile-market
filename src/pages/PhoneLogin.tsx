@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, KeyRound, Phone, ShieldCheck } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
+import AuthHeading from '@/components/auth/AuthHeading';
 import PasswordInput from '@/components/auth/PasswordInput';
 import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
 import { Button } from '@/components/ui/button';
@@ -105,21 +106,13 @@ export default function PhoneLogin() {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md px-1 py-2" dir="rtl">
-        <div className="mb-7 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#e8f5ee] text-[#005931] shadow-sm">
-            {step === 'phone' ? <Phone size={30} strokeWidth={2.2} /> : <KeyRound size={30} strokeWidth={2.2} />}
-          </div>
-          <h1 className="text-2xl font-black text-slate-950">
-            {step === 'phone' ? 'أهلًا بيك في سوبر ماركو' : 'اكتب كلمة المرور'}
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            {step === 'phone'
-              ? 'ابدأ برقم موبايلك وهنكمل معاك تلقائيًا'
-              : 'الحساب موجود، كمّل بكلمة المرور'}
-          </p>
-        </div>
+        <AuthHeading
+          icon={step === 'phone' ? Phone : KeyRound}
+          title={step === 'phone' ? 'أهلًا بيك في سوبر ماركو' : 'اكتب كلمة المرور'}
+          description={step === 'phone' ? 'ابدأ برقم موبايلك وهنكمل معاك تلقائيًا' : 'الحساب موجود، كمّل بكلمة المرور'}
+        />
 
-        <div className="rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.07)] sm:p-6">
+        <div className="auth-card">
           {step === 'phone' ? (
             <div className="space-y-5">
               <div>
