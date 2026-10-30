@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return json({ error: "invalid_request" }, 400); }
 
   const phone = normalizePhone(body?.phone);
-  if (!/^\+[1-9]\d{7,14}$/.test(phone)) return json({ error: "invalid_phone" }, 400);
+  if (!/^\+201[0125]\d{8}$/.test(phone)) return json({ error: "egypt_phone_only" }, 400);
 
   const url = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
