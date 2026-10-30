@@ -1,7 +1,7 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, Check, Phone, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import { Button } from '@/components/ui/button';
@@ -174,11 +174,7 @@ export default function PhoneVerify() {
             <ArrowRight size={22} />
           </button>
         </div>
-        <AuthHeading
-          icon={step === 'phone' ? Phone : ShieldCheck}
-          title={step === 'phone' ? (isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل') : 'رمز التحقق'}
-          description={step === 'phone' ? 'اكتب رقم موبايلك المصري عشان نرسل رمز التحقق بأمان.' : 'اكتب الرمز المكوّن من 6 أرقام لإكمال الخطوة.'}
-        />
+        <AuthHeading title={step === 'phone' ? (isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل') : 'تأكيد الرقم'} />
 
         <div className="auth-card">
           {step === 'phone' ? (
