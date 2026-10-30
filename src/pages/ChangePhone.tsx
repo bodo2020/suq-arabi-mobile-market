@@ -5,26 +5,18 @@ import { Check, Phone, ShieldCheck } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
+import { egyptianMobileDigits, egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { normalizeDigits } from '@/utils/authUi';
-
-const DEFAULT_COUNTRY: Country = {
-  name: 'مصر',
-  code: 'EG',
-  dialCode: '+20',
-  flag: '🇪🇬',
-};
 
 const ChangePhone = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentPhone, setCurrentPhone] = useState('');
   const [newPhone, setNewPhone] = useState('');
-  const [countryCode, setCountryCode] = useState<Country>(DEFAULT_COUNTRY);
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
@@ -63,31 +55,21 @@ const ChangePhone = () => {
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
 
-  const formatLocalPhone = (value: string, country: Country) => {
-    const digits = normalizeDigits(value).replace(/\D/g, '');
-    if (country.code === 'EG' && digits.startsWith('0')) return digits.slice(1);
-    return digits;
-  };
-
-  const formatInternationalPhone = (value: string, country: Country) => {
-    const local = formatLocalPhone(value, country);
-    const dialCode = normalizeDigits(country.dialCode).replace(/\D/g, '');
-    return `+${dialCode}${local}`;
-  };
+  const formatInternationalPhone = (value: string) => egyptianMobileE164(value);
 
   const validatePhone = () => {
-    const local = formatLocalPhone(newPhone, countryCode);
+    const local = egyptianMobileDigits(newPhone);
     if (!local) {
       setError('أدخل رقم الهاتف الجديد');
       return false;
     }
 
-    if (countryCode.code === 'EG' && !(local.startsWith('1') && local.length === 10)) {
+    if (!isValidEgyptianMobile(newPhone)) {
       setError('أدخل رقم هاتف مصري صحيح مكون من 10 أرقام ويبدأ بـ 1');
       return false;
     }
 
-    const fullPhone = formatInternationalPhone(newPhone, countryCode);
+    const fullPhone = formatInternationalPhone(newPhone);
     if (currentPhone && fullPhone === currentPhone) {
       setError('الرقم الجديد هو نفس الرقم الحالي');
       return false;
@@ -102,7 +84,7 @@ const ChangePhone = () => {
     setLoading(true);
     setError('');
     try {
-      const fullPhone = formatInternationalPhone(newPhone, countryCode);
+      const fullPhone = formatInternationalPhone(newPhone);
       const { error: updateError } = await supabase.auth.updateUser({ phone: fullPhone });
       if (updateError) throw updateError;
 
@@ -127,7 +109,7 @@ const ChangePhone = () => {
     setResendLoading(true);
     setError('');
     try {
-      const fullPhone = formatInternationalPhone(newPhone, countryCode);
+      const fullPhone = formatInternationalPhone(newPhone);
       const { error: resendError } = await supabase.auth.resend({
         type: 'phone_change',
         phone: fullPhone,
@@ -155,7 +137,7 @@ const ChangePhone = () => {
     setLoading(true);
     setError('');
     try {
-      const fullPhone = formatInternationalPhone(newPhone, countryCode);
+      const fullPhone = formatInternationalPhone(newPhone);
       const { error: verifyError } = await supabase.auth.verifyOtp({
         phone: fullPhone,
         token: normalizedCode,
@@ -210,22 +192,12 @@ const ChangePhone = () => {
           {step === 'phone' ? <div className="space-y-5">
             <div>
               <label htmlFor="newPhone" className="mb-2 flex items-center gap-2 text-sm font-semibold"><Phone size={18} className="text-primary" />رقم الهاتف الجديد</label>
-              <div className="flex items-center gap-2">
-                <CountryCodeSelector value={countryCode} onChange={setCountryCode} className="min-w-[88px]" />
-                <Input
-                  id="newPhone"
-                  type="tel"
-                  inputMode="numeric"
-                  value={newPhone}
-                  onChange={(event) => {
-                    setNewPhone(event.target.value);
-                    setError('');
-                  }}
-                  placeholder={countryCode.code === 'EG' ? '01xxxxxxxxx' : 'رقم الهاتف'}
-                  dir="ltr"
-                  className="min-h-12 rounded-xl"
-                />
-              </div>
+              <EgyptPhoneField
+                id="newPhone"
+                value={newPhone}
+                onChange={(event) => { setNewPhone(event.target.value); setError(''); }}
+                aria-invalid={Boolean(error)}
+              />
               <p className="mt-2 text-xs leading-5 text-gray-500">ينفع تكتب الرقم بالأرقام العربية أو الإنجليزية.</p>
             </div>
 
@@ -238,7 +210,7 @@ const ChangePhone = () => {
           </div> : <div className="space-y-5">
             <div className="rounded-2xl bg-green-50 p-4 text-center">
               <p className="text-sm text-gray-600">أدخل الرمز المرسل إلى</p>
-              <p className="mt-1 font-bold text-primary" dir="ltr">{formatInternationalPhone(newPhone, countryCode)}</p>
+              <p className="mt-1 font-bold text-primary" dir="ltr">{formatInternationalPhone(newPhone)}</p>
             </div>
 
             <div>
