@@ -30,7 +30,7 @@
 }
 @keyframes brand-product-to-cart {
   0% { opacity: 1; transform: translate3d(0,0,0) scale(.95); }
-  35% { opacity: 1; transform: translate3d(calc(var(--brand-flight-x) * .36), calc(var(--brand-flight-y) * .22 - 22px),0) scale(.85); }
+  35% { opacity: 1; transform: translate3d(var(--brand-flight-mid-x),var(--brand-flight-mid-y),0) scale(.85); }
   100% { opacity: 0; transform: translate3d(var(--brand-flight-x),var(--brand-flight-y),0) scale(.22); }
 }
 .brand-quantity-pop {
