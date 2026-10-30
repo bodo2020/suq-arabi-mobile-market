@@ -3,37 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, KeyRound, Phone, ShieldCheck } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
-import { localPhoneDigits } from '@/utils/authUi';
-
-const DEFAULT_COUNTRY: Country = {
-  name: 'مصر',
-  code: 'EG',
-  dialCode: '+20',
-  flag: '🇪🇬',
-};
+import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
+import { egyptianMobileDigits, isValidEgyptianMobile } from '@/utils/egyptPhone';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [error, setError] = useState('');
 
   const continueWithOtp = () => {
-    const digits = localPhoneDigits(phone, country.dialCode, country.code);
+    const digits = egyptianMobileDigits(phone);
     if (!digits) {
       setError('اكتب رقم الموبايل.');
       return;
     }
-    if (country.code !== 'EG' || !/^1[0125]\d{8}$/.test(digits)) {
+    if (!isValidEgyptianMobile(phone)) {
       setError('اكتب رقم موبايل مصري صحيح، مثل 01012345678.');
       return;
     }
 
     const params = new URLSearchParams({
       phone: digits,
-      countryCode: country.code,
+      countryCode: 'EG',
       mode: 'recovery',
     });
     navigate(`/phone-verify?${params.toString()}`);
@@ -67,26 +58,13 @@ export default function ForgotPassword() {
               <Phone size={17} className="text-[#005931]" />
               رقم الموبايل
             </label>
-            <div className="flex min-h-14 items-stretch gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1.5 transition focus-within:border-[#005931] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#005931]/10">
-              <CountryCodeSelector
-                value={country}
-                onChange={value => { setCountry(value); setError(''); }}
-                className="min-w-[86px] border-0 bg-transparent shadow-none"
-              />
-              <div className="my-2 w-px bg-slate-200" aria-hidden="true" />
-              <Input
-                id="recovery-phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel-national"
-                value={phone}
-                onChange={event => { setPhone(event.target.value); setError(''); }}
-                onKeyDown={event => { if (event.key === 'Enter') continueWithOtp(); }}
-                placeholder={country.code === 'EG' ? '010 1234 5678' : 'رقم الموبايل'}
-                className="h-auto flex-1 border-0 bg-transparent px-2 text-left text-base font-semibold shadow-none focus-visible:ring-0"
-                dir="ltr"
-              />
-            </div>
+            <EgyptPhoneField
+              id="recovery-phone"
+              value={phone}
+              onChange={event => { setPhone(event.target.value); setError(''); }}
+              onKeyDown={event => { if (event.key === 'Enter') continueWithOtp(); }}
+              aria-invalid={Boolean(error)}
+            />
             {error && <p role="alert" className="mt-2 text-sm text-red-600">{error}</p>}
           </div>
 
