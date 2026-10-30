@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
-import BrandWordmark from '@/components/brand/BrandWordmark';
-import BrandMark from '@/components/brand/BrandMark';
+import HeaderBrand from '@/components/layout/header/HeaderBrand';
 import './auth.css';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -10,10 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <main className="auth-page" dir="rtl">
       <header className="auth-brand">
-        <Link to="/" className="auth-brand-link" aria-label="سوبر ماركو — الرئيسية">
-          <span className="auth-brand-symbol"><BrandMark variant="mark" className="h-10 w-[30px]" /></span>
-          <BrandWordmark />
-        </Link>
+        <HeaderBrand className="auth-brand-link" />
         <Link to="/" className="auth-guest">تصفح كضيف</Link>
       </header>
       <div className="auth-surface">
