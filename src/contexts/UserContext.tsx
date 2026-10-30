@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { deactivateCurrentPushDevice } from '@/services/pushNotifications';
-import { isValidEgyptianMobile } from '@/utils/egyptPhone';
+import { egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
 
 type UserContextType = {
   user: User | null;
@@ -34,6 +34,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 const normalizePhone = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return '';
+  if (isValidEgyptianMobile(trimmed)) return egyptianMobileE164(trimmed);
   if (trimmed.startsWith('+')) return `+${trimmed.slice(1).replace(/\D/g, '')}`;
   return `+${trimmed.replace(/\D/g, '')}`;
 };
