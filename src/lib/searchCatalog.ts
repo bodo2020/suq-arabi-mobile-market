@@ -33,8 +33,28 @@ async function searchOwnedProducts(branchId: string, query: string, limit: numbe
   return (Array.isArray(legacy.data) ? legacy.data : []) as Product[];
 }
 
-/** Merge the shop's full-stock search with the address-scoped marketplace
- * discovery, without dropping out-of-stock items or overriding their rank. */
+/** Curated synonyms live in Supabase and are expanded for every eligible search,
+ * including autocomplete, even when the direct query already matched products.
+ * The existing branch-scoped RPCs remain the only source of catalog records. */
+async function expandedQueries(query: string, maxAlternates: number): Promise<string[]> {
+  if (query.length < 3 || /^\\d+$/.test(query.trim())) return [];
+  const fallback = searchAlternates(query);
+  const result = await rpc('customer_search_expand_query_v2', {
+    p_search: query, p_country_code: 'EG', p_limit: maxAlternates,
+  });
+  const remote = !result.error && Array.isArray(result.data)
+    ? (result.data as Array<{ alternative?: unknown }>).map(row => row.alternative).filter((q): q is string => typeof q === 'string')
+    : [];
+  const unique = new Set<string>();
+  for (const term of [...remote, ...fallback]) {
+    const normalized = term.trim();
+    if (normalized && normalized !== query.trim() && normalized.length <= 120) unique.add(normalized);
+  }
+  return [...unique].slice(0, maxAlternates);
+}
+
+/** Blend available marketplace products and all-stock owned catalog results.
+ * Preserve branch prices, availability, and product IDs; never synthesize SKUs. */
 export async function searchBranchProductsIncludingUnavailable(
   query: string,
   limit = 150,
@@ -44,29 +64,37 @@ export async function searchBranchProductsIncludingUnavailable(
   if (!cleaned) return [];
   const branchId = await requireDeliveryBranchId();
   const count = Math.min(300, Math.max(1, limit));
-  const [owned, discovery] = await Promise.all([
+  const aliasPromise = includeSynonyms
+    ? expandedQueries(cleaned, count <= 10 ? 2 : 4).catch(() => searchAlternates(cleaned).slice(0, 2))
+    : Promise.resolve([] as string[]);
+  const [owned, discovery, alternates] = await Promise.all([
     searchOwnedProducts(branchId, cleaned, count),
     getBranchCatalog({ search: cleaned, limit: count }),
+    aliasPromise,
   ]);
   const merged = new Map<string, Product>();
   for (const row of owned) merged.set(row.id, row);
   for (const row of discovery) if (!merged.has(row.id)) merged.set(row.id, row);
 
-  // Only expand curated Egyptian aliases for weak result sets. Avoid fan-out
-  // and traffic spikes while the shopper is still typing a partial word.
-  if (includeSynonyms && merged.size < 4 && cleaned.length >= 3) {
-    const alternates = searchAlternates(cleaned);
-    for (const alternate of alternates) {
-      const [moreOwned, moreDiscovery] = await Promise.all([
-        searchOwnedProducts(branchId, alternate, Math.min(30,count)),
-        getBranchCatalog({ search: alternate, limit: Math.min(30,count) }),
+  // Bounded parallel discovery: keep autocomplete responsive and protect RPC load.
+  // Unlike v1, synonyms are *not* conditional on getting fewer than four hits.
+  if (alternates.length) {
+    const cap = Math.min(60, count);
+    const fetched = await Promise.allSettled(alternates.map(async alternate => {
+      const results = await Promise.allSettled([
+        searchOwnedProducts(branchId, alternate, cap),
+        getBranchCatalog({ search: alternate, limit: cap }),
       ]);
-      for (const row of [...moreOwned, ...moreDiscovery]) {
-        if (!merged.has(row.id)) merged.set(row.id, { ...row, search_rank: 10 } as Product);
+      return results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+    }));
+    for (const item of fetched) {
+      if (item.status !== 'fulfilled') continue;
+      for (const product of item.value) {
+        if (!merged.has(product.id)) merged.set(product.id, product);
       }
     }
   }
-  return rankSearchProducts([...merged.values()], cleaned).slice(0,count);
+  return rankSearchProducts([...merged.values()], cleaned, alternates).slice(0, count);
 }
 
 export async function searchBranchProductByBarcodeIncludingUnavailable(barcode: string): Promise<Product | null> {
