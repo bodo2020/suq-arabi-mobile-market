@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, KeyRound, Phone } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import PasswordInput from '@/components/auth/PasswordInput';
@@ -104,25 +103,21 @@ export default function PhoneLogin() {
   };
 
   return (
-    <AuthLayout>
-      <div className="mx-auto w-full max-w-md px-1 py-2" dir="rtl">
-        <AuthHeading title="تسجيل الدخول" />
+    <AuthLayout variant={step === 'phone' ? 'welcome' : 'flow'}>
+      <div className="mx-auto w-full max-w-md" dir="rtl">
+        {step === 'password' && <AuthHeading title="كلمة المرور" />}
 
-        <div className="auth-card">
+        <div className={step === 'phone' ? 'auth-card auth-card--entry' : 'auth-card'}>
           {step === 'phone' ? (
             <div className="space-y-5">
               <div>
-                <label htmlFor="phone" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-800">
-                  <Phone size={17} className="text-[#005931]" />
-                  رقم الموبايل
-                </label>
+                <label htmlFor="phone" className="mb-3 block text-sm font-bold text-[#174b35]">رقم موبايلك</label>
                 <EgyptPhoneField
                   id="phone"
                   value={phone}
                   disabled={busy}
                   onChange={event => { setPhone(event.target.value); setError(''); }}
                   onKeyDown={event => { if (event.key === 'Enter') void continueWithPhone(); }}
-                  autoFocus
                   aria-invalid={Boolean(error)}
                 />
               </div>
@@ -137,14 +132,14 @@ export default function PhoneLogin() {
                 type="button"
                 onClick={() => void continueWithPhone()}
                 disabled={busy}
-                className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black shadow-[0_12px_28px_rgba(0,89,49,0.18)] hover:bg-[#004a29]"
+                className="auth-primary-button"
               >
-                {busy ? <><BrandLoader size="sm" className="ml-2" />جاري المتابعة</> : <>استمرار<ArrowRight size={18} className="mr-2 rotate-180" /></>}
+                {busy ? <><BrandLoader size="sm" className="ml-2" />جاري المتابعة</> : 'يلا نكمل'}
               </Button>
             </div>
           ) : (
             <div className="space-y-5">
-              <div className="flex items-center justify-between gap-3 rounded-2xl bg-[#f0faf5] px-4 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#dfefe4] bg-[#f6fbf8] px-4 py-3">
                 <div>
                   <p className="text-xs text-slate-500">رقم الموبايل</p>
                   <bdi dir="ltr" className="mt-1 block font-black text-[#005931]">{fullPhone()}</bdi>
@@ -156,10 +151,7 @@ export default function PhoneLogin() {
 
               <div>
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <label htmlFor="password" className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <KeyRound size={17} className="text-[#005931]" />
-                    كلمة المرور
-                  </label>
+                  <label htmlFor="password" className="text-sm font-bold text-[#174b35]">كلمة المرور</label>
                   <button
                     type="button"
                     onClick={() => navigate(otpPath('recovery'))}
@@ -176,7 +168,7 @@ export default function PhoneLogin() {
                   onChange={event => { setPassword(event.target.value); setError(''); }}
                   onKeyDown={event => { if (event.key === 'Enter') void login(); }}
                   placeholder="اكتب كلمة المرور"
-                  className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4 text-base focus-visible:border-[#005931] focus-visible:ring-[#005931]/10"
+                  className="min-h-14 rounded-2xl border-[#cbdcd1] bg-white px-4 text-base focus-visible:border-[#005931] focus-visible:ring-[#005931]/10"
                   autoFocus
                 />
               </div>
@@ -191,15 +183,13 @@ export default function PhoneLogin() {
                 type="button"
                 onClick={() => void login()}
                 disabled={busy}
-                className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black shadow-[0_12px_28px_rgba(0,89,49,0.18)] hover:bg-[#004a29]"
+                className="auth-primary-button"
               >
                 {busy ? <><BrandLoader size="sm" className="ml-2" />جاري تسجيل الدخول</> : 'دخول'}
               </Button>
             </div>
           )}
         </div>
-
-
       </div>
     </AuthLayout>
   );
