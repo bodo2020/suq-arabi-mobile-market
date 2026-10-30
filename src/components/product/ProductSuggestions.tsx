@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import type { Product } from '@/lib/supabase';
-import { rankRecommendationCandidates, type RecommendationKind } from '@/lib/recommendationEngineV2';
+import { rankRecommendationCandidates, type RecommendationKind, type RecommendationSignals } from '@/lib/recommendationEngineV2';
 import ProductCard from '@/components/ui/ProductCard';
 
 type ProductSuggestionsProps = {
   sourceProduct: Product;
   products: Product[];
   cartProductIds: string[];
+  learnedScores?: RecommendationSignals;
   loading: boolean;
   layout: 'mobile' | 'desktop';
 };
@@ -29,9 +30,9 @@ const groupOrder: RecommendationKind[] = ['complement', 'similar', 'discover'];
  * Lazy-loaded below the product hero. Re-rank cached catalog candidates when
  * the cart changes, without another request or a generative model call.
  */
-function ProductSuggestions({ sourceProduct, products, cartProductIds, loading, layout }: ProductSuggestionsProps) {
+function ProductSuggestions({ sourceProduct, products, cartProductIds, learnedScores, loading, layout }: ProductSuggestionsProps) {
   const recommendations = useMemo(() => {
-    const ranked = rankRecommendationCandidates(sourceProduct, products, 16, { cartProductIds });
+    const ranked = rankRecommendationCandidates(sourceProduct, products, 16, { cartProductIds, learnedScores });
     const selected = [
       ...ranked.filter(row => row.kind === 'complement').slice(0, 4),
       ...ranked.filter(row => row.kind === 'similar').slice(0, 3),
@@ -39,7 +40,7 @@ function ProductSuggestions({ sourceProduct, products, cartProductIds, loading, 
     ];
     const selectedIds = new Set(selected.map(row => row.product.id));
     return [...selected, ...ranked.filter(row => !selectedIds.has(row.product.id))].slice(0, 8);
-  }, [sourceProduct, products, cartProductIds]);
+  }, [sourceProduct, products, cartProductIds, learnedScores]);
 
   if (!loading && recommendations.length === 0) return null;
   const mobile = layout === 'mobile';
