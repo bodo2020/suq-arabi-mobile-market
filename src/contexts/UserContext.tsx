@@ -18,8 +18,18 @@ type UserContextType = {
   verifyPhone: (phone: string, code: string) => Promise<any>;
 };
 
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
 // The development test-OTP edge function (customer-test-otp) is retired in
 // production; phone login uses regular Supabase SMS OTP only.
+
+const normalizePhone = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (isValidEgyptianMobile(trimmed)) return egyptianMobileE164(trimmed);
+  if (trimmed.startsWith('+')) return `+${trimmed.slice(1).replace(/\D/g, '')}`;
+  return `+${trimmed.replace(/\D/g, '')}`;
+};
 
 export const useUser = () => {
   const context = useContext(UserContext);
