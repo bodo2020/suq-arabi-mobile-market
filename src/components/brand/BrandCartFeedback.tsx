@@ -60,6 +60,8 @@ export default function BrandCartFeedback() {
             top: flight.y,
             '--brand-flight-x': `${flight.targetX - flight.x}px`,
             '--brand-flight-y': `${flight.targetY - flight.y}px`,
+            '--brand-flight-mid-x': `${(flight.targetX - flight.x) * .36}px`,
+            '--brand-flight-mid-y': `${(flight.targetY - flight.y) * .22 - 22}px`,
           } as CSSProperties}
         >
           <img src={flight.imageUrl} alt="" draggable={false} />
