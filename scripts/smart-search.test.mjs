@@ -114,7 +114,12 @@ test('Catalog searches include aliases even when five exact matches exist', asyn
       }
       assert.equal(name, 'search_customer_smart_catalog_v1');
       calls.push(args.p_search);
-      return { data: data[args.p_search] || [], error: null };
+      // The production RPC compares normalized Arabic names, including ة/ه.
+      const normalized = arabic.normalizeArabicSearch(args.p_search);
+      const rows = Object.entries(data)
+        .filter(([term]) => arabic.normalizeArabicSearch(term) === normalized)
+        .flatMap(([, products]) => products);
+      return { data: rows, error: null };
     },
   };
   const catalog = loadSource('src/lib/searchCatalog.ts', {
