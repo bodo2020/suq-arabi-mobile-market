@@ -6,7 +6,7 @@ import AuthHeading from '@/components/auth/AuthHeading';
 import PasswordInput from '@/components/auth/PasswordInput';
 import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
 import { Button } from '@/components/ui/button';
-import { egyptianMobileDigits, egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
+import { egyptianMobileDigits, egyptianMobileE164, egyptianPhoneStartError, isValidEgyptianMobile } from '@/utils/egyptPhone';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { useUser } from '@/contexts/UserContext';
 import { authErrorMessage } from '@/utils/authUi';
@@ -37,7 +37,7 @@ export default function PhoneLogin() {
       return false;
     }
     if (!isValidEgyptianMobile(phone)) {
-      setError('اكتب رقم موبايل مصري صحيح، مثل 01012345678.');
+      setError(egyptianPhoneStartError(phone) ? '' : 'اكتب رقم موبايل مصري صحيح، مثل 01012345678.');
       return false;
     }
     return true;
