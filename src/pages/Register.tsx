@@ -171,7 +171,7 @@ export default function Register() {
             {error && <p id="registration-error" role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
             <Button className="auth-primary-button" type="submit" disabled={busy || !phone}>
-              {busy ? <><BrandLoader size="sm" className="ml-2" />جاري حفظ حسابك</> : 'إنشاء الحساب'}
+              {busy ? <><BrandLoader size="sm" tone="onGreen" className="ml-2" />جاري حفظ حسابك</> : 'إنشاء الحساب'}
             </Button>
           </form>
         )}

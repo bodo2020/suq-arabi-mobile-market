@@ -134,7 +134,7 @@ export default function PhoneLogin() {
                 disabled={busy}
                 className="auth-primary-button"
               >
-                {busy ? <><BrandLoader size="sm" className="ml-2" />جاري المتابعة</> : 'يلا نكمل'}
+                {busy ? <><BrandLoader size="sm" tone="onGreen" className="ml-2" />جاري المتابعة</> : 'يلا نكمل'}
               </Button>
             </div>
           ) : (
@@ -185,7 +185,7 @@ export default function PhoneLogin() {
                 disabled={busy}
                 className="auth-primary-button"
               >
-                {busy ? <><BrandLoader size="sm" className="ml-2" />جاري تسجيل الدخول</> : 'دخول'}
+                {busy ? <><BrandLoader size="sm" tone="onGreen" className="ml-2" />جاري تسجيل الدخول</> : 'دخول'}
               </Button>
             </div>
           )}

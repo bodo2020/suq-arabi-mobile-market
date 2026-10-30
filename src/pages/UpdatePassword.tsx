@@ -147,7 +147,7 @@ const UpdatePassword = () => {
                 disabled={loading}
                 className="auth-primary-button"
               >
-                {loading && <BrandLoader size="sm" className="ml-2" />}
+                {loading && <BrandLoader size="sm" tone="onGreen" className="ml-2" />}
                 {loading ? 'جاري حفظ كلمة المرور' : 'حفظ كلمة المرور الجديدة'}
               </Button>
             </div>

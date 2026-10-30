@@ -192,7 +192,7 @@ export default function PhoneVerify() {
               </div>
 
               <Button onClick={() => void sendOtp(false)} disabled={loading} className="auth-primary-button">
-                {loading ? <><BrandLoader size="sm" className="ml-2" />جاري إرسال الرمز</> : 'إرسال رمز التحقق'}
+                {loading ? <><BrandLoader size="sm" tone="onGreen" className="ml-2" />جاري إرسال الرمز</> : 'إرسال رمز التحقق'}
               </Button>
             </div>
           ) : (
@@ -233,7 +233,7 @@ export default function PhoneVerify() {
               </div>
 
               <Button onClick={() => void verify()} disabled={loading || code.length !== 6} className="auth-primary-button">
-                {loading ? <><BrandLoader size="sm" className="ml-2" />جاري التحقق</> : 'تأكيد الرمز'}
+                {loading ? <><BrandLoader size="sm" tone="onGreen" className="ml-2" />جاري التحقق</> : 'تأكيد الرمز'}
               </Button>
 
               <div className="auth-otp-resend">

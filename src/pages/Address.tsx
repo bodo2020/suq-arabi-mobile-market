@@ -327,11 +327,11 @@ export default function Address() {
           </div>
 
           {error && <p id="address-error" className="text-sm text-red-700 mt-4" role="alert">{error}</p>}
-          <Button type="submit" disabled={!canSubmit} className="address-desktop-submit cart-primary mt-5">{saving ? <BrandLoader size="sm" /> : saveLabel}</Button>
+          <Button type="submit" disabled={!canSubmit} className="address-desktop-submit cart-primary mt-5">{saving ? <BrandLoader size="sm" tone="onGreen" /> : saveLabel}</Button>
         </section>
 
         <div className="address-mobile-action" aria-label="تأكيد عنوان التوصيل">
-          <Button type="submit" disabled={!canSubmit} className="cart-primary">{saving ? <BrandLoader size="sm" /> : saveLabel}</Button>
+          <Button type="submit" disabled={!canSubmit} className="cart-primary">{saving ? <BrandLoader size="sm" tone="onGreen" /> : saveLabel}</Button>
         </div>
       </form>}
   </CheckoutLayout>;

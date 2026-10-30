@@ -7,6 +7,7 @@
   line-height: 0;
 }
 .brand-mark--mark { aspect-ratio: 121 / 161; }
+.brand-mark--mark.brand-mark--on-green { aspect-ratio: 165 / 219; }
 .brand-mark--badge { aspect-ratio: 321 / 320; }
 .brand-mark img, .brand-mark svg {
   display: block;
