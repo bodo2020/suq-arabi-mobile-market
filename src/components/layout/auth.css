@@ -24,8 +24,7 @@
   justify-content: space-between;
   gap: 14px;
 }
-/* HeaderBrand supplies the exact homepage letters, colors, size and art. */
-.auth-brand-link { display: inline-flex; min-width: 0; align-items: center; gap: 1.5px; }
+/* HeaderBrand renders with its own homepage spacing and unboxed lettering. */
 .auth-guest {
   flex-shrink: 0;
   color: #005931;
