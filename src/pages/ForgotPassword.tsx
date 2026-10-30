@@ -61,11 +61,8 @@ export default function ForgotPassword() {
             إرسال رمز الاستعادة
           </Button>
 
-false        </div>
+        </div>
 
-        <button type="button" onClick={() => navigate('/phone-login')} className="mt-4 min-h-11 w-full text-sm font-bold text-[#005931]">
-          الرجوع لتسجيل الدخول
-        </button>
       </div>
     </AuthLayout>
   );
