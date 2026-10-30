@@ -1,4 +1,5 @@
 /* Brand-consistent customer auth shell. Mobile first; isolated from POS screens. */
+/* Continue the homepage hero green gradient down the entire auth page. */
 .auth-page {
   position: relative;
   isolation: isolate;
@@ -7,20 +8,13 @@
   overflow-y: visible;
   color: #173d2d;
   padding: calc(20px + var(--safe-area-top, 0px)) 18px calc(38px + var(--safe-area-bottom, 0px));
-  background: radial-gradient(circle at 4% 0%, #e8f6e9 0%, transparent 38%),
-    radial-gradient(circle at 96% 98%, #fff4cd 0%, transparent 40%), #f6f9f6;
-}
-.auth-page::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  pointer-events: none;
-  width: 280px;
-  height: 280px;
-  top: -170px;
-  left: -130px;
-  border: 30px solid rgba(0, 89, 49, 0.045);
-  border-radius: 50%;
+  background: linear-gradient(
+    180deg,
+    #e6f9ee 0%,
+    #edf9f1 27%,
+    #f4fbf6 62%,
+    #f6f8f7 100%
+  );
 }
 .auth-brand {
   max-width: 960px;
@@ -30,19 +24,8 @@
   justify-content: space-between;
   gap: 14px;
 }
-.auth-brand-link { display: flex; min-width: 0; align-items: center; gap: 10px; }
-.auth-brand-symbol {
-  display: grid;
-  width: 51px;
-  height: 51px;
-  flex-shrink: 0;
-  place-items: center;
-  border: 1px solid #d9e9df;
-  border-radius: 17px;
-  background: white;
-  box-shadow: 0 6px 20px rgba(0, 70, 38, .06);
-}
-.auth-brand .brand-name { font-size: clamp(15px, 3vw, 21px); }
+/* HeaderBrand supplies the exact homepage letters, colors, size and art. */
+.auth-brand-link { display: inline-flex; min-width: 0; align-items: center; gap: 1.5px; }
 .auth-guest {
   flex-shrink: 0;
   color: #005931;
@@ -60,11 +43,8 @@
   gap: 8px;
   width: fit-content;
   margin: 0 auto 18px;
-  padding: 8px 14px;
+  padding: 0;
   color: #005931;
-  background: #e6f4ea;
-  border: 1px solid #d4eada;
-  border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
 }
@@ -78,9 +58,6 @@
   height: 67px;
   margin: 0 auto 14px;
   color: #005931;
-  border: 1px solid #d8efdf;
-  background: linear-gradient(140deg, #effbf2 10%, #def4e6 100%);
-  border-radius: 22px;
 }
 .auth-card {
   padding: 23px;
@@ -138,7 +115,6 @@
   .auth-heading h1 { font-size: 23px; }
 }
 @media (max-width: 350px) {
-  .auth-brand .brand-name { font-size: 13px; }
   .auth-surface [data-input-otp-container],
   .auth-surface [data-input-otp-container] > div { gap: 4px; }
   .auth-surface [data-input-otp-container] > div > div { width: 35px; height: 51px; }
