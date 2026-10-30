@@ -86,7 +86,7 @@ Deno.serve(async req => {
     // a short catalog *query*. It can never write to a cart, set a price or
     // assert product availability.
     const candidate = typeof match.search_query==='string' ? match.search_query : '';
-    const cleaned = candidate.replace(/[^\\p{L}\\p{N}\\s-]/gu,' ').replace(/\\s+/g,' ').trim().slice(0,64).trim();
+    const cleaned = candidate.replace(/[^\p{L}\p{N}\s-]/gu,' ').replace(/\s+/g,' ').trim().slice(0,64).trim();
     const search_query = !slug && cleaned.length >= 2 ? cleaned : null;
     return respond({slug,people,budget,search_query});
   } catch {return respond({error:'ai_temporarily_unavailable'},503);}
