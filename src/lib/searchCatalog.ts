@@ -37,7 +37,7 @@ async function searchOwnedProducts(branchId: string, query: string, limit: numbe
  * including autocomplete, even when the direct query already matched products.
  * The existing branch-scoped RPCs remain the only source of catalog records. */
 async function expandedQueries(query: string, maxAlternates: number): Promise<string[]> {
-  if (query.length < 3 || /^\\d+$/.test(query.trim())) return [];
+  if (query.length < 3 || /^\d+$/.test(query.trim())) return [];
   const fallback = searchAlternates(query);
   const result = await rpc('customer_search_expand_query_v2', {
     p_search: query, p_country_code: 'EG', p_limit: maxAlternates,
