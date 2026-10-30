@@ -33,7 +33,7 @@ export default function EgyptPhoneField({ className, ...props }: EgyptPhoneField
           dir="ltr"
           maxLength={18}
           placeholder="010 1234 5678"
-          aria-invalid={Boolean(startError || props['aria-invalid'])}
+          aria-invalid={Boolean(startError) || props['aria-invalid'] === true || props['aria-invalid'] === 'true'}
           aria-describedby={startError ? [props['aria-describedby'], feedbackId].filter(Boolean).join(' ') : props['aria-describedby']}
           className={cn('auth-phone-input min-w-0 flex-1 !h-auto !min-h-0 !border-0 !bg-transparent px-3 text-left text-base font-semibold !shadow-none !outline-none !ring-0 focus-visible:!ring-0', className)}
         />
