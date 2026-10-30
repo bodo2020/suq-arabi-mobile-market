@@ -1,5 +1,5 @@
 import { getBranchCatalog, getCurrentDeliveryBranchId, supabase, type Product } from '@/lib/supabase';
-import { rankSearchProducts, searchAlternates, relatedSearches, type SearchMatchProduct } from '@/lib/arabicSearch';
+import { rankSearchProducts, searchAlternates, matchesSearchWords, normalizeArabicSearch, type SearchMatchProduct } from '@/lib/arabicSearch';
 
 const rpc = supabase.rpc.bind(supabase) as unknown as (
   name: string,
@@ -77,47 +77,52 @@ export async function searchBranchProductsIncludingUnavailable(
     getBranchCatalog({ search: cleaned, limit: count }),
   ]);
   const merged = new Map<string, SearchMatchProduct>();
+  // Some legacy/marketplace RPCs match substrings (e.g. "رز" inside "سنيكرز").
+  // Keep typo-tolerant results for longer direct searches, but short words and
+  // all synonym expansions must match complete product-name/brand tokens.
+  const accepted = (row: Product, term: string, kind: 'direct' | 'synonym') =>
+    matchesSearchWords(row, term) ||
+    (kind === 'direct' && normalizeArabicSearch(term).split(' ').every(t => t.length >= 4));
+
   // A product may have marketplace offers; preserve the original source row.
   const keyFor = (product: Product) => product.commerce_source === 'marketplace'
     ? product.id + ':' + (product.marketplace_listing_id || product.marketplace_branch_id || 'marketplace')
     : product.id;
   for (const row of [...owned, ...discovery]) {
+    if (!accepted(row, cleaned, 'direct')) continue;
     const key = keyFor(row);
     if (!merged.has(key)) merged.set(key, { ...row, search_match_type: 'direct' });
   }
 
   // Unlike the previous implementation, aliases are searched even when
   // the primary term returned 4+ items (e.g. "حليب" also finds "لبن").
-  // Do not expand barcode searches or the live, rapidly-typed 2-letter query.
-  if (includeSynonyms && cleaned.length >= 3 && !/^\d+$/.test(cleaned)) {
-    const addSecondary = async (alternate: string, kind: 'synonym' | 'related', perSourceLimit: number) => {
+  // Two-character *known* words like "رز" also need "أرز" results.
+  // Avoid remote dictionary round trips on every 2-letter autocomplete input.
+  if (includeSynonyms && cleaned.length >= 2 && !/^\d+$/.test(cleaned)) {
+    const addSecondary = async (alternate: string, perSourceLimit: number) => {
       try {
         const [moreOwned, moreDiscovery] = await Promise.all([
           searchOwnedProducts(branchId, alternate, perSourceLimit),
           getBranchCatalog({ search: alternate, limit: perSourceLimit }),
         ]);
         for (const row of [...moreOwned, ...moreDiscovery]) {
+          if (!accepted(row, alternate, 'synonym')) continue;
           const key = keyFor(row);
-          if (!merged.has(key)) merged.set(key, { ...row, search_match_type: kind });
+          if (!merged.has(key)) merged.set(key, { ...row, search_match_type: 'synonym' });
         }
       } catch (error) {
         // Alias discovery must never break the original exact results.
-        console.warn('Supplemental search skipped', kind, error);
+        console.warn('Supplemental synonym search skipped', error);
       }
     };
 
-    // Bounded searches, with a little more room for terms inside a phrase.
-    const alternates = await getSearchSynonyms(cleaned, count <= 10 ? 2 : 5);
+    const alternates = cleaned.length < 3
+      ? searchAlternates(cleaned).slice(0, 2)
+      : await getSearchSynonyms(cleaned, count <= 10 ? 2 : 5);
     await Promise.all(alternates.map(term =>
-      addSecondary(term, 'synonym', Math.min(count, 45))));
-
-    // Distinct categories are NOT interchangeable. Only discover them for
-    // broad terms and only after exact/synonym candidates are in hand.
-    if (count >= 12 && merged.size < 70) {
-      const related = relatedSearches(cleaned);
-      await Promise.all(related.map(term =>
-        addSecondary(term, 'related', Math.min(count, 12))));
-    }
+      addSecondary(term, Math.min(count, 45))));
+    // Related categories (e.g. pasta for rice) must NOT pollute core results.
+    // They can be offered in a separately labelled discovery section later.
   }
 
   return rankSearchProducts([...merged.values()], cleaned).slice(0, count);
