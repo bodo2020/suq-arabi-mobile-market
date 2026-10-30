@@ -2,6 +2,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
+import { getProductsByIds } from '@/lib/branchProductIds';
+import { fetchLearnedRecommendationScores, type LearnedRecommendationScores } from '@/lib/productRecommendationSignals';
 import { prepareProductBrowseImages } from '@/lib/productImagePipeline';
 import { prefersReducedProductMotion } from '@/lib/productSheetMotion';
 import ProductSwipePeek from '@/components/product/ProductSwipePeek';
@@ -171,6 +173,14 @@ const ProductDetail = () => {
   } as Product) : null, [id, isPreviewOnly, pendingPreview?.name, pendingPreview?.image]);
   const product: Product | null = serverProduct || previewDisplayProduct;
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [learnedRecommendationScores, setLearnedRecommendationScores] = useState<LearnedRecommendationScores>({});
+  const [learnedRecommendationProducts, setLearnedRecommendationProducts] = useState<Product[]>([]);
+  const recommendationCandidates = useMemo(() => {
+    const merged = new Map<string, Product>();
+    for (const candidate of relatedProducts) merged.set(candidate.id, candidate);
+    for (const candidate of learnedRecommendationProducts) merged.set(candidate.id, candidate);
+    return [...merged.values()];
+  }, [relatedProducts, learnedRecommendationProducts]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [extrasForId, setExtrasForId] = useState<string | null>(null);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
@@ -595,6 +605,31 @@ const ProductDetail = () => {
     }, isMobile ? 320 : 0);
     return () => { active = false; window.clearTimeout(timer); };
   }, [product, queryClient, isMobile, shouldLoadExtras, isPreviewOnly]);
+
+  // Optional, non-blocking co-purchase scores and real, branch-authorized SKUs.
+  // Paint catalog-based recommendations first; optional learned data arrives later.
+  useEffect(() => {
+    setLearnedRecommendationScores({});
+    setLearnedRecommendationProducts([]);
+    if (!product || isPreviewOnly || !shouldLoadExtras) return;
+    let active = true;
+    const controller = new AbortController();
+    void (async () => {
+      const scores = await fetchLearnedRecommendationScores(product, controller.signal);
+      if (!active) return;
+      setLearnedRecommendationScores(scores);
+      const ids = Object.keys(scores);
+      if (!ids.length) return;
+      try {
+        // This RPC resolves IDs to real sellable products for this customer's branch.
+        const verified = await getProductsByIds(ids);
+        if (active) setLearnedRecommendationProducts(verified);
+      } catch {
+        // Preserve existing recommendations even if the extra catalog read fails.
+      }
+    })();
+    return () => { active = false; controller.abort(); };
+  }, [product?.id, product?.commerce_source, product?.delivery_branch_id, isPreviewOnly, shouldLoadExtras]);
 
   // Use the small card image for the entrance animation; load full resolution
   // only after the sheet has settled, never before the user sees name/price.
@@ -1092,7 +1127,10 @@ const ProductDetail = () => {
             {shouldLoadExtras && (
               <React.Suspense fallback={<div className="h-40 animate-pulse rounded-[24px] bg-slate-100" />}>
                 <ProductSuggestions
-                  products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
+              sourceProduct={product}
+              cartProductIds={items.map(item => item.product.id)}
+              learnedScores={learnedRecommendationScores}
+                  products={recommendationCandidates.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
                   loading={relatedLoading}
                   layout="mobile"
                 />
@@ -1232,7 +1270,10 @@ const ProductDetail = () => {
         {shouldLoadExtras && (
           <React.Suspense fallback={<div className="mt-5 h-40 animate-pulse rounded-[26px] bg-slate-100" />}>
             <ProductSuggestions
-              products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
+                  sourceProduct={product}
+                  cartProductIds={items.map(item => item.product.id)}
+                  learnedScores={learnedRecommendationScores}
+              products={recommendationCandidates.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
               loading={relatedLoading}
               layout="desktop"
             />
