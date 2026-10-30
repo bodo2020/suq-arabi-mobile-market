@@ -102,7 +102,49 @@ test('Catalog searches include aliases even when five exact matches exist', asyn
   assert.equal(milk.find(x => x.name === 'لبن بقري').search_match_type, 'synonym');
   const tuna = await catalog.searchBranchProductsIncludingUnavailable('تونة', 25, true);
   assert.equal(tuna[0].name, 'تونة قطع');
-  const sardines = tuna.find(x => x.name === 'سردين معلب');
-  assert.ok(sardines);
-  assert.equal(sardines.search_match_type, 'related');
+  assert.ok(!tuna.some(x => x.name === 'سردين معلب'),
+    'Related but different categories must not appear as search hits');
+});
+
+test('Rice search respects whole words and finds أرز through the two-letter alias', async () => {
+  const calls = [];
+  const rows = {
+    'رز': [
+      product('wrong1', 'سنيكرز شوكولاتة'),
+      product('wrong2', 'كرزبي مقرمش'),
+      product('rice1', 'رز مصري'),
+    ],
+    'ارز': [
+      product('rice2', 'أرز بسمتي 1 كيلو'),
+      product('rice3', 'خلطة الأرز البسمتي'),
+      product('wrong3', 'ملتيزرز شوكولاتة'),
+    ],
+    'مكرونة': [product('unrelated', 'مكرونة اسباجتي')],
+  };
+  const supabase = {
+    rpc: async (name, args) => {
+      if (name === 'customer_search_expand_query_v2') return { data: [], error: null };
+      calls.push(args.p_search);
+      return { data: rows[args.p_search] || [], error: null };
+    },
+  };
+  const catalog = loadSource('src/lib/searchCatalog.ts', {
+    '@/lib/supabase': {
+      supabase,
+      getCurrentDeliveryBranchId: async () => 'branch-1',
+      getBranchCatalog: async () => [],
+    },
+    '@/lib/arabicSearch': arabic,
+  });
+  assert.equal(arabic.matchesSearchWords(product('w', 'سنيكرز شوكولاتة'), 'رز'), false);
+  assert.equal(arabic.matchesSearchWords(product('r', 'أرز بسمتي'), 'ارز'), true);
+  const results = await catalog.searchBranchProductsIncludingUnavailable('رز', 30, true);
+  assert.deepEqual(Array.from(results, row => row.name), [
+    'رز مصري', 'أرز بسمتي 1 كيلو', 'خلطة الأرز البسمتي',
+  ]);
+  assert.ok(calls.includes('ارز'), 'The 2-letter rice query must search its 3-letter alias');
+  assert.ok(!calls.includes('مكرونة'), 'Related categories are not product equivalents');
+  const full = await catalog.searchBranchProductsIncludingUnavailable('ارز', 30, true);
+  assert.ok(full.some(row => row.name === 'رز مصري'));
+  assert.ok(!full.some(row => row.name === 'سنيكرز شوكولاتة'));
 });
