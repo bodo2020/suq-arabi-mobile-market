@@ -162,7 +162,7 @@ export default function Cart() {
                   </div>
                 ) : <div className="cart-counter">
                   <button disabled={atLimit || !serverReady} aria-label={atLimit ? `وصلت للكمية المتاحة من ${item.product.name}` : `زيادة كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity + 1, !!item.is_bulk, item.marketplace_listing_id || null)}><Plus size={17} /></button>
-                  <output aria-label={`كمية ${item.product.name}`} aria-live="polite">{money(item.quantity)}</output>
+                  <output key={item.quantity} className="brand-quantity-pop" aria-label={`كمية ${item.product.name}`} aria-live="polite">{money(item.quantity)}</output>
                   <button aria-label={item.quantity === 1 ? `حذف ${item.product.name}` : `تقليل كمية ${item.product.name}`} onClick={() => updateQuantity(item.product.id, item.quantity - 1, !!item.is_bulk, item.marketplace_listing_id || null)}>{item.quantity === 1 ? <Trash2 size={16} /> : <Minus size={17} />}</button>
                 </div>}
                 <strong className="cart-line-total">{money(lineTotal)} <small>ج.م</small></strong>
