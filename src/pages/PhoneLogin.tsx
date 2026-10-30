@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, KeyRound, Phone, ShieldCheck } from 'lucide-react';
+import { ArrowRight, KeyRound, Phone } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import PasswordInput from '@/components/auth/PasswordInput';
@@ -106,11 +106,7 @@ export default function PhoneLogin() {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md px-1 py-2" dir="rtl">
-        <AuthHeading
-          icon={step === 'phone' ? Phone : KeyRound}
-          title={step === 'phone' ? 'أهلًا بيك في سوبر ماركو' : 'اكتب كلمة المرور'}
-          description={step === 'phone' ? 'ابدأ برقم موبايلك وهنكمل معاك تلقائيًا' : 'الحساب موجود، كمّل بكلمة المرور'}
-        />
+        <AuthHeading title="تسجيل الدخول" />
 
         <div className="auth-card">
           {step === 'phone' ? (
@@ -203,10 +199,7 @@ export default function PhoneLogin() {
           )}
         </div>
 
-        <div className="mt-5 flex items-start gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">
-          <ShieldCheck size={17} className="mt-0.5 shrink-0 text-[#005931]" />
-          <span>{step === 'phone' ? 'لو الرقم جديد هنبعت OTP لتأكيده مرة واحدة.' : 'نسيت الباسورد؟ هنأكد رقمك بـ OTP وتختار باسورد جديد.'}</span>
-        </div>
+
       </div>
     </AuthLayout>
   );
