@@ -48,6 +48,12 @@
 .brand-loader__particle--4 { bottom: 26%; left: 0; background: #FFC120; animation-delay: 160ms; }
 .brand-loader__particle--5 { bottom: 7%; right: 13%; animation-delay: 530ms; }
 .brand-loader__particle--6 { bottom: 6%; left: 13%; background: #FFC120; animation-delay: 360ms; }
+/* Use the supplied white/yellow artwork and high-contrast particles on dark green
+   controls. The light-surface loader and its trace keyframes stay untouched. */
+.brand-loader--on-green .brand-loader__particle { background: #fff; }
+.brand-loader--on-green .brand-loader__particle--2,
+.brand-loader--on-green .brand-loader__particle--4,
+.brand-loader--on-green .brand-loader__particle--6 { background: #FFC120; }
 @keyframes brand-refresh-trace {
   0%, 9% { stroke-dashoffset: 100; opacity: .68; }
   51%, 69% { stroke-dashoffset: 0; opacity: 1; }
