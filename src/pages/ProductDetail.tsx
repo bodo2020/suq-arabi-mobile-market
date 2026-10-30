@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
+import { fetchLearnedRecommendationScores, type LearnedRecommendationScores } from '@/lib/productRecommendationSignals';
 import { prepareProductBrowseImages } from '@/lib/productImagePipeline';
 import { prefersReducedProductMotion } from '@/lib/productSheetMotion';
 import ProductSwipePeek from '@/components/product/ProductSwipePeek';
@@ -171,6 +172,7 @@ const ProductDetail = () => {
   } as Product) : null, [id, isPreviewOnly, pendingPreview?.name, pendingPreview?.image]);
   const product: Product | null = serverProduct || previewDisplayProduct;
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [learnedRecommendationScores, setLearnedRecommendationScores] = useState<LearnedRecommendationScores>({});
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [extrasForId, setExtrasForId] = useState<string | null>(null);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
@@ -595,6 +597,19 @@ const ProductDetail = () => {
     }, isMobile ? 320 : 0);
     return () => { active = false; window.clearTimeout(timer); };
   }, [product, queryClient, isMobile, shouldLoadExtras, isPreviewOnly]);
+
+  // Optional, non-blocking co-purchase scores. The verified catalog rail paints
+  // normally first; network/model outages never gate product details or cart.
+  useEffect(() => {
+    setLearnedRecommendationScores({});
+    if (!product || isPreviewOnly || !shouldLoadExtras) return;
+    let active = true;
+    const controller = new AbortController();
+    void fetchLearnedRecommendationScores(product, controller.signal).then(scores => {
+      if (active) setLearnedRecommendationScores(scores);
+    });
+    return () => { active = false; controller.abort(); };
+  }, [product?.id, product?.commerce_source, product?.delivery_branch_id, isPreviewOnly, shouldLoadExtras]);
 
   // Use the small card image for the entrance animation; load full resolution
   // only after the sheet has settled, never before the user sees name/price.
@@ -1094,6 +1109,7 @@ const ProductDetail = () => {
                 <ProductSuggestions
               sourceProduct={product}
               cartProductIds={items.map(item => item.product.id)}
+              learnedScores={learnedRecommendationScores}
                   products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
                   loading={relatedLoading}
                   layout="mobile"
@@ -1236,6 +1252,7 @@ const ProductDetail = () => {
             <ProductSuggestions
                   sourceProduct={product}
                   cartProductIds={items.map(item => item.product.id)}
+                  learnedScores={learnedRecommendationScores}
               products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
               loading={relatedLoading}
               layout="desktop"
