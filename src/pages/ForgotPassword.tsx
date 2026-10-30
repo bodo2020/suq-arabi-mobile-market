@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, KeyRound, Phone, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Phone } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ export default function ForgotPassword() {
             <ArrowRight size={22} />
           </button>
         </div>
-        <AuthHeading icon={KeyRound} title="نسيت كلمة المرور؟" description="اكتب رقم الموبايل المسجل عندنا، وهنبعت رمز تحقق لتعيين كلمة مرور جديدة." />
+        <AuthHeading title="استعادة كلمة المرور" />
 
         <div className="auth-card space-y-5">
           <div>
@@ -61,11 +61,7 @@ export default function ForgotPassword() {
             إرسال رمز الاستعادة
           </Button>
 
-          <div className="mt-4 flex items-start gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">
-            <ShieldCheck size={17} className="mt-0.5 shrink-0 text-[#005931]" />
-            <span>بعد تغيير كلمة المرور، تسجيل الدخول القادم هيكون بالرقم والباسورد بدون OTP.</span>
-          </div>
-        </div>
+false        </div>
 
         <button type="button" onClick={() => navigate('/phone-login')} className="mt-4 min-h-11 w-full text-sm font-bold text-[#005931]">
           الرجوع لتسجيل الدخول
