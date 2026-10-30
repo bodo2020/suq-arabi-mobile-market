@@ -42,7 +42,7 @@ assert.match(field, /<div dir="ltr" className="flex/);
 assert.ok(field.indexOf('+20') < field.indexOf('<Input'), 'Egypt prefix renders on the visual left in an LTR flex row');
 assert.match(field, /px-3 text-left text-base/);
 const layout = read('../src/components/layout/AuthLayout.tsx');
-assert.match(layout, /<HeaderBrand className="auth-brand-link"/);
+assert.match(layout, /<HeaderBrand \/>/);
 assert.doesNotMatch(layout, /<BrandWordmark|<BrandMark|auth-brand-symbol/);
 const css = read('../src/components/layout/auth.css');
 assert.match(css, /#e6f9ee/);
