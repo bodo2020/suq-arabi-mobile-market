@@ -53,7 +53,7 @@ Deno.serve(async req => {
   const abort = new AbortController();
   const timeout = setTimeout(()=>abort.abort(),9500);
   try {
-    const provider = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',{
+    const provider = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',{
       method:'POST',
       signal:abort.signal,
       headers:{'Content-Type':'application/json','x-goog-api-key':key},
