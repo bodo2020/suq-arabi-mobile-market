@@ -18,6 +18,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import BrandIntro from '@/components/brand/BrandIntro';
 import BrandPullToRefresh from '@/components/brand/BrandPullToRefresh';
 import BrandCartFeedback from '@/components/brand/BrandCartFeedback';
+import '@/styles/brand-micro-motion.css';
 
 const PhoneLogin = lazy(() => import('./pages/PhoneLogin'));
 const PhoneVerify = lazy(() => import('./pages/PhoneVerify'));
