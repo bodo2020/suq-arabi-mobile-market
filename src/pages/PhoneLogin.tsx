@@ -105,7 +105,7 @@ export default function PhoneLogin() {
   return (
     <AuthLayout variant={step === 'phone' ? 'welcome' : 'flow'}>
       <div className="mx-auto w-full max-w-md" dir="rtl">
-        {step === 'password' && <AuthHeading title="كلمة المرور" />}
+        {step === 'password' && <AuthHeading title="كمّل دخولك" />}
 
         <div className={step === 'phone' ? 'auth-card auth-card--entry' : 'auth-card'}>
           {step === 'phone' ? (
