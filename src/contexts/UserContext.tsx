@@ -223,26 +223,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('رمز التحقق يجب أن يتكون من 6 أرقام');
       }
 
-      try {
-        const testResult = await invokeTestOtp('verify', normalizedPhone, token);
-        if (!testResult.error && testResult.data?.testNumber) {
-          if (!testResult.data.verified || !testResult.data.session) {
-            throw new Error(testOtpErrorMessage(testResult.data.error));
-          }
-
-          const { data, error } = await supabase.auth.setSession({
-            access_token: testResult.data.session.access_token,
-            refresh_token: testResult.data.session.refresh_token,
-          });
-          if (error) throw error;
-          return { data };
-        }
-      } catch (testOtpError) {
-        if (testOtpError instanceof Error && /رمز|اختبار|دقيقة/.test(testOtpError.message)) {
-          throw testOtpError;
-        }
-        console.warn('Test OTP verifier unavailable; trying regular Supabase OTP.', testOtpError);
-      }
+      // The retired test-OTP edge function is no longer probed; verify with Supabase directly.
 
       const { data, error } = await supabase.auth.verifyOtp({
         phone: normalizedPhone,
