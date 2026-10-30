@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, Phone, ShieldCheck } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
+import AuthHeading from '@/components/auth/AuthHeading';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
@@ -168,27 +169,20 @@ export default function PhoneVerify() {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md px-1 py-2" dir="rtl">
-        <div className="mb-6 flex items-center">
-          <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600" aria-label="الرجوع">
+        <div className="mb-2 flex justify-start">
+          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600" aria-label="الرجوع">
             <ArrowRight size={22} />
           </button>
-          <div className="flex-1 text-center">
-            <h1 className="text-xl font-black text-slate-950">{isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل'}</h1>
-            <p className="mt-1 text-xs text-slate-500">{isRecovery ? 'OTP لمرة واحدة لتعيين باسورد جديد' : 'OTP لمرة واحدة لإنشاء الحساب'}</p>
-          </div>
-          <div className="w-10" />
         </div>
+        <AuthHeading
+          icon={step === 'phone' ? Phone : ShieldCheck}
+          title={step === 'phone' ? (isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل') : 'رمز التحقق'}
+          description={step === 'phone' ? 'اكتب رقم موبايلك المصري عشان نرسل رمز التحقق بأمان.' : 'اكتب الرمز المكوّن من 6 أرقام لإكمال الخطوة.'}
+        />
 
-        <div className="rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.07)] sm:p-6">
+        <div className="auth-card">
           {step === 'phone' ? (
             <div className="space-y-5">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f5ee] text-[#005931]">
-                <Phone size={26} />
-              </div>
-              <p className="text-center text-sm leading-6 text-slate-500">
-                {isRecovery ? 'اكتب رقم حسابك وهنبعتلك رمز لاستعادة كلمة المرور.' : 'اكتب رقمك وهتبعتلك رسالة واحدة لتأكيد إنشاء الحساب.'}
-              </p>
-
               <div>
                 <label htmlFor="phone" className="mb-2 block text-sm font-bold text-slate-800">رقم الموبايل</label>
                 <EgyptPhoneField
@@ -209,9 +203,6 @@ export default function PhoneVerify() {
             </div>
           ) : (
             <div className="space-y-5">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f5ee] text-[#005931]">
-                <ShieldCheck size={27} />
-              </div>
               <p className="text-center text-sm leading-6 text-slate-500">
                 {isTestOtp ? 'أدخل رمز الاختبار' : 'أدخل الرمز المرسل إلى'}
                 <br />
