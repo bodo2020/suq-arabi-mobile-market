@@ -16,6 +16,17 @@ export function normalizeArabicSearch(value: string): string {
     .trim();
 }
 
+export function matchesSearchWords(product: SearchMatchProduct, query: string): boolean {
+  const key = normalizeArabicSearch(query);
+  if (!key) return false;
+  const words = key.split(' ').filter(Boolean);
+  const searchable = [product.name, product.bulk_name || '', product.manufacturer_name || '']
+    .filter(Boolean).map(normalizeArabicSearch).join(' ');
+  const padded = ' ' + searchable + ' ';
+  return words.every(word => padded.includes(' ' + word + ' ')) ||
+    [product.barcode, product.bulk_barcode].some(code => Boolean(code && String(code).trim() === query.trim()));
+}
+
 /** Rewrite a whole word/phrase, never a substring inside a different name. */
 function rewriteTerm(query: string, from: string, to: string): string | null {
   const original = normalizeArabicSearch(from);
@@ -102,23 +113,23 @@ export function relevanceScore(product: SearchMatchProduct, query: string): numb
     if (name === q) return Math.max(best, 700);
     if (name.startsWith(q + ' ')) return Math.max(best, 660);
     if ((' ' + name + ' ').includes(' ' + q + ' ')) return Math.max(best, 640);
-    if (name.includes(q)) return Math.max(best, 600);
     if (terms.every(t => (' ' + name + ' ').includes(' ' + t + ' '))) return Math.max(best, 570);
     return best;
   }, 0);
   if (directScore) return directScore;
+  if (matchesSearchWords(product, q)) return 560;
 
   const variants = searchAlternates(q);
   const synonymScore = variants.reduce((best, variant) => names.reduce((nested, name) => {
     if (name === variant) return Math.max(nested, 490);
     if (name.startsWith(variant + ' ')) return Math.max(nested, 475);
     if ((' ' + name + ' ').includes(' ' + variant + ' ')) return Math.max(nested, 465);
-    if (name.includes(variant)) return Math.max(nested, 450);
     const words = variant.split(' ');
     if (words.every(t => (' ' + name + ' ').includes(' ' + t + ' '))) return Math.max(nested, 430);
     return nested;
   }, best), 0);
   if (synonymScore) return synonymScore;
+  if (variants.some(variant => matchesSearchWords(product, variant))) return 420;
 
   const serverRank = Number(product.search_rank);
   const safeServerRank = Number.isFinite(serverRank) && serverRank > 0 ? Math.min(serverRank, 180) : 0;
