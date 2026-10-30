@@ -59,7 +59,8 @@ export const synonymGroups = [
   ['مقرمشات', 'سناكس', 'snacks'],
   ['بسكوت', 'بسكويت', 'biscuits', 'cookies'],
   ['ويفر', 'وايفر', 'wafer'],
-  ['شوكلاته', 'شوكولاتة', 'شيكولاتة', 'chocolate'],
+  // Common spellings and frequent typing mistakes for the same chocolate product.
+  ['شوكولاتة', 'شيكولاتة', 'شكولاتة', 'شوكلاته', 'chocolate', 'شوكولا', 'شوكالته', 'شوكليت', 'شوكوليت', 'شيكولا', 'شوكولات'],
   ['كاكاو', 'cocoa'],
   ['لبان', 'علكة', 'chewing gum'],
   ['بنبوني', 'كاندي', 'candy'],
