@@ -67,3 +67,11 @@ Companion: https://github.com/bodo2020/market-maadaoui-sells/pull/171
 - Marketplace recommendation rails keep deterministic same-merchant candidate restrictions; co-purchase scoring is **not enabled** for marketplace.
 - Data quality gate: 365-day receipt data in the linked marketpos project is currently too sparse for any reliable minimum-support pair. An empty response is expected and handled without errors.
 - Do not turn the flag ON until migration, new Edge function, gateway deploy, isolated branch tests and user-flow QA are all approved. Keep feature disabled during initial code merge.
+
+## Recommendation learning events (staged)
+
+- `src/lib/productRecommendationAnalytics.ts` sends best-effort, authenticated events through the existing Marko AI Engine.
+- The rail records an `impression` only after it becomes visible, a `click` on recommendation-card interaction, and `add_to_cart` when a recommended product is added to the cart.
+- Events are disabled for marketplace/partner listings and require a current delivery branch plus a signed-in session; no personal identifiers, price or cart contents are sent.
+- Session identifier is a random UUID stored only in sessionStorage. Backend PR #171 validates the branch and both product IDs and stores only pair/event/session/time metadata.
+- Analytics never blocks navigation, product detail or cart behavior.
