@@ -51,7 +51,7 @@ function ProductSuggestions({ sourceProduct, products, cartProductIds, learnedSc
     const observer = new IntersectionObserver(entries => {
       if (!entries.some(entry => entry.isIntersecting)) return;
       for (const row of recommendations) {
-        const id = row.product.id;
+        const id = `${sourceProduct.id}:${row.product.id}`;
         if (trackedImpressions.current.has(id)) continue;
         trackedImpressions.current.add(id);
         void trackProductRecommendationEvent(sourceProduct, row.product, 'impression');
