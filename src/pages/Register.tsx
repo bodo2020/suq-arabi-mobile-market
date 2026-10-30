@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { KeyRound, ShieldCheck, UserRound } from 'lucide-react';
+import { KeyRound, ShieldCheck } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import PasswordRules from '@/components/auth/PasswordRules';
@@ -114,11 +114,7 @@ export default function Register() {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md" dir="rtl">
-        <AuthHeading
-          icon={UserRound}
-          title="كمّل بيانات حسابك"
-          description="آخر خطوة بعد تأكيد رقمك. بعد كده هتقدر تدخل بكلمة المرور من غير OTP كل مرة."
-        />
+        <AuthHeading title="كمّل بياناتك" />
 
         {checking ? (
           <div className="flex min-h-48 items-center justify-center"><BrandLoader label="جاري التأكد من حسابك" /></div>
@@ -159,7 +155,6 @@ export default function Register() {
                 className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
                 onChange={event => { setPassword(event.target.value); setError(''); }}
               />
-              <p className="mt-2 text-xs text-slate-500">هتستخدمها بعد كده مع رقم موبايلك بدل إرسال OTP كل مرة.</p>
             </div>
 
             <div>

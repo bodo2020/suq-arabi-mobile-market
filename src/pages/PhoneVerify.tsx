@@ -1,14 +1,14 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, Check, Phone, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { egyptianMobileDigits, egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
+import { egyptianMobileDigits, egyptianMobileE164, egyptianPhoneStartError, isValidEgyptianMobile } from '@/utils/egyptPhone';
 import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
 import { authErrorMessage, normalizeDigits } from '@/utils/authUi';
 import { safeReturnTo } from '@/lib/onboarding';
@@ -57,7 +57,7 @@ export default function PhoneVerify() {
       return false;
     }
     if (!isValidEgyptianMobile(phone)) {
-      setErrors(prev => ({ ...prev, phone: 'اكتب رقم موبايل مصري صحيح، مثل 01012345678.' }));
+      setErrors(prev => ({ ...prev, phone: egyptianPhoneStartError(phone) ? '' : 'اكتب رقم موبايل مصري صحيح، مثل 01012345678.' }));
       return false;
     }
     return true;
@@ -174,11 +174,7 @@ export default function PhoneVerify() {
             <ArrowRight size={22} />
           </button>
         </div>
-        <AuthHeading
-          icon={step === 'phone' ? Phone : ShieldCheck}
-          title={step === 'phone' ? (isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل') : 'رمز التحقق'}
-          description={step === 'phone' ? 'اكتب رقم موبايلك المصري عشان نرسل رمز التحقق بأمان.' : 'اكتب الرمز المكوّن من 6 أرقام لإكمال الخطوة.'}
-        />
+        <AuthHeading title={step === 'phone' ? (isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل') : 'تأكيد الرقم'} />
 
         <div className="auth-card">
           {step === 'phone' ? (

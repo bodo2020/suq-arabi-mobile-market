@@ -7,7 +7,7 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import { Button } from '@/components/ui/button';
 import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { egyptianMobileDigits, egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
+import { egyptianMobileDigits, egyptianMobileE164, egyptianPhoneStartError, isValidEgyptianMobile } from '@/utils/egyptPhone';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { normalizeDigits } from '@/utils/authUi';
@@ -65,7 +65,7 @@ const ChangePhone = () => {
     }
 
     if (!isValidEgyptianMobile(newPhone)) {
-      setError('أدخل رقم هاتف مصري صحيح مكون من 10 أرقام ويبدأ بـ 1');
+      setError(egyptianPhoneStartError(newPhone) ? '' : 'أدخل رقم موبايل مصري صحيح، مثل 01012345678.');
       return false;
     }
 

@@ -1,7 +1,7 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, KeyRound } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import PasswordRules from '@/components/auth/PasswordRules';
@@ -100,11 +100,7 @@ const UpdatePassword = () => {
             <ArrowRight size={22} />
           </button>
         </div>
-        <AuthHeading
-          icon={KeyRound}
-          title="تعيين كلمة مرور جديدة"
-          description="اختار كلمة مرور قوية لحماية حسابك. هتستخدمها بعد كده مع رقم موبايلك."
-        />
+        <AuthHeading title="كلمة مرور جديدة" />
 
         <div className="auth-card">
           {checkingSession ? (
