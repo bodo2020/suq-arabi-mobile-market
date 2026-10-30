@@ -103,3 +103,20 @@ test('optional shared AI signals are OFF by default and are never required for c
   assert.match(ui, /rankRecommendationCandidates\(sourceProduct, products, 16, \{ cartProductIds, learnedScores \}\)/);
   assert.doesNotMatch(signals, /SERVICE_ROLE_KEY|\.from\('pos_invoices'\)|generateContent/);
 });
+
+test('recommendation telemetry is best-effort and records visible, clicked and cart-added products', () => {
+  const analytics = readFileSync(new URL('../src/lib/productRecommendationAnalytics.ts', import.meta.url), 'utf8');
+  const ui = readFileSync(new URL('../src/components/product/ProductSuggestions.tsx', import.meta.url), 'utf8');
+  const cart = readFileSync(new URL('../src/contexts/CartProvider.tsx', import.meta.url), 'utf8');
+  assert.match(analytics, /customer_recommendation_event/);
+  assert.match(analytics, /session_id: sessionId/);
+  assert.match(analytics, /source_product_id: source.id/);
+  assert.match(analytics, /recommended_product_id: recommended.id/);
+  assert.match(analytics, /event_type: eventType/);
+  assert.match(ui, /IntersectionObserver/);
+  assert.match(ui, /'impression'/);
+  assert.match(ui, /'click'/);
+  assert.match(ui, /'add_to_cart'/);
+  assert.match(cart, /CustomEvent\('super-marko:cart-added', \{ detail: \{ product_id: product.id \} \}\)/);
+  assert.doesNotMatch(analytics, /customer_id|phone|email|cart_items/);
+});
