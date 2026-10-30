@@ -6,7 +6,7 @@ Branch: `feat/customer-auth-refresh-eg-20261030`
 
 - One shared branded shell for login, OTP, recovery, registration and password reset.
 - Existing `BrandMark` and `BrandWordmark` are preserved.
-- One Egypt-only phone field with 🇪🇬 +20 on the **right** in RTL.
+- One Egypt-only phone field with 🇪🇬 +20 on the **left** of the field, while the screen remains RTL.
 - 010 / 011 / 012 / 015, Arabic and Persian digits, +20 and 0020 normalized to E.164.
 - Customer auth methods and `customer-auth-route` server source validate Egyptian mobiles.
 - Password requirement states, six OTP boxes, SMS autofill, resend cooldown and recovery proof remain intact.
@@ -14,7 +14,7 @@ Branch: `feat/customer-auth-refresh-eg-20261030`
 
 ## Smoke tests before merge / release
 
-1. On Android WebView and responsive browser, check dial code appears at far **right** of the national phone input and is not clickable. Verify keyboard, safe areas, scroll and accessibility.
+1. On Android WebView and responsive browser, check dial code appears at far **left** of the national phone input and is not clickable. Verify keyboard, safe areas, scroll and accessibility.
 2. Existing customer (010..., +201..., and Arabic digits) → password → correct account; incorrect password gets error, not signup.
 3. New Egyptian mobile → OTP → confirm → profile/name/password → signed in; verify `returnTo`.
 4. Wrong or expired OTP, SMS failure, 429 response, 60s resend and paste/autofill of 6 digits.
