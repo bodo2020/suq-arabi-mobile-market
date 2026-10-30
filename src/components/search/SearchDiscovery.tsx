@@ -8,7 +8,6 @@ import { useBranch } from '@/contexts/BranchContext';
 import { useUser } from '@/contexts/UserContext';
 import { normalizeArabicSearch } from '@/lib/arabicSearch';
 import { getSmartGroups } from '@/lib/smartShopping';
-import MarcoAiPrompt from '@/components/search/MarcoAiPrompt';
 import { getHomeRecommendationIds } from '@/lib/homePage';
 import { getBranchCatalog, type Product } from '@/lib/supabase';
 
@@ -211,7 +210,6 @@ export default function SearchDiscovery({ recent, onSearch, onClearRecent }: Sea
               </div>
             </section>
           )}
-          <MarcoAiPrompt />
           <ProductRail title="مقترح ليك" products={recommendations} />
           <ProductRail title="أفضل العروض" products={offers} href="/offers" />
         </>
