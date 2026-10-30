@@ -15,12 +15,12 @@ import {
   searchBranchProductByBarcodeIncludingUnavailable,
   searchBranchProductsIncludingUnavailable,
 } from '@/lib/searchCatalog';
-import { normalizeArabicSearch, relevanceScore } from '@/lib/arabicSearch';
+import { normalizeArabicSearch, relevanceScore, type SearchMatchProduct } from '@/lib/arabicSearch';
 import { useToast } from '@/hooks/use-toast';
 import { getProductListWithVariants } from '@/utils/productUtils';
 
 type AvailabilityFilter = 'all' | 'available' | 'unavailable';
-type SearchDisplayProduct = Product & { displayType?: 'regular' | 'bulk'; variantKey?: string };
+type SearchDisplayProduct = SearchMatchProduct & { displayType?: 'regular' | 'bulk'; variantKey?: string };
 const available = (p: SearchDisplayProduct) => {
   const quantity = Math.max(0, Number(p.quantity || 0));
   return p.displayType === 'bulk'
@@ -110,11 +110,11 @@ export default function Search() {
     setSuggestions([]);
     setSuggesting(true);
     const timer = window.setTimeout(() => {
-      searchBranchProductsIncludingUnavailable(draft, 8, false)
+      searchBranchProductsIncludingUnavailable(draft, 8, draftKey.length >= 3)
         .then(rows => { if (active) setSuggestions(rows.slice(0, 5)); })
         .catch(() => { if (active) setSuggestions([]); })
         .finally(() => { if (active) setSuggesting(false); });
-    }, 230);
+    }, 420);
     return () => {
       active = false;
       window.clearTimeout(timer);
@@ -303,10 +303,14 @@ export default function Search() {
             ) : visible.length ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {visible.map(product => (
-                  <ProductCard
-                    key={product.variantKey || (product.displayType || 'regular') + ':' + product.id}
-                    product={product}
-                  />
+                  <div className="min-w-0" key={product.variantKey || (product.displayType || 'regular') + ':' + product.id}>
+                    {product.search_match_type === 'related' && (
+                      <p className="mb-1 rounded-md bg-amber-50 px-2 py-1 text-center text-[11px] font-bold text-amber-800">
+                        صنف قريب، مش نفس المنتج
+                      </p>
+                    )}
+                    <ProductCard product={product} />
+                  </div>
                 ))}
               </div>
             ) : (
