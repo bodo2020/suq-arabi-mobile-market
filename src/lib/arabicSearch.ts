@@ -1,4 +1,5 @@
 import type { Product } from '@/lib/supabase';
+import { synonymGroups, relatedFamilies } from '@/lib/searchVocabulary';
 
 /** Match-only normalization. Never rewrite the product's displayed name. */
 export function normalizeArabicSearch(value: string): string {
@@ -15,47 +16,115 @@ export function normalizeArabicSearch(value: string): string {
     .trim();
 }
 
-// Egyptian shopper words and trade spellings, deliberately small and curated.
-// The best candidate is always the actual catalog product, not a guessed item.
-const aliases: Record<string, string[]> = {
-  'شيبسي': ['شيبس', 'بطاطس شيبسي'],
-  'شيبس': ['شيبسي'],
-  'معجون سنان': ['معجون اسنان'],
-  'معجون اسنان': ['معجون سنان'],
-  'زبادي': ['يوجرت'],
-  'يوجرت': ['زبادي'],
-  'برسيل': ['برسيل', 'persil'],
-  'نسكافيه': ['nescafe', 'نسكافية'],
-};
-
-export function searchAlternates(term: string): string[] {
-  const normalized = normalizeArabicSearch(term);
-  return [...new Set((aliases[normalized] || []).filter(v => normalizeArabicSearch(v) !== normalized))].slice(0, 2);
+/** Rewrite a whole word/phrase, never a substring inside a different name. */
+function rewriteTerm(query: string, from: string, to: string): string | null {
+  const original = normalizeArabicSearch(from);
+  const replacement = normalizeArabicSearch(to);
+  if (!original || !replacement || original === replacement) return null;
+  const padded = ' ' + query + ' ';
+  const match = ' ' + original + ' ';
+  if (!padded.includes(match)) return null;
+  return padded.replace(match, ' ' + replacement + ' ').trim();
 }
 
-type RankedProduct = Product & { search_rank?: number | string; manufacturer_name?: string | null };
+const alternatesCache = new Map<string, string[]>();
 
-export function relevanceScore(product: RankedProduct, query: string): number {
+/**
+ * Find safe two-way Egyptian synonyms even when the term is in a longer query:
+ * "لبن كامل الدسم" -> "حليب كامل الدسم".
+ * Longest phrase wins. Capped to avoid too many catalog round trips.
+ */
+export function searchAlternates(term: string): string[] {
+  const normalized = normalizeArabicSearch(term);
+  if (normalized.length < 2) return [];
+  const cached = alternatesCache.get(normalized);
+  if (cached) return cached;
+
+  const matches: { length: number; phrase: string; group: string[] }[] = [];
+  for (const group of synonymGroups) {
+    for (const phrase of group) {
+      const needle = normalizeArabicSearch(phrase);
+      if (needle.length < 2) continue;
+      if ((' ' + normalized + ' ').includes(' ' + needle + ' ')) {
+        matches.push({ length: needle.length, phrase, group });
+      }
+    }
+  }
+  matches.sort((a, b) => b.length - a.length);
+  const variants: string[] = [];
+  for (const match of matches) {
+    for (const synonym of match.group) {
+      const variant = rewriteTerm(normalized, match.phrase, synonym);
+      if (variant && variant !== normalized && !variants.includes(variant)) variants.push(variant);
+      if (variants.length >= 3) break;
+    }
+    if (variants.length >= 3) break;
+  }
+  if (alternatesCache.size > 100) alternatesCache.clear();
+  alternatesCache.set(normalized, variants);
+  return variants;
+}
+
+/** Different products in a similar family, NOT synonyms or silent replacements. */
+export function relatedSearches(term: string): string[] {
+  const q = normalizeArabicSearch(term);
+  // Only broad single-category searches can suggest neighbouring products.
+  // Never silently change specifications such as "تونة بالزيت" to sardines.
+  if (q.length < 3 || q.includes(' ') || /^\d+$/.test(q)) return [];
+  const family = relatedFamilies.find(item => item.triggers.some(trigger => normalizeArabicSearch(trigger) === q));
+  if (!family) return [];
+  const exact = new Set([q, ...searchAlternates(q)]);
+  return family.terms.map(normalizeArabicSearch).filter(t => t.length > 1 && !exact.has(t)).slice(0, 2);
+}
+
+export type SearchMatchProduct = Product & {
+  search_rank?: number | string;
+  manufacturer_name?: string | null;
+  search_match_type?: 'direct' | 'synonym' | 'related';
+};
+
+/** Exact query > real synonym > similarly-related product. */
+export function relevanceScore(product: SearchMatchProduct, query: string): number {
   const q = normalizeArabicSearch(query);
   if (!q) return 0;
   const barcode = String(product.barcode || product.bulk_barcode || '').trim();
-  if (barcode && barcode === query.trim()) return 200;
+  if (barcode && barcode === query.trim()) return 1000;
   const names = [product.name, product.bulk_name || '', product.manufacturer_name || '']
     .filter(Boolean).map(normalizeArabicSearch);
-  const server = Number(product.search_rank);
-  let score = Number.isFinite(server) && server > 0 ? server : 0;
-  for (const name of names) {
-    if (name === q) score = Math.max(score, 150);
-    else if (name.startsWith(q)) score = Math.max(score, 120);
-    else if (name.includes(q)) score = Math.max(score, 100);
-    else if (q.split(' ').filter(Boolean).every(t => name.includes(t))) score = Math.max(score, 90);
-  }
-  return score;
+  const terms = q.split(' ').filter(Boolean);
+  const directScore = names.reduce((best, name) => {
+    if (name === q) return Math.max(best, 700);
+    if (name.startsWith(q + ' ')) return Math.max(best, 660);
+    if ((' ' + name + ' ').includes(' ' + q + ' ')) return Math.max(best, 640);
+    if (name.includes(q)) return Math.max(best, 600);
+    if (terms.every(t => (' ' + name + ' ').includes(' ' + t + ' '))) return Math.max(best, 570);
+    return best;
+  }, 0);
+  if (directScore) return directScore;
+
+  const variants = searchAlternates(q);
+  const synonymScore = variants.reduce((best, variant) => names.reduce((nested, name) => {
+    if (name === variant) return Math.max(nested, 490);
+    if (name.startsWith(variant + ' ')) return Math.max(nested, 475);
+    if ((' ' + name + ' ').includes(' ' + variant + ' ')) return Math.max(nested, 465);
+    if (name.includes(variant)) return Math.max(nested, 450);
+    const words = variant.split(' ');
+    if (words.every(t => (' ' + name + ' ').includes(' ' + t + ' '))) return Math.max(nested, 430);
+    return nested;
+  }, best), 0);
+  if (synonymScore) return synonymScore;
+
+  const serverRank = Number(product.search_rank);
+  const safeServerRank = Number.isFinite(serverRank) && serverRank > 0 ? Math.min(serverRank, 180) : 0;
+  if (product.search_match_type === 'related') return 70 + Math.min(safeServerRank, 100) / 20;
+  if (product.search_match_type === 'synonym') return 370 + Math.min(safeServerRank, 100) / 10;
+  return safeServerRank;
 }
 
-export function rankSearchProducts<T extends RankedProduct>(products: T[], query: string): T[] {
+export function rankSearchProducts<T extends SearchMatchProduct>(products: T[], query: string): T[] {
+  const scores = new Map(products.map(product => [product, relevanceScore(product, query)]));
   return [...products].sort((a, b) => {
-    const diff = relevanceScore(b,query) - relevanceScore(a,query);
+    const diff = (scores.get(b) || 0) - (scores.get(a) || 0);
     if (diff) return diff;
     const bHasStock = Number(b.quantity || 0) > 0;
     const aHasStock = Number(a.quantity || 0) > 0;
