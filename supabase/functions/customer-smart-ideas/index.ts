@@ -73,7 +73,10 @@ Deno.serve(async req => {
         generationConfig:{responseMimeType:'application/json',temperature:0.1,maxOutputTokens:220},
       }),
     });
-    if(!provider.ok) return respond({error:'ai_temporarily_unavailable'},503);
+    if(!provider.ok) {
+      console.error('gemini_provider_error', { status: provider.status, body: (await provider.text()).slice(0, 400) });
+      return respond({error:'ai_temporarily_unavailable'},503);
+    }
     const payload = await provider.json();
     const raw = payload?.candidates?.[0]?.content?.parts?.map((p:{text?:string})=>p.text||'').join('')||'';
     let match:Record<string,unknown>;
