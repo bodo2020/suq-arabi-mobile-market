@@ -71,7 +71,8 @@
   100% { opacity: 0; transform: scale(1.6) rotate(18deg); }
 }
 .brand-category-enter {
-  animation: brand-category-enter 270ms ease-out both;
+  /* Backwards-fill only: let the existing hover elevation work after entry. */
+  animation: brand-category-enter 270ms ease-out backwards;
 }
 @keyframes brand-category-enter {
   from { opacity: .82; transform: translateY(5px); }
