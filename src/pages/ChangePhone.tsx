@@ -204,7 +204,7 @@ const ChangePhone = () => {
             {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
             <Button onClick={handleRequestChange} disabled={loading} className="min-h-12 w-full rounded-xl text-base">
-              {loading && <BrandLoader size="sm" className="ml-2" />}
+              {loading && <BrandLoader size="sm" tone="onGreen" className="ml-2" />}
               {loading ? 'جاري إرسال الرمز…' : 'إرسال رمز التحقق'}
             </Button>
           </div> : <div className="space-y-5">
@@ -240,7 +240,7 @@ const ChangePhone = () => {
             {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-700">{error}</p>}
 
             <Button onClick={handleVerify} disabled={loading || normalizeDigits(code).replace(/\D/g, '').length !== 6} className="min-h-12 w-full rounded-xl text-base">
-              {loading && <BrandLoader size="sm" className="ml-2" />}
+              {loading && <BrandLoader size="sm" tone="onGreen" className="ml-2" />}
               {loading ? 'جاري التأكيد…' : 'تأكيد الرقم الجديد'}
             </Button>
 
