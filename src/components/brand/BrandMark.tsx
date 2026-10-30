@@ -1,8 +1,9 @@
-import type { CSSProperties } from 'react';
+import { useId, type CSSProperties } from 'react';
 import './brand-motion.css';
 
 type BrandMarkProps = {
   variant?: 'mark' | 'badge';
+  tone?: 'default' | 'onGreen';
   motion?: 'none' | 'reveal' | 'pop';
   className?: string;
   style?: CSSProperties;
@@ -14,12 +15,14 @@ type BrandMarkProps = {
  * animates their individual strokes, without rasterization or SVG filters. */
 export default function BrandMark({
   variant = 'mark',
+  tone = 'default',
   motion = 'none',
   className = '',
   style,
   decorative = true,
 }: BrandMarkProps) {
-  const classes = `brand-mark brand-mark--${variant} brand-mark--${motion} ${className}`.trim();
+  const filterId = `brand-on-green-shadow-${useId().replace(/:/g, '')}`;
+  const classes = `brand-mark brand-mark--${variant} brand-mark--${tone === 'onGreen' ? 'on-green' : 'default'} brand-mark--${motion} ${className}`.trim();
   const aria = decorative
     ? { 'aria-hidden': true as const }
     : { role: 'img' as const, 'aria-label': 'شعار سوبر ماركو' };
@@ -28,13 +31,44 @@ export default function BrandMark({
     return (
       <span className={classes} style={style} {...aria}>
         <img
-          src={variant === 'badge' ? '/brand/super-marko-badge.svg' : '/brand/super-marko-mark.svg'}
+          src={variant === 'badge' ? '/brand/super-marko-badge.svg' : tone === 'onGreen' ? '/brand/super-marko-mark-on-green.svg' : '/brand/super-marko-mark.svg'}
           alt=""
           draggable={false}
           decoding="async"
-          width={variant === 'badge' ? 321 : 121}
-          height={variant === 'badge' ? 320 : 161}
+          width={variant === 'badge' ? 321 : tone === 'onGreen' ? 165 : 121}
+          height={variant === 'badge' ? 320 : tone === 'onGreen' ? 219 : 161}
         />
+      </span>
+    );
+  }
+
+  // Exact five paths from the supplied white/yellow on-green artwork.
+  // Keep path geometry and the original drop shadow, while reusing the same
+  // stroke classes so BrandLoader's trace timing matches the light variant.
+  if (variant === 'mark' && tone === 'onGreen') {
+    return (
+      <span className={classes} style={style} {...aria}>
+        <svg viewBox="0 0 165 219" fill="none" aria-hidden="true">
+          <defs>
+            <filter id={filterId} x="0" y="0" width="164.465" height="218.661" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+              <feFlood floodOpacity="0" result="BackgroundImageFix" />
+              <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+              <feOffset dy="4" />
+              <feGaussianBlur stdDeviation="2" />
+              <feComposite in2="hardAlpha" operator="out" />
+              <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+              <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow" />
+              <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape" />
+            </filter>
+          </defs>
+          <g filter={`url(#${filterId})`}>
+            <path className="brand-mark__stroke brand-mark__stroke--1" pathLength={100} d="M10.5 32.535V153.686C10.5 163.074 18.1112 170.686 27.5 170.686H114.644" stroke="#FFC120" strokeWidth={13} strokeLinecap="round" />
+            <path className="brand-mark__stroke brand-mark__stroke--2" pathLength={100} d="M10.5 32.0039H136.964C146.353 32.0039 153.964 39.6151 153.964 49.0039V204.161" stroke="white" strokeWidth={13} strokeLinecap="round" />
+            <path className="brand-mark__stroke brand-mark__stroke--3" pathLength={100} d="M114.642 170.707L153.964 204.161" stroke="#FFC120" strokeWidth={13} strokeLinecap="round" />
+            <path className="brand-mark__stroke brand-mark__stroke--4" pathLength={100} d="M51.9445 88.3274C51.9445 120.208 111.987 122.865 111.987 88.3274" stroke="#FFC120" strokeWidth={13} strokeLinecap="round" strokeLinejoin="round" />
+            <path className="brand-mark__stroke brand-mark__stroke--5" pathLength={100} d="M111.988 31.4169C111.988 -0.464045 51.9454 -3.12079 51.9454 31.4169" stroke="white" strokeWidth={13} strokeLinecap="round" strokeLinejoin="bevel" />
+          </g>
+        </svg>
       </span>
     );
   }
