@@ -1,5 +1,5 @@
 import { getBranchCatalog, getCurrentDeliveryBranchId, supabase, type Product } from '@/lib/supabase';
-import { rankSearchProducts, searchAlternates } from '@/lib/arabicSearch';
+import { rankSearchProducts, searchAlternates, relatedSearches, type SearchMatchProduct } from '@/lib/arabicSearch';
 
 const rpc = supabase.rpc.bind(supabase) as unknown as (
   name: string,
@@ -33,8 +33,8 @@ async function searchOwnedProducts(branchId: string, query: string, limit: numbe
   return (Array.isArray(legacy.data) ? legacy.data : []) as Product[];
 }
 
-/** Merge the shop's full-stock search with the address-scoped marketplace
- * discovery, without dropping out-of-stock items or overriding their rank. */
+/** Match exact products first, safe Egyptian synonyms next and labelled related
+ * categories last. All three passes use the actual branch-scoped catalog. */
 export async function searchBranchProductsIncludingUnavailable(
   query: string,
   limit = 150,
@@ -48,25 +48,51 @@ export async function searchBranchProductsIncludingUnavailable(
     searchOwnedProducts(branchId, cleaned, count),
     getBranchCatalog({ search: cleaned, limit: count }),
   ]);
-  const merged = new Map<string, Product>();
-  for (const row of owned) merged.set(row.id, row);
-  for (const row of discovery) if (!merged.has(row.id)) merged.set(row.id, row);
+  const merged = new Map<string, SearchMatchProduct>();
+  // A product may have marketplace offers; preserve the original source row.
+  const keyFor = (product: Product) => product.commerce_source === 'marketplace'
+    ? product.id + ':' + (product.marketplace_listing_id || product.marketplace_branch_id || 'marketplace')
+    : product.id;
+  for (const row of [...owned, ...discovery]) {
+    const key = keyFor(row);
+    if (!merged.has(key)) merged.set(key, { ...row, search_match_type: 'direct' });
+  }
 
-  // Only expand curated Egyptian aliases for weak result sets. Avoid fan-out
-  // and traffic spikes while the shopper is still typing a partial word.
-  if (includeSynonyms && merged.size < 4 && cleaned.length >= 3) {
-    const alternates = searchAlternates(cleaned);
-    for (const alternate of alternates) {
-      const [moreOwned, moreDiscovery] = await Promise.all([
-        searchOwnedProducts(branchId, alternate, Math.min(30,count)),
-        getBranchCatalog({ search: alternate, limit: Math.min(30,count) }),
-      ]);
-      for (const row of [...moreOwned, ...moreDiscovery]) {
-        if (!merged.has(row.id)) merged.set(row.id, { ...row, search_rank: 10 } as Product);
+  // Unlike the previous implementation, aliases are searched even when
+  // the primary term returned 4+ items (e.g. "حليب" also finds "لبن").
+  // Do not expand barcode searches or the live, rapidly-typed 2-letter query.
+  if (includeSynonyms && cleaned.length >= 3 && !/^\d+$/.test(cleaned)) {
+    const addSecondary = async (alternate: string, kind: 'synonym' | 'related', perSourceLimit: number) => {
+      try {
+        const [moreOwned, moreDiscovery] = await Promise.all([
+          searchOwnedProducts(branchId, alternate, perSourceLimit),
+          getBranchCatalog({ search: alternate, limit: perSourceLimit }),
+        ]);
+        for (const row of [...moreOwned, ...moreDiscovery]) {
+          const key = keyFor(row);
+          if (!merged.has(key)) merged.set(key, { ...row, search_match_type: kind });
+        }
+      } catch (error) {
+        // Alias discovery must never break the original exact results.
+        console.warn('Supplemental search skipped', kind, error);
       }
+    };
+
+    // Bounded searches, with a little more room for terms inside a phrase.
+    const alternates = searchAlternates(cleaned).slice(0, 3);
+    await Promise.all(alternates.map(term =>
+      addSecondary(term, 'synonym', Math.min(count, 45))));
+
+    // Distinct categories are NOT interchangeable. Only discover them for
+    // broad terms and only after exact/synonym candidates are in hand.
+    if (count >= 12 && merged.size < 70) {
+      const related = relatedSearches(cleaned);
+      await Promise.all(related.map(term =>
+        addSecondary(term, 'related', Math.min(count, 12))));
     }
   }
-  return rankSearchProducts([...merged.values()], cleaned).slice(0,count);
+
+  return rankSearchProducts([...merged.values()], cleaned).slice(0, count);
 }
 
 export async function searchBranchProductByBarcodeIncludingUnavailable(barcode: string): Promise<Product | null> {
