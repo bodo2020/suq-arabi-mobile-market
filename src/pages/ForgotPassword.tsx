@@ -57,7 +57,7 @@ export default function ForgotPassword() {
             {error && <p role="alert" className="mt-2 text-sm text-red-600">{error}</p>}
           </div>
 
-          <Button onClick={continueWithOtp} className="mt-5 min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black">
+          <Button onClick={continueWithOtp} className="auth-primary-button mt-5">
             إرسال رمز الاستعادة
           </Button>
 

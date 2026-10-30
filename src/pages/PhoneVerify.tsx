@@ -193,7 +193,7 @@ export default function PhoneVerify() {
                 {rateLimitError && <p className="mt-2 text-sm text-amber-700">تم طلب رموز كثيرة. انتظر قليلًا قبل المحاولة مرة أخرى.</p>}
               </div>
 
-              <Button onClick={() => void sendOtp(false)} disabled={loading} className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black">
+              <Button onClick={() => void sendOtp(false)} disabled={loading} className="auth-primary-button">
                 {loading ? <><BrandLoader size="sm" className="ml-2" />جاري إرسال الرمز</> : 'إرسال رمز التحقق'}
               </Button>
             </div>
@@ -225,7 +225,7 @@ export default function PhoneVerify() {
                 {errors.code && <p className="mt-3 text-center text-sm text-red-600">{errors.code}</p>}
               </div>
 
-              <Button onClick={() => void verify()} disabled={loading || code.length !== 6} className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black">
+              <Button onClick={() => void verify()} disabled={loading || code.length !== 6} className="auth-primary-button">
                 {loading ? <><BrandLoader size="sm" className="ml-2" />جاري التحقق</> : 'تأكيد الرمز'}
               </Button>
 

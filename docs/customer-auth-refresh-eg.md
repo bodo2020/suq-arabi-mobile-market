@@ -2,6 +2,16 @@
 
 Branch: `feat/customer-auth-refresh-eg-20261030`
 
+## Approved login presentation (bag-first refresh)
+
+- The first phone-entry step uses `AuthLayout variant="welcome"`: original `BrandMark variant="mark"` artwork from `/brand/super-marko-mark.svg`, centered with **no badge or logo tile**.
+- Below the bag, show exactly `يا أهلاً بيك في` and the original `BrandWordmark` with the **same tatweel lettering and green/yellow styles as the home header**. Do not type a second plain-text brand name.
+- Do not show a second "تسجيل الدخول" heading in the initial phone step. Use one quiet white form surface, label `رقم موبايلك`, left-side locked 🇪🇬 `+20`, and button `يلا نكمل`.
+- Switch to `AuthLayout variant="flow"` on password, OTP, recovery, signup and password reset: **small official bag only**, plus concise task heading; no welcome repeated.
+- Keep immediate first-digit 0/1 feedback, original full-phone validation, password recovery proof and OTP cooldown unchanged.
+- Make the gradient, small-screen spacing, keyboard opening behavior and primary buttons consistent through `src/components/layout/auth.css`.
+- On QA, verify no nested header boxes or duplicate brand names, no forced mobile keyboard on initial login, readable 320px/360px/390px layouts and safe-area padding.
+
 ## Scope
 
 - One shared branded shell for login, OTP, recovery, registration and password reset.

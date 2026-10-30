@@ -110,7 +110,7 @@ const UpdatePassword = () => {
           ) : !sessionValid ? (
             <div className="space-y-4 text-center">
               <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">جلسة الاستعادة غير صالحة أو انتهت. اطلب رمز تحقق جديدًا.</p>
-              <Button type="button" onClick={() => navigate('/forgot-password')} className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-bold">
+              <Button type="button" onClick={() => navigate('/forgot-password')} className="auth-primary-button">
                 بدء الاستعادة من جديد
               </Button>
             </div>
@@ -148,7 +148,7 @@ const UpdatePassword = () => {
                 type="button"
                 onClick={() => void handleUpdatePassword()}
                 disabled={loading}
-                className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black hover:bg-[#004a29]"
+                className="auth-primary-button"
               >
                 {loading && <BrandLoader size="sm" className="ml-2" />}
                 {loading ? 'جاري حفظ كلمة المرور' : 'حفظ كلمة المرور الجديدة'}

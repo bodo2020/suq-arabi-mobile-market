@@ -174,7 +174,7 @@ export default function Register() {
 
             {error && <p id="registration-error" role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-            <Button className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black" type="submit" disabled={busy || !phone}>
+            <Button className="auth-primary-button" type="submit" disabled={busy || !phone}>
               {busy ? <><BrandLoader size="sm" className="ml-2" />جاري حفظ حسابك</> : 'حفظ ومتابعة'}
             </Button>
           </form>

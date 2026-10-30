@@ -1,45 +1,97 @@
-/* Brand-consistent customer auth shell. Mobile first; isolated from POS screens. */
-/* Continue the homepage hero green gradient down the entire auth page. */
+/* Customer authentication: one brand system, matching the homepage gradient. */
 .auth-page {
-  position: relative;
-  isolation: isolate;
   min-height: 100dvh;
-  overflow-x: clip;
-  overflow-y: visible;
-  color: #173d2d;
-  padding: calc(20px + var(--safe-area-top, 0px)) 18px calc(38px + var(--safe-area-bottom, 0px));
-  background: linear-gradient(
-    180deg,
-    #e6f9ee 0%,
-    #edf9f1 27%,
-    #f4fbf6 62%,
-    #f6f8f7 100%
-  );
-}
-.auth-brand {
-  max-width: 480px;
-  margin: 0 auto 32px;
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  flex-direction: column;
+  overflow-x: clip;
+  color: #173d2d;
+  padding:
+    calc(24px + var(--safe-area-top, 0px))
+    max(16px, var(--safe-area-right, 0px))
+    calc(32px + var(--safe-area-bottom, 0px))
+    max(16px, var(--safe-area-left, 0px));
+  background: linear-gradient(180deg, #e6f9ee 0%, #edf9f1 28%, #f4fbf6 63%, #f6f8f7 100%);
 }
-/* HeaderBrand renders with its own homepage spacing and unboxed lettering. */
-.auth-surface { width: 100%; max-width: 480px; margin: 0 auto; }
-.auth-heading { text-align: right; margin: 0 3px 18px; }
+
+.auth-brand {
+  width: 100%;
+  max-width: 440px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.auth-brand--welcome {
+  padding-top: clamp(8px, 3.6dvh, 36px);
+  margin-bottom: clamp(26px, 5dvh, 42px);
+}
+.auth-brand--flow { margin-bottom: 25px; }
+.auth-brand-mark-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  outline-offset: 7px;
+}
+.auth-brand-mark-link:focus-visible { outline: 2px solid #005931; }
+.auth-bag-mark--welcome { width: 67px; height: 89px; }
+.auth-bag-mark--flow { width: 37px; height: 49px; }
+.auth-welcome-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin: 15px 0 0;
+  line-height: 1.45;
+}
+.auth-welcome-greeting {
+  color: #174b35;
+  font-family: 'Thmanyah', 'Cairo', sans-serif;
+  font-size: clamp(1.24rem, 5.2vw, 1.55rem);
+  font-weight: 750;
+}
+/* The official BrandWordmark supplies the exact stretched letters and two colors. */
+.auth-welcome-heading .brand-name--home.auth-welcome-wordmark {
+  max-width: 100%;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: clamp(1.22rem, 5.6vw, 1.7rem);
+  line-height: 1.55;
+}
+
+.auth-surface { width: 100%; max-width: 440px; margin-inline: auto; }
+.auth-heading { text-align: right; margin: 0 4px 17px; }
 .auth-heading h1 { line-height: 1.5; letter-spacing: -.015em; }
 .auth-heading p { line-height: 1.7; }
 .auth-card {
-  padding: 23px;
-  border: 1px solid #e1ede5;
-  border-radius: 27px;
-  background: #fff;
-  box-shadow: 0 22px 66px rgba(0, 51, 25, .075);
+  padding: 25px 23px;
+  border: 1px solid rgba(0, 89, 49, .105);
+  border-radius: 25px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 14px 42px rgba(0, 60, 34, .055);
 }
+.auth-card--entry { padding-block: 29px; }
 .auth-card input:not([data-input-otp]):not(.auth-phone-input) {
   min-height: 54px;
   border-radius: 15px;
   font-size: 16px;
 }
+.auth-card .auth-primary-button {
+  min-height: 56px;
+  width: 100%;
+  border-radius: 16px;
+  background: #005931;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 850;
+  box-shadow: 0 9px 20px rgba(0, 89, 49, .12);
+  transition: background-color .16s, box-shadow .16s;
+}
+.auth-card .auth-primary-button:hover { background: #004a29; }
+.auth-card .auth-primary-button:focus-visible { outline: 2px solid #005931; outline-offset: 3px; }
 .auth-surface input { min-width: 0; }
 .auth-surface input:focus-visible { outline-offset: 2px; }
 .auth-surface button:disabled { cursor: not-allowed; }
@@ -69,16 +121,28 @@
   border-radius: 12px;
 }
 .auth-password-toggle:focus-visible { outline: 2px solid #005931; outline-offset: 1px; }
+
 @media (max-width: 480px) {
-  .auth-page { padding-right: 14px; padding-left: 14px; }
-  .auth-brand { margin-bottom: 25px; }
-  .auth-card { padding: 20px 16px; border-radius: 24px; }
+  .auth-page {
+    padding-right: max(14px, var(--safe-area-right, 0px));
+    padding-left: max(14px, var(--safe-area-left, 0px));
+  }
+  .auth-card { padding: 22px 18px; border-radius: 22px; }
+  .auth-card--entry { padding-block: 27px; }
   .auth-heading h1 { font-size: 23px; }
 }
 @media (max-width: 350px) {
+  .auth-brand--welcome { margin-bottom: 23px; }
+  .auth-bag-mark--welcome { width: 57px; height: 76px; }
+  .auth-card--entry { padding: 22px 14px; }
   .auth-surface [data-input-otp-container],
   .auth-surface [data-input-otp-container] > div { gap: 4px; }
   .auth-surface [data-input-otp-container] > div > div { width: 35px; height: 51px; }
+}
+@media (max-height: 660px) {
+  .auth-brand--welcome { padding-top: 0; margin-bottom: 22px; }
+  .auth-bag-mark--welcome { width: 58px; height: 77px; }
+  .auth-welcome-heading { margin-top: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-page *, .auth-page *::before, .auth-page *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
