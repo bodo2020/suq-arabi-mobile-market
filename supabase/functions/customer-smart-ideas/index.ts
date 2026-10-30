@@ -53,7 +53,7 @@ Deno.serve(async req => {
   const abort = new AbortController();
   const timeout = setTimeout(()=>abort.abort(),9500);
   try {
-    const provider = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',{
+    const provider = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',{
       method:'POST',
       signal:abort.signal,
       headers:{'Content-Type':'application/json','x-goog-api-key':key},
@@ -73,7 +73,10 @@ Deno.serve(async req => {
         generationConfig:{responseMimeType:'application/json',temperature:0.1,maxOutputTokens:220},
       }),
     });
-    if(!provider.ok) return respond({error:'ai_temporarily_unavailable'},503);
+    if(!provider.ok) {
+      console.error('gemini_provider_error', { status: provider.status, body: (await provider.text()).slice(0, 400) });
+      return respond({error:'ai_temporarily_unavailable'},503);
+    }
     const payload = await provider.json();
     const raw = payload?.candidates?.[0]?.content?.parts?.map((p:{text?:string})=>p.text||'').join('')||'';
     let match:Record<string,unknown>;
