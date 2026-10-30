@@ -5,7 +5,7 @@ import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import { Button } from '@/components/ui/button';
 import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
-import { egyptianMobileDigits, isValidEgyptianMobile } from '@/utils/egyptPhone';
+import { egyptianMobileDigits, egyptianPhoneStartError, isValidEgyptianMobile } from '@/utils/egyptPhone';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export default function ForgotPassword() {
       return;
     }
     if (!isValidEgyptianMobile(phone)) {
-      setError('اكتب رقم موبايل مصري صحيح، مثل 01012345678.');
+      setError(egyptianPhoneStartError(phone) ? '' : 'اكتب رقم موبايل مصري صحيح، مثل 01012345678.');
       return;
     }
 
