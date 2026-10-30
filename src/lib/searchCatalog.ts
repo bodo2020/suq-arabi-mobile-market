@@ -33,6 +33,34 @@ async function searchOwnedProducts(branchId: string, query: string, limit: numbe
   return (Array.isArray(legacy.data) ? legacy.data : []) as Product[];
 }
 
+// Terms come from the database so stores can add thousands of safe regional aliases
+// without publishing a new Android/web build. Small in-memory cache limits typing traffic.
+const queryAliasCache = new Map<string, { at: number; terms: string[] }>();
+
+async function getSearchSynonyms(query: string, max: number): Promise<string[]> {
+  const local = searchAlternates(query);
+  const cached = queryAliasCache.get(query);
+  if (cached && Date.now() - cached.at < 300000) return cached.terms.slice(0, max);
+  let remote: string[] = [];
+  try {
+    const result = await rpc('customer_search_expand_query_v2', {
+      p_search: query, p_country_code: 'EG', p_limit: 7,
+    });
+    if (!result.error && Array.isArray(result.data)) {
+      remote = (result.data as Array<{ alternative?: unknown }>)
+        .map(row => row.alternative).filter((term): term is string => typeof term === 'string');
+    }
+  } catch {
+    // Older DBs still have the comprehensive bundled Egyptian vocabulary.
+  }
+  const terms = [...new Set([...local, ...remote].map(t => t.trim()))]
+    .filter(t => t.length >= 2 && t !== query && t.length <= 120)
+    .slice(0, 7);
+  if (queryAliasCache.size >= 120) queryAliasCache.clear();
+  queryAliasCache.set(query, { at: Date.now(), terms });
+  return terms.slice(0, max);
+}
+
 /** Match exact products first, safe Egyptian synonyms next and labelled related
  * categories last. All three passes use the actual branch-scoped catalog. */
 export async function searchBranchProductsIncludingUnavailable(
@@ -79,7 +107,7 @@ export async function searchBranchProductsIncludingUnavailable(
     };
 
     // Bounded searches, with a little more room for terms inside a phrase.
-    const alternates = searchAlternates(cleaned).slice(0, 3);
+    const alternates = await getSearchSynonyms(cleaned, count <= 10 ? 2 : 5);
     await Promise.all(alternates.map(term =>
       addSecondary(term, 'synonym', Math.min(count, 45))));
 

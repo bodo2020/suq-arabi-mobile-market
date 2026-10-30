@@ -76,6 +76,11 @@ test('Catalog searches include aliases even when five exact matches exist', asyn
   };
   const supabase = {
     rpc: async (name, args) => {
+      if (name === 'customer_search_expand_query_v2') {
+        calls.push('db-synonyms:' + args.p_search);
+        return { data: args.p_search === 'حليب'
+          ? [{ alternative: 'لبن' }] : [], error: null };
+      }
       assert.equal(name, 'search_customer_smart_catalog_v1');
       calls.push(args.p_search);
       return { data: data[args.p_search] || [], error: null };
@@ -92,6 +97,7 @@ test('Catalog searches include aliases even when five exact matches exist', asyn
   const milk = await catalog.searchBranchProductsIncludingUnavailable('حليب', 25, true);
   assert.ok(milk.some(x => x.name === 'لبن بقري'));
   assert.ok(calls.includes('لبن'));
+  assert.ok(calls.includes('db-synonyms:حليب'), 'Read DB aliases on every full search');
   assert.equal(milk.find(x => x.name === 'لبن بقري').price, 25);
   assert.equal(milk.find(x => x.name === 'لبن بقري').search_match_type, 'synonym');
   const tuna = await catalog.searchBranchProductsIncludingUnavailable('تونة', 25, true);
