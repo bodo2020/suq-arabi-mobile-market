@@ -1,38 +1,65 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Product } from '@/lib/supabase';
+import { rankRecommendationCandidates, type RecommendationKind } from '@/lib/recommendationEngineV2';
 import ProductCard from '@/components/ui/ProductCard';
 
 type ProductSuggestionsProps = {
+  sourceProduct: Product;
   products: Product[];
+  cartProductIds: string[];
   loading: boolean;
   layout: 'mobile' | 'desktop';
 };
 
+const groupTitles: Record<RecommendationKind, string> = {
+  complement: 'يكمل مشترياتك',
+  similar: 'بدائل ومنتجات مشابهة',
+  discover: 'اكتشف كمان',
+};
+
+const groupDescriptions: Record<RecommendationKind, string> = {
+  complement: 'منتجات بتكمل استخدام المنتج اللي بتتفرج عليه',
+  similar: 'اختيارات قريبة من نفس النوع',
+  discover: 'منتجات أخرى متاحة في المتجر',
+};
+
+const groupOrder: RecommendationKind[] = ['complement', 'similar', 'discover'];
+
 /**
- * Loaded only when the shopper reaches the lower section of product details.
- * Keeping ProductCard and its cart/favorites dependencies out of the critical
- * detail-sheet bundle reduces work before the hero/name/price first paint.
+ * Lazy-loaded below the product hero. Re-rank cached catalog candidates when
+ * the cart changes, without another request or a generative model call.
  */
-function ProductSuggestions({ products, loading, layout }: ProductSuggestionsProps) {
-  if (!loading && products.length === 0) return null;
+function ProductSuggestions({ sourceProduct, products, cartProductIds, loading, layout }: ProductSuggestionsProps) {
+  const recommendations = useMemo(() => {
+    const ranked = rankRecommendationCandidates(sourceProduct, products, 16, { cartProductIds });
+    const selected = [
+      ...ranked.filter(row => row.kind === 'complement').slice(0, 4),
+      ...ranked.filter(row => row.kind === 'similar').slice(0, 3),
+      ...ranked.filter(row => row.kind === 'discover').slice(0, 1),
+    ];
+    const selectedIds = new Set(selected.map(row => row.product.id));
+    return [...selected, ...ranked.filter(row => !selectedIds.has(row.product.id))].slice(0, 8);
+  }, [sourceProduct, products, cartProductIds]);
+
+  if (!loading && recommendations.length === 0) return null;
   const mobile = layout === 'mobile';
   return (
     <section
       data-product-recommendations
-      aria-label="منتجات مقترحة"
+      aria-label="اقتراحات منتجات مرتبطة"
       className={mobile
         ? 'rounded-[24px] border border-slate-100 bg-white px-3.5 py-4'
         : 'mt-5 rounded-[26px] bg-white px-5 py-6 ring-1 ring-black/[0.035]'}
     >
       <div className="mb-4 px-1">
         <h2 className={mobile ? 'text-base font-black text-slate-950' : 'text-xl font-black text-slate-950'}>
-          قد يعجبك أيضًا
+          مقترحات ليك
         </h2>
         <p className="mt-1 text-xs font-medium text-slate-500">
-          اختيارات مرتبطة بالمنتج اللي بتتفرج عليه
+          اختيارات من المنتجات المتاحة فعلًا في المتجر
         </p>
       </div>
-      {loading && products.length === 0 ? (
+      {loading && recommendations.length === 0 ? (
         <div className="flex gap-3 overflow-hidden" role="status" aria-label="جاري تجهيز الاقتراحات">
           {[0, 1, 2].map(index => (
             <div key={index} className={mobile ? 'w-[136px] shrink-0' : 'w-[175px] shrink-0'}>
@@ -43,19 +70,34 @@ function ProductSuggestions({ products, loading, layout }: ProductSuggestionsPro
           ))}
         </div>
       ) : (
-        <div dir="rtl" className={mobile
-          ? 'hide-scrollbar flex snap-x gap-2.5 overflow-x-auto pb-2'
-          : 'flex snap-x gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:overflow-visible'}
-          style={{ scrollbarWidth: 'none' }}
-        >
-          {products.slice(0, 8).map(item => (
-            <div key={item.id} className={mobile
-              ? 'w-[136px] shrink-0 snap-start sm:w-[156px]'
-              : 'w-[170px] min-w-[170px] snap-start sm:w-[190px] sm:min-w-[190px] md:w-auto md:min-w-0'}
-            >
-              <ProductCard product={item} />
-            </div>
-          ))}
+        <div className="space-y-5">
+          {groupOrder.map(kind => {
+            const group = recommendations.filter(row => row.kind === kind);
+            if (!group.length) return null;
+            return (
+              <div key={kind} data-recommendation-kind={kind}>
+                <h3 className="px-1 text-sm font-black text-slate-900">{groupTitles[kind]}</h3>
+                <p className="mb-3 mt-1 px-1 text-xs text-slate-500">{groupDescriptions[kind]}</p>
+                <div dir="rtl" className={mobile
+                  ? 'hide-scrollbar flex snap-x gap-2.5 overflow-x-auto pb-2'
+                  : 'flex snap-x gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:overflow-visible'}
+                  style={{ scrollbarWidth: 'none' }}
+                >
+                  {group.map(({ product }) => (
+                    <div
+                      key={product.id}
+                      data-recommendation-product-id={product.id}
+                      className={mobile
+                        ? 'w-[136px] shrink-0 snap-start sm:w-[156px]'
+                        : 'w-[170px] min-w-[170px] snap-start sm:w-[190px] sm:min-w-[190px] md:w-auto md:min-w-0'}
+                    >
+                      <ProductCard product={product} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
