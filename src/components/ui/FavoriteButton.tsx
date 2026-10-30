@@ -28,6 +28,12 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   const { isFavorite, toggleFavorite, isLoading, user, favoritesLoaded } = useFavorites();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [burst, setBurst] = React.useState(false);
+  React.useEffect(() => {
+    if (!burst) return;
+    const timer = window.setTimeout(() => setBurst(false), 480);
+    return () => window.clearTimeout(timer);
+  }, [burst]);
 
   const baseClassName = cn(
     'relative flex items-center justify-center transition-colors duration-200',
@@ -70,6 +76,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   const handleClick = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
+    if (!selected && !isLoading) setBurst(true);
     void toggleFavorite(productId, variantId);
   };
 
@@ -87,9 +94,11 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         strokeWidth={2}
         className={cn(
           'transition-colors duration-300',
+          burst && 'brand-favorite-heart--burst',
           selected ? 'fill-[#005931] text-[#005931]' : 'text-slate-400 group-hover:text-[#005931]',
         )}
       />
+      {burst && <span className="brand-favorite-sparks" aria-hidden="true" />}
       {isLoading && <Skeleton className="absolute inset-0 rounded-full" />}
     </button>
   );
