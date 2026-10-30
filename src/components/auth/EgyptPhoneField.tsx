@@ -21,7 +21,7 @@ export default function EgyptPhoneField({ className, ...props }: EgyptPhoneField
         dir="ltr"
         maxLength={18}
         placeholder="010 1234 5678"
-        className={cn('min-w-0 flex-1 !h-auto !min-h-0 !border-0 !bg-transparent px-3 text-right text-base font-semibold !shadow-none !outline-none !ring-0 focus-visible:!ring-0', className)}
+        className={cn('auth-phone-input min-w-0 flex-1 !h-auto !min-h-0 !border-0 !bg-transparent px-3 text-right text-base font-semibold !shadow-none !outline-none !ring-0 focus-visible:!ring-0', className)}
       />
     </div>
   );
