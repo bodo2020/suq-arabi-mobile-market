@@ -86,3 +86,18 @@ test('Does not call a generative provider and requires source product for the UI
   assert.match(component, /data-recommendation-kind/);
   assert.doesNotMatch(source, /fetch\(|functions\.invoke|generateContent/);
 });
+
+test('optional shared AI signals are OFF by default and are never required for catalog rendering', () => {
+  const signals = readFileSync(new URL('../src/lib/productRecommendationSignals.ts', import.meta.url), 'utf8');
+  const details = readFileSync(new URL('../src/pages/ProductDetail.tsx', import.meta.url), 'utf8');
+  const ui = readFileSync(new URL('../src/components/product/ProductSuggestions.tsx', import.meta.url), 'utf8');
+  assert.match(signals, /VITE_MARKO_COPURCHASE_V1 === 'true'/);
+  assert.match(signals, /mode: 'customer_recommendations'/);
+  assert.match(signals, /getCurrentDeliveryBranchId\(/);
+  assert.match(signals, /product\.commerce_source === 'marketplace'/);
+  assert.match(signals, /if \(error \|\| signal\?\.aborted/);
+  assert.match(details, /fetchLearnedRecommendationScores\(product, controller\.signal\)/);
+  assert.match(details, /learnedScores=\{learnedRecommendationScores\}/);
+  assert.match(ui, /rankRecommendationCandidates\(sourceProduct, products, 16, \{ cartProductIds, learnedScores \}\)/);
+  assert.doesNotMatch(signals, /SERVICE_ROLE_KEY|\.from\('pos_invoices'\)|generateContent/);
+});
