@@ -56,7 +56,7 @@ const OrderSuccess = () => {
     <MainLayout>
       <div className="mx-auto flex min-h-[75vh] max-w-lg items-center px-4 py-8" dir="rtl">
         <section className="w-full rounded-3xl border border-green-100 bg-white p-6 text-center shadow-sm sm:p-8">
-          <span className="relative mx-auto flex h-20 w-20 items-center justify-center">
+          <span className="brand-success-celebration relative mx-auto flex h-20 w-20 items-center justify-center">
             <BrandMark variant="badge" motion="pop" className="brand-order-success__badge" />
             <span className="brand-order-success__check"><Check size={17} strokeWidth={3} /></span>
           </span>
