@@ -11,5 +11,5 @@ from unnest(array[
   'شوكالته', 'شوكليت',
   'شوكوليت', 'شيكولا',
   'شوكولات', 'chocolate'
-]::text[]) as spelling
+]::text[]) as chocolate_variants(spelling)
 on conflict (concept_id, term_key, country_code) do nothing;
