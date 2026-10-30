@@ -17,7 +17,8 @@
     "android:run": "npm run android:sync && npx cap run android",
     "test:marko-ai-gateway": "node scripts/marko-ai-shared-gateway.test.mjs",
     "test:smart-search": "node scripts/smart-search.test.mjs",
-    "test:egypt-phone": "node scripts/test-egypt-phone.mjs"
+    "test:egypt-phone": "node scripts/test-egypt-phone.mjs",
+    "test:brand-loader": "node scripts/test-brand-loader-contrast.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",
