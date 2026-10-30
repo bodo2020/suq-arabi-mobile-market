@@ -29,8 +29,8 @@ export default function MarcoAiPrompt() {
 
     setPending(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-smart-ideas', {
-        body: { message: text },
+      const { data, error } = await supabase.functions.invoke('marko-ai-engine', {
+        body: { mode: 'customer_shopping', message: text },
       });
       const response = data as Record<string, unknown> | null;
       if (error || response?.error) {
