@@ -25,7 +25,7 @@ for (let index = 1; index <= 5; index++) {
 }
 assert.match(loader, /tone = 'default'/);
 assert.match(loader, /tone=\{tone\}/);
-assert.match(loader, /brand-loader--on-green/);
+assert.match(loader, /tone === 'onGreen' \? 'on-green' : 'default'/);
 assert.match(css, /brand-refresh-trace 1850ms/);
 assert.match(css, /brand-loader--on-green \.brand-loader__particle/);
 assert.match(css, /prefers-reduced-motion: reduce/);
