@@ -33,6 +33,14 @@
   35% { opacity: 1; transform: translate3d(var(--brand-flight-mid-x),var(--brand-flight-mid-y),0) scale(.85); }
   100% { opacity: 0; transform: translate3d(var(--brand-flight-x),var(--brand-flight-y),0) scale(.22); }
 }
+.brand-card-counter {
+  transform-origin: 75% 55%;
+  animation: brand-counter-emerge 240ms var(--brand-motion-ease) both;
+}
+@keyframes brand-counter-emerge {
+  from { opacity: .78; transform: scale(.88); }
+  to { opacity: 1; transform: scale(1); }
+}
 .brand-quantity-pop {
   display: inline-block;
   animation: brand-quantity-bump var(--brand-motion-count) var(--brand-motion-ease) both;
@@ -96,15 +104,43 @@
   0% { opacity: .85; transform: scale(.6); }
   100% { opacity: 0; transform: scale(1.35); }
 }
+.brand-favorites-empty__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 150px;
+  margin-bottom: 15px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #eaf9f0 0%, #f7fcf8 67%, transparent 72%);
+}
+.brand-favorites-empty__bag { width: 70px; height: 94px; }
+.brand-favorites-empty__heart {
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  color: #005931;
+  stroke-width: 2.3;
+  animation: brand-favorites-heart-float 1.1s ease-out both;
+}
+.brand-favorites-empty__heart--one { top: 18px; right: 16px; animation-delay: 220ms; }
+.brand-favorites-empty__heart--two { bottom: 27px; left: 15px; width: 15px; height: 15px; color: #ffc120; animation-delay: 360ms; }
+@keyframes brand-favorites-heart-float {
+  0% { opacity: 0; transform: translateY(9px) scale(.55); }
+  65% { opacity: 1; transform: translateY(-4px) scale(1.12); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
 @media (prefers-reduced-motion: reduce) {
   .brand-product-flight { display: none !important; }
+  .brand-card-counter,
   .brand-quantity-pop,
   .brand-favorite-heart--burst,
   .brand-favorite-sparks,
   .brand-search-suggestion-enter,
   .brand-search-results-enter,
   .brand-order-step--current > div:first-child > span:first-child,
-  .brand-success-celebration::before {
+  .brand-success-celebration::before,
+  .brand-favorites-empty__heart {
     animation: none !important;
   }
   .brand-order-step > div:first-child > span { transition: none !important; }
