@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <main className="auth-page" dir="rtl">
       <header className="auth-brand">
-        <HeaderBrand className="auth-brand-link" />
+        <HeaderBrand />
         <Link to="/" className="auth-guest">تصفح كضيف</Link>
       </header>
       <div className="auth-surface">
