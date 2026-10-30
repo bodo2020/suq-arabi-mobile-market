@@ -67,7 +67,7 @@ export default function Cart() {
   };
 
   const cta = <Button className="cart-primary" onClick={proceed} disabled={blocked}>
-    {isSaving ? <><BrandLoader size="sm" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
+    {isSaving ? <><BrandLoader size="sm" tone="onGreen" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" tone="onGreen" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
   </Button>;
 
   const subtotal = Number(quote?.subtotal ?? getTotalPrice());
