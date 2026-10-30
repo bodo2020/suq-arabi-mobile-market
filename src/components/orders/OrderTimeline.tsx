@@ -185,7 +185,7 @@ const OrderTimeline: React.FC<OrderTimelineProps> = ({ order }) => {
         const current = statusIndex === index && order.status !== 'delivered';
         const time = reached ? formatTime(firstReachedAt(step.key)) : null;
         return (
-          <div key={step.key} className="flex gap-3">
+          <div key={step.key} className={`brand-order-step flex gap-3 ${current ? 'brand-order-step--current' : ''}`}>
             <div className="flex flex-col items-center">
               <span className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${reached ? 'border-primary bg-primary text-white' : 'border-gray-200 bg-white text-gray-300'} ${current ? 'ring-4 ring-green-100' : ''}`}>
                 {reached ? <CheckCircle2 size={16} /> : <span className="h-2 w-2 rounded-full bg-current" />}

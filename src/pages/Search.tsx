@@ -232,7 +232,7 @@ export default function Search() {
                   key={product.id}
                   type="button"
                   onClick={() => navigate('/product/' + product.id)}
-                  className="flex min-h-16 w-full items-center gap-3 border-b border-slate-50 py-2 text-right last:border-b-0 hover:bg-emerald-50"
+                  className="brand-search-suggestion-enter flex min-h-16 w-full items-center gap-3 border-b border-slate-50 py-2 text-right last:border-b-0 hover:bg-emerald-50"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-50">
                     {product.image_urls?.[0]
@@ -301,7 +301,7 @@ export default function Search() {
                 <BrandLoader size="md" /><span className="text-sm text-slate-500">بنبحث في منتجات فرعك…</span>
               </div>
             ) : visible.length ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              <div className="brand-search-results-enter grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {visible.map(product => (
                   <div className="min-w-0" key={product.variantKey || (product.displayType || 'regular') + ':' + product.id}>
                     {product.search_match_type === 'related' && (

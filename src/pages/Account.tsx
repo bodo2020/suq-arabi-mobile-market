@@ -140,12 +140,12 @@ const Account = () => {
                     <div className="mt-5 grid grid-cols-2 gap-3">
                       <div className="rounded-2xl bg-white/10 p-4">
                         <p className="text-xs text-emerald-100">رصيد النقاط</p>
-                        <strong className="mt-1 block text-2xl font-black text-brand-yellow">{Number(loyalty.data.points_balance || 0).toLocaleString('ar-EG')}</strong>
+                        <strong key={Number(loyalty.data.points_balance || 0)} className="brand-quantity-pop mt-1 block text-2xl font-black text-brand-yellow">{Number(loyalty.data.points_balance || 0).toLocaleString('ar-EG')}</strong>
                         <span className="text-xs text-emerald-100">نقطة</span>
                       </div>
                       <div className="rounded-2xl bg-white/10 p-4">
                         <p className="text-xs text-emerald-100">قابل للتحويل لكوبون خصم</p>
-                        <strong className="mt-1 block text-2xl font-black text-brand-yellow">{Number(loyalty.data.redeemable_credit_egp || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 })}</strong>
+                        <strong key={Number(loyalty.data.redeemable_credit_egp || 0)} className="brand-quantity-pop mt-1 block text-2xl font-black text-brand-yellow">{Number(loyalty.data.redeemable_credit_egp || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 })}</strong>
                         <span className="text-xs text-emerald-100">ج.م</span>
                       </div>
                     </div>
