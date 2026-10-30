@@ -389,7 +389,7 @@ export default function CombinedPayment() {
               onClick={() => void handleSubmit()}
               disabled={loading || isSaving || quoteQuery.isFetching || (!pending && !quote)}
             >
-              {loading ? <BrandLoader size="sm" /> : <ShieldCheck size={18} />}
+              {loading ? <BrandLoader size="sm" tone="onGreen" /> : <ShieldCheck size={18} />}
               تأكيد الطلب المجمّع
             </Button>
             <p className="text-center text-xs leading-5 text-gray-500">
