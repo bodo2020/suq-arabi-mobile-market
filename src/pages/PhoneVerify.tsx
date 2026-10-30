@@ -1,7 +1,7 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import AuthHeading from '@/components/auth/AuthHeading';
 import { Button } from '@/components/ui/button';
@@ -168,19 +168,17 @@ export default function PhoneVerify() {
 
   return (
     <AuthLayout>
-      <div className="mx-auto w-full max-w-md px-1 py-2" dir="rtl">
-        <div className="mb-2 flex justify-start">
-          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600" aria-label="الرجوع">
-            <ArrowRight size={22} />
-          </button>
-        </div>
-        <AuthHeading title={step === 'phone' ? (isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل') : 'تأكيد الرقم'} />
+      <div className="mx-auto w-full max-w-md" dir="rtl">
+        <button type="button" onClick={() => navigate(-1)} className="auth-back-button" aria-label="الرجوع">
+          <ArrowRight size={20} />
+        </button>
+        <AuthHeading title={step === 'phone' ? (isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقمك') : 'اكتب كود التحقق'} />
 
-        <div className="auth-card">
+        <div className="auth-card auth-card--flow">
           {step === 'phone' ? (
             <div className="space-y-5">
               <div>
-                <label htmlFor="phone" className="mb-2 block text-sm font-bold text-slate-800">رقم الموبايل</label>
+                <label htmlFor="phone" className="auth-field-label">رقم موبايلك</label>
                 <EgyptPhoneField
                   id="phone"
                   value={phone}
@@ -199,43 +197,49 @@ export default function PhoneVerify() {
             </div>
           ) : (
             <div className="space-y-5">
-              <p className="text-center text-sm leading-6 text-slate-500">
-                {isTestOtp ? 'أدخل رمز الاختبار' : 'أدخل الرمز المرسل إلى'}
-                <br />
-                <bdi dir="ltr" className="font-black text-slate-800">{formatInternationalPhone(phone)}</bdi>
-              </p>
+              <div className="auth-recipient">
+                <div className="min-w-0">
+                  <p className="auth-recipient-label">{isTestOtp ? 'كود الاختبار للرقم' : 'بعتنالك الكود على'}</p>
+                  <bdi dir="ltr" className="auth-recipient-phone">{formatInternationalPhone(phone)}</bdi>
+                </div>
+                <button
+                  type="button"
+                  className="auth-inline-link"
+                  onClick={() => { setStep('phone'); setCode(''); setInitialSendDone(true); setErrors({ phone: '', code: '' }); }}
+                  disabled={loading || resendLoading}
+                >
+                  تغيير الرقم
+                </button>
+              </div>
 
-              <div>
-                <div className="mb-3 flex items-center justify-center gap-2 text-sm font-bold text-slate-800"><Check size={17} className="text-[#005931]" />رمز التحقق</div>
-                <div className="flex justify-center" dir="ltr">
+              <div className="auth-otp-entry">
+                <div dir="ltr">
                   <InputOTP
                     aria-label="رمز التحقق المكون من 6 أرقام"
                     autoComplete="one-time-code"
                     inputMode="numeric"
+                    containerClassName="auth-otp-input"
                     disabled={loading || resendLoading}
                     maxLength={6}
                     value={code}
                     onChange={value => { setCode(normalizeDigits(value).replace(/\D/g, '')); setErrors(prev => ({ ...prev, code: '' })); }}
                   >
-                    <InputOTPGroup>
-                      {[0, 1, 2, 3, 4, 5].map(index => <InputOTPSlot key={index} index={index} />)}
+                    <InputOTPGroup className="auth-otp-group">
+                      {[0, 1, 2, 3, 4, 5].map(index => <InputOTPSlot key={index} index={index} className="auth-otp-slot" />)}
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
-                {errors.code && <p className="mt-3 text-center text-sm text-red-600">{errors.code}</p>}
+                {errors.code && <p role="alert" className="mt-3 text-center text-sm text-red-700">{errors.code}</p>}
               </div>
 
               <Button onClick={() => void verify()} disabled={loading || code.length !== 6} className="auth-primary-button">
                 {loading ? <><BrandLoader size="sm" className="ml-2" />جاري التحقق</> : 'تأكيد الرمز'}
               </Button>
 
-              <div className="space-y-2 text-center text-sm">
-                <button type="button" onClick={() => void sendOtp(true)} disabled={loading || resendLoading || resendSeconds > 0} className="min-h-10 font-bold text-[#005931] disabled:opacity-50">
-                  {resendLoading ? 'جاري إعادة الإرسال...' : resendSeconds > 0 ? `إعادة الإرسال بعد ${resendSeconds} ثانية` : 'إعادة إرسال الرمز'}
+              <div className="auth-otp-resend">
+                <button type="button" onClick={() => void sendOtp(true)} disabled={loading || resendLoading || resendSeconds > 0} className="auth-inline-link">
+                  {resendLoading ? 'جاري إعادة الإرسال...' : resendSeconds > 0 ? `إعادة الإرسال بعد ${resendSeconds} ثانية` : 'إعادة إرسال الكود'}
                 </button>
-                <div>
-                  <button type="button" onClick={() => { setStep('phone'); setCode(''); setInitialSendDone(true); }} className="min-h-10 text-slate-500">تغيير رقم الموبايل</button>
-                </div>
               </div>
             </div>
           )}
