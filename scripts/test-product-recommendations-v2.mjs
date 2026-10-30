@@ -98,6 +98,8 @@ test('optional shared AI signals are OFF by default and are never required for c
   assert.match(signals, /if \(error \|\| signal\?\.aborted/);
   assert.match(details, /fetchLearnedRecommendationScores\(product, controller\.signal\)/);
   assert.match(details, /learnedScores=\{learnedRecommendationScores\}/);
+  assert.match(details, /getProductsByIds\(ids\)/);
+  assert.match(details, /recommendationCandidates\.filter\(/);
   assert.match(ui, /rankRecommendationCandidates\(sourceProduct, products, 16, \{ cartProductIds, learnedScores \}\)/);
   assert.doesNotMatch(signals, /SERVICE_ROLE_KEY|\.from\('pos_invoices'\)|generateContent/);
 });
