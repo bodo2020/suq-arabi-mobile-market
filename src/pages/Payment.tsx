@@ -45,6 +45,7 @@ import {
   placeOrder,
   preparePendingCheckout,
   quoteOrder,
+  reconcilePendingCheckoutAttempt,
   readPendingCheckout,
   removePendingCheckout,
   type PendingCheckout,
@@ -223,6 +224,7 @@ const Payment = () => {
 
     submitting.current = true;
     setIsLoading(true);
+    let submittedAttempt: PendingCheckout | null = null;
     try {
       const candidate: PendingCheckout = {
         requestId,
@@ -238,6 +240,7 @@ const Payment = () => {
       };
 
       const pending = await preparePendingCheckout(user.id, candidate);
+      submittedAttempt = pending;
       setPendingCheckout(pending);
       setRequestId(pending.requestId as `${string}-${string}-${string}-${string}-${string}`);
 
@@ -249,7 +252,8 @@ const Payment = () => {
       setWalletDialogOpen(false);
       setSelectedVoucherId('none');
       if (cartMatchesPlacedAttempt) clearCart();
-      await Promise.all([
+      // Non-critical cache refresh must never turn a placed order into a failure toast.
+      void Promise.allSettled([
         queryClient.invalidateQueries({ queryKey: ['loyalty-vouchers', user.id] }),
         queryClient.invalidateQueries({ queryKey: ['loyalty-card', user.id] }),
         queryClient.invalidateQueries({ queryKey: ['customer-loyalty-card', user.id] }),
@@ -272,9 +276,43 @@ const Payment = () => {
         await Promise.all([quoteQuery.refetch(), vouchersQuery.refetch()]);
         toast({ title: 'راجع الطلب قبل التأكيد', description: message, variant: 'destructive' });
       } else {
+        // The response may have been lost *after* the order committed.
+        // Reconcile the same persisted request ID first; never create a new one.
+        // A negative/failed lookup is not proof that a delayed request cannot arrive.
+        const attempt = submittedAttempt || pendingCheckout;
+        if (attempt) {
+          try {
+            const resolved = await reconcilePendingCheckoutAttempt(attempt.requestId);
+            if (resolved.exists && resolved.id) {
+              removePendingCheckout(user.id);
+              setPendingCheckout(null);
+              setWalletDialogOpen(false);
+              setSelectedVoucherId('none');
+              if (JSON.stringify(attempt.items) === serializedLines) clearCart();
+              void Promise.allSettled([
+                queryClient.invalidateQueries({ queryKey: ['loyalty-vouchers', user.id] }),
+                queryClient.invalidateQueries({ queryKey: ['loyalty-card', user.id] }),
+                queryClient.invalidateQueries({ queryKey: ['customer-loyalty-card', user.id] }),
+              ]);
+              navigate('/order-success', {
+                replace: true,
+                state: {
+                  orderId: resolved.id,
+                  orderNumber: resolved.tracking_number || resolved.id,
+                  voucherAmount: Number(resolved.loyalty_voucher_amount || 0),
+                  amountDue: Number(resolved.amount_due ?? Math.max(0, Number(resolved.total || 0) - Number(resolved.loyalty_voucher_amount || 0))),
+                  recovered: true,
+                },
+              });
+              return;
+            }
+          } catch (recoveryError) {
+            console.warn('Checkout attempt reconciliation unavailable:', recoveryError);
+          }
+        }
         toast({
-          title: 'تعذر التأكد من نتيجة الطلب',
-          description: `${message} اضغط تأكيد مرة تانية؛ هنكمل نفس المحاولة بدون إنشاء طلب مكرر.`,
+          title: 'لسه مش قادرين نتأكد من نتيجة الطلب',
+          description: 'المحاولة محفوظة بنفس رقمها. راجع «طلباتي»، أو اضغط «تأكيد الطلب» تاني لاستكمال نفس المحاولة من غير تكرار.',
           variant: 'destructive',
         });
       }
