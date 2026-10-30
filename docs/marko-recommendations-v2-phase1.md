@@ -1,0 +1,57 @@
+# Marko Recommendation Engine V2 — Phase 1 (2026-10-30)
+
+## Scope and boundaries
+
+This PR implements the **customer product-detail recommendation foundation**, not a trained AI model, purchasing automation, or a Supabase migration.
+
+- The existing authenticated `marko-ai-engine` gateway remains the shared Marko AI entry point.
+- The product-detail rail runs a fast, deterministic V2 ranker on catalog-authorized product records.
+- Relationships are typed `complement`, `similar`, or `discover` rather than a single "you may like" label.
+- The algorithm handles Egyptian Arabic spelling variants such as لبن/حليب; it does not confuse concept synonyms with replacement products.
+- The live cart excludes already-added product IDs from suggestions, without mutating the cart.
+- Candidate filtering rejects products with zero or invalid price/quantity, mismatched explicit owned branch, mismatched marketplace branch and mismatched merchant.
+- Candidate sources remain `getBranchCatalog` and `getMarketplaceStoreCatalog`; the AI never invents a product, stock, prices, merchant or listing.
+- Product-detail recommendations remain lazy-loaded after the main product content, respecting the existing swipe/navigation behavior.
+
+## Integration into the existing Marko AI Engine
+
+The shared `marko-ai-engine` currently routes `customer_shopping` to `customer-smart-ideas` and `business_admin` to `ai-gateway`. This phase intentionally leaves those deployed routes, authentication, quota, and existing business functions untouched.
+
+The V2 ranker optionally accepts `learnedScores: { [candidateProductId]: number }` where each number is clamped to [0, 1] and contributes at most 25 points. **No learned score service is enabled or called in this phase.** When enabled later, only trusted, authorized product IDs from the catalog may be ranked; learned output can never override product/source/stock constraints.
+
+For Phase 2, add a dedicated, authenticated, allowlisted gateway route for recommendation signals, with:
+- Branch, merchant and customer identity derived and verified on the server, not trusted from request body.
+- Aggregated order co-occurrence and optional repeat-purchase signals, subject to consent, privacy controls, tenant isolation and minimum support.
+- Immutable model/version and experiment identifiers, cache keys scoped to branch, merchant, catalog version and customer segment.
+- An explicit fallback to the deterministic V2 ranker whenever inference is unavailable. Do not call Gemini/Groq on every product-detail page load.
+- No cross-merchant sharing of customer-level sales; aggregate comparisons only where policies permit.
+
+## Why not train a neural recommender immediately?
+
+Our current catalog and transactional data volume have not been validated for production-quality collaborative filtering. Begin with explainable relationships and historical evaluation, then introduce learned scoring if it wins against the baseline on **chronologically separated holdout orders**. Treat product stockouts and test transactions carefully; avoid training on future events.
+
+## Analytics and success gates (not yet implemented)
+
+`data-recommendation-kind` and `data-recommendation-product-id` are UI hooks for subsequent first-party impression/click/add-to-cart attribution. They do **not** persist analytics yet.
+
+Before a production rollout:
+1. Validate all customer branch/account paths, especially marketplace, bulk and weighted products, on mobile and desktop.
+2. Run `npm run test:recommendations`, existing gateway tests and the production build.
+3. Connect first-party, consent-aware impression/click/add-to-cart and completed-order attribution using real (non-demo) orders.
+4. Run a randomized A/B experiment vs. the current recommender; primary metric is completed order conversion / incremental gross margin. Guardrails include relevance complaints, latency, stock errors and privacy.
+5. Roll out behind a remotely controlled feature flag, first to internal QA, then a small customer cohort.
+6. Keep a fast rollback to the prior recommender. Do not deploy or merge this draft PR without QA approval.
+
+## Merchant procurement is a related but separate decision service
+
+Super Business's `suggestedPurchaseQuantity` in `src/pages/InventoryManagement.tsx` currently targets min/max stock. A future **Merchant Demand Intelligence** service will forecast demand per branch/product, include lead time, review interval, on-order and reserved quantities, pack size, wastage and safety stock; output must be a merchant-reviewable **draft**, never an automatic supplier purchase. It will reuse the same product identity and analytics layer but a separate decision policy.
+
+## Manual QA checklist
+
+- Milk/لبن pages show cereal and biscuits as complements; other milk variants appear as similar.
+- Pasta pages prioritize tomato sauce and cheese as complements.
+- Add a suggested product to cart and confirm it disappears from suggestions.
+- Switch delivery address / store and ensure there are no products from the previous store.
+- Marketplace product suggestions stay inside the same marketplace branch and merchant.
+- Zero-stock and invalid-price products never appear.
+- Mobile swipe gestures, loading skeleton, weighted purchase controls and bulk variant navigation remain intact.
