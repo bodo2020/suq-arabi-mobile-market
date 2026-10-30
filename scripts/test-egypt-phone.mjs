@@ -38,8 +38,17 @@ for (const input of ['', '01012', '01412345678', '+966501234567', '+971501234567
 }
 
 const field = read('../src/components/auth/EgyptPhoneField.tsx');
-assert.match(field, /dir="rtl"/);
-assert.ok(field.indexOf('+20') < field.indexOf('<Input'), 'Egypt prefix renders before phone input in RTL');
+assert.match(field, /<div dir="ltr" className="flex/);
+assert.ok(field.indexOf('+20') < field.indexOf('<Input'), 'Egypt prefix renders on the visual left in an LTR flex row');
+assert.match(field, /px-3 text-left text-base/);
+const layout = read('../src/components/layout/AuthLayout.tsx');
+assert.match(layout, /<HeaderBrand \/>/);
+assert.doesNotMatch(layout, /<BrandWordmark|<BrandMark|auth-brand-symbol/);
+const css = read('../src/components/layout/auth.css');
+assert.match(css, /#e6f9ee/);
+assert.match(css, /#edf9f1/);
+assert.match(css, /#f4fbf6/);
+assert.doesNotMatch(css, /\.auth-brand-symbol/);
 assert.doesNotMatch(field, /DropdownMenu|ChevronDown/);
 
 for (const path of ['PhoneLogin', 'PhoneVerify', 'ForgotPassword', 'ChangePhone']) {
@@ -51,4 +60,4 @@ const context = read('../src/contexts/UserContext.tsx');
 assert.match(context, /isValidEgyptianMobile\(normalizedPhone\)/);
 const edge = read('../supabase/functions/customer-auth-route/index.ts');
 assert.match(edge, /egypt_phone_only/);
-console.log('PASS: Egyptian +20 phone normalization, invalid numbers rejected, fixed RTL field, shared auth screens.');
+console.log('PASS: Egyptian +20 phone normalization, invalid numbers rejected, fixed left-side +20 field, homepage header branding and gradient.');
