@@ -31,7 +31,7 @@ const Index = () => {
         deliveryEstimateMinutes={deliveryEstimateMinutes}
         onAddressClick={openAddress}
       />
-      <div className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-4 md:pt-6">
+      <div className="home-hero-content mx-auto max-w-7xl px-3 pb-10 pt-2 sm:px-4 md:pt-6">
         <button
           onClick={openAddress}
           className="mb-5 hidden w-full items-center gap-2 rounded-2xl md:flex border border-emerald-100 bg-white px-3 py-2 text-right transition hover:bg-brand-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"

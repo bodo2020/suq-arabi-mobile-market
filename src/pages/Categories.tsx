@@ -47,7 +47,7 @@ const Categories = () => {
         deliveryEstimateMinutes={deliveryEstimateMinutes}
         onAddressClick={openAddress}
       />
-      <div className="mx-auto w-full max-w-7xl px-3 pb-24 pt-2 sm:px-5">
+      <div className="home-hero-content mx-auto w-full max-w-7xl px-3 pb-24 pt-2 sm:px-5">
         <h1 className="sr-only">الأقسام</h1>
         {loading ? (
           <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
