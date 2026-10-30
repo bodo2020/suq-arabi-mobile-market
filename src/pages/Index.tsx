@@ -6,6 +6,7 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import StoreStructuredData from '@/components/seo/StoreStructuredData';
 import DynamicHomeSections from '@/components/sections/DynamicHomeSections';
 import UnifiedCatalogSection from '@/components/sections/UnifiedCatalogSection';
+import MarcoAiPrompt from '@/components/search/MarcoAiPrompt';
 import { useCustomerDeliveryHeader } from '@/hooks/useCustomerDeliveryHeader';
 
 const Index = () => {
@@ -48,6 +49,7 @@ const Index = () => {
             </strong>
         </button>
 
+        <div className="mb-5"><MarcoAiPrompt /></div>
         <DynamicHomeSections hidePromotions showBanners />
         <UnifiedCatalogSection />
       </div>
