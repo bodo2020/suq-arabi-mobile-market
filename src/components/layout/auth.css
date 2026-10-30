@@ -185,7 +185,7 @@
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: clamp(5px, 1.6vw, 9px);
 }
-.auth-otp-group .auth-otp-slot {
+.auth-page .auth-otp-group .auth-otp-slot {
   width: 100%;
   min-width: 0;
   height: clamp(48px, 13vw, 58px);
@@ -198,11 +198,22 @@
   box-shadow: none;
   transition: border-color .18s, background-color .18s, box-shadow .18s;
 }
-.auth-otp-group .auth-otp-slot.ring-2 {
+.auth-page .auth-otp-group .auth-otp-slot.ring-2 {
   border-color: #005931;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(0,89,49,.12);
 }
+.auth-password-rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 18px;
+  row-gap: 8px;
+  padding: 3px 1px 0;
+  font-size: 12px;
+}
+.auth-rule { display: inline-flex; align-items: center; gap: 7px; color: #778b7f; }
+.auth-rule--valid { color: #005931; }
 .auth-otp-resend {
   border-top: 1px solid #e3eee7;
   padding-top: 9px;
