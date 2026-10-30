@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { collectProductBrowseState } from '@/lib/productBrowsing';
 import { captureProductCardOrigin } from '@/lib/productSheetMotion';
+import { announceProductAdded } from '@/lib/brandMicroMotion';
 import { observeProductCardImage, prepareProductBrowseImages } from '@/lib/productImagePipeline';
 import { registerBrowsableProduct, seedProductBrowseCache } from '@/lib/productDetailCache';
 import { Bell, BellRing, Loader2, Minus, Package, Plus, Scale, Trash2 } from 'lucide-react';
@@ -133,7 +134,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       updateQuantity(product.id, Math.min(item.quantity + 1, maxCartQuantity), bulk, listingId);
       return;
     }
-    addToCart({
+    const result = addToCart({
       ...product,
       name: displayName,
       image_urls: bulk && bulkImageUrl ? [bulkImageUrl] : product.image_urls,
@@ -141,18 +142,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
       quantity: 1,
       is_bulk: bulk,
     });
+    if (result === 'added') announceProductAdded(cardRef.current?.querySelector('img') || null, imageSrc);
   };
 
   const addDefaultWeight = () => {
     if (!weighted || !isInitialized || unavailable || item || maxCartQuantity <= 0) return;
     const defaultWeight = Math.min(maxCartQuantity, Math.max(1, weightStep));
-    addToCart({
+    const result = addToCart({
       ...product,
       quantity: defaultWeight,
       price: product.price,
       unit_of_measure: 'weight',
       is_bulk: false,
     });
+    if (result === 'added') announceProductAdded(cardRef.current?.querySelector('img') || null, imageSrc);
   };
 
   const decreaseRegularOrBulk = () => {
@@ -245,7 +248,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     {selectedWeight <= weightStep ? <Trash2 className="h-3.5 w-3.5 sm:h-[17px] sm:w-[17px]" /> : <Minus className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" />}
                   </button>
                   <button type="button" onClick={() => setWeightOpen(true)} className="min-w-0 flex-1 px-0.5 text-center text-[#005931]" aria-label={`تعديل الوزن الحالي ${formatWeightAmount(selectedWeight)}`}>
-                    <strong className="block truncate whitespace-nowrap text-[9px] sm:text-xs">{formatWeightAmount(selectedWeight)}</strong>
+                    <strong key={selectedWeight} className="brand-quantity-pop block truncate whitespace-nowrap text-[9px] sm:text-xs">{formatWeightAmount(selectedWeight)}</strong>
                   </button>
                   <button type="button" onClick={increaseWeight} disabled={!isInitialized || !weightCanIncrease} aria-label={`زيادة الوزن بمقدار ${formatWeightAmount(weightStep)}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                     <Plus className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
@@ -267,7 +270,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 <button type="button" onClick={decreaseRegularOrBulk} disabled={!isInitialized} aria-label={item.quantity <= 1 ? `حذف ${displayName} من السلة` : `تقليل كمية ${displayName}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                   {item.quantity <= 1 ? <Trash2 className="h-3.5 w-3.5 sm:h-[17px] sm:w-[17px]" /> : <Minus className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" />}
                 </button>
-                <span aria-live="polite" className="min-w-6 flex-1 text-center text-[11px] font-black text-[#005931] sm:min-w-9 sm:text-sm">{money(item.quantity)}</span>
+                <span key={item.quantity} aria-live="polite" className="brand-quantity-pop min-w-6 flex-1 text-center text-[11px] font-black text-[#005931] sm:min-w-9 sm:text-sm">{money(item.quantity)}</span>
                 <button type="button" onClick={addRegularOrBulk} disabled={!isInitialized || reachedStockLimit} aria-label={reachedStockLimit ? `وصلت للكمية المتاحة من ${displayName}` : `زيادة كمية ${displayName}`} className="flex h-9 w-8 shrink-0 items-center justify-center text-[#005931] disabled:opacity-30 sm:h-12 sm:w-11">
                   <Plus className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
                 </button>
