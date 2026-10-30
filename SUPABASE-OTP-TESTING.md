@@ -2,6 +2,8 @@
 
 The customer app uses Supabase Phone OTP (`signInWithOtp` + `verifyOtp`) for normal customer numbers.
 
-The development test-OTP edge function (`customer-test-otp`) is retired in production: it returns `410 customer_test_otp_retired`. The frontend no longer calls it — `src/contexts/UserContext.tsx` sends and verifies OTP with regular Supabase Phone OTP only.
+A single development test number can be handled by the `customer-test-otp` Edge Function. The frontend asks the function whether the entered number is a configured test number; if it is not, the app falls back to normal Supabase Phone OTP.
 
-If a test number is ever needed again, configure it in Supabase rather than reintroducing a custom edge function.
+The test phone and fixed code are never committed to GitHub or bundled in the APK. Supabase stores only SHA-256 hashes for the configured test credentials. The test verifier also expires automatically and temporarily locks after repeated invalid attempts.
+
+Remove or disable the test credential before production release.

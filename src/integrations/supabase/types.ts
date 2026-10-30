@@ -1802,36 +1802,6 @@ export type Database = {
           },
         ]
       }
-      customer_search_terms_v2: {
-        Row: {
-          active: boolean
-          concept_id: string
-          country_code: string
-          created_at: string
-          id: number
-          term: string
-          term_key: string | null
-        }
-        Insert: {
-          active?: boolean
-          concept_id: string
-          country_code?: string
-          created_at?: string
-          id?: never
-          term: string
-          term_key?: string | null
-        }
-        Update: {
-          active?: boolean
-          concept_id?: string
-          country_code?: string
-          created_at?: string
-          id?: never
-          term?: string
-          term_key?: string | null
-        }
-        Relationships: []
-      }
       customer_smart_ai_limits: {
         Row: {
           requests: number
@@ -9361,16 +9331,6 @@ export type Database = {
       customer_search_arabic_key_v1: {
         Args: { value: string }
         Returns: string
-      }
-      customer_search_expand_query_v2: {
-        Args: { p_country_code?: string; p_limit?: number; p_search: string }
-        Returns: {
-          alternative: string
-        }[]
-      }
-      customer_search_tokens_match_v2: {
-        Args: { p_query: string; p_text: string }
-        Returns: boolean
       }
       decide_attendance_exception_v1: {
         Args: { p_decision: string; p_exception_id: string; p_note?: string }
