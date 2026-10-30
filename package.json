@@ -21,7 +21,8 @@
     "test:brand-loader": "node scripts/test-brand-loader-contrast.mjs",
     "test:cart-empty": "node scripts/test-cart-empty-state.mjs",
     "test:brand-motion": "node scripts/test-brand-micro-motion.mjs",
-    "test:checkout-recovery": "node scripts/test-checkout-ambiguous-result.mjs"
+    "test:checkout-recovery": "node scripts/test-checkout-ambiguous-result.mjs",
+    "test:recommendations": "node scripts/test-product-recommendations-v2.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",
