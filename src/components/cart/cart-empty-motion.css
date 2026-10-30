@@ -1,0 +1,180 @@
+/* Empty cart: an inviting brand moment, without altering the official mark. */
+.checkout .cart-empty-state {
+  width: min(100%, 590px);
+  min-height: min(640px, calc(100dvh - 220px));
+  margin: clamp(4px, 2.5dvh, 24px) auto 30px;
+  padding: clamp(22px, 5vw, 44px) clamp(18px, 5vw, 40px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid #e0ece3;
+  border-radius: 30px;
+  background: linear-gradient(172deg, #f4fbf6 0%, #ffffff 50%, #ffffff 100%);
+  box-shadow: 0 18px 46px rgba(0, 63, 35, .045);
+}
+
+.cart-empty-scene {
+  position: relative;
+  width: 168px;
+  height: 181px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  margin: 0 auto 13px;
+}
+.cart-empty-scene__halo {
+  position: absolute;
+  z-index: -1;
+  inset: 15px -8px 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(220, 246, 229, .98), rgba(235, 251, 240, .58) 58%, transparent 73%);
+  animation: cart-empty-halo 6.4s ease-in-out infinite;
+}
+.cart-empty-bag {
+  display: block;
+  position: relative;
+  width: 103px;
+  height: 137px;
+  transform-origin: center 73%;
+  animation: cart-empty-bag-bob 6.4s ease-in-out infinite;
+}
+.cart-empty-bag__mark,
+.cart-empty-bag__plus {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cart-empty-bag__plus { overflow: visible; pointer-events: none; }
+
+/* The fourth path is the exact original smile. It briefly yields to a
+   contextual +; the brand asset itself remains completely unmodified. */
+.checkout .cart-empty-bag__mark .brand-mark__stroke--4 {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cart-empty-smile-to-plus 6.4s ease-in-out infinite;
+}
+.cart-empty-plus-line {
+  opacity: 0;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cart-empty-plus-draw 6.4s ease-in-out infinite;
+}
+.cart-empty-plus-line--vertical { animation-delay: 120ms; }
+
+.checkout .cart-empty-state h1 {
+  margin: 0;
+  color: #174b35;
+  font-size: clamp(25px, 5.8vw, 31px);
+  font-weight: 900;
+  letter-spacing: -.025em;
+  line-height: 1.5;
+}
+.checkout .cart-empty-state__description {
+  max-width: 360px;
+  margin: 9px auto 24px;
+  color: #5c7666;
+  font-size: 15px;
+  line-height: 1.9;
+}
+.cart-empty-state__description-line { display: block; }
+.checkout .cart-empty-state__primary {
+  display: inline-flex;
+  width: min(100%, 290px);
+  min-height: 56px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: #fff;
+  background: #005931;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 850;
+  text-decoration: none;
+  box-shadow: 0 10px 22px rgba(0, 89, 49, .16);
+  transition: background-color .18s, transform .18s;
+}
+.checkout .cart-empty-state__primary:hover { background: #004b2a; transform: translateY(-1px); }
+.checkout .cart-empty-state__primary:active { transform: translateY(0); }
+.cart-empty-state__primary svg { color: #ffc120; }
+
+.cart-empty-state__links {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 18px;
+}
+.checkout .cart-empty-state__links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 13px;
+  color: #005931;
+  font-size: 13px;
+  font-weight: 750;
+  border: 1px solid #d8e9dd;
+  border-radius: 13px;
+  background: #f8fcf9;
+  text-decoration: none;
+}
+.checkout .cart-empty-state__links a:hover { background: #e9f6ed; border-color: #bedbc8; }
+.checkout .cart-empty-state__note {
+  margin: 18px 0 0;
+  color: #728a7c;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+@keyframes cart-empty-bag-bob {
+  0%, 30%, 65%, 100% { transform: translateY(0); }
+  42% { transform: translateY(-4px); }
+  52% { transform: translateY(-2px); }
+}
+@keyframes cart-empty-halo {
+  0%, 30%, 70%, 100% { opacity: .75; transform: scale(.98); }
+  47% { opacity: 1; transform: scale(1.065); }
+}
+@keyframes cart-empty-smile-to-plus {
+  0%, 8% { opacity: 0; stroke-dashoffset: 100; transform: translateY(2px) scale(.84); }
+  14%, 32% { opacity: 1; stroke-dashoffset: 0; transform: translateY(0) scale(1); }
+  40%, 60% { opacity: 0; stroke-dashoffset: 100; transform: translateY(-4px) scale(.6); }
+  69%, 100% { opacity: 1; stroke-dashoffset: 0; transform: translateY(0) scale(1); }
+}
+@keyframes cart-empty-plus-draw {
+  0%, 34% { opacity: 0; stroke-dashoffset: 100; transform: scale(.72); }
+  42%, 55% { opacity: 1; stroke-dashoffset: 0; transform: scale(1); }
+  64%, 100% { opacity: 0; stroke-dashoffset: 100; transform: scale(.72); }
+}
+
+@media (max-width: 480px) {
+  .checkout .cart-empty-state {
+    min-height: 0;
+    margin-top: 4px;
+    padding: 26px 17px 30px;
+    border-radius: 25px;
+  }
+  .cart-empty-scene { width: 150px; height: 165px; margin-bottom: 8px; }
+  .cart-empty-bag { width: 94px; height: 125px; }
+  .checkout .cart-empty-state__description { margin-bottom: 19px; font-size: 14px; }
+}
+@media (max-height: 660px) {
+  .checkout .cart-empty-state { min-height: 0; padding-top: 18px; padding-bottom: 22px; }
+  .cart-empty-scene { height: 140px; }
+  .cart-empty-bag { width: 82px; height: 110px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .checkout .cart-empty-scene *,
+  .checkout .cart-empty-bag { animation: none !important; transition: none !important; }
+  .checkout .cart-empty-bag .brand-mark__stroke { stroke-dashoffset: 0 !important; opacity: 1 !important; }
+  .cart-empty-bag__plus { display: none !important; }
+}
