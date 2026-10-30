@@ -53,9 +53,8 @@ export default function CheckoutAttemptRecovery() {
         const result = await reconcilePendingCheckoutAttempt(pending.requestId);
         if (cancelled) return;
 
-        removePendingCheckout(user.id);
-
         if (result.exists && result.id) {
+          removePendingCheckout(user.id);
           const currentLines = checkoutLines(items);
           if (JSON.stringify(currentLines) === JSON.stringify(pending.items)) clearCart();
           navigate('/order-success', {
@@ -71,8 +70,12 @@ export default function CheckoutAttemptRecovery() {
           return;
         }
 
-        sessionStorage.setItem(RECOVERED_FLAG, '1');
-        window.location.reload();
+        // A negative lookup might race a delayed original request. Preserve the
+        // pending request ID; only the same ID may be safely retried.
+        toast({
+          title: 'المحاولة السابقة لسه محفوظة',
+          description: 'مفيش طلب مؤكد لحد دلوقتي. اضغط «تأكيد الطلب» عشان نستكمل نفس المحاولة بأمان.',
+        });
       } catch (error) {
         resolvingRequestId.current = null;
         console.error('Checkout attempt reconciliation failed:', error);
