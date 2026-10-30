@@ -11,13 +11,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <main className="auth-page" dir="rtl">
       <header className="auth-brand">
         <Link to="/" className="auth-brand-link" aria-label="سوبر ماركو — الرئيسية">
-          <BrandMark variant="mark" className="h-10 w-[30px]" />
+          <span className="auth-brand-symbol"><BrandMark variant="mark" className="h-10 w-[30px]" /></span>
           <BrandWordmark />
         </Link>
         <Link to="/" className="auth-guest">تصفح كضيف</Link>
       </header>
       <div className="auth-surface">
-        <div className="auth-eyebrow"><ShieldCheck size={18} aria-hidden="true" />
+        <div className="auth-eyebrow"><ShieldCheck size={17} aria-hidden="true" />
           {pathname === '/register' ? 'رقمك اتأكد · كمّل حسابك' : 'حسابك في سوبر ماركو'}
         </div>
         {children}
