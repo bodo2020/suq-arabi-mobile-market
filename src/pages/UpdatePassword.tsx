@@ -1,10 +1,11 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, KeyRound, Loader } from 'lucide-react';
-import MainLayout from '@/components/layout/AuthLayout';
+import { ArrowRight, KeyRound } from 'lucide-react';
+import AuthLayout from '@/components/layout/AuthLayout';
+import AuthHeading from '@/components/auth/AuthHeading';
+import PasswordRules from '@/components/auth/PasswordRules';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import PasswordInput from '@/components/auth/PasswordInput';
 import { authErrorMessage } from '@/utils/authUi';
 import { useToast } from '@/hooks/use-toast';
@@ -92,76 +93,75 @@ const UpdatePassword = () => {
   };
 
   return (
-    <MainLayout>
-      <div className="p-4 max-w-md mx-auto">
-        <div className="flex items-center mb-6">
-          <button onClick={() => navigate(-1)} className="p-2" aria-label="الرجوع">
-            <ArrowRight size={24} />
+    <AuthLayout>
+      <div className="mx-auto w-full max-w-md" dir="rtl">
+        <div className="mb-2 flex justify-start">
+          <button type="button" onClick={() => navigate('/phone-login')} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600" aria-label="الرجوع">
+            <ArrowRight size={22} />
           </button>
-          <h1 className="text-xl font-bold flex-1 text-center">تعيين كلمة مرور جديدة</h1>
-          <div className="w-10" />
         </div>
+        <AuthHeading
+          icon={KeyRound}
+          title="تعيين كلمة مرور جديدة"
+          description="اختار كلمة مرور قوية لحماية حسابك. هتستخدمها بعد كده مع رقم موبايلك."
+        />
 
-        <div className="bg-white rounded-lg p-6 shadow-sm space-y-5">
+        <div className="auth-card">
           {checkingSession ? (
-            <div className="text-center text-gray-500">جاري التحقق من جلسة الاستعادة...</div>
+            <div className="flex min-h-44 items-center justify-center">
+              <BrandLoader label="جاري التأكد من جلسة الاستعادة" />
+            </div>
           ) : !sessionValid ? (
             <div className="space-y-4 text-center">
-              <p className="text-red-600">رابط أو جلسة الاستعادة غير صالحة أو انتهت.</p>
-              <Button onClick={() => navigate('/forgot-password')} className="w-full">
+              <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">جلسة الاستعادة غير صالحة أو انتهت. اطلب رمز تحقق جديدًا.</p>
+              <Button type="button" onClick={() => navigate('/forgot-password')} className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-bold">
                 بدء الاستعادة من جديد
               </Button>
             </div>
           ) : (
-            <>
-              <p className="text-gray-600">اختر كلمة مرور جديدة لحسابك.</p>
-
+            <div className="space-y-5" aria-busy={loading}>
               <div>
-                <div className="flex items-center mb-2">
-                  <KeyRound size={18} className="ml-2 text-gray-500" />
-                  <label htmlFor="password" className="font-medium">كلمة المرور الجديدة</label>
-                </div>
+                <label htmlFor="password" className="mb-2 block text-sm font-bold text-slate-800">كلمة المرور الجديدة</label>
                 <PasswordInput
                   id="password"
                   autoComplete="new-password"
-                  type="password"
                   value={password}
-                  onChange={(event) => {
-                    setPassword(event.target.value);
-                    setError('');
-                  }}
-                  placeholder="8 أحرف أو أكثر"
+                  disabled={loading}
+                  onChange={event => { setPassword(event.target.value); setError(''); }}
+                  placeholder="8 أحرف على الأقل"
+                  className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
+                  autoFocus
                 />
               </div>
-
               <div>
-                <label htmlFor="confirmPassword" className="font-medium block mb-2">تأكيد كلمة المرور</label>
+                <label htmlFor="confirmPassword" className="mb-2 block text-sm font-bold text-slate-800">تأكيد كلمة المرور</label>
                 <PasswordInput
                   id="confirmPassword"
                   autoComplete="new-password"
-                  type="password"
                   value={confirmPassword}
-                  onChange={(event) => {
-                    setConfirmPassword(event.target.value);
-                    setError('');
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') void handleUpdatePassword();
-                  }}
+                  disabled={loading}
+                  onChange={event => { setConfirmPassword(event.target.value); setError(''); }}
+                  onKeyDown={event => { if (event.key === 'Enter') void handleUpdatePassword(); }}
+                  placeholder="اكتب كلمة المرور مرة تانية"
+                  className="min-h-14 rounded-2xl border-slate-200 bg-slate-50 px-4"
                 />
               </div>
-
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-
-              <Button onClick={handleUpdatePassword} disabled={loading} className="w-full">
+              <PasswordRules password={password} confirmPassword={confirmPassword} />
+              {error && <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+              <Button
+                type="button"
+                onClick={() => void handleUpdatePassword()}
+                disabled={loading}
+                className="min-h-14 w-full rounded-2xl bg-[#005931] text-base font-black hover:bg-[#004a29]"
+              >
                 {loading && <BrandLoader size="sm" className="ml-2" />}
-                حفظ كلمة المرور الجديدة
+                {loading ? 'جاري حفظ كلمة المرور' : 'حفظ كلمة المرور الجديدة'}
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
-    </MainLayout>
+    </AuthLayout>
   );
 };
 

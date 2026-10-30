@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { deactivateCurrentPushDevice } from '@/services/pushNotifications';
+import { egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
 
 type UserContextType = {
   user: User | null;
@@ -33,6 +34,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 const normalizePhone = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return '';
+  if (isValidEgyptianMobile(trimmed)) return egyptianMobileE164(trimmed);
   if (trimmed.startsWith('+')) return `+${trimmed.slice(1).replace(/\D/g, '')}`;
   return `+${trimmed.replace(/\D/g, '')}`;
 };
@@ -107,6 +109,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const identifier = username.trim();
       const isEmail = identifier.includes('@');
+      if (!isEmail && !isValidEgyptianMobile(identifier)) {
+        throw new Error('رقم الموبايل لازم يكون مصريًا صحيحًا.');
+      }
 
       const { data, error } = isEmail
         ? await supabase.auth.signInWithPassword({ email: identifier, password })
@@ -129,6 +134,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const cleanEmail = email.trim();
       const normalizedPhone = normalizePhone(phone);
+      if (phone && !isValidEgyptianMobile(normalizedPhone)) {
+        throw new Error('تسجيل الموبايل متاح للأرقام المصرية فقط حاليًا.');
+      }
       const metadata = {
         ...additionalData,
         email: cleanEmail || undefined,
@@ -229,8 +237,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const signInWithPhone = async (phone: string, shouldCreateUser = true) => {
     try {
       const normalizedPhone = normalizePhone(phone);
-      if (!normalizedPhone || normalizedPhone.length < 8) {
-        throw new Error('رقم الهاتف غير صحيح');
+      if (!isValidEgyptianMobile(normalizedPhone)) {
+        throw new Error('رمز التحقق متاح للموبايل المصري فقط حاليًا.');
       }
 
       // Test numbers are resolved only on the server. No test phone or fixed code is bundled in the app.
@@ -262,6 +270,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const verifyPhone = async (phone: string, code: string) => {
     try {
       const normalizedPhone = normalizePhone(phone);
+      if (!isValidEgyptianMobile(normalizedPhone)) {
+        throw new Error('الموبايل المصري فقط هو المدعوم حاليًا.');
+      }
       const token = code.trim();
 
       if (!/^\d{6}$/.test(token)) {

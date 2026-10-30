@@ -2,28 +2,16 @@ import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, KeyRound, Phone, ShieldCheck } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
+import AuthHeading from '@/components/auth/AuthHeading';
 import PasswordInput from '@/components/auth/PasswordInput';
-import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
+import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { egyptianMobileDigits, egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { useUser } from '@/contexts/UserContext';
-import { authErrorMessage, localPhoneDigits } from '@/utils/authUi';
+import { authErrorMessage } from '@/utils/authUi';
 import { loadOnboardingState, nextOnboardingPath, safeReturnTo } from '@/lib/onboarding';
 import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
-
-const DEFAULT_COUNTRY: Country = {
-  name: 'مصر',
-  code: 'EG',
-  dialCode: '+20',
-  flag: '🇪🇬',
-};
-
-const KNOWN_COUNTRIES: Country[] = [
-  DEFAULT_COUNTRY,
-  { name: 'السعودية', code: 'SA', dialCode: '+966', flag: '🇸🇦' },
-  { name: 'الإمارات', code: 'AE', dialCode: '+971', flag: '🇦🇪' },
-];
 
 type LoginStep = 'phone' | 'password';
 
@@ -34,32 +22,21 @@ export default function PhoneLogin() {
 
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const returnTo = safeReturnTo(params.get('returnTo'));
-  const countryFromQuery = params.get('countryCode') || 'EG';
 
-  const [country, setCountry] = useState<Country>(
-    KNOWN_COUNTRIES.find(item => item.code === countryFromQuery) || DEFAULT_COUNTRY,
-  );
   const [phone, setPhone] = useState(params.get('phone') || '');
   const [password, setPassword] = useState('');
   const [step, setStep] = useState<LoginStep>('phone');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const localDigits = () => localPhoneDigits(phone, country.dialCode, country.code);
-
-  const fullPhone = () => {
-    const digits = localDigits();
-    const dialCode = country.dialCode.replace(/\D/g, '');
-    return `+${dialCode}${digits}`;
-  };
-
+  const localDigits = () => egyptianMobileDigits(phone);
+  const fullPhone = () => egyptianMobileE164(phone);
   const validPhone = () => {
-    const digits = localDigits();
-    if (!digits) {
+    if (!localDigits()) {
       setError('اكتب رقم الموبايل.');
       return false;
     }
-    if (country.code === 'EG' && !(digits.startsWith('1') && digits.length === 10)) {
+    if (!isValidEgyptianMobile(phone)) {
       setError('اكتب رقم موبايل مصري صحيح، مثل 01012345678.');
       return false;
     }
@@ -69,7 +46,7 @@ export default function PhoneLogin() {
   const otpPath = (mode: 'signup' | 'recovery') => {
     const next = new URLSearchParams({
       phone: localDigits(),
-      countryCode: country.code,
+      countryCode: 'EG',
       returnTo,
       mode,
     });
@@ -129,21 +106,13 @@ export default function PhoneLogin() {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md px-1 py-2" dir="rtl">
-        <div className="mb-7 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#e8f5ee] text-[#005931] shadow-sm">
-            {step === 'phone' ? <Phone size={30} strokeWidth={2.2} /> : <KeyRound size={30} strokeWidth={2.2} />}
-          </div>
-          <h1 className="text-2xl font-black text-slate-950">
-            {step === 'phone' ? 'أهلًا بيك في سوبر ماركو' : 'اكتب كلمة المرور'}
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            {step === 'phone'
-              ? 'ابدأ برقم موبايلك وهنكمل معاك تلقائيًا'
-              : 'الحساب موجود، كمّل بكلمة المرور'}
-          </p>
-        </div>
+        <AuthHeading
+          icon={step === 'phone' ? Phone : KeyRound}
+          title={step === 'phone' ? 'أهلًا بيك في سوبر ماركو' : 'اكتب كلمة المرور'}
+          description={step === 'phone' ? 'ابدأ برقم موبايلك وهنكمل معاك تلقائيًا' : 'الحساب موجود، كمّل بكلمة المرور'}
+        />
 
-        <div className="rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.07)] sm:p-6">
+        <div className="auth-card">
           {step === 'phone' ? (
             <div className="space-y-5">
               <div>
@@ -151,28 +120,15 @@ export default function PhoneLogin() {
                   <Phone size={17} className="text-[#005931]" />
                   رقم الموبايل
                 </label>
-                <div className="flex min-h-14 items-stretch gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1.5 transition focus-within:border-[#005931] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#005931]/10">
-                  <CountryCodeSelector
-                    value={country}
-                    onChange={value => { setCountry(value); setError(''); }}
-                    className="min-w-[86px] border-0 bg-transparent shadow-none"
-                  />
-                  <div className="my-2 w-px bg-slate-200" aria-hidden="true" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel-national"
-                    value={phone}
-                    disabled={busy}
-                    onChange={event => { setPhone(event.target.value); setError(''); }}
-                    onKeyDown={event => { if (event.key === 'Enter') void continueWithPhone(); }}
-                    placeholder={country.code === 'EG' ? '010 1234 5678' : 'رقم الموبايل'}
-                    className="h-auto flex-1 border-0 bg-transparent px-2 text-left text-base font-semibold shadow-none focus-visible:ring-0"
-                    dir="ltr"
-                    autoFocus
-                  />
-                </div>
+                <EgyptPhoneField
+                  id="phone"
+                  value={phone}
+                  disabled={busy}
+                  onChange={event => { setPhone(event.target.value); setError(''); }}
+                  onKeyDown={event => { if (event.key === 'Enter') void continueWithPhone(); }}
+                  autoFocus
+                  aria-invalid={Boolean(error)}
+                />
               </div>
 
               {error && (

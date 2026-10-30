@@ -3,30 +3,18 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, Phone, ShieldCheck } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
+import AuthHeading from '@/components/auth/AuthHeading';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Input } from '@/components/ui/input';
-import CountryCodeSelector, { Country } from '@/components/ui/CountryCodeSelector';
-import { authErrorMessage, localPhoneDigits, normalizeDigits } from '@/utils/authUi';
+import { egyptianMobileDigits, egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
+import EgyptPhoneField from '@/components/auth/EgyptPhoneField';
+import { authErrorMessage, normalizeDigits } from '@/utils/authUi';
 import { safeReturnTo } from '@/lib/onboarding';
 import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
 import { shouldRouteRegisteredPhone } from '@/utils/otpRequest';
 import { savePhoneRecoveryProof } from '@/utils/phoneRecovery';
-
-const DEFAULT_COUNTRY: Country = {
-  name: 'مصر',
-  code: 'EG',
-  dialCode: '+20',
-  flag: '🇪🇬',
-};
-
-const KNOWN_COUNTRIES: Country[] = [
-  DEFAULT_COUNTRY,
-  { name: 'السعودية', code: 'SA', dialCode: '+966', flag: '🇸🇦' },
-  { name: 'الإمارات', code: 'AE', dialCode: '+971', flag: '🇦🇪' },
-];
 
 export default function PhoneVerify() {
   const navigate = useNavigate();
@@ -36,7 +24,6 @@ export default function PhoneVerify() {
 
   const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const phoneFromQuery = queryParams.get('phone') || '';
-  const countryCodeFromQuery = queryParams.get('countryCode') || 'EG';
   const mode = queryParams.get('mode') === 'recovery' ? 'recovery' : 'signup';
   const isRecovery = mode === 'recovery';
   const returnTo = safeReturnTo(queryParams.get('returnTo'));
@@ -49,9 +36,6 @@ export default function PhoneVerify() {
   const [rateLimitError, setRateLimitError] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [isTestOtp, setIsTestOtp] = useState(false);
-  const [countryCode, setCountryCode] = useState<Country>(
-    KNOWN_COUNTRIES.find(country => country.code === countryCodeFromQuery) || DEFAULT_COUNTRY,
-  );
   const [errors, setErrors] = useState({ phone: '', code: '' });
   const [initialSendDone, setInitialSendDone] = useState(false);
   const sendInFlight = useRef(false);
@@ -65,23 +49,14 @@ export default function PhoneVerify() {
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
 
-  const formatPhoneNumber = (value: string, country: Country) => {
-    const digits = localPhoneDigits(value, country.dialCode, country.code);
-    return country.code === 'EG' && digits.startsWith('0') ? digits.slice(1) : digits;
-  };
-
-  const formatInternationalPhone = (value: string, country: Country) => {
-    const digits = formatPhoneNumber(value, country);
-    return `+${country.dialCode.replace(/\D/g, '')}${digits}`;
-  };
-
+  const formatPhoneNumber = (value: string) => egyptianMobileDigits(value);
+  const formatInternationalPhone = (value: string) => egyptianMobileE164(value);
   const validatePhone = () => {
-    const digits = formatPhoneNumber(phone, countryCode);
-    if (!digits) {
+    if (!formatPhoneNumber(phone)) {
       setErrors(prev => ({ ...prev, phone: 'اكتب رقم الموبايل.' }));
       return false;
     }
-    if (countryCode.code !== 'EG' || !/^1[0125]\d{8}$/.test(digits)) {
+    if (!isValidEgyptianMobile(phone)) {
       setErrors(prev => ({ ...prev, phone: 'اكتب رقم موبايل مصري صحيح، مثل 01012345678.' }));
       return false;
     }
@@ -91,7 +66,7 @@ export default function PhoneVerify() {
   const sendOtp = async (isResend = false) => {
     if (sendInFlight.current || loading || resendLoading || (isResend && resendSeconds > 0)) return;
     if (!validatePhone()) return;
-    const fullPhone = formatInternationalPhone(phone, countryCode);
+    const fullPhone = formatInternationalPhone(phone);
     const cooldownKey = `otp-cooldown:${fullPhone}`;
     try {
       const remaining = Math.ceil((Number(sessionStorage.getItem(cooldownKey) || 0) - Date.now()) / 1000);
@@ -108,8 +83,8 @@ export default function PhoneVerify() {
         if (registered) {
           setInitialSendDone(true);
           const next = new URLSearchParams({
-            phone: formatPhoneNumber(phone, countryCode),
-            countryCode: countryCode.code,
+            phone: formatPhoneNumber(phone),
+            countryCode: 'EG',
             returnTo,
           });
           navigate(`/phone-login?${next.toString()}`, { replace: true });
@@ -167,7 +142,7 @@ export default function PhoneVerify() {
 
     setLoading(true);
     try {
-      const fullPhone = formatInternationalPhone(phone, countryCode);
+      const fullPhone = formatInternationalPhone(phone);
       const { data, error } = await verifyPhone(fullPhone, code);
       if (error) throw error;
       const verifiedUser = data?.user;
@@ -194,50 +169,30 @@ export default function PhoneVerify() {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md px-1 py-2" dir="rtl">
-        <div className="mb-6 flex items-center">
-          <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600" aria-label="الرجوع">
+        <div className="mb-2 flex justify-start">
+          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600" aria-label="الرجوع">
             <ArrowRight size={22} />
           </button>
-          <div className="flex-1 text-center">
-            <h1 className="text-xl font-black text-slate-950">{isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل'}</h1>
-            <p className="mt-1 text-xs text-slate-500">{isRecovery ? 'OTP لمرة واحدة لتعيين باسورد جديد' : 'OTP لمرة واحدة لإنشاء الحساب'}</p>
-          </div>
-          <div className="w-10" />
         </div>
+        <AuthHeading
+          icon={step === 'phone' ? Phone : ShieldCheck}
+          title={step === 'phone' ? (isRecovery ? 'استعادة كلمة المرور' : 'تأكيد رقم الموبايل') : 'رمز التحقق'}
+          description={step === 'phone' ? 'اكتب رقم موبايلك المصري عشان نرسل رمز التحقق بأمان.' : 'اكتب الرمز المكوّن من 6 أرقام لإكمال الخطوة.'}
+        />
 
-        <div className="rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.07)] sm:p-6">
+        <div className="auth-card">
           {step === 'phone' ? (
             <div className="space-y-5">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f5ee] text-[#005931]">
-                <Phone size={26} />
-              </div>
-              <p className="text-center text-sm leading-6 text-slate-500">
-                {isRecovery ? 'اكتب رقم حسابك وهنبعتلك رمز لاستعادة كلمة المرور.' : 'اكتب رقمك وهتبعتلك رسالة واحدة لتأكيد إنشاء الحساب.'}
-              </p>
-
               <div>
                 <label htmlFor="phone" className="mb-2 block text-sm font-bold text-slate-800">رقم الموبايل</label>
-                <div className="flex min-h-14 items-stretch gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1.5 focus-within:border-[#005931] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#005931]/10">
-                  <CountryCodeSelector
-                    value={countryCode}
-                    onChange={country => { setCountryCode(country); setErrors({ phone: '', code: '' }); }}
-                    className="min-w-[86px] border-0 bg-transparent shadow-none"
-                  />
-                  <div className="my-2 w-px bg-slate-200" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel-national"
-                    value={phone}
-                    disabled={loading}
-                    onChange={event => { setPhone(event.target.value); setErrors(prev => ({ ...prev, phone: '' })); }}
-                    onKeyDown={event => { if (event.key === 'Enter') void sendOtp(false); }}
-                    placeholder={countryCode.code === 'EG' ? '010 1234 5678' : 'رقم الموبايل'}
-                    className="h-auto flex-1 border-0 bg-transparent px-2 text-left text-base font-semibold shadow-none focus-visible:ring-0"
-                    dir="ltr"
-                  />
-                </div>
+                <EgyptPhoneField
+                  id="phone"
+                  value={phone}
+                  disabled={loading}
+                  onChange={event => { setPhone(event.target.value); setErrors(prev => ({ ...prev, phone: '' })); }}
+                  onKeyDown={event => { if (event.key === 'Enter') void sendOtp(false); }}
+                  aria-invalid={Boolean(errors.phone)}
+                />
                 {errors.phone && <p className="mt-2 text-sm text-red-600">{errors.phone}</p>}
                 {rateLimitError && <p className="mt-2 text-sm text-amber-700">تم طلب رموز كثيرة. انتظر قليلًا قبل المحاولة مرة أخرى.</p>}
               </div>
@@ -248,13 +203,10 @@ export default function PhoneVerify() {
             </div>
           ) : (
             <div className="space-y-5">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f5ee] text-[#005931]">
-                <ShieldCheck size={27} />
-              </div>
               <p className="text-center text-sm leading-6 text-slate-500">
                 {isTestOtp ? 'أدخل رمز الاختبار' : 'أدخل الرمز المرسل إلى'}
                 <br />
-                <bdi dir="ltr" className="font-black text-slate-800">{formatInternationalPhone(phone, countryCode)}</bdi>
+                <bdi dir="ltr" className="font-black text-slate-800">{formatInternationalPhone(phone)}</bdi>
               </p>
 
               <div>
