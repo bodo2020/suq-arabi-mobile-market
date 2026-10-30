@@ -110,7 +110,7 @@ export default function Search() {
     setSuggestions([]);
     setSuggesting(true);
     const timer = window.setTimeout(() => {
-      searchBranchProductsIncludingUnavailable(draft, 8, draftKey.length >= 3)
+      searchBranchProductsIncludingUnavailable(draft, 8, draftKey.length >= 2)
         .then(rows => { if (active) setSuggestions(rows.slice(0, 5)); })
         .catch(() => { if (active) setSuggestions([]); })
         .finally(() => { if (active) setSuggesting(false); });
