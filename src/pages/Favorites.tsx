@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, ShoppingBag } from 'lucide-react';
+import BrandMark from '@/components/brand/BrandMark';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
@@ -209,11 +210,15 @@ const Favorites = () => {
             })}
           </div>
         ) : (
-          <div className="mx-auto flex max-w-md flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100"><Heart size={32} className="text-gray-300" /></div>
-            <h3 className="mb-2 text-lg font-medium text-gray-900">المفضلة فاضية</h3>
-            <p className="mb-6 text-sm text-gray-500">ضيف المنتجات اللي بتحبها وهتفضل ظاهرة هنا حتى لو خلصت مؤقتًا.</p>
-            <Button onClick={() => navigate('/')} className="min-w-32"><ShoppingBag size={16} className="ml-2" />تسوق الآن</Button>
+          <div className="brand-favorites-empty mx-auto flex max-w-md flex-col items-center justify-center rounded-3xl border border-emerald-100 bg-white px-6 py-12 text-center">
+            <div className="brand-favorites-empty__art" aria-hidden="true">
+              <BrandMark variant="mark" motion="reveal" className="brand-favorites-empty__bag" />
+              <Heart className="brand-favorites-empty__heart brand-favorites-empty__heart--one" />
+              <Heart className="brand-favorites-empty__heart brand-favorites-empty__heart--two" />
+            </div>
+            <h3 className="mb-2 text-xl font-black text-[#005931]">لسه مختارتش مفضلاتك</h3>
+            <p className="mb-6 text-sm leading-7 text-slate-500">دوس على القلب جنب أي منتج يعجبك، وهتلاقيه مستنيك هنا.</p>
+            <Button onClick={() => navigate('/')} className="min-h-12 min-w-44 rounded-2xl bg-[#005931] font-bold hover:bg-[#004a29]"><ShoppingBag size={17} className="ml-2" />يلا نتسوّق</Button>
           </div>
         )}
       </div>
