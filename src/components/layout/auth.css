@@ -3,7 +3,8 @@
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   color: #173d2d;
   padding: calc(20px + var(--safe-area-top, 0px)) 18px calc(38px + var(--safe-area-bottom, 0px));
   background: radial-gradient(circle at 4% 0%, #e8f6e9 0%, transparent 38%),
