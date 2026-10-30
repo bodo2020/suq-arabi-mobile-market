@@ -53,6 +53,12 @@ export function searchAlternates(term: string): string[] {
   matches.sort((a, b) => b.length - a.length);
   const variants: string[] = [];
   for (const match of matches) {
+    // Do not rewrite a short word again when a longer, precise phrase already
+    // matched (e.g. "رز بسمتي" must never become "رز رز بسمتي").
+    const phrase = normalizeArabicSearch(match.phrase);
+    const covered = matches.some(other => other.length > match.length &&
+      (' ' + normalizeArabicSearch(other.phrase) + ' ').includes(' ' + phrase + ' '));
+    if (covered) continue;
     for (const synonym of match.group) {
       const variant = rewriteTerm(normalized, match.phrase, synonym);
       if (variant && variant !== normalized && !variants.includes(variant)) variants.push(variant);
