@@ -1,22 +1,52 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, ArrowLeft, Search, PackageCheck } from 'lucide-react';
+import { Sparkles, ArrowLeft, Search, PackageCheck, MapPin } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
-import { supabase } from '@/lib/supabase';
+import { useBranch } from '@/contexts/BranchContext';
+import { supabase, type Product } from '@/lib/supabase';
+import { searchBranchProductsIncludingUnavailable } from '@/lib/searchCatalog';
 import { useToast } from '@/hooks/use-toast';
 import BrandMark from '@/components/brand/BrandMark';
+import ProductCard from '@/components/ui/ProductCard';
 import { interpretMarkoResponse } from '@/lib/markoAi';
 
 const examples = ['عايز أعمل كشري لستة', 'دورلي على رز ٥ كيلو', 'عايز شيبسي عائلي'];
+const PREVIEW_LIMIT = 4;
 
-/** ماركو only routes an authenticated customer to existing, verified catalog
- * screens. No model output can add products or submit an order. */
+type CatalogReply = {
+  question: string;
+  searchQuery: string;
+  availableProducts: Product[];
+};
+
+/**
+ * Marko understands the customer's request but never creates prices, stock,
+ * SKUs or cart lines. The existing address-scoped catalog is authoritative.
+ * ProductCard is the existing UI for explicit add-to-cart actions.
+ */
 export default function MarcoAiPrompt() {
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
+  const [reply, setReply] = useState<CatalogReply | null>(null);
+  const requestSequence = useRef(0);
   const { user } = useUser();
+  const { branch, branchLoading } = useBranch();
+  const branchId = branch?.delivery_branch_id || null;
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // A delivery-address/branch change must invalidate any catalog result
+  // returned by an earlier request. This also prevents stale async updates.
+  useEffect(() => {
+    requestSequence.current += 1;
+    setReply(null);
+    setPending(false);
+  }, [branchId]);
+
+  useEffect(() => () => { requestSequence.current += 1; }, []);
+
+  const openFullResults = (query: string) =>
+    navigate('/search?q=' + encodeURIComponent(query));
 
   const submit = async () => {
     const text = message.trim();
@@ -26,12 +56,22 @@ export default function MarcoAiPrompt() {
       navigate('/phone-login');
       return;
     }
+    if (!branchId) {
+      toast({
+        title: branchLoading ? 'بنجدد بيانات فرع التوصيل، جرّب كمان لحظة' : 'حدد عنوان التوصيل عشان نعرض المنتجات المتاحة ليك',
+      });
+      if (!branchLoading) navigate('/address-manager');
+      return;
+    }
 
+    const sequence = ++requestSequence.current;
     setPending(true);
+    setReply(null);
     try {
       const { data, error } = await supabase.functions.invoke('marko-ai-engine', {
         body: { mode: 'customer_shopping', message: text },
       });
+      if (sequence !== requestSequence.current) return;
       const response = data as Record<string, unknown> | null;
       if (error || response?.error) {
         const code = String(response?.error || '');
@@ -44,23 +84,36 @@ export default function MarcoAiPrompt() {
 
       const intent = interpretMarkoResponse(response);
       if (intent.kind === 'group') {
+        // Smart shopping groups already validate published recipes and
+        // re-check their products, quantities and prices before cart changes.
         navigate('/ala-mazagak/' + encodeURIComponent(intent.slug), {
           state: { people: intent.people, budget: intent.budget },
         });
       } else if (intent.kind === 'search') {
-        // Only the existing branch-aware search page can show real, available
-        // products and their actual prices. The model never invents SKUs.
-        navigate('/search?q=' + encodeURIComponent(intent.query));
+        // Use the exact same branch/address scoped search as /search.
+        // Never use a model-provided SKU, price, stock or image.
+        const products = await searchBranchProductsIncludingUnavailable(intent.query, 32, true);
+        if (sequence !== requestSequence.current) return;
+        const availableProducts = products
+          .filter(product => Number(product.quantity || 0) > 0 && Number(product.price || 0) > 0)
+          .slice(0, PREVIEW_LIMIT);
+        setReply({ question: text, searchQuery: intent.query, availableProducts });
       } else {
         toast({
           title: 'قولي اسم منتج معين أو أكلة عايز تجهزها',
-          description: 'دلوقتي ماركو بيساعدك تلاقي المنتجات والمجموعات، ومش بيجهز أوردر كامل لوحده.',
+          description: 'ماركو حاليًا بيساعدك تلاقي منتجات أو مجموعات. الطلبات اللي فيها أصناف كتير لسه محتاجة تطوير.',
         });
       }
-    } catch {
-      toast({ title: 'ماركو مش متاح دلوقتي، جرّب البحث العادي', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      toast({
+        title: message.includes('DELIVERY_ADDRESS_REQUIRED')
+          ? 'حدد عنوان التوصيل عشان نعرض المنتجات المتاحة ليك'
+          : 'مش قادرين نجيب المنتجات دلوقتي، جرّب البحث العادي',
+        variant: 'destructive',
+      });
     } finally {
-      setPending(false);
+      if (sequence === requestSequence.current) setPending(false);
     }
   };
 
@@ -74,7 +127,7 @@ export default function MarcoAiPrompt() {
           <h2 className="flex items-center gap-1.5 text-base font-black text-[#005931]">
             ماركو AI <Sparkles size={17} aria-hidden="true" className="text-[#d5a20c]" />
           </h2>
-          <p className="text-xs font-medium leading-5 text-[#3d7259]">قول لماركو محتاج إيه، وهو يساعدك توصله بسرعة</p>
+          <p className="text-xs font-medium leading-5 text-[#3d7259]">قول لماركو محتاج إيه، وهو يجيبلك اختيارات من المنتجات المتاحة</p>
         </div>
       </div>
 
@@ -82,7 +135,7 @@ export default function MarcoAiPrompt() {
         <input
           aria-label="اسأل ماركو بالمصري"
           value={message}
-          onChange={e => setMessage(e.target.value.slice(0,240))}
+          onChange={e => setMessage(e.target.value.slice(0, 240))}
           disabled={pending}
           placeholder="زي: عايز رز ٥ كيلو أو كشري لستة…"
           className="min-h-12 min-w-0 flex-1 rounded-xl border border-[#d2e6d8] bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-[#005931] focus:ring-1 focus:ring-[#005931] disabled:opacity-70"
@@ -98,7 +151,7 @@ export default function MarcoAiPrompt() {
             : <ArrowLeft size={21} aria-hidden="true" />}
         </button>
       </form>
-      {pending && <p role="status" className="mt-2 text-xs text-[#005931]">ماركو بيفهم طلبك…</p>}
+      {pending && <p role="status" className="mt-2 text-xs text-[#005931]">ماركو بيفهم طلبك وبيجيب المنتجات من فرعك…</p>}
       <div aria-label="أمثلة لطلبات ماركو" className="mt-3 flex flex-wrap gap-1.5">
         {examples.map((example, index) => (
           <button key={example} type="button" onClick={() => setMessage(example)} disabled={pending}
@@ -108,7 +161,53 @@ export default function MarcoAiPrompt() {
           </button>
         ))}
       </div>
-      <p className="mt-2 text-[11px] leading-5 text-[#557264]">ماركو بيقترح بس. المنتجات والأسعار من كتالوج الفرع، وأي إضافة للسلة بتكون باختيارك.</p>
+      <p className="mt-2 text-[11px] leading-5 text-[#557264]">ماركو بيقترح بس. المنتجات والأسعار من كتالوج فرع التوصيل، وأي إضافة للسلة باختيارك.</p>
+
+      {reply && (
+        <div className="mt-4 space-y-3 border-t border-[#d3e8da] pt-4" aria-label="رد ماركو على طلبك">
+          <div className="flex justify-start">
+            <p className="max-w-[90%] rounded-2xl rounded-tr-sm bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700">
+              {reply.question}
+            </p>
+          </div>
+          <div className="rounded-2xl rounded-tl-sm bg-[#dcf2e3] px-3.5 py-3" role="status">
+            <p className="text-sm font-bold text-[#005931]">
+              {reply.availableProducts.length
+                ? 'لقيتلك اختيارات موجودة في المنتجات المتاحة لعنوانك. اختار اللي يعجبك:'
+                : 'ملقيتش اختيار متاح مطابق لطلبك في العنوان الحالي.'}
+            </p>
+            {!reply.availableProducts.length && (
+              <p className="mt-1 text-xs text-[#386852]">جرّب اسم أبسط للمنتج أو اتأكد من عنوان التوصيل.</p>
+            )}
+          </div>
+          {reply.availableProducts.length > 0 && (
+            <div className="hide-scrollbar -mx-1 flex snap-x snap-proximity gap-2.5 overflow-x-auto px-1 pb-2" dir="rtl"
+              aria-label="ترشيحات ماركو من المنتجات الحقيقية">
+              {reply.availableProducts.map(product => (
+                <div key={[product.id, product.marketplace_listing_id || 'owned'].join(':')}
+                  className="w-[155px] shrink-0 snap-start sm:w-[185px]">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => openFullResults(reply.searchQuery)}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#a5d4b7] bg-white px-3 text-xs font-bold text-[#005931] transition-colors hover:bg-emerald-50"
+          >
+            <Search size={16} aria-hidden="true" />
+            عرض كل نتائج البحث عن «{reply.searchQuery}»
+            <ArrowLeft size={15} aria-hidden="true" />
+          </button>
+          {!branchId && (
+            <button type="button" onClick={() => navigate('/address-manager')}
+              className="flex min-h-10 items-center gap-2 text-xs font-bold text-[#005931]">
+              <MapPin size={14} aria-hidden="true" /> تحديد عنوان التوصيل
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }
