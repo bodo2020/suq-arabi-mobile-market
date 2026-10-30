@@ -55,3 +55,15 @@ Super Business's `suggestedPurchaseQuantity` in `src/pages/InventoryManagement.t
 - Marketplace product suggestions stay inside the same marketplace branch and merchant.
 - Zero-stock and invalid-price products never appear.
 - Mobile swipe gestures, loading skeleton, weighted purchase controls and bulk variant navigation remain intact.
+
+## Phase 2 companion staged in backend PR #171
+
+Companion: https://github.com/bodo2020/market-maadaoui-sells/pull/171
+
+- A strictly allowlisted `customer_recommendations` mode in the **existing** shared Marko AI gateway can return anonymous, branch-scoped co-purchase scores.
+- The client has `src/lib/productRecommendationSignals.ts`, gated by **`VITE_MARKO_COPURCHASE_V1 === 'true'`**. It remains **OFF by default** in existing release builds.
+- Scores are asynchronously fetched **after** the product detail becomes visible; the regular catalog recommendations render without awaiting AI inference.
+- Every learned candidate ID is resolved through the existing authenticated/address-scoped `get_customer_branch_products_by_ids` catalog RPC. No AI-supplied product names, availability, price or merchant are trusted.
+- Marketplace recommendation rails keep deterministic same-merchant candidate restrictions; co-purchase scoring is **not enabled** for marketplace.
+- Data quality gate: 365-day receipt data in the linked marketpos project is currently too sparse for any reliable minimum-support pair. An empty response is expected and handled without errors.
+- Do not turn the flag ON until migration, new Edge function, gateway deploy, isolated branch tests and user-flow QA are all approved. Keep feature disabled during initial code merge.
