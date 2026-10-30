@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { KeyRound, ShieldCheck, UserRound } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
+import AuthHeading from '@/components/auth/AuthHeading';
+import PasswordRules from '@/components/auth/PasswordRules';
 import PasswordInput from '@/components/auth/PasswordInput';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -112,18 +114,16 @@ export default function Register() {
   return (
     <AuthLayout>
       <div className="mx-auto w-full max-w-md" dir="rtl">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#e8f5ee] text-[#005931]">
-            <UserRound size={30} />
-          </div>
-          <h1 className="text-2xl font-black text-slate-950">كمّل بيانات حسابك</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">دي آخر خطوة بعد تأكيد رقمك، وبعدها هتدخل بالباسورد من غير OTP كل مرة.</p>
-        </div>
+        <AuthHeading
+          icon={UserRound}
+          title="كمّل بيانات حسابك"
+          description="آخر خطوة بعد تأكيد رقمك. بعد كده هتقدر تدخل بكلمة المرور من غير OTP كل مرة."
+        />
 
         {checking ? (
           <div className="flex min-h-48 items-center justify-center"><BrandLoader label="جاري التأكد من حسابك" /></div>
         ) : (
-          <form onSubmit={completeProfile} className="space-y-5 rounded-[28px] border border-slate-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.07)] sm:p-6" aria-busy={busy}>
+          <form onSubmit={completeProfile} className="auth-card space-y-5" aria-busy={busy}>
             <div className="flex items-center gap-2 rounded-2xl bg-[#f0faf5] px-4 py-3 text-sm font-bold text-[#005931]">
               <ShieldCheck size={18} />
               <span>تم تأكيد رقمك</span>
@@ -174,6 +174,8 @@ export default function Register() {
                 onChange={event => { setConfirmPassword(event.target.value); setError(''); }}
               />
             </div>
+
+            <PasswordRules password={password} confirmPassword={confirmPassword} />
 
             {error && <p id="registration-error" role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
