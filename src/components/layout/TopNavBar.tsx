@@ -62,7 +62,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const { getTotalItems } = useCart();
   const { user } = useUser();
   const headerRef = React.useRef<HTMLElement | null>(null);
-  const expandedHeaderHeightRef = React.useRef(0);
+  const collapseDistanceRef = React.useRef(84);
   const scrollFrameRef = React.useRef<number | null>(null);
   const [homeCollapsed, setHomeCollapsed] = React.useState(false);
 
@@ -79,29 +79,56 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   // routes keep the original header. Categories retains its back action.
   const collapsibleHome = isHero && (location.pathname === '/' || location.pathname === '/categories');
 
-  React.useEffect(() => {
+  // The hero is part of the document scroll, not a second fixed viewport.
+  // Update CSS variables per animation frame so swipes do not rerender the page.
+  React.useLayoutEffect(() => {
     if (!collapsibleHome) return;
+    const header = headerRef.current;
+    if (!header) return;
+
     const update = () => {
       scrollFrameRef.current = null;
       if (window.innerWidth >= 768) {
+        header.style.removeProperty('--home-scroll-progress');
         setHomeCollapsed(false);
         return;
       }
-      const offset = Math.max(window.scrollY, document.scrollingElement?.scrollTop || 0);
-      // Hysteresis prevents header chatter when the user pauses at the boundary.
-      setHomeCollapsed(previous => previous ? offset > 36 : offset >= 112);
+
+      const offset = Math.max(0, window.scrollY, document.scrollingElement?.scrollTop || 0);
+      const progress = Math.min(1, offset / collapseDistanceRef.current);
+      header.style.setProperty('--home-scroll-progress', progress.toFixed(4));
+      // A small dead zone stops rapid focus/animation changes near the midpoint.
+      setHomeCollapsed(previous => previous ? progress > 0.56 : progress >= 0.72);
     };
+
     const scheduleUpdate = () => {
       if (scrollFrameRef.current === null) {
         scrollFrameRef.current = window.requestAnimationFrame(update);
       }
     };
-    update(); // Restored scroll position / browser Back.
+
+    const measure = () => {
+      if (window.innerWidth < 768) {
+        const safeTop = Number.parseFloat(window.getComputedStyle(header).paddingTop) || 0;
+        // Keep only the 68px compact search rail visible after the hero scrolls away.
+        // Measuring the real height also handles dynamic text and Android safe areas.
+        collapseDistanceRef.current = Math.max(1, Math.ceil(header.getBoundingClientRect().height - safeTop - 68));
+        header.style.setProperty('--home-collapse-distance', `${collapseDistanceRef.current}px`);
+      }
+      scheduleUpdate();
+    };
+
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(header);
     window.addEventListener('scroll', scheduleUpdate, { passive: true });
-    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', measure, { passive: true });
+    window.addEventListener('orientationchange', measure);
     return () => {
+      observer?.disconnect();
       window.removeEventListener('scroll', scheduleUpdate);
-      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
         scrollFrameRef.current = null;
@@ -123,32 +150,27 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const showSearch = !isTitle && !hideSearch;
   const signedIn = Boolean(user);
 
-  // Always measure the actual fixed header. Switching search, keyboard,
-  // orientation or delivery address never leaves page content under it.
+  // Other routes still reserve the height of their fixed navbar.
+  // The home/categories sticky hero owns its height in normal document flow.
   React.useLayoutEffect(() => {
     const header = headerRef.current;
     if (!header) return;
     const update = () => {
+      if (collapsibleHome && window.innerWidth < 768) return;
       const height = Math.ceil(header.getBoundingClientRect().height);
-      // Keep the original homepage content offset stable while its fixed
-      // header changes size. Otherwise the page jumps and re-triggers scroll.
-      if (collapsibleHome && window.innerWidth < 768) {
-        if (!homeCollapsed) expandedHeaderHeightRef.current = height;
-        const reserved = Math.max(height, expandedHeaderHeightRef.current);
-        document.documentElement.style.setProperty('--top-nav-height', `${reserved}px`);
-      } else {
-        document.documentElement.style.setProperty('--top-nav-height', `${height}px`);
-      }
+      document.documentElement.style.setProperty('--top-nav-height', `${height}px`);
     };
     update();
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
     observer?.observe(header);
     window.addEventListener('orientationchange', update);
+    window.addEventListener('resize', update, { passive: true });
     return () => {
       observer?.disconnect();
       window.removeEventListener('orientationchange', update);
+      window.removeEventListener('resize', update);
     };
-  }, [mode, pageTitle, needsBack, collapsibleHome, homeCollapsed]);
+  }, [mode, pageTitle, needsBack, collapsibleHome]);
 
   const search = (appearance: 'hero' | 'category' | 'compact' | 'default') => (
     <SearchBar
@@ -167,18 +189,16 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       ref={headerRef}
       data-customer-header={mode}
       data-home-collapsed={collapsibleHome ? String(homeCollapsed) : undefined}
-      className={`native-safe-top fixed inset-x-0 top-0 z-50 border-b text-[#005931] ${
-        collapsibleHome ? 'home-top-nav' : ''
-      } ${
-        isHero && !(collapsibleHome && homeCollapsed)
+      className={`native-safe-top ${collapsibleHome ? 'home-top-nav' : 'fixed'} inset-x-0 top-0 z-50 border-b text-[#005931] ${
+        isHero
           ? 'border-[#d6eee0] bg-gradient-to-b from-[#e6f9ee] via-[#f1fbf5] to-white md:bg-white'
           : 'border-emerald-100 bg-white'
       }`}
     >
-      {isHero && !(collapsibleHome && homeCollapsed) && (
-        <div className={`mx-auto max-w-7xl px-3 pb-3 pt-3 sm:px-5 md:hidden ${collapsibleHome ? 'home-header-expanded' : ''}`}>
+      {isHero && (
+        <div aria-hidden={collapsibleHome && homeCollapsed} inert={collapsibleHome && homeCollapsed} className={`mx-auto max-w-7xl px-3 pb-3 pt-3 sm:px-5 md:hidden ${collapsibleHome ? 'home-header-expanded' : ''}`}>
           <div className="flex min-h-[66px] items-start justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-1 pt-2">
+            <div className={`flex min-w-0 items-center gap-1 pt-2 ${collapsibleHome ? 'home-hero-brand' : ''}`}>
               {needsBack && (
                 <button type="button" onClick={goBack} aria-label="رجوع" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 active:bg-emerald-50">
                   <ArrowRight size={19} />
@@ -186,7 +206,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               )}
               <HeaderBrand category={needsBack} />
             </div>
-            <div className={`min-w-0 ${needsBack ? 'max-w-[50%]' : 'max-w-[55%]'}`}>
+            <div className={`min-w-0 ${needsBack ? 'max-w-[50%]' : 'max-w-[55%]'} ${collapsibleHome ? 'home-hero-delivery' : ''}`}>
               <HeaderDelivery
                 addressLabel={addressLabel}
                 addressLoading={addressLoading}
@@ -196,12 +216,12 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               />
             </div>
           </div>
-          <div className="mt-2">{search('hero')}</div>
+          <div className={`mt-2 ${collapsibleHome ? 'home-hero-search' : ''}`}>{search('hero')}</div>
         </div>
       )}
 
-      {collapsibleHome && homeCollapsed && (
-        <div className="home-header-compact mx-auto max-w-7xl px-3 py-2 sm:px-5 md:hidden">
+      {collapsibleHome && (
+        <div aria-hidden={!homeCollapsed} inert={!homeCollapsed} className="home-header-compact mx-auto max-w-7xl px-3 py-2 sm:px-5 md:hidden">
           <div className="flex h-[52px] min-w-0 items-center gap-1.5 rounded-full border border-[#b8d8c8] bg-white px-1.5 shadow-[0_4px_14px_rgba(0,89,49,.08)]">
             {needsBack && (
               <button
@@ -213,7 +233,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
                 <ArrowRight size={19} aria-hidden="true" />
               </button>
             )}
-            <div className="min-w-0 flex-1">{search('compact')}</div>
+            <div className="min-w-0 flex-1">{homeCollapsed && search('compact')}</div>
           </div>
         </div>
       )}

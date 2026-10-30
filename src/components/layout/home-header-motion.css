@@ -1,26 +1,100 @@
-/* Mobile home + categories: original BrandWordmark lettering is untouched.
- * Compact search first reveals the same wordmark, then typewriter prompts. */
+/* Home/categories use ONE document scroll. The hero is in normal flow,
+ * then sticks with its bottom search rail visible as the user swipes up.
+ * Only the brand art and search treatments crossfade; lettering is unchanged. */
 @media (max-width: 767px) {
+  .app-main-layout:has(> main > .home-top-nav) {
+    padding-top: 0;
+  }
+
   .home-top-nav {
-    transition: background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
+    --home-scroll-progress: 0;
+    --home-collapse-distance: 84px;
+    position: sticky;
+    top: calc(-1 * var(--home-collapse-distance));
+    isolation: isolate;
+    border-bottom: 0;
+    background: linear-gradient(180deg, #e6f9ee 0%, #edf9f1 55%, #f4fbf6 100%);
   }
-  .home-top-nav[data-home-collapsed='true'] {
-    box-shadow: 0 5px 18px rgba(0, 65, 36, .08);
+
+  /* Fade from soft green to white as the header settles into its search rail. */
+  .home-top-nav::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: #fff;
+    opacity: clamp(0, calc((var(--home-scroll-progress) - 0.55) * 2.3), 1);
+    pointer-events: none;
   }
+
   .home-header-expanded {
-    animation: home-header-enter 240ms cubic-bezier(.2,.8,.25,1) both;
+    position: relative;
+    z-index: 1;
   }
+
+  .home-hero-brand {
+    transform-origin: right center;
+    transform: translate3d(0, calc(var(--home-scroll-progress) * 32px), 0)
+      scale(calc(1 - var(--home-scroll-progress) * .16));
+    opacity: clamp(0, calc(1 - var(--home-scroll-progress) * 1.55), 1);
+    will-change: transform, opacity;
+  }
+
+  .home-hero-delivery {
+    opacity: clamp(0, calc(1 - var(--home-scroll-progress) * 2), 1);
+    transform: translate3d(0, calc(var(--home-scroll-progress) * 8px), 0);
+  }
+
+  .home-hero-search {
+    opacity: clamp(0, calc((.95 - var(--home-scroll-progress)) * 2.8), 1);
+    transform: translate3d(0, calc(var(--home-scroll-progress) * -5px), 0);
+  }
+
   .home-header-compact {
-    animation: home-header-enter 240ms cubic-bezier(.2,.8,.25,1) both;
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 2;
+    opacity: clamp(0, calc((var(--home-scroll-progress) - .55) * 3), 1);
+    transform: translate3d(0, calc((1 - var(--home-scroll-progress)) * 4px), 0);
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .home-top-nav[data-home-collapsed='true'] .home-header-compact {
+    pointer-events: auto;
+  }
+
+  .home-top-nav[data-home-collapsed='true'] .home-hero-search,
+  .home-top-nav[data-home-collapsed='true'] .home-hero-brand,
+  .home-top-nav[data-home-collapsed='true'] .home-hero-delivery {
+    pointer-events: none;
+  }
+
+  .home-top-nav[data-home-collapsed='true'] {
+    box-shadow: 0 5px 16px rgba(0, 65, 36, .07);
+  }
+
+  /* Matches the last hero gradient stop, continuing underneath the banners. */
+  .home-hero-content {
+    background: linear-gradient(180deg, #f4fbf6 0px, #f6f8f7 190px);
   }
 }
-@keyframes home-header-enter {
-  from { opacity: .7; transform: translate3d(0, -8px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
-}
+
 @media (prefers-reduced-motion: reduce) {
-  .home-top-nav { transition: none !important; }
-  .home-header-expanded, .home-header-compact { animation: none !important; }
+  .home-top-nav,
+  .home-header-compact,
+  .home-hero-brand,
+  .home-hero-delivery,
+  .home-hero-search {
+    transition: none !important;
+  }
+  .home-hero-brand,
+  .home-hero-delivery,
+  .home-hero-search,
+  .home-header-compact {
+    transform: none !important;
+  }
 }
 
 /* Brand letters stay exactly as authored in BrandWordmark; only the whole
