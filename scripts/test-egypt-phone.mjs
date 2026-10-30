@@ -37,12 +37,30 @@ for (const input of ['', '01012', '01412345678', '+966501234567', '+971501234567
   assert.equal(egypt.isValidEgyptianMobile(input), false, input);
 }
 
+// The first typed digit should be checked immediately without waiting for submit.
+for (const entered of ['2', '3', '4', '9', '٥', '٧', ' ٨', '+966501234567']) {
+  assert.match(egypt.egyptianPhoneStartError(entered), /0 أو 1/, entered);
+}
+for (const entered of ['', '0', '01', '1', '10', '٠', '١', '01012345678',
+  '+2', '+20', '+201012345678', '00201012345678', '201012345678']) {
+  assert.equal(egypt.egyptianPhoneStartError(entered), '', entered);
+}
+
 const field = read('../src/components/auth/EgyptPhoneField.tsx');
-assert.match(field, /<div dir="ltr" className="flex/);
+assert.match(field, /dir="ltr"\s+className=\{cn\(/);
+assert.match(field, /role="alert"/);
+assert.match(field, /aria-describedby=\{startError/);
+assert.match(field, /egyptianPhoneStartError\(currentValue\)/);
 assert.ok(field.indexOf('+20') < field.indexOf('<Input'), 'Egypt prefix renders on the visual left in an LTR flex row');
 assert.match(field, /px-3 text-left text-base/);
 const layout = read('../src/components/layout/AuthLayout.tsx');
 assert.match(layout, /<HeaderBrand \/>/);
+assert.doesNotMatch(layout, /تصفح كضيف|حسابك في سوبر ماركو|auth-eyebrow|auth-guest|auth-footer/);
+const login = read('../src/pages/PhoneLogin.tsx');
+assert.match(login, /<AuthHeading title="تسجيل الدخول" \/>/);
+assert.doesNotMatch(login, /أهلًا بيك في سوبر ماركو|لو الرقم جديد هنبعت OTP|نسيت الباسورد\? هنأكد رقمك/);
+const heading = read('../src/components/auth/AuthHeading.tsx');
+assert.doesNotMatch(heading, /auth-feature-icon|<Icon/);
 assert.doesNotMatch(layout, /<BrandWordmark|<BrandMark|auth-brand-symbol/);
 const css = read('../src/components/layout/auth.css');
 assert.match(css, /#e6f9ee/);
@@ -60,4 +78,4 @@ const context = read('../src/contexts/UserContext.tsx');
 assert.match(context, /isValidEgyptianMobile\(normalizedPhone\)/);
 const edge = read('../supabase/functions/customer-auth-route/index.ts');
 assert.match(edge, /egypt_phone_only/);
-console.log('PASS: Egyptian +20 phone normalization, invalid numbers rejected, fixed left-side +20 field, homepage header branding and gradient.');
+console.log('PASS: Egyptian +20 formats, live first-digit warning, single brand, lean auth copy, fixed left-side +20 and home gradient.');
