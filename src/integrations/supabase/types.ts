@@ -1802,6 +1802,48 @@ export type Database = {
           },
         ]
       }
+      customer_smart_ai_limits: {
+        Row: {
+          requests: number
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          requests?: number
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          requests?: number
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customer_smart_lists: {
+        Row: {
+          entries: Json
+          id: string
+          list_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          entries?: Json
+          id?: string
+          list_key?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          entries?: Json
+          id?: string
+          list_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customer_tag_assignments: {
         Row: {
           assigned_at: string
@@ -7349,6 +7391,95 @@ export type Database = {
           },
         ]
       }
+      smart_shopping_groups: {
+        Row: {
+          base_servings: number
+          created_at: string
+          id: string
+          kind: string
+          position: number
+          published: boolean
+          slug: string
+          source_url: string | null
+          subtitle_ar: string
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          base_servings?: number
+          created_at?: string
+          id?: string
+          kind: string
+          position?: number
+          published?: boolean
+          slug: string
+          source_url?: string | null
+          subtitle_ar?: string
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          base_servings?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          position?: number
+          published?: boolean
+          slug?: string
+          source_url?: string | null
+          subtitle_ar?: string
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      smart_shopping_slots: {
+        Row: {
+          amount: number
+          excluded_terms: string[]
+          group_id: string
+          id: string
+          label_ar: string
+          optional: boolean
+          position: number
+          required_terms: string[]
+          search_terms: string[]
+          unit: string
+        }
+        Insert: {
+          amount?: number
+          excluded_terms?: string[]
+          group_id: string
+          id?: string
+          label_ar: string
+          optional?: boolean
+          position?: number
+          required_terms?: string[]
+          search_terms: string[]
+          unit: string
+        }
+        Update: {
+          amount?: number
+          excluded_terms?: string[]
+          group_id?: string
+          id?: string
+          label_ar?: string
+          optional?: boolean
+          position?: number
+          required_terms?: string[]
+          search_terms?: string[]
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_shopping_slots_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "smart_shopping_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       special_offers: {
         Row: {
           active: boolean | null
@@ -8707,6 +8838,10 @@ export type Database = {
         Args: { p_provider_reference: string; p_refund_id: string }
         Returns: Json
       }
+      consume_customer_smart_ai_quota_v1: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       consume_edge_rate_limit_v1: {
         Args: {
           p_endpoint: string
@@ -9192,6 +9327,10 @@ export type Database = {
           p_type: string
         }
         Returns: Json
+      }
+      customer_search_arabic_key_v1: {
+        Args: { value: string }
+        Returns: string
       }
       decide_attendance_exception_v1: {
         Args: { p_decision: string; p_exception_id: string; p_note?: string }
@@ -9715,6 +9854,10 @@ export type Database = {
       get_customer_service_search_v1: {
         Args: { p_branch_id?: string; p_limit?: number; p_query: string }
         Returns: Json
+      }
+      get_customer_smart_group_bundle_v1: {
+        Args: { p_branch_id: string; p_slug: string }
+        Returns: Json[]
       }
       get_daily_inventory_offer_v1: {
         Args: { p_branch_id: string }
@@ -12383,6 +12526,10 @@ export type Database = {
           p_limit?: number
           p_search?: string
         }
+        Returns: Json[]
+      }
+      search_customer_smart_catalog_v1: {
+        Args: { p_branch_id: string; p_limit?: number; p_search: string }
         Returns: Json[]
       }
       search_franchise_catalog_v1: {
