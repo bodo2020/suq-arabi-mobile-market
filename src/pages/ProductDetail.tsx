@@ -1092,8 +1092,8 @@ const ProductDetail = () => {
             {shouldLoadExtras && (
               <React.Suspense fallback={<div className="h-40 animate-pulse rounded-[24px] bg-slate-100" />}>
                 <ProductSuggestions
-                  sourceProduct={product}
-                  cartProductIds={items.map(item => item.product.id)}
+              sourceProduct={product}
+              cartProductIds={items.map(item => item.product.id)}
                   products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
                   loading={relatedLoading}
                   layout="mobile"
