@@ -18,55 +18,8 @@ type UserContextType = {
   verifyPhone: (phone: string, code: string) => Promise<any>;
 };
 
-type TestOtpResponse = {
-  testNumber?: boolean;
-  sent?: boolean;
-  verified?: boolean;
-  error?: string;
-  session?: {
-    access_token: string;
-    refresh_token: string;
-  };
-};
-
-const UserContext = createContext<UserContextType | undefined>(undefined);
-
-const normalizePhone = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-  if (isValidEgyptianMobile(trimmed)) return egyptianMobileE164(trimmed);
-  if (trimmed.startsWith('+')) return `+${trimmed.slice(1).replace(/\D/g, '')}`;
-  return `+${trimmed.replace(/\D/g, '')}`;
-};
-
-const invokeTestOtp = async (
-  action: 'send' | 'verify',
-  phone: string,
-  code?: string,
-): Promise<{ data: TestOtpResponse | null; error: any }> => {
-  const result = await supabase.functions.invoke<TestOtpResponse>('customer-test-otp', {
-    body: {
-      action,
-      phone,
-      ...(code ? { code } : {}),
-    },
-  });
-
-  return { data: result.data ?? null, error: result.error };
-};
-
-const testOtpErrorMessage = (code?: string) => {
-  switch (code) {
-    case 'TOO_MANY_ATTEMPTS':
-      return 'تم إدخال رمز غير صحيح عدة مرات. حاول مرة أخرى بعد 15 دقيقة.';
-    case 'TEST_OTP_EXPIRED':
-      return 'انتهت صلاحية رقم الاختبار. حدّث إعداد الاختبار ثم حاول مرة أخرى.';
-    case 'INVALID_CODE':
-      return 'رمز التحقق غير صحيح.';
-    default:
-      return 'تعذر التحقق من رمز الاختبار. حاول مرة أخرى.';
-  }
-};
+// The development test-OTP edge function (customer-test-otp) is retired in
+// production; phone login uses regular Supabase SMS OTP only.
 
 export const useUser = () => {
   const context = useContext(UserContext);
@@ -241,16 +194,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('رمز التحقق متاح للموبايل المصري فقط حاليًا.');
       }
 
-      // Test numbers are resolved only on the server. No test phone or fixed code is bundled in the app.
-      try {
-        const testResult = await invokeTestOtp('send', normalizedPhone);
-        if (!testResult.error && testResult.data?.testNumber) {
-          return { data: { testOtp: true } };
-        }
-      } catch (testOtpError) {
-        console.warn('Test OTP probe unavailable; falling back to regular phone OTP.', testOtpError);
-      }
-
+      // Test numbers are handled in Supabase; the app always uses regular SMS OTP.
       const { data, error } = await supabase.auth.signInWithOtp({
         phone: normalizedPhone,
         options: {
