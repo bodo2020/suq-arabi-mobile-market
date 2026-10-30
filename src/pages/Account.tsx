@@ -129,7 +129,7 @@ const Account = () => {
                 </div>
 
                 {loyalty.isLoading ? (
-                  <div className="flex min-h-36 items-center justify-center"><BrandLoader size="sm" /></div>
+                  <div className="flex min-h-36 items-center justify-center"><BrandLoader size="sm" tone="onGreen" /></div>
                 ) : loyalty.isError || !loyalty.data ? (
                   <div className="mt-5 rounded-2xl bg-white/10 p-4 text-sm text-emerald-50">
                     تعذّر تحميل بطاقة الولاء حاليًا.
