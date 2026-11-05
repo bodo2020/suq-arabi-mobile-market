@@ -49,7 +49,8 @@ const ProductDetail = () => {
     : (browse?.paths.findIndex(path => path.split('?')[0] === location.pathname) ?? -1);
   const canSwipePrevious = browseIndex > 0;
   const canSwipeNext = browseIndex >= 0 && browseIndex < (browse?.paths.length ?? 0) - 1;
-  const sheetTouch = useRef<{ x: number; y: number; at: number; axis: 'pending' | 'vertical' | 'horizontal' } | null>(null);
+  const sheetTouch = useRef<{ x: number; y: number; at: number; axis: 'pending' | 'vertical' | 'horizontal' | 'dismiss'; fromTop: boolean } | null>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const sheetStage = useRef<HTMLDivElement>(null);
   const sheetCardRef = useRef<HTMLElement>(null);
   const dismissGesture = useRef<{ pointerId: number; y: number; at: number } | null>(null);
@@ -245,21 +246,79 @@ const ProductDetail = () => {
     closeTimer.current = setTimeout(finish, 195);
   };
 
+  // ---- Drag down to close -------------------------------------------------
+  // Works from the top strip and from anywhere on the sheet while it is
+  // scrolled to the top (like native bottom sheets). Finger moves are
+  // coalesced to one compositor-only write per frame; the backdrop fades on
+  // its own layer instead of repainting the full-screen stage.
+  // Recent finger samples; velocity is measured over the last ~100ms so a
+  // slow drag never counts as a flick because of one bunched touch event.
+  const dismissTrack = useRef<{ y: number; t: number }[]>([]);
+  const dismissFrame = useRef<number | null>(null);
+  const beginDismiss = (y: number) => {
+    dismissOffset.current = 0;
+    dismissTrack.current = [{ y, t: performance.now() }];
+    setDismissMotion(false);
+    sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-center-card], [data-product-swipe-card]')
+      .forEach(card => { card.style.willChange = 'transform'; });
+    if (backdropRef.current) backdropRef.current.style.transition = 'none';
+  };
+  const moveDismiss = (pointerY: number, startY: number) => {
+    const now = performance.now();
+    const track = dismissTrack.current;
+    track.push({ y: pointerY, t: now });
+    while (track.length > 2 && now - track[0].t > 100) track.shift();
+    dismissOffset.current = Math.max(0, Math.min(560, pointerY - startY));
+    if (dismissFrame.current !== null) return;
+    dismissFrame.current = requestAnimationFrame(() => {
+      dismissFrame.current = null;
+      const y = dismissOffset.current;
+      setCardsVar('--product-dismiss-y', `${y}px`);
+      if (backdropRef.current) backdropRef.current.style.opacity = String(Math.max(0, 1 - y / 520));
+    });
+  };
+  const endDismiss = (cancelled = false) => {
+    if (dismissFrame.current !== null) cancelAnimationFrame(dismissFrame.current);
+    dismissFrame.current = null;
+    const dy = dismissOffset.current;
+    const track = dismissTrack.current;
+    const first = track[0];
+    const last = track[track.length - 1];
+    const velocity = first && last && last.t - first.t >= 30 && performance.now() - last.t < 120
+      ? (last.y - first.y) / (last.t - first.t)
+      : 0;
+    dismissOffset.current = 0;
+    if (!cancelled && (dy > 120 || (dy > 30 && velocity > .45))) {
+      closeSheet();
+      return;
+    }
+    // Spring back: cards and backdrop return together.
+    setDismissMotion(true, 240);
+    if (backdropRef.current) {
+      backdropRef.current.style.transition = 'opacity 240ms cubic-bezier(0.2, 0.8, 0.2, 1)';
+      backdropRef.current.style.opacity = '1';
+    }
+    requestAnimationFrame(() => setCardsVar('--product-dismiss-y', '0px'));
+    window.setTimeout(() => {
+      if (closingRef.current || dismissGesture.current) return;
+      sheetStage.current?.querySelectorAll<HTMLElement>(
+        '[data-product-center-card], [data-product-swipe-card]',
+      ).forEach(card => { card.style.removeProperty('transition'); card.style.removeProperty('will-change'); });
+    }, 265);
+  };
+
   const onHeaderPointerDown = (event: React.PointerEvent<HTMLElement>) => {
     if (event.pointerType === 'mouse' || closingRef.current || swipeLocked || weightOpen) return;
     if ((event.target as HTMLElement).closest('button, a, input, textarea')) return;
     dismissGesture.current = { pointerId: event.pointerId, y: event.clientY, at: Date.now() };
-    dismissOffset.current = 0;
-    setDismissMotion(false);
+    beginDismiss(event.clientY);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onHeaderPointerMove = (event: React.PointerEvent<HTMLElement>) => {
     const gesture = dismissGesture.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
-    const dy = Math.max(0, Math.min(480, event.clientY - gesture.y));
-    dismissOffset.current = dy;
-    setCardsVar('--product-dismiss-y', `${dy}px`);
+    moveDismiss(event.clientY, gesture.y);
   };
 
   const onHeaderPointerEnd = (event: React.PointerEvent<HTMLElement>, cancelled = false) => {
@@ -269,22 +328,7 @@ const ProductDetail = () => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    const dy = dismissOffset.current;
-    dismissOffset.current = 0;
-    const elapsed = Math.max(1, Date.now() - gesture.at);
-    if (!cancelled && (dy > 110 || (dy > 45 && dy / elapsed > .65))) {
-      closeSheet();
-      return;
-    }
-    // A short drag springs all three cards back together.
-    setDismissMotion(true, 220);
-    requestAnimationFrame(() => setCardsVar('--product-dismiss-y', '0px'));
-    window.setTimeout(() => {
-      if (closingRef.current || dismissGesture.current) return;
-      sheetStage.current?.querySelectorAll<HTMLElement>(
-        '[data-product-center-card], [data-product-swipe-card]',
-      ).forEach(card => card.style.removeProperty('transition'));
-    }, 245);
+    endDismiss(cancelled);
   };
 
   // Route changes re-center the newly selected card *before the browser paints*.
@@ -384,6 +428,7 @@ const ProductDetail = () => {
       y: touch.clientY,
       at: Date.now(),
       axis: 'pending',
+      fromTop: (mobileScrollRef.current?.scrollTop ?? 0) <= 0,
     };
     setCarouselMotion(false);
   };
@@ -396,11 +441,19 @@ const ProductDetail = () => {
     const dy = touch.clientY - start.y;
     if (start.axis === 'pending') {
       if (Math.abs(dx) < 9 && Math.abs(dy) < 9) return;
-      start.axis = Math.abs(dx) >= Math.abs(dy) * 1.2 ? 'horizontal' : 'vertical';
+      start.axis = Math.abs(dx) >= Math.abs(dy) * 1.2
+        ? 'horizontal'
+        // Pulling down while already at the top drags the sheet closed.
+        : dy > 0 && start.fromTop && !closingRef.current ? 'dismiss' : 'vertical';
+      if (start.axis === 'dismiss') beginDismiss(start.y);
       if (start.axis === 'horizontal') {
         setSheetDragging(true);
         setSwipeAnimating(false);
       }
+    }
+    if (start.axis === 'dismiss') {
+      moveDismiss(touch.clientY, start.y);
+      return;
     }
     if (start.axis !== 'horizontal') return;
     // The main photo belongs to this card: swiping across it moves the
@@ -416,6 +469,10 @@ const ProductDetail = () => {
     const start = sheetTouch.current;
     sheetTouch.current = null;
     const end = event.changedTouches[0];
+    if (start?.axis === 'dismiss') {
+      endDismiss();
+      return;
+    }
     if (!start || !end || weightOpen || swipeLocked || start.axis !== 'horizontal') return;
     const dx = end.clientX - start.x;
     const dy = end.clientY - start.y;
@@ -926,7 +983,8 @@ const ProductDetail = () => {
       {/* Inline display (not the .flex class) keeps these large containers out of the
           `.flex:has(...)` product-card rules, whose invalidation re-styled the whole
           sheet whenever a peek card or section was swapped during a swipe. */}
-      <div ref={sheetStage} className="product-sheet-stage fixed inset-0 z-[100] items-end justify-center overflow-hidden bg-slate-950/50 px-0 pt-5 md:hidden">
+      <div ref={sheetStage} className="product-sheet-stage fixed inset-0 z-[100] items-end justify-center overflow-hidden px-0 pt-5 md:hidden">
+        <div ref={backdropRef} aria-hidden="true" className="pointer-events-none absolute inset-0 bg-slate-950/50 will-change-[opacity]" />
         {rail.filter(slide => Math.abs(slide.offset) <= 1).map(slide => (
           <ProductSwipePeek
             key={slide.path}
@@ -986,11 +1044,16 @@ const ProductDetail = () => {
           </button>
           <div
             ref={mobileScrollRef}
-            className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain px-3 pb-5"
+            className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-none px-3 pb-5"
             onTouchStart={startSheetSwipe}
             onTouchMove={moveSheetSwipe}
             onTouchEnd={finishSheetSwipe}
             onTouchCancel={() => {
+              if (sheetTouch.current?.axis === 'dismiss') {
+                sheetTouch.current = null;
+                endDismiss(true);
+                return;
+              }
               cancelDragFrame();
               sheetTouch.current = null;
               setSheetDragging(false);
