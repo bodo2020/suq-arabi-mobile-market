@@ -2,6 +2,7 @@ import React from 'react';
 import type { Product } from '@/lib/supabase';
 import type { ProductPreview } from '@/lib/productBrowsing';
 import { productCardImage } from '@/lib/productCardImage';
+import { SHEET_GALLERY, SHEET_IMAGE, SHEET_ROUND_BUTTON } from './productSheetLayout';
 import { isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 
 type Props = {
@@ -56,20 +57,21 @@ function ProductSwipePeek({
       aria-hidden={!visible}
       aria-label={`عرض تفاصيل ${title}`}
       dir="rtl"
-      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-20px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${moving ? 'will-change-transform' : ''} ${transitioning ? 'transition-[transform,opacity] duration-[220ms] ease-out' : 'transition-opacity duration-[160ms]'} ${shown ? 'opacity-100' : 'opacity-0'}`}
+      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${moving ? 'will-change-transform' : ''} ${transitioning ? 'transition-[transform,opacity] duration-[220ms] ease-out' : 'transition-opacity duration-[160ms]'} ${shown ? 'opacity-100' : 'opacity-0'}`}
       style={{ transform: `translate3d(calc(${position} + var(--product-swipe-x, 0px)), var(--product-dismiss-y, 0px), 0)` }}
     >
-      <span className="flex w-full shrink-0 flex-col rounded-t-[30px] bg-white px-4 pb-2 pt-3">
-        <span className="mx-auto mb-2 flex h-4 w-20 items-center justify-center">
-          <span className="h-1 w-11 rounded-full bg-slate-300" />
-        </span>
-        <span className="flex h-10 items-center justify-center text-sm font-extrabold text-slate-700">
-          تفاصيل المنتج
-        </span>
+      {/* Same geometry as the real sheet: photo at the top, floating round buttons. */}
+      <span className="absolute inset-x-0 top-0 z-10 flex h-5 justify-center" aria-hidden="true">
+        <span className="mt-auto h-1 w-10 rounded-full bg-slate-300/90" />
+      </span>
+      <span className={`${SHEET_ROUND_BUTTON} absolute right-4 top-5 z-10`} aria-hidden="true" />
+      <span className="absolute left-4 top-5 z-10 flex flex-col gap-3" aria-hidden="true">
+        <span className={SHEET_ROUND_BUTTON} />
+        <span className={SHEET_ROUND_BUTTON} />
       </span>
 
-      <span className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden px-3 pb-4 pt-3">
-        <span className="flex h-[min(34dvh,270px)] shrink-0 items-center justify-center overflow-hidden rounded-[24px] bg-white">
+      <span className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden px-3 pb-4">
+        <span className={SHEET_GALLERY}>
           {image
             ? <img
                 src={productCardImage(image)}
@@ -77,7 +79,7 @@ function ProductSwipePeek({
                 loading="eager"
                 decoding="async"
                 draggable={false}
-                className="h-full w-full object-contain px-7 py-5"
+                className={SHEET_IMAGE}
                 onError={event => {
                   if (event.currentTarget.src !== image) {
                     event.currentTarget.onerror = null;
@@ -85,7 +87,7 @@ function ProductSwipePeek({
                   }
                 }}
               />
-            : <span className="h-32 w-32 rounded-3xl bg-slate-100" />}
+            : <span className="skeleton-shimmer h-32 w-32 rounded-3xl" />}
         </span>
 
         <span className="flex w-full flex-col rounded-[24px] bg-white px-4 pb-5 pt-4">

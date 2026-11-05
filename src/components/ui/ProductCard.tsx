@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { appNavigate, currentRouterLocation } from '@/lib/appNavigation';
 import { collectProductBrowseState } from '@/lib/productBrowsing';
 import { captureProductCardOrigin } from '@/lib/productSheetMotion';
 import { announceProductAdded } from '@/lib/brandMicroMotion';
@@ -49,9 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const { items, addToCart, updateQuantity, removeFromCart, isInitialized } = useCart();
   const [weightOpen, setWeightOpen] = useState(false);
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const location = useLocation();
   const [reminderPending, setReminderPending] = useState(false);
   const cardRef = React.useRef<HTMLElement>(null);
 
@@ -97,6 +95,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const openDetails = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     event.preventDefault();
+    // Read the location at click time; subscribing every card to the router
+    // re-rendered the whole catalog on each product swipe.
+    const location = currentRouterLocation();
     const browseState = collectProductBrowseState(event.currentTarget, location.pathname + location.search);
     // The active card must win even if a very large catalog evicted it from memory.
     registerBrowsableProduct(detailHref, product);
@@ -110,7 +111,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
     const backgroundLocation = inheritedBackground ||
       (mobile && !location.pathname.startsWith('/product/') ? location : undefined);
-    navigate(detailHref, {
+    appNavigate(detailHref, {
       state: {
         // Reference the complete in-memory journey rather than cloning every
         // product into browser history on each swipe.
@@ -218,7 +219,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       data-product-price={money(price)}
     >
       <div className="relative mb-5 sm:mb-7">
-        <Link to={detailHref} onClick={openDetails} onPointerEnter={warmDetailModule} onTouchStart={warmDetailModule} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
+        <a href={detailHref} onClick={openDetails} onPointerEnter={warmDetailModule} onTouchStart={warmDetailModule} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
           <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5">
             <SmartImage
               src={productCardImage(imageSrc)}
@@ -229,7 +230,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               className="h-full w-full object-contain motion-safe:md:transition-transform motion-safe:md:duration-150 motion-safe:md:group-hover/card:scale-[1.02]"
             />
           </div>
-        </Link>
+        </a>
 
         <div className="absolute left-1 top-1 z-20 flex h-7 w-7 scale-90 items-center justify-center rounded-full bg-white/95 shadow-[0_3px_10px_rgba(15,23,42,0.09)] sm:left-2 sm:top-2 sm:h-9 sm:w-9 sm:scale-100">
           <FavoriteButton productId={product.id} variantId={variantId} size="sm" />
@@ -294,9 +295,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
       </div>
 
-      <Link to={detailHref} onClick={openDetails} className="min-w-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]">
+      <a href={detailHref} onClick={openDetails} className="min-w-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]">
         <h3 className="min-h-8 line-clamp-2 text-[11px] font-bold leading-4 text-slate-950 sm:min-h-10 sm:text-[15px] sm:leading-5">{displayName}</h3>
-      </Link>
+      </a>
 
       <div className="mt-1 flex min-h-4 flex-wrap items-center gap-1 text-[9px] font-medium text-slate-500 sm:mt-1.5 sm:min-h-5 sm:gap-1.5 sm:text-[11px]">
         {weighted ? <Scale className="h-2.5 w-2.5 text-[#005931] sm:h-[13px] sm:w-[13px]" /> : bulk ? <Package className="h-2.5 w-2.5 text-[#005931] sm:h-[13px] sm:w-[13px]" /> : null}

@@ -8,6 +8,7 @@ import ProductSwipePeek from '@/components/product/ProductSwipePeek';
 import { productCardImage } from '@/lib/productCardImage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Check, ImageIcon, Minus, Package, Plus, Scale, Share2, ShoppingCart, Trash2, X } from 'lucide-react';
+import { SHEET_GALLERY, SHEET_IMAGE, SHEET_ROUND_BUTTON } from '@/components/product/productSheetLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductStructuredData from '@/components/seo/ProductStructuredData';
@@ -78,9 +79,14 @@ const ProductDetail = () => {
   // All three mounted cards share exactly one translation. Updating the
   // stage's CSS variable moves the *entire sheets*, not their product content.
   // This avoids per-touch React renders and keeps drag 1:1 with the finger.
-  const setSheetOffset = (x: number) => {
-    sheetStage.current?.style.setProperty('--product-swipe-x', `${x}px`);
+  // The variables are registered as non-inherited (@property in index.css) and
+  // written on each card, so a drag frame restyles 3 elements instead of the
+  // whole product sheet subtree (which cost up to ~45ms of style recalc/frame).
+  const setCardsVar = (name: '--product-swipe-x' | '--product-dismiss-y', value: string) => {
+    sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-center-card], [data-product-swipe-card]')
+      .forEach(card => card.style.setProperty(name, value));
   };
+  const setSheetOffset = (x: number) => setCardsVar('--product-swipe-x', `${x}px`);
   // Touchmove may fire more often than the screen can paint. Coalesce drag
   // coordinates to one compositor transform write per animation frame.
   const cancelDragFrame = () => {
@@ -230,10 +236,11 @@ const ProductDetail = () => {
     setDismissMotion(true, 185);
     const stage = sheetStage.current;
     if (stage) {
-      const current = Number.parseFloat(stage.style.getPropertyValue('--product-dismiss-y')) || 0;
+      const center = stage.querySelector<HTMLElement>('[data-product-center-card]');
+      const current = Number.parseFloat(center?.style.getPropertyValue('--product-dismiss-y') || '') || 0;
       stage.style.transition = 'opacity 185ms ease-out';
       stage.style.opacity = '0';
-      stage.style.setProperty('--product-dismiss-y', `${Math.max(current + 64, 72)}px`);
+      setCardsVar('--product-dismiss-y', `${Math.max(current + 64, 72)}px`);
     }
     closeTimer.current = setTimeout(finish, 195);
   };
@@ -252,7 +259,7 @@ const ProductDetail = () => {
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     const dy = Math.max(0, Math.min(480, event.clientY - gesture.y));
     dismissOffset.current = dy;
-    sheetStage.current?.style.setProperty('--product-dismiss-y', `${dy}px`);
+    setCardsVar('--product-dismiss-y', `${dy}px`);
   };
 
   const onHeaderPointerEnd = (event: React.PointerEvent<HTMLElement>, cancelled = false) => {
@@ -271,7 +278,7 @@ const ProductDetail = () => {
     }
     // A short drag springs all three cards back together.
     setDismissMotion(true, 220);
-    requestAnimationFrame(() => sheetStage.current?.style.setProperty('--product-dismiss-y', '0px'));
+    requestAnimationFrame(() => setCardsVar('--product-dismiss-y', '0px'));
     window.setTimeout(() => {
       if (closingRef.current || dismissGesture.current) return;
       sheetStage.current?.querySelectorAll<HTMLElement>(
@@ -613,6 +620,13 @@ const ProductDetail = () => {
   }, [product, bulkMode, bulkImageUrl, isPreviewOnly]);
   const activeImageIndex = Math.min(selectedImageIndex, Math.max(0, images.length - 1));
 
+  // Stable list so the memoized suggestions rail (many product cards) is not
+  // re-rendered by unrelated swipe/drag state updates.
+  const suggestionProducts = useMemo(
+    () => relatedProducts.filter(item => item.id !== product?.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId)),
+    [relatedProducts, product?.id, requestedStoreId],
+  );
+
   const structuredProduct = useMemo(() => {
     if (!product || !bulkMode) return product;
     return {
@@ -757,31 +771,29 @@ const ProductDetail = () => {
         </div>
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/50 pt-5 md:hidden">
           <div role="status" aria-live="polite" aria-label="جاري تجهيز تفاصيل المنتج" dir="rtl"
-            className="flex h-[calc(100dvh-20px)] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8]">
-            <div className="flex h-14 shrink-0 items-center justify-between bg-white px-5">
-              <button type="button" onClick={() => { if (browse) navigate(-1); else navigate('/', { replace: true }); }} aria-label="رجوع" className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700"><X size={18} /></button>
-              <span className="text-sm font-bold text-slate-600">تفاصيل المنتج</span>
-              <div className="h-9 w-9 rounded-full bg-slate-100" />
-            </div>
-            <div className="min-h-0 flex-1 space-y-3 overflow-hidden p-3">
-              <div className="flex h-[min(35dvh,280px)] items-center justify-center rounded-[24px] bg-white p-7">
+            className="relative flex h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8]">
+            <button type="button" onClick={() => { if (browse) navigate(-1); else navigate('/', { replace: true }); }} aria-label="رجوع"
+              className={`${SHEET_ROUND_BUTTON} absolute right-4 top-5 z-30`}><X size={22} strokeWidth={2.2} /></button>
+            <div className="min-h-0 flex-1 space-y-3 overflow-hidden px-3">
+              <div className={SHEET_GALLERY}>
                 {pendingPreview?.image
-                  ? <img src={productCardImage(pendingPreview.image)} alt="" decoding="async" className="h-full w-full object-contain" />
-                  : <div className="h-44 w-44 animate-pulse rounded-3xl bg-slate-100" />}
+                  ? <img src={productCardImage(pendingPreview.image)} alt="" decoding="async" className={SHEET_IMAGE} />
+                  : <div className="skeleton-shimmer h-44 w-44 rounded-3xl" />}
               </div>
-              <div className="space-y-3 rounded-[24px] bg-white p-5">
-                {pendingPreview?.name
-                  ? <h1 className="text-xl font-black text-slate-900">{pendingPreview.name}</h1>
-                  : <div className="h-6 w-4/5 animate-pulse rounded-lg bg-slate-100" />}
-                <div className="h-3 w-1/3 animate-pulse rounded-md bg-slate-100" />
-                {pendingPreview?.price
-                  ? <div className="text-2xl font-black text-[#005931]">{pendingPreview.price} ج.م</div>
-                  : <div className="h-9 w-1/2 animate-pulse rounded-lg bg-slate-100" />}
-                <div className="h-5 w-1/4 animate-pulse rounded-full bg-slate-100" />
+              <div className="space-y-3 rounded-[24px] bg-white px-4 py-5">
+                <div className="skeleton-shimmer h-6 w-4/5" />
+                <div className="skeleton-shimmer h-4 w-1/3" />
+                <div className="skeleton-shimmer h-4 w-2/5" />
+                <div className="skeleton-shimmer h-9 w-1/3" />
+              </div>
+              <div className="space-y-3 rounded-[24px] bg-white px-4 py-5">
+                <div className="skeleton-shimmer h-4 w-1/4" />
+                <div className="skeleton-shimmer h-4 w-full" />
+                <div className="skeleton-shimmer h-4 w-2/3" />
               </div>
             </div>
             <div className="shrink-0 border-t border-slate-100 bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
-              <div className="h-14 animate-pulse rounded-2xl bg-emerald-100" />
+              <div className="skeleton-shimmer h-12 rounded-2xl" />
             </div>
           </div>
         </div>
@@ -814,6 +826,9 @@ const ProductDetail = () => {
     : bulkMode
       ? `${bulkUnitType} · ${packNumber} قطعة`
       : String(product.unit_of_measure || '').trim() || 'قطعة';
+
+  // Opened from a catalog card before the product request finished.
+  const showSkeleton = isPreviewOnly && !loadError;
 
   const piecePurchaseControl = (
     <div className="space-y-3">
@@ -908,7 +923,10 @@ const ProductDetail = () => {
       <div className="hidden md:block"><TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} /></div>
 
       {/* Three-card carousel: neighbors stay mounted and follow the same GPU transform. */}
-      <div ref={sheetStage} className="fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/50 px-0 pt-5 md:hidden" style={{ '--product-swipe-x': '0px' } as React.CSSProperties}>
+      {/* Inline display (not the .flex class) keeps these large containers out of the
+          `.flex:has(...)` product-card rules, whose invalidation re-styled the whole
+          sheet whenever a peek card or section was swapped during a swipe. */}
+      <div ref={sheetStage} className="product-sheet-stage fixed inset-0 z-[100] items-end justify-center overflow-hidden bg-slate-950/50 px-0 pt-5 md:hidden">
         {rail.filter(slide => Math.abs(slide.offset) <= 1).map(slide => (
           <ProductSwipePeek
             key={slide.path}
@@ -931,7 +949,7 @@ const ProductDetail = () => {
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`relative z-10 flex h-[calc(100dvh-20px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${sheetDragging ? 'will-change-transform transition-none' : swipeAnimating ? 'will-change-transform transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-[transform,opacity] duration-[190ms] ease-out'}`}
+          className={`product-sheet-card relative z-10 h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${sheetDragging ? 'will-change-transform transition-none' : swipeAnimating ? 'will-change-transform transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-[transform,opacity] duration-[190ms] ease-out'}`}
           style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible ? '0px' : '28px'} + var(--product-dismiss-y, 0px)), 0)`, opacity: sheetVisible ? 1 : 0 }}
           onTransitionEnd={event => {
             if (event.currentTarget !== event.target || event.propertyName !== 'transform') return;
@@ -947,8 +965,10 @@ const ProductDetail = () => {
             }
           }}
         >
+          {/* No title bar: the photo starts at the top of the sheet. A thin
+              top strip keeps drag-down-to-close; the close button floats. */}
           <header
-            className="relative z-20 shrink-0 select-none rounded-t-[30px] bg-white px-4 pb-2 pt-3"
+            className="absolute inset-x-0 top-0 z-30 h-9 select-none rounded-t-[30px]"
             style={{ touchAction: 'none' }}
             onPointerDown={onHeaderPointerDown}
             onPointerMove={onHeaderPointerMove}
@@ -956,24 +976,17 @@ const ProductDetail = () => {
             onPointerCancel={event => onHeaderPointerEnd(event, true)}
             aria-label="اسحب لأسفل لإغلاق تفاصيل المنتج"
           >
-            <div data-product-drag-handle className="mx-auto mb-2 flex h-4 w-20 items-center justify-center" aria-hidden="true">
-              <span className="h-1 w-11 rounded-full bg-slate-300" />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <button type="button" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-800 active:scale-95">
-                <X size={19} />
-              </button>
-              <span className="truncate text-center text-sm font-extrabold text-slate-700">تفاصيل المنتج</span>
-              <div className="flex shrink-0 items-center gap-1">
-                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700" aria-label="مشاركة المنتج" onClick={handleShare}><Share2 size={19} /></button>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full"><FavoriteButton productId={product.id} variantId={favoriteVariantId} size="sm" /></div>
-              </div>
+            <div data-product-drag-handle className="mx-auto flex h-5 w-20 items-end justify-center" aria-hidden="true">
+              <span className="h-1 w-10 rounded-full bg-slate-300/90" />
             </div>
           </header>
+          <button type="button" onClick={closeSheet} aria-label="إغلاق تفاصيل المنتج"
+            className={`${SHEET_ROUND_BUTTON} absolute right-4 top-5 z-30`}>
+            <X size={22} strokeWidth={2.2} />
+          </button>
           <div
             ref={mobileScrollRef}
-            className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain px-3 pb-5 pt-3"
+            className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain px-3 pb-5"
             onTouchStart={startSheetSwipe}
             onTouchMove={moveSheetSwipe}
             onTouchEnd={finishSheetSwipe}
@@ -990,7 +1003,12 @@ const ProductDetail = () => {
               });
             }}
           >
-            <div data-product-gallery className="relative flex h-[min(34dvh,270px)] items-center justify-center overflow-hidden rounded-[24px] border border-slate-100 bg-white">
+            <div data-product-gallery className={SHEET_GALLERY}>
+              {/* Favourite and share float on the photo and scroll with it. */}
+              <div className="absolute left-4 top-5 z-20 flex flex-col gap-3">
+                <div className={SHEET_ROUND_BUTTON}><FavoriteButton productId={product.id} variantId={favoriteVariantId} size="sm" /></div>
+                <button type="button" onClick={handleShare} aria-label="مشاركة المنتج" className={SHEET_ROUND_BUTTON}><Share2 size={20} strokeWidth={2} /></button>
+              </div>
               {bulkMode && !bulkImageUrl ? (
                 <div className="flex h-40 w-40 items-center justify-center rounded-[30px] bg-[#005931] text-6xl font-black text-white">{packNumber}</div>
               ) : images.length > 0 ? (
@@ -1001,7 +1019,7 @@ const ProductDetail = () => {
                       alt=""
                       aria-hidden="true"
                       draggable={false}
-                      className="absolute inset-0 h-full w-full object-contain px-7 py-5"
+                      className={`absolute inset-0 ${SHEET_IMAGE}`}
                       onError={event => {
                         const fallback = images[activeImageIndex];
                         if (event.currentTarget.src !== fallback) {
@@ -1013,7 +1031,7 @@ const ProductDetail = () => {
                   )}
                   {(fullResolutionProductId === id || productCardImage(images[activeImageIndex]) === images[activeImageIndex]) && (
                     <img
-                      className="relative h-full w-full object-contain px-7 py-5"
+                      className={`relative ${SHEET_IMAGE}`}
                       src={images[activeImageIndex] || '/placeholder.svg'}
                       alt={displayName}
                       decoding="async"
@@ -1043,6 +1061,24 @@ const ProductDetail = () => {
                 </div>
               )}
             </div>
+            {showSkeleton ? (
+              // The photo is already on screen from the catalog; details shimmer
+              // in place until the product data arrives.
+              <div role="status" aria-label="جاري تحميل تفاصيل المنتج" className="space-y-3">
+                <section className="space-y-3 rounded-[24px] bg-white px-4 py-5">
+                  <div className="skeleton-shimmer h-6 w-4/5" />
+                  <div className="skeleton-shimmer h-4 w-1/3" />
+                  <div className="skeleton-shimmer h-4 w-2/5" />
+                  <div className="skeleton-shimmer h-9 w-1/3" />
+                </section>
+                <section className="space-y-3 rounded-[24px] bg-white px-4 py-5">
+                  <div className="skeleton-shimmer h-4 w-1/4" />
+                  <div className="skeleton-shimmer h-4 w-full" />
+                  <div className="skeleton-shimmer h-4 w-11/12" />
+                  <div className="skeleton-shimmer h-4 w-2/3" />
+                </section>
+              </div>
+            ) : (
             <section className="rounded-[24px] border border-slate-100 bg-white px-4 pb-4 pt-4">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${unavailable ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-[#005931]'}`}>
@@ -1077,6 +1113,7 @@ const ProductDetail = () => {
                 </div>
               )}
             </section>
+            )}
             <div className="overflow-hidden rounded-[24px] border border-slate-100 bg-white">
               {product.description && (
                 <details className="group border-b border-slate-100">
@@ -1092,7 +1129,7 @@ const ProductDetail = () => {
             {shouldLoadExtras && (
               <React.Suspense fallback={<div className="h-40 animate-pulse rounded-[24px] bg-slate-100" />}>
                 <ProductSuggestions
-                  products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
+                  products={suggestionProducts}
                   loading={relatedLoading}
                   layout="mobile"
                 />
@@ -1100,7 +1137,7 @@ const ProductDetail = () => {
             )}
           </div>
           <footer className="shrink-0 border-t border-slate-100 bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
-            {weighted ? weightedPurchaseControl : piecePurchaseControl}
+            {showSkeleton ? <div className="skeleton-shimmer h-12 rounded-2xl" /> : weighted ? weightedPurchaseControl : piecePurchaseControl}
           </footer>
         </section>
       </div>
@@ -1232,7 +1269,7 @@ const ProductDetail = () => {
         {shouldLoadExtras && (
           <React.Suspense fallback={<div className="mt-5 h-40 animate-pulse rounded-[26px] bg-slate-100" />}>
             <ProductSuggestions
-              products={relatedProducts.filter(item => item.id !== product.id && (!requestedStoreId || item.marketplace_branch_id === requestedStoreId))}
+              products={suggestionProducts}
               loading={relatedLoading}
               layout="desktop"
             />

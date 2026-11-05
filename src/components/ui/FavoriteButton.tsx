@@ -1,6 +1,6 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { appNavigate } from '@/lib/appNavigation';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,6 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   size = 'md',
 }) => {
   const { isFavorite, toggleFavorite, isLoading, user, favoritesLoaded } = useFavorites();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [burst, setBurst] = React.useState(false);
   React.useEffect(() => {
@@ -48,7 +47,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
       event.preventDefault();
       event.stopPropagation();
       toast({ title: 'سجل دخولك أولاً', description: 'سجل الدخول علشان تحفظ المنتجات في المفضلة.' });
-      navigate('/phone-login');
+      appNavigate('/phone-login');
     };
 
     return (

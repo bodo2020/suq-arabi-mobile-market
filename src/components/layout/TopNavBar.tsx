@@ -10,6 +10,24 @@ import HeaderActions from './header/HeaderActions';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
 
+// Page-level flags on <html> replacing `:has()` selectors on html/.app-main-layout.
+// Those made every DOM change re-check the whole document and re-style ~3000
+// elements per frame while swiping product sheets. Counted, because the
+// catalog header and an overlay's header can be mounted at the same time.
+const htmlFlagCounts: Record<string, number> = {};
+function useHtmlFlag(flag: string, active: boolean) {
+  React.useLayoutEffect(() => {
+    if (!active) return;
+    const root = document.documentElement;
+    htmlFlagCounts[flag] = (htmlFlagCounts[flag] || 0) + 1;
+    root.classList.add(flag);
+    return () => {
+      htmlFlagCounts[flag] = Math.max(0, (htmlFlagCounts[flag] || 1) - 1);
+      if (!htmlFlagCounts[flag]) root.classList.remove(flag);
+    };
+  }, [flag, active]);
+}
+
 /** A page asks for a *purpose*, not a pile of visual hide/show flags.
  * Legacy flags remain supported while the rest of the app migrates.
  */
@@ -79,6 +97,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   // routes keep the original header. Categories is a bottom-nav tab, so like
   // home it has no back action.
   const collapsibleHome = isHero && (location.pathname === '/' || location.pathname === '/categories');
+  useHtmlFlag('has-customer-header', true);
+  useHtmlFlag('has-home-top-nav', collapsibleHome);
 
   // The hero is part of the document scroll, not a second fixed viewport.
   // Update CSS variables per animation frame so swipes do not rerender the page.

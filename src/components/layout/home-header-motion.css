@@ -2,15 +2,16 @@
  * then sticks with its bottom search rail visible as the user swipes up.
  * Only the brand art and search treatments crossfade; lettering is unchanged. */
 @media (max-width: 767px) {
-  .app-main-layout:has(> main > .home-top-nav) {
+  /* html.has-home-top-nav is set by TopNavBar (replaces costly :has()). */
+  html.has-home-top-nav .app-main-layout {
     padding-top: 0;
   }
 
   /* Clip horizontal overflow without creating an extra scroll ancestor.
      Sticky must follow the same window scrolling element as the catalog. */
-  html:has(.home-top-nav),
-  html:has(.home-top-nav) body,
-  html:has(.home-top-nav) #root {
+  html.has-home-top-nav,
+  html.has-home-top-nav body,
+  html.has-home-top-nav #root {
     overflow-x: clip;
   }
 

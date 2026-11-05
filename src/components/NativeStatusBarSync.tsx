@@ -6,6 +6,8 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 // Matches the light green top of the home/categories hero header and the
 // Android theme's launch color, so there is no jump on first paint.
 const FALLBACK = '#E6F9EE';
+// The light page under the product sheet's 50% slate backdrop.
+const SHEET_DIM = '#757C80';
 
 type Rgba = [number, number, number, number];
 
@@ -56,6 +58,14 @@ export default function NativeStatusBarSync() {
 
   useEffect(() => {
     if (Capacitor.getPlatform() !== 'android') return;
+    // A product sheet dims the page behind it, so the bar takes the dimmed
+    // tone (light icons). A fixed colour also avoids sampling, which forced
+    // style/layout on every swipe because each product is its own route.
+    if (location.pathname.startsWith('/product/')) {
+      void StatusBar.setBackgroundColor({ color: SHEET_DIM }).catch(() => {});
+      void StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+      return;
+    }
     let last = '';
     let frame: number | null = null;
 
