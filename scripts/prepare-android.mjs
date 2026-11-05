@@ -73,9 +73,9 @@ function upsertItemInStyle(source, styleName, itemName, value) {
 
 const appThemeName = styles.includes('name="AppTheme.NoActionBar"') ? 'AppTheme.NoActionBar' : 'AppTheme';
 styles = upsertItemInStyle(styles, appThemeName, 'android:windowOptOutEdgeToEdgeEnforcement', 'true');
-styles = upsertItemInStyle(styles, appThemeName, 'android:statusBarColor', '#005931');
+styles = upsertItemInStyle(styles, appThemeName, 'android:statusBarColor', '#E6F9EE');
 styles = upsertItemInStyle(styles, appThemeName, 'android:navigationBarColor', '#F6F8F7');
-styles = upsertItemInStyle(styles, appThemeName, 'android:windowLightStatusBar', 'false');
+styles = upsertItemInStyle(styles, appThemeName, 'android:windowLightStatusBar', 'true');
 styles = upsertItemInStyle(styles, appThemeName, 'android:windowLightNavigationBar', 'true');
 styles = upsertItemInStyle(styles, appThemeName, 'android:enforceStatusBarContrast', 'false');
 styles = upsertItemInStyle(styles, appThemeName, 'android:enforceNavigationBarContrast', 'false');
