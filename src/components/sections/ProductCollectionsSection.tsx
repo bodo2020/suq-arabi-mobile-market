@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getCurrentDeliveryBranchId, getProducts, supabase } from '@/lib/supabase';
+import { getCurrentDeliveryBranchId, supabase } from '@/lib/supabase';
+import { getProductsByIds } from '@/lib/branchProductIds';
 import CollectionSkeleton from '@/components/ui/CollectionSkeleton';
 import CollectionsList from './CollectionsList';
 
@@ -18,7 +19,7 @@ const ProductCollectionsSection: React.FC<ProductCollectionsSectionProps> = ({ c
     refetchOnWindowFocus: true,
   });
 
-  const { data: productCollections = [], isLoading: collectionsLoading } = useQuery({
+  const collectionsQuery = useQuery({
     queryKey: ['productCollections'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,29 +34,40 @@ const ProductCollectionsSection: React.FC<ProductCollectionsSectionProps> = ({ c
     refetchOnWindowFocus: false,
   });
 
-  const { data: products = [], isLoading: productsLoading, isError: productsError } = useQuery({
-    queryKey: ['active-products', branchId],
-    queryFn: () => getProducts(),
-    enabled: Boolean(branchId),
-    staleTime: 30_000,
-    refetchOnWindowFocus: true,
-  });
-
-  if (branchLoading || collectionsLoading || productsLoading) {
-    return <div className="space-y-6"><CollectionSkeleton /></div>;
-  }
-
-  const selectedCollections = productCollections
+  const selectedCollections = React.useMemo(() => (collectionsQuery.data || [])
     .filter(collection => !collectionId || collection.id === collectionId)
     .map(collection => collectionId ? {
       ...collection,
       title: titleOverride || collection.title,
       description: subtitleOverride ?? collection.description,
-    } : collection);
+    } : collection), [collectionsQuery.data, collectionId, titleOverride, subtitleOverride]);
 
-  if (!selectedCollections.length || !branchId || productsError) return null;
+  // Only the products shown in collections, instead of the whole branch
+  // catalog (1000 rows, ~1.5s) just to pick a few dozen. The ids of *all*
+  // active collections form one shared query, so the home page's several
+  // collection sections make a single request instead of one each.
+  const productIds = React.useMemo(() => [...new Set((collectionsQuery.data || []).flatMap(collection =>
+    Array.isArray(collection.products) ? collection.products.filter((id): id is string => typeof id === 'string') : []))].sort(),
+  [collectionsQuery.data]);
 
-  return <div className="space-y-6"><CollectionsList collections={selectedCollections} products={products} /></div>;
+  const productsQuery = useQuery({
+    queryKey: ['collection-products', branchId, productIds.join(',')],
+    queryFn: () => getProductsByIds(productIds),
+    enabled: Boolean(branchId) && productIds.length > 0,
+    staleTime: 30_000,
+    // Refetching on every app resume would flash the skeleton; pull-to-refresh
+    // still refreshes it explicitly.
+    refetchOnWindowFocus: false,
+  });
+
+  // Skeleton while loading, including a pull-to-refresh refetch.
+  if (branchLoading || collectionsQuery.isLoading || productsQuery.isFetching) {
+    return <div className="space-y-6"><CollectionSkeleton /></div>;
+  }
+
+  if (!selectedCollections.length || !branchId || productsQuery.isError) return null;
+
+  return <div className="space-y-6"><CollectionsList collections={selectedCollections} products={productsQuery.data || []} /></div>;
 };
 
 export default ProductCollectionsSection;

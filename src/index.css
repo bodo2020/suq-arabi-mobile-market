@@ -415,7 +415,9 @@ html.native-platform [role="button"] {
 .ala-mazagak-product-rail img { object-fit: contain; background: transparent; mix-blend-mode: multiply; }
 
 /* Loading placeholder with a soft light sweep (moves right-to-left for RTL). */
-.skeleton-shimmer {
+/* :where() keeps these at zero specificity so utilities (absolute, rounded-*)
+   on the same element still win. */
+:where(.skeleton-shimmer) {
   position: relative;
   overflow: hidden;
   border-radius: 10px;

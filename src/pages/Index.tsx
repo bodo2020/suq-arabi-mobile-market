@@ -5,7 +5,6 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import StoreStructuredData from '@/components/seo/StoreStructuredData';
 import DynamicHomeSections from '@/components/sections/DynamicHomeSections';
-import UnifiedCatalogSection from '@/components/sections/UnifiedCatalogSection';
 import { useCustomerDeliveryHeader } from '@/hooks/useCustomerDeliveryHeader';
 
 const Index = () => {
@@ -49,7 +48,6 @@ const Index = () => {
         </button>
 
         <DynamicHomeSections hidePromotions showBanners />
-        <UnifiedCatalogSection />
       </div>
     </MainLayout>
   );
