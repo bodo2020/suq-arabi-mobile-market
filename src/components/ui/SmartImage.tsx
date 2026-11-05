@@ -64,7 +64,9 @@ const SmartImage: React.FC<SmartImageProps> = ({
 
   return (
     <span ref={hostRef} className="relative block h-full w-full overflow-hidden bg-white">
-      {!loaded && <span className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-50 via-white to-slate-100" aria-hidden="true" />}
+      {/* Static placeholder: a pulse here ran on every not-yet-loaded card (including
+          off-screen lazy ones) and forced a style recalc every frame. */}
+      {!loaded && <span className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100" aria-hidden="true" />}
       {shouldLoad && (
         <img
           key={`${finalSource}:${attempt}`}

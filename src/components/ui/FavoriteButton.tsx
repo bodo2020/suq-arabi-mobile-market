@@ -66,7 +66,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   if (!favoritesLoaded) {
     return (
       <div className={baseClassName}>
-        <Heart size={sizeMap[size]} strokeWidth={2} className="animate-pulse text-gray-200" />
+        <Heart size={sizeMap[size]} strokeWidth={2} className="text-gray-200" />
       </div>
     );
   }

@@ -57,7 +57,7 @@ function ProductSwipePeek({
       aria-hidden={!visible}
       aria-label={`عرض تفاصيل ${title}`}
       dir="rtl"
-      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none will-change-transform ${transitioning ? 'transition-[transform,opacity] duration-[220ms] ease-out' : 'transition-opacity duration-[160ms]'} ${shown ? 'opacity-100' : 'opacity-0'}`}
+      className={`absolute bottom-0 left-1/2 ${handoff ? 'z-20 pointer-events-none' : 'z-[1]'} flex h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] flex-col overflow-hidden rounded-t-[30px] bg-[#f7f9f8] text-right motion-reduce:transition-none will-change-transform ${transitioning ? 'transition-[transform,opacity] duration-[220ms] ease-out' : 'transition-opacity duration-[160ms]'} ${shown ? 'opacity-100' : 'opacity-0'}`}
       style={{ transform: `translate3d(calc(${position} + var(--product-swipe-x, 0px)), var(--product-dismiss-y, 0px), 0)` }}
     >
       {/* Same geometry as the real sheet: photo at the top, floating round buttons. */}

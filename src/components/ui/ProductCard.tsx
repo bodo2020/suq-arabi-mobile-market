@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { appNavigate, currentRouterLocation } from '@/lib/appNavigation';
 import { collectProductBrowseState } from '@/lib/productBrowsing';
-import { captureProductCardOrigin } from '@/lib/productSheetMotion';
 import { announceProductAdded } from '@/lib/brandMicroMotion';
 import { observeProductCardImage, prepareProductBrowseImages } from '@/lib/productImagePipeline';
 import { registerBrowsableProduct, seedProductBrowseCache } from '@/lib/productDetailCache';
@@ -106,7 +105,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
     // Begin image decode before routing, while the listing images are already
     // on screen and likely present in the browser's HTTP cache.
     prepareProductBrowseImages(browseState.productBrowse.previews, browseState.productBrowse.paths, index);
-    const productCardOrigin = captureProductCardOrigin(event.currentTarget, detailHref);
     const inheritedBackground = (location.state as { backgroundLocation?: typeof location } | null)?.backgroundLocation;
     const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
     const backgroundLocation = inheritedBackground ||
@@ -117,7 +115,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
         // product into browser history on each swipe.
         productBrowseKey: browseState.productBrowseKey,
         ...(backgroundLocation ? { backgroundLocation } : {}),
-        ...(mobile && productCardOrigin ? { productCardOrigin } : {}),
       },
       // Don't stack nested sheets when tapping a recommendation inside a sheet.
       replace: Boolean(inheritedBackground),

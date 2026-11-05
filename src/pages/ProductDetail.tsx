@@ -1033,7 +1033,7 @@ const ProductDetail = () => {
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`product-sheet-card relative z-10 h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none will-change-transform ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
+          className={`product-sheet-card relative z-10 h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] overflow-hidden rounded-t-[30px] bg-[#f7f9f8] motion-reduce:transition-none will-change-transform ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
           style={{ transform: 'translate3d(var(--product-swipe-x, 0px), var(--product-dismiss-y, 0px), 0)' }}
           onTransitionEnd={event => {
             if (event.currentTarget !== event.target || event.propertyName !== 'transform') return;
