@@ -23,6 +23,9 @@ const toHex = ([r, g, b]: Rgba) =>
 // The page colour right under the status bar: the first opaque background
 // (or the first stop of a gradient) found from the top-centre element upward.
 function colorAtTop(): string {
+  // The pull-to-refresh panel ignores pointer events, so elementFromPoint
+  // would see past it; while it is open the top of the screen is mint.
+  if (document.querySelector('.brand-pull-panel')) return FALLBACK;
   let el = document.elementFromPoint(window.innerWidth / 2, 1) as HTMLElement | null;
   while (el) {
     const style = getComputedStyle(el);
@@ -74,11 +77,14 @@ export default function NativeStatusBarSync() {
     const timers = [120, 450, 1200].map(ms => window.setTimeout(schedule, ms));
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
+    // Pull-to-refresh opens/closes without scrolling the page.
+    window.addEventListener('brand-pull-change', schedule);
     return () => {
       timers.forEach(window.clearTimeout);
       if (frame != null) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
+      window.removeEventListener('brand-pull-change', schedule);
     };
   }, [location.pathname, location.search]);
 

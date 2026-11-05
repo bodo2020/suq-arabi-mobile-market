@@ -1,7 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import BrandLoader from '@/components/ui/BrandLoader';
+import BrandMark from './BrandMark';
+import BrandWordmark from './BrandWordmark';
+
+const THRESHOLD = 96;
+// Little brand-coloured pieces that pop around the logo once the pull is far enough.
+const CONFETTI = [
+  { x: -150, y: -30, r: 20, c: '#FFC120' }, { x: -168, y: 10, r: -15, c: '#005931' },
+  { x: -132, y: 26, r: 45, c: '#9ED9B6' }, { x: 150, y: -28, r: -25, c: '#005931' },
+  { x: 168, y: 12, r: 30, c: '#FFC120' }, { x: 134, y: 28, r: 10, c: '#9ED9B6' },
+  { x: -60, y: -46, r: 45, c: '#9ED9B6' }, { x: 40, y: -48, r: -10, c: '#FFC120' },
+  { x: -10, y: -54, r: 35, c: '#005931' },
+];
+const SETTLE_MS = 280;
 
 /** Native-only pull indicator: regular Chrome already implements pull-to-reload.
  * Refresh active read queries without navigating, remounting or touching carts.
@@ -60,7 +73,7 @@ export default function BrandPullToRefresh() {
       if (dy < 8 || dx > dy * .7 ||
           window.scrollY > 0 || (document.scrollingElement?.scrollTop ?? 0) > 0) return;
       if (event.cancelable) event.preventDefault();
-      pullRef.current = Math.min(110, dy * .55);
+      pullRef.current = Math.min(150, dy * .55);
       if (frameRef.current === null) {
         frameRef.current = requestAnimationFrame(() => {
           frameRef.current = null;
@@ -70,7 +83,7 @@ export default function BrandPullToRefresh() {
     };
 
     const end = () => {
-      const shouldRefresh = pullRef.current >= 75 && navigator.onLine && !refreshingRef.current;
+      const shouldRefresh = pullRef.current >= THRESHOLD && navigator.onLine && !refreshingRef.current;
       resetGesture();
       if (!shouldRefresh) return;
       refreshingRef.current = true;
@@ -105,11 +118,77 @@ export default function BrandPullToRefresh() {
     };
   }, [enabled, queryClient, pathname]);
 
-  if (!enabled || (!pull && !refreshing)) return null;
-  return (
-    <div className="brand-pull-refresh" role="status" aria-live="polite">
-      <BrandLoader size="md" label={refreshing ? 'جاري تحديث البيانات' : 'اسحب للتحديث'} />
-      <span>{refreshing ? 'جاري التحديث…' : pull >= 75 ? 'افلت للتحديث' : 'اسحب للتحديث'}</span>
-    </div>
+  // The whole app slides down with the finger (like a native pull-to-refresh)
+  // and reveals the brand panel behind it. The transform is removed entirely
+  // when idle so fixed headers/bottom nav go back to normal positioning.
+  // On release the page slides straight back; the refresh runs in the background.
+  const offset = pull;
+  const [panelVisible, setPanelVisible] = useState(false);
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (!root) return;
+    if (offset > 0) {
+      setPanelVisible(true);
+      const dragging = pull > 0;
+      root.dataset.pull = dragging ? 'drag' : 'settle';
+      root.style.setProperty('--pull-offset', `${offset}px`);
+      root.style.transition = dragging ? 'none' : `transform ${SETTLE_MS}ms cubic-bezier(.2,.8,.2,1)`;
+      root.style.transform = `translate3d(0, ${offset}px, 0)`;
+      return;
+    }
+    if (!root.style.transform) return;
+    root.dataset.pull = 'settle';
+    root.style.setProperty('--pull-offset', '0px');
+    root.style.transition = `transform ${SETTLE_MS}ms cubic-bezier(.2,.8,.2,1)`;
+    root.style.transform = 'translate3d(0, 0, 0)';
+    const timer = window.setTimeout(() => {
+      delete root.dataset.pull;
+      root.style.removeProperty('--pull-offset');
+      root.style.transition = '';
+      root.style.transform = '';
+      setPanelVisible(false);
+    }, SETTLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [offset, pull]);
+
+  // Let the native status bar re-sample its colour when the panel opens/closes.
+  useEffect(() => {
+    window.dispatchEvent(new Event('brand-pull-change'));
+  }, [panelVisible]);
+
+  useEffect(() => () => {
+    const root = document.getElementById('root');
+    if (root) { delete root.dataset.pull; root.style.removeProperty('--pull-offset'); root.style.transition = ''; root.style.transform = ''; }
+  }, []);
+
+  if (!enabled || (!panelVisible && !pull)) return null;
+  const progress = Math.min(1, pull / THRESHOLD);
+  const label = pull >= THRESHOLD ? 'سيب وهنحدّثلك' : 'اسحب لتحت عشان تحدّث';
+  return createPortal(
+    <div
+      className="brand-pull-panel"
+      style={{ height: `calc(var(--safe-area-top, 0px) + ${Math.max(offset, 0)}px)`, '--pull-progress': progress } as CSSProperties}
+      role="status"
+      aria-live="polite"
+    >
+      <div className="brand-pull-panel__content">
+        <span className="brand-pull-panel__brand">
+          {pull >= THRESHOLD && (
+            <span className="brand-pull-panel__confetti" aria-hidden="true">
+              {CONFETTI.map((piece, index) => (
+                <i
+                  key={index}
+                  style={{ '--x': `${piece.x}px`, '--y': `${piece.y}px`, '--r': `${piece.r}deg`, background: piece.c, animationDelay: `${index * 18}ms` } as CSSProperties}
+                />
+              ))}
+            </span>
+          )}
+          <BrandMark className="brand-pull-panel__mark" />
+          <BrandWordmark className="brand-name--home brand-pull-panel__wordmark" />
+        </span>
+        <span className="brand-pull-panel__label">{label}</span>
+      </div>
+    </div>,
+    document.body,
   );
 }

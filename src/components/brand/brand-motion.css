@@ -70,30 +70,72 @@
   animation: brand-wordmark-arrive 440ms 180ms both;
 }
 .brand-intro--refresh .brand-name--intro { animation-delay: 200ms; }
-.brand-pull-refresh {
+/* Pull-to-refresh: the app slides down and reveals this brand panel behind it. */
+.brand-pull-panel {
   position: fixed;
-  z-index: 90;
-  top: calc(var(--safe-area-top, 0px) + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
+  z-index: 40;
+  inset: 0 0 auto 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
   justify-content: center;
-  gap: 12px;
-  min-width: 164px;
-  padding: 8px 16px;
-  border: 1px solid #d9ece0;
-  border-radius: 22px;
-  background: rgba(255,255,255,.97);
-  box-shadow: 0 8px 24px rgba(0,65,36,.1);
-  color: #005931;
-  font-family: 'Thmanyah', 'Cairo', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
+  padding-top: var(--safe-area-top, 0px);
+  background: linear-gradient(180deg, #e6f9ee 0%, #f1fbf5 100%);
   pointer-events: none;
 }
-.brand-pull-refresh .brand-loader { width: 25px; height: 34px; }
+.brand-pull-panel__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 22px;
+  opacity: calc(.25 + .75 * var(--pull-progress, 0));
+  transform: scale(calc(.82 + .18 * var(--pull-progress, 0)));
+  transform-origin: 50% 100%;
+}
+.brand-pull-panel__brand {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  direction: rtl;
+}
+.brand-pull-panel__mark { width: 38px; height: auto; }
+.brand-pull-panel__mark img { width: 100%; height: auto; display: block; }
+.brand-pull-panel .brand-pull-panel__wordmark { font-size: 34px; line-height: 1.2; }
+/* #root slides down during the pull; keep the fixed bottom nav where it is. */
+/* Inside the transformed #root a fixed element is laid out against #root (the
+   whole page), so pin the nav to the viewport bottom explicitly. */
+#root[data-pull] .bottom-nav {
+  top: calc(100vh - 68px - .75rem - var(--safe-area-bottom, 0px) - var(--pull-offset, 0px));
+  bottom: auto;
+}
+#root[data-pull="settle"] .bottom-nav { transition: top 280ms cubic-bezier(.2,.8,.2,1); }
+.brand-pull-panel__confetti { position: absolute; inset: 50% auto auto 50%; width: 0; height: 0; }
+.brand-pull-panel__confetti i {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: brand-pull-confetti 520ms cubic-bezier(.2,.9,.3,1.2) forwards;
+}
+@keyframes brand-pull-confetti {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(.3); }
+  60% { opacity: 1; }
+  100% { opacity: .9; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(1); }
+}
+.brand-pull-panel__label {
+  color: #005931;
+  font-family: 'Thmanyah', 'Cairo', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-pull-panel__confetti i { animation: none; opacity: 1; transform: translate(var(--x), var(--y)) rotate(var(--r)); }
+}
 .brand-cart-feedback {
   position: fixed;
   bottom: calc(94px + env(safe-area-inset-bottom,0px));
