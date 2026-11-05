@@ -25,6 +25,7 @@ import {
   savePendingMarketplaceCheckout,
   type PendingMarketplaceCheckout,
 } from '@/lib/marketplaceCheckout';
+import { reconcilePendingCheckoutAttempt } from '@/lib/checkout';
 import { DEFAULT_SUBSTITUTION_POLICY, type SubstitutionPolicy } from '@/lib/substitutionPolicy';
 
 const WALLET_PHONE_NUMBER = '01005245096';
@@ -106,6 +107,7 @@ export default function MarketplacePayment() {
 
     submitting.current = true;
     setLoading(true);
+    let submittedAttempt: PendingMarketplaceCheckout | null = null;
     try {
       const candidate: PendingMarketplaceCheckout = pending || {
         requestId,
@@ -120,6 +122,7 @@ export default function MarketplacePayment() {
       };
       if (!pending) savePendingMarketplaceCheckout(user.id, candidate);
       setPending(candidate);
+      submittedAttempt = candidate;
 
       const placed = await placeMarketplaceOrder(candidate);
       removePendingMarketplaceCheckout(user.id);
@@ -128,7 +131,35 @@ export default function MarketplacePayment() {
       navigate('/order-success', { state: { orderId: placed.id, orderNumber: placed.tracking_number, amountDue: placed.amount_due } });
     } catch (error) {
       const message = marketplaceCheckoutError(error);
-      if (marketplaceDefinitelyRejected(error)) {
+      // placeMarketplaceOrder re-quotes before the idempotent place RPC, so a
+      // "rejection" on a resend can hide an order that an earlier send of the
+      // same request already committed. Check the request ID first.
+      const attempt = submittedAttempt || pending;
+      let attemptState: 'placed' | 'absent' | 'unknown' = attempt ? 'unknown' : 'absent';
+      if (attempt) {
+        try {
+          const resolved = await reconcilePendingCheckoutAttempt(attempt.requestId);
+          if (resolved.exists && resolved.id) {
+            removePendingMarketplaceCheckout(user.id);
+            setPending(null);
+            clearCart();
+            navigate('/order-success', {
+              replace: true,
+              state: {
+                orderId: resolved.id,
+                orderNumber: resolved.tracking_number || resolved.id,
+                amountDue: Number(resolved.amount_due ?? resolved.total ?? 0),
+                recovered: true,
+              },
+            });
+            return;
+          }
+          attemptState = 'absent';
+        } catch (recoveryError) {
+          console.warn('Marketplace checkout reconciliation unavailable:', recoveryError);
+        }
+      }
+      if (marketplaceDefinitelyRejected(error) && attemptState === 'absent') {
         removePendingMarketplaceCheckout(user.id);
         setPending(null);
         setRequestId(crypto.randomUUID());

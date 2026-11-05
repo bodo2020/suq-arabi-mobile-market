@@ -271,45 +271,55 @@ const Payment = () => {
       console.error('Secure checkout error:', error);
       const rejected = definitelyRejected(error);
       const message = checkoutError(error);
-      if (rejected) {
+      // Always reconcile the persisted request ID before deciding anything.
+      // A "rejection" can come from the client-side re-quote in placeOrder,
+      // which runs *before* the idempotent place RPC: if an earlier send of
+      // this same attempt already committed (and took the last stock), the
+      // re-quote fails although the order exists. Dropping the attempt then
+      // would let the customer place a duplicate order.
+      const attempt = submittedAttempt || pendingCheckout;
+      let attemptState: 'placed' | 'absent' | 'unknown' = attempt ? 'unknown' : 'absent';
+      if (attempt) {
+        try {
+          const resolved = await reconcilePendingCheckoutAttempt(attempt.requestId);
+          if (resolved.exists && resolved.id) {
+            attemptState = 'placed';
+            removePendingCheckout(user.id);
+            setPendingCheckout(null);
+            setWalletDialogOpen(false);
+            setSelectedVoucherId('none');
+            if (JSON.stringify(attempt.items) === serializedLines) clearCart();
+            void Promise.allSettled([
+              queryClient.invalidateQueries({ queryKey: ['loyalty-vouchers', user.id] }),
+              queryClient.invalidateQueries({ queryKey: ['loyalty-card', user.id] }),
+              queryClient.invalidateQueries({ queryKey: ['customer-loyalty-card', user.id] }),
+            ]);
+            navigate('/order-success', {
+              replace: true,
+              state: {
+                orderId: resolved.id,
+                orderNumber: resolved.tracking_number || resolved.id,
+                voucherAmount: Number(resolved.loyalty_voucher_amount || 0),
+                amountDue: Number(resolved.amount_due ?? Math.max(0, Number(resolved.total || 0) - Number(resolved.loyalty_voucher_amount || 0))),
+                recovered: true,
+              },
+            });
+            return;
+          }
+          attemptState = 'absent';
+        } catch (recoveryError) {
+          console.warn('Checkout attempt reconciliation unavailable:', recoveryError);
+        }
+      }
+
+      if (rejected && attemptState === 'absent') {
         resetAttempt();
         await Promise.all([quoteQuery.refetch(), vouchersQuery.refetch()]);
         toast({ title: 'راجع الطلب قبل التأكيد', description: message, variant: 'destructive' });
       } else {
-        // The response may have been lost *after* the order committed.
-        // Reconcile the same persisted request ID first; never create a new one.
+        // The response may have been lost *after* the order committed, or we
+        // could not confirm the attempt's state: keep the same request ID.
         // A negative/failed lookup is not proof that a delayed request cannot arrive.
-        const attempt = submittedAttempt || pendingCheckout;
-        if (attempt) {
-          try {
-            const resolved = await reconcilePendingCheckoutAttempt(attempt.requestId);
-            if (resolved.exists && resolved.id) {
-              removePendingCheckout(user.id);
-              setPendingCheckout(null);
-              setWalletDialogOpen(false);
-              setSelectedVoucherId('none');
-              if (JSON.stringify(attempt.items) === serializedLines) clearCart();
-              void Promise.allSettled([
-                queryClient.invalidateQueries({ queryKey: ['loyalty-vouchers', user.id] }),
-                queryClient.invalidateQueries({ queryKey: ['loyalty-card', user.id] }),
-                queryClient.invalidateQueries({ queryKey: ['customer-loyalty-card', user.id] }),
-              ]);
-              navigate('/order-success', {
-                replace: true,
-                state: {
-                  orderId: resolved.id,
-                  orderNumber: resolved.tracking_number || resolved.id,
-                  voucherAmount: Number(resolved.loyalty_voucher_amount || 0),
-                  amountDue: Number(resolved.amount_due ?? Math.max(0, Number(resolved.total || 0) - Number(resolved.loyalty_voucher_amount || 0))),
-                  recovered: true,
-                },
-              });
-              return;
-            }
-          } catch (recoveryError) {
-            console.warn('Checkout attempt reconciliation unavailable:', recoveryError);
-          }
-        }
         toast({
           title: 'لسه مش قادرين نتأكد من نتيجة الطلب',
           description: 'المحاولة محفوظة بنفس رقمها. راجع «طلباتي»، أو اضغط «تأكيد الطلب» تاني لاستكمال نفس المحاولة من غير تكرار.',

@@ -175,11 +175,13 @@ Deno.serve(async (request: Request) => {
     } catch (error) {
       const code = error instanceof Error ? error.message : "ORDER_GROUP_REPRICE_FAILED";
       console.error("order-group-reprice route/apply failed", code);
-      await caller.rpc("mark_order_group_reprice_failed_v1", {
+      // Supabase query builders are thenables without .catch(); errors come back in { error }.
+      const { error: markError } = await caller.rpc("mark_order_group_reprice_failed_v1", {
         p_group_id: groupId,
         p_request_id: context.request_id,
         p_error: code,
-      }).catch(() => null);
+      });
+      if (markError) console.error("order-group-reprice mark failed", markError.message);
       return json({ error: code, request_id: context.request_id }, 400);
     }
   } catch (error) {

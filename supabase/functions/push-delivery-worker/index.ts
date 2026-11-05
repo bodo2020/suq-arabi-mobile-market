@@ -133,7 +133,9 @@ Deno.serve(async req => {
           lastError = message.slice(0, 500)
           // Stale token: disable the device so future sends skip it.
           if (status === 404 || status === 400) {
-            await supabase.rpc('disable_push_device_token_v2', { p_device_id: device.device_id }).catch(() => undefined)
+            // Supabase query builders are thenables without .catch(); errors come back in { error }.
+            const { error: disableError } = await supabase.rpc('disable_push_device_token_v2', { p_device_id: device.device_id })
+            if (disableError) console.warn('disable_push_device_token_v2 failed:', disableError.message)
           }
         }
       }
