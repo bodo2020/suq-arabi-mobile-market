@@ -76,7 +76,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const isTitle = mode === 'title';
   const needsBack = showBackButton || isSearch;
   // Only the mobile home and categories hero headers collapse; all other
-  // routes keep the original header. Categories retains its back action.
+  // routes keep the original header. Categories is a bottom-nav tab, so like
+  // home it has no back action.
   const collapsibleHome = isHero && (location.pathname === '/' || location.pathname === '/categories');
 
   // The hero is part of the document scroll, not a second fixed viewport.
@@ -200,7 +201,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
           <div className="flex min-h-[66px] items-start justify-between gap-2">
             <div className={`flex min-w-0 items-center gap-1 pt-2 ${collapsibleHome ? 'home-hero-brand' : ''}`}>
               {needsBack && (
-                <button type="button" onClick={goBack} aria-label="رجوع" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 active:bg-emerald-50">
+                <button type="button" onClick={goBack} aria-label="رجوع" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/90 active:bg-emerald-50">
                   <ArrowRight size={19} />
                 </button>
               )}

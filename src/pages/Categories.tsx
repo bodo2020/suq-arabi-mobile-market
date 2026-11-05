@@ -37,8 +37,6 @@ const Categories = () => {
         variant="hero"
         homeHero
         hideLogo
-        showBackButton
-        onBack={() => navigate(-1)}
         searchPlaceholder="دور على منتج أو قسم…"
         onSearchFocus={() => navigate('/search', { state: { focusSearch: true } })}
         searchProps={{ appearance: 'category' }}

@@ -259,7 +259,8 @@ export default function Search() {
               </div>
               {!loading && !error && <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-[#005931]">{counts.all} نتيجة</span>}
             </div>
-            <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1" dir="rtl">
+            {/* Chips scroll sideways: hide the native scrollbar and fade the far (left) edge so the cut-off chip reads as "more". */}
+            <div className="hide-scrollbar mb-4 flex items-center gap-2 overflow-x-auto pb-1 pl-6 [-webkit-mask-image:linear-gradient(to_left,transparent,black_28px)] [mask-image:linear-gradient(to_left,transparent,black_28px)]" dir="rtl">
               {([
                 ['all','الكل'],
                 ['available','متوفر'],
