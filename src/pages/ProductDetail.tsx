@@ -68,7 +68,10 @@ const ProductDetail = () => {
   }, []);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closingRef = useRef(false);
-  const [sheetVisible, setSheetVisible] = useState(false);
+  // The entrance is a compositor-only slide driven by --product-dismiss-y
+  // (see the entrance effect), so no React re-render happens mid-animation.
+  const [sheetVisible] = useState(true);
+  const enteredRef = useRef(false);
   const [sheetDragging, setSheetDragging] = useState(false);
   const [swipeAnimating, setSwipeAnimating] = useState(false);
   const [swipeLocked, setSwipeLocked] = useState(false);
@@ -232,18 +235,16 @@ const ProductDetail = () => {
       finish();
       return;
     }
-    // Keep all three sheets moving together while the backdrop and sheets
-    // fade as one layer. No expensive full-screen resize or shadow animation.
-    setDismissMotion(true, 185);
-    const stage = sheetStage.current;
-    if (stage) {
-      const center = stage.querySelector<HTMLElement>('[data-product-center-card]');
-      const current = Number.parseFloat(center?.style.getPropertyValue('--product-dismiss-y') || '') || 0;
-      stage.style.transition = 'opacity 185ms ease-out';
-      stage.style.opacity = '0';
-      setCardsVar('--product-dismiss-y', `${Math.max(current + 64, 72)}px`);
+    // All three cards slide down off-screen together and the backdrop fades:
+    // transform + opacity on layers that already exist, nothing to repaint.
+    setDismissMotion(true, 240);
+    setCardsVar('--product-dismiss-y', `${Math.round(window.innerHeight)}px`);
+    const backdrop = backdropRef.current;
+    if (backdrop) {
+      backdrop.style.transition = 'opacity 240ms ease-out';
+      backdrop.style.opacity = '0';
     }
-    closeTimer.current = setTimeout(finish, 195);
+    closeTimer.current = setTimeout(finish, 250);
   };
 
   // ---- Drag down to close -------------------------------------------------
@@ -593,12 +594,35 @@ const ProductDetail = () => {
     return () => window.clearTimeout(timer);
   }, [browse, browseIndex, queryClient, isMobile]);
 
-  // Lightweight 28px entrance uses compositor-only transform/opacity.
+  // Entrance: all three cards slide up from below together while the
+  // backdrop fades in. Positioned off-screen before the first paint, then
+  // animated by changing one non-inherited variable per card (no re-render).
   useLayoutEffect(() => {
-    if (!product || !isMobile || sheetVisible || closingRef.current) return;
-    const frame = requestAnimationFrame(() => setSheetVisible(true));
-    return () => cancelAnimationFrame(frame);
-  }, [Boolean(product), isMobile, sheetVisible]);
+    if (!product || !isMobile || enteredRef.current || closingRef.current) return;
+    enteredRef.current = true;
+    if (prefersReducedProductMotion()) return;
+    const backdrop = backdropRef.current;
+    setDismissMotion(false);
+    setCardsVar('--product-dismiss-y', `${Math.round(window.innerHeight * .9)}px`);
+    if (backdrop) { backdrop.style.transition = 'none'; backdrop.style.opacity = '0'; }
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        setDismissMotion(true, 340);
+        setCardsVar('--product-dismiss-y', '0px');
+        if (backdrop) {
+          backdrop.style.transition = 'opacity 280ms ease-out';
+          backdrop.style.opacity = '1';
+        }
+      });
+    });
+    const settle = window.setTimeout(() => {
+      if (closingRef.current || dismissGesture.current) return;
+      sheetStage.current?.querySelectorAll<HTMLElement>('[data-product-center-card], [data-product-swipe-card]')
+        .forEach(card => card.style.removeProperty('transition'));
+    }, 380);
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); window.clearTimeout(settle); };
+  }, [Boolean(product), isMobile]);
 
   // Only begin secondary network work once the user gets near the bottom of
   // the sheet (or the lower section on desktop). The hero renders independently.
@@ -964,18 +988,20 @@ const ProductDetail = () => {
 
   return (
     <DetailShell>
-      <SEOHead
+      {/* SEO/structured data only for the standalone page: inside the catalog
+          overlay they rewrote ~13 <head> tags on every open and swipe. */}
+      {!inCatalogOverlay && <SEOHead
         title={`${displayName} - سوبر ماركو`}
         description={product.description || `اشتري ${displayName} من سوبر ماركو`}
         image={images[0]}
         type="product"
-      />
-      {structuredProduct && !isPreviewOnly && <ProductStructuredData product={structuredProduct} />}
-      <BreadcrumbStructuredData items={[
+      />}
+      {!inCatalogOverlay && structuredProduct && !isPreviewOnly && <ProductStructuredData product={structuredProduct} />}
+      {!inCatalogOverlay && <BreadcrumbStructuredData items={[
         { name: 'الرئيسية', url: '/' },
         { name: bulkMode ? 'منتجات الجملة' : 'المنتجات', url: bulkMode ? '/bulk-products' : '/categories' },
         { name: displayName, url: bulkMode ? `/product/${product.id}?unit=bulk` : `/product/${product.id}` },
-      ]} />
+      ]} />}
 
       <div className="hidden md:block"><TopNavBar hideLogo hideSearch pageTitle="تفاصيل المنتج" showBackButton onBack={() => navigate(-1)} /></div>
 
@@ -1007,8 +1033,8 @@ const ProductDetail = () => {
           aria-modal="true"
           aria-label={`تفاصيل ${displayName}`}
           dir="rtl"
-          className={`product-sheet-card relative z-10 h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none ${sheetDragging ? 'will-change-transform transition-none' : swipeAnimating ? 'will-change-transform transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : 'transition-[transform,opacity] duration-[190ms] ease-out'}`}
-          style={{ transform: `translate3d(var(--product-swipe-x, 0px), calc(${sheetVisible ? '0px' : '28px'} + var(--product-dismiss-y, 0px)), 0)`, opacity: sheetVisible ? 1 : 0 }}
+          className={`product-sheet-card relative z-10 h-[calc(100dvh-64px)] w-[92vw] max-w-[680px] overflow-hidden rounded-t-[30px] bg-[#f7f9f8] shadow-[0_10px_30px_rgba(0,0,0,.13)] motion-reduce:transition-none will-change-transform ${sheetDragging ? 'transition-none' : swipeAnimating ? 'transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
+          style={{ transform: 'translate3d(var(--product-swipe-x, 0px), var(--product-dismiss-y, 0px), 0)' }}
           onTransitionEnd={event => {
             if (event.currentTarget !== event.target || event.propertyName !== 'transform') return;
             if (pendingSwipeNavigation.current) {
