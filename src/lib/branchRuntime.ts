@@ -40,6 +40,22 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 
 let cachedRuntime: BranchRuntimeContext | null | undefined;
 let pendingRuntime: Promise<BranchRuntimeContext | null> | null = null;
+// The branch saved on this device last time. At app start it is served
+// immediately (stale-while-revalidate) while the real lookup — delivery
+// branch -> road-distance check -> branch runtime, ~1.5s on mobile — runs in
+// the background. Cleared whenever the delivery address changes, so an old
+// branch is never shown for a new address. Checkout re-prices server-side.
+let staleRuntime: BranchRuntimeContext | null | undefined;
+
+function getStaleRuntime(): BranchRuntimeContext | null {
+  if (staleRuntime === undefined) staleRuntime = readPersistedBranchRuntime();
+  return staleRuntime;
+}
+
+/** The best branch known right now without waiting: resolved, else saved. */
+export function peekBranchRuntime(): BranchRuntimeContext | null {
+  return cachedRuntime ?? getStaleRuntime() ?? null;
+}
 
 function readPersistedBranchRuntime(): BranchRuntimeContext | null {
   if (typeof window === 'undefined') return null;
@@ -124,14 +140,25 @@ async function resolveSelectedBranchId(): Promise<string | null> {
   return match?.branch_id || null;
 }
 
+/** Forget everything, including the saved branch (e.g. the address changed). */
 export function resetBranchRuntimeCache() {
   cachedRuntime = undefined;
   pendingRuntime = null;
+  staleRuntime = null;
 }
 
 export async function loadBranchRuntimeContext(force = false): Promise<BranchRuntimeContext | null> {
   if (!force && cachedRuntime !== undefined) return cachedRuntime;
-  if (!force && pendingRuntime) return pendingRuntime;
+  if (!force) {
+    const stale = getStaleRuntime();
+    if (stale) {
+      if (!pendingRuntime) void loadBranchRuntimeContext(true).catch(() => {});
+      return stale;
+    }
+  }
+  // One lookup at a time: a forced call joins the one already running
+  // (resetBranchRuntimeCache() drops it when the address changes).
+  if (pendingRuntime) return pendingRuntime;
 
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     const persisted = readPersistedBranchRuntime();
