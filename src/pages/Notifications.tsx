@@ -62,7 +62,10 @@ const Notifications = () => {
   const allItems = notifications.data?.items || [];
   const unreadCount = notifications.data?.summary.unread || 0;
   const todayCount = notifications.data?.summary.today || 0;
-  const items = category === 'all' ? allItems : allItems.filter(item => item.category === category);
+  // Newest first, so the day groups read النهارده → أقدم.
+  const items = (category === 'all' ? allItems : allItems.filter(item => item.category === category))
+    .slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const countFor = (key: Category) => key === 'all' ? allItems.length : allItems.filter(item => item.category === key).length;
   const visibleFilters = CATEGORY_FILTERS.filter(entry => entry.key === 'all' || countFor(entry.key) > 0);
   const groups = items.reduce<Array<{ label: string; items: CustomerNotificationItemV2[] }>>((acc, item) => {
