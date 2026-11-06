@@ -5,6 +5,8 @@ import { ArrowLeft, BadgePercent, Check, Package, Plus, Minus, Trash2, Scale, Al
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
 import CartEmptyState from '@/components/cart/CartEmptyState';
+import CartSuggestions from '@/components/cart/CartSuggestions';
+import BrandBagIcon from '@/components/brand/BrandBagIcon';
 import WeightSelector from '@/components/ui/WeightSelector';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/useCart';
@@ -84,13 +86,16 @@ export default function Cart() {
     {(branchError || quoteError) && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{branchError || quoteError}</span><Button variant="outline" onClick={() => void retryQuote()}><RefreshCw size={16} />إعادة المراجعة</Button></div>}
 
     {!isInitialized ? <div className="cart-loading"><BrandLoader size="lg" /><span>{syncError ? 'سلتك المحفوظة لم تُحمّل بعد' : 'بنجهّز سلتك'}</span></div> : !items.length ?
-      <CartEmptyState /> : <>
-      <div className="cart-heading border-b border-brand-yellow/50 pb-3">
-        <div><h1>سلتك، على ذوقك.</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
+      <><CartEmptyState /><CartSuggestions title="ابدأ بالأساسيات" subtitle="اختيارات من أقسام سوبر ماركو تضيفها بضغطة" /></> : <>
+      <div className="cart-heading">
+        <div className="flex items-center gap-3">
+          <span className="cart-heading-icon"><BrandBagIcon size={26} strokeWidth={2.3} accent="#E0A800" /></span>
+          <div><h1>سلتك</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
+        </div>
         <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />سلتك محفوظة</> : 'سلة الضيف جاهزة'}</div>
       </div>
 
-      {branch && <div className="cart-alert" role="status">
+      {branch && <div className="cart-info" role="status">
         <Clock3 size={18} />
         <span>
           {combinedCart && quote?.stores_count ? <>طلب مجمّع من <strong>{money(quote.stores_count)} متاجر</strong> · </> : marketplaceCart && quote?.merchant_name ? <>طلب من <strong>{quote.merchant_name}</strong> · </> : null}
@@ -98,7 +103,7 @@ export default function Cart() {
         </span>
       </div>}
 
-      {quote?.delivery_campaign && Number(quote.delivery_campaign.discount || 0) > 0 && <div className="cart-alert" role="status">
+      {quote?.delivery_campaign && Number(quote.delivery_campaign.discount || 0) > 0 && <div className="cart-info cart-info--gold" role="status">
         <BadgePercent size={18} />
         <span><strong>{quote.delivery_campaign.name}</strong> · وفّرت {money(Number(quote.delivery_campaign.discount || 0))} ج.م من التوصيل</span>
       </div>}
@@ -136,7 +141,7 @@ export default function Cart() {
             <div>
               <div className="cart-line-heading">
                 <div><Link to={productHref} className="cart-product-name">{item.product.name}</Link><div className="mt-1 text-[11px] font-bold text-primary">{item.commerce_source === 'marketplace' ? (item.merchant_name || item.marketplace_branch_name || 'متجر شريك') : 'ماركت المعداوي'}</div><div className="cart-kind">{item.is_bulk ? <><Package size={14} />{bulkUnitType} · {money(bulkQty)} قطعة</> : isWeight ? <><Scale size={14} />بالوزن · الخطوة {formatWeightAmount(weightStep)}</> : 'بالقطعة'}</div></div>
-                <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk, item.marketplace_listing_id || null)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>
+                {(isWeight ? item.quantity > weightStep : item.quantity > 1) && <button className="cart-remove" onClick={() => removeFromCart(item.product.id, !!item.is_bulk, item.marketplace_listing_id || null)} aria-label={`حذف ${item.product.name}`}><Trash2 size={18} /></button>}
               </div>
               <p className="cart-unit-price">{money(unitPrice)} ج.م {item.is_bulk ? `/ ${bulkUnitType}` : isWeight ? '/ كجم' : '/ قطعة'}{line && <span className="mr-2 text-[11px] text-primary">سعر الفرع</span>}</p>
               <div className="cart-line-bottom">
@@ -181,6 +186,8 @@ export default function Cart() {
         {cta}
         {!user && <p className="cart-help">سجّل برقم موبايلك وكلمة المرور عشان تكمّل الطلب.</p>}
       </aside></div>
+
+      <div className="cart-after-list"><CartSuggestions title="كمّل سلتك" subtitle="حاجات ممكن تكون نسيتها" excludeIds={items.map(item => item.product.id)} /></div>
 
       <div className="cart-mobile-action"><div className="border-r-[3px] border-brand-yellow pr-2"><span>الإجمالي شامل التوصيل</span><strong>{quotePending ? '...' : `${money(total)} ج.م`}</strong></div>{cta}</div>
     </>}

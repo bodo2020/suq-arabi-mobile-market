@@ -41,6 +41,17 @@
   from { opacity: .78; transform: scale(.88); }
   to { opacity: 1; transform: scale(1); }
 }
+/* Bottom-nav brand bag: a small hop when the cart count changes. */
+.brand-bag-hop {
+  transform-origin: 50% 90%;
+  animation: brand-bag-hop 420ms var(--brand-motion-ease) both;
+}
+@keyframes brand-bag-hop {
+  0% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(-4px) rotate(-6deg); }
+  65% { transform: translateY(0) rotate(4deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
 .brand-quantity-pop {
   display: inline-block;
   animation: brand-quantity-bump var(--brand-motion-count) var(--brand-motion-ease) both;
@@ -142,6 +153,7 @@
   .brand-product-flight { display: none !important; }
   .brand-card-counter,
   .brand-quantity-pop,
+  .brand-bag-hop,
   .brand-favorite-heart--burst,
   .brand-favorite-sparks,
   .brand-category-enter,

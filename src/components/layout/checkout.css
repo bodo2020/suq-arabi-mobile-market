@@ -69,3 +69,18 @@
   .checkout-header__context strong { font-size: 15px; }
   .checkout-header .checkout-back { min-width: 40px; }
 }
+
+/* Brand cart heading: bag mark in a cream circle + compact title. */
+.cart-heading-icon{display:grid;place-items:center;width:48px;height:48px;flex-shrink:0;border-radius:16px;background:hsl(var(--brand-yellow-soft));color:#005931;box-shadow:inset 0 0 0 1px #f1e2b0}
+.cart-heading h1{font-size:24px;line-height:1.4;color:#005931}
+.cart-heading p{font-size:13px;margin-top:0}
+/* Neutral information rows (delivery time, campaigns) — not the alert style. */
+.cart-info{display:flex;align-items:center;gap:10px;border:1px solid #d6eee0;background:#f1faf4;color:#1f4d36;border-radius:16px;padding:12px 14px;margin-bottom:14px;font-size:14px;line-height:1.7}
+.cart-info svg{color:#005931;flex-shrink:0}
+.cart-info strong{color:#005931}
+.cart-info--gold{border-color:#f1d78a;background:#fffaeb}
+.cart-info--gold svg{color:#cf9700}
+@media(max-width:767px){.cart-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.cart-status{margin-top:0;font-size:12px}}
+/* On phones the fixed total/CTA bar covers the bottom: reserve its space after
+   the suggestions rail instead of after the cart grid. */
+@media(max-width:767px){.cart-grid{padding-bottom:0}.cart-after-list{padding-bottom:150px}}
