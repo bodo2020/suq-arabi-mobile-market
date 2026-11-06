@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "168326873858",
+    "project_id": "elmadawy-c165b",
+    "storage_bucket": "elmadawy-c165b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168326873858:android:4486e3de9dd6b65fc8b81b",
+        "android_client_info": {
+          "package_name": "com.elmadawy.market.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWZGjuSLgcjDAizfKKsbFH-bfbqYJqW_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

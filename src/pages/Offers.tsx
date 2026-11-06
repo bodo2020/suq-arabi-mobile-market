@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
+import BrandWordmark from '@/components/brand/BrandWordmark';
 import HomeSectionHeader, { HOME_SECTION_CARD } from '@/components/sections/HomeSectionHeader';
 import { Button } from '@/components/ui/button';
 import { getCategories, getProducts, type Product } from '@/lib/supabase';
@@ -46,14 +47,13 @@ export default function Offers() {
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [category, setCategory] = useState('');
-  const [seller, setSeller] = useState('');
   const [minDiscount, setMinDiscount] = useState(0);
   const [sort, setSort] = useState<Sort>('discount');
   const [campaignId, setCampaignId] = useState('');
   const [limit, setLimit] = useState(30);
 
   useEffect(() => { setCampaignId(''); setLimit(30); }, [flash]);
-  useEffect(() => setLimit(30), [search, category, seller, sort, campaignId, minDiscount]);
+  useEffect(() => setLimit(30), [search, category, sort, campaignId, minDiscount]);
 
   const products = useQuery({ queryKey: ['offers-catalog'], queryFn: () => getProducts(), staleTime: 15000, refetchInterval: 60000 });
   const campaigns = useQuery({ queryKey: ['catalog-campaigns'], queryFn: getCatalogCampaigns, staleTime: 15000, refetchInterval: 60000 });
@@ -77,23 +77,21 @@ export default function Offers() {
     return (categories.data || []).filter(c => counts.has(c.id)).map(c => ({ id: c.id, name: c.name, count: counts.get(c.id)! }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products.data, categories.data, flash, campaigns.data]);
-  const sellers = [...new Map(allOffers.filter(p => p.merchant_id).map(p => [p.merchant_id!, p.merchant_name || 'متجر شريك'])).entries()];
   const discountSteps = DISCOUNT_STEPS.filter(step => allOffers.some(p => discountOf(p) >= step));
 
   const query = search.trim().toLocaleLowerCase();
   const visible = allOffers
     .filter(p => (!campaignId || liveIds.has(p.id))
       && (!category || p.main_category_id === category)
-      && (!seller || (seller === 'owned' ? p.commerce_source !== 'marketplace' : p.merchant_id === seller))
       && discountOf(p) >= minDiscount
       && (!query || p.name.toLocaleLowerCase().includes(query)))
     .sort((a, b) => sort === 'low' ? productUnitPrice(a) - productUnitPrice(b) : sort === 'high' ? productUnitPrice(b) - productUnitPrice(a) : discountOf(b) - discountOf(a));
   const topDeals = [...allOffers].sort((a, b) => discountOf(b) - discountOf(a)).slice(0, 8);
-  const filtering = Boolean(category || seller || minDiscount || query || campaignId);
+  const filtering = Boolean(category || minDiscount || query || campaignId);
 
   const loading = products.isLoading || (flash && campaigns.isLoading);
   const error = products.isError || (flash && campaigns.isError);
-  const clearFilters = () => { setCategory(''); setSeller(''); setMinDiscount(0); setSearch(''); setCampaignId(''); };
+  const clearFilters = () => { setCategory(''); setMinDiscount(0); setSearch(''); setCampaignId(''); };
 
   return (
     <MainLayout>
@@ -107,7 +105,7 @@ export default function Offers() {
             <div className="min-w-0">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-extrabold">
                 {flash ? <Flame size={13} /> : <Tag size={13} className="text-[#FFC120]" />}
-                {flash ? 'لفترة محدودة' : 'عروض سوبر ماركو'}
+                {flash ? 'لفترة محدودة' : <>عروض <BrandWordmark className="brand-name--inline" /></>}
               </span>
               <h1 className="mt-3 text-[26px] font-black leading-tight">
                 {flash ? 'الفلاش سيل' : <>وفّر في <span className="text-[#FFC120]">كل طلب</span></>}
@@ -188,13 +186,6 @@ export default function Offers() {
                     خصم {money(step)}٪+
                   </button>
                 ))}
-                {sellers.length > 0 && (
-                  <select aria-label="البائع" value={seller} onChange={e => setSeller(e.target.value)} className={`${chip(Boolean(seller))} appearance-none pr-3.5`}>
-                    <option value="">كل البائعين</option>
-                    <option value="owned">ماركت المعداوي</option>
-                    {sellers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-                  </select>
-                )}
               </div>
               {searchOpen && (
                 <label className="relative block">
