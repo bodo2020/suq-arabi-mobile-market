@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import BrandWordmark from './BrandWordmark';
 
-export type BrandTone = 'light' | 'dark' | 'gold';
+export type BrandTone = 'light' | 'dark';
 
 const BRAND = /سوبر ?ماركو/g;
 const toneClass: Record<BrandTone, string> = {
@@ -9,8 +9,6 @@ const toneClass: Record<BrandTone, string> = {
   light: 'brand-name--inline brand-name--on-light',
   // Green surface: white + yellow (the wordmark's own colours).
   dark: 'brand-name--inline',
-  // Yellow surface: green + white.
-  gold: 'brand-name--inline brand-name--on-gold',
 };
 
 /** The official two-colour wordmark, sized to sit inside running text. */

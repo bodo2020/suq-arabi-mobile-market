@@ -127,7 +127,7 @@ const Account = () => {
             {/* Membership card with the barcode for the cashier */}
             <section className="acc-member" aria-label="بطاقة سوبر ماركو">
               <div className="acc-member__band">
-                <strong>بطاقة <BrandText tone="gold">سوبر ماركو</BrandText></strong>
+                <strong>بطاقة <BrandText tone="dark">سوبر ماركو</BrandText></strong>
                 {card?.membership_number && <span dir="ltr">{card.membership_number}</span>}
               </div>
               <div className="acc-member__body">
