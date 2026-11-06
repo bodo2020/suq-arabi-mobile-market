@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Sparkles } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import BannersContainer from '@/components/ui/BannersContainer';
 import BannerSkeleton from '@/components/ui/BannerSkeleton';
 import CategoryItem from '@/components/ui/CategoryItem';
@@ -10,6 +10,7 @@ import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import ProductCard from '@/components/ui/ProductCard';
 import { Button } from '@/components/ui/button';
 import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
+import HomeSectionHeader, { HOME_SECTION_CARD } from '@/components/sections/HomeSectionHeader';
 import {
   defaultHomeSections,
   getHomeAnalyticsSessionKey,
@@ -21,16 +22,6 @@ import {
 import { getCategories, getCurrentDeliveryBranchId, getProducts, MainCategory, Product, supabase } from '@/lib/supabase';
 import { getProductListWithVariants } from '@/utils/productUtils';
 import { useUser } from '@/contexts/UserContext';
-
-const SectionHeading = ({ title, subtitle, href }: { title?: string | null; subtitle?: string | null; href?: string }) => (
-  <div className="mb-4 flex items-end justify-between gap-3">
-    <div className="min-w-0">
-      {title && <h2 className="text-xl font-black text-slate-950">{title}</h2>}
-      {subtitle && <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>}
-    </div>
-    {href && <Link to={href} className="flex min-h-10 shrink-0 items-center gap-1 rounded-xl px-3 text-sm font-bold text-[#005931] hover:bg-brand-cream">عرض الكل<ChevronLeft size={17} /></Link>}
-  </div>
-);
 
 const eventMetadata = (section: HomeSectionConfig) => ({
   section_type: section.section_type,
@@ -181,15 +172,10 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
   }
 
   const renderProductRail = (products: Product[], loading: boolean, title: string, subtitle?: string | null, smart = false) => (
-    <section className="rounded-3xl bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            {smart && <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-cream text-[#005931]"><Sparkles size={16} /></span>}
-            <h2 className="text-xl font-black text-slate-950">{title}</h2>
-          </div>
-          {subtitle && <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>}
-        </div>
+    <section className={HOME_SECTION_CARD}>
+      <div className="relative">
+        {smart && <span className="absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-xl bg-brand-cream text-[#005931]"><Sparkles size={16} /></span>}
+        <HomeSectionHeader title={title} subtitle={subtitle} />
       </div>
       {loading ? (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}</div>
@@ -207,14 +193,14 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
     if (section.section_type === 'hero_banners') {
       if (bannersQuery.isLoading) return <BannerSkeleton />;
       if (!bannersQuery.data?.length) return null;
-      return <div className="overflow-hidden rounded-3xl shadow-sm"><BannersContainer banners={bannersQuery.data} /></div>;
+      return <div className="overflow-hidden rounded-[28px] shadow-[0_8px_24px_rgba(0,89,49,0.10)] ring-1 ring-[#d6eee0]"><BannersContainer banners={bannersQuery.data} /></div>;
     }
 
     if (section.section_type === 'categories') {
       const categories = categoriesQuery.data || [];
       return (
-        <section className="rounded-3xl bg-white p-2 shadow-sm sm:p-4">
-          <SectionHeading title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle || 'وصل للي محتاجه بسرعة'} href="/categories" />
+        <section className={HOME_SECTION_CARD}>
+          <HomeSectionHeader title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle || 'وصل للي محتاجه بسرعة'} href="/categories" />
           {categoriesQuery.isLoading ? (
             <div className="grid grid-cols-3 gap-3">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
           ) : categoriesQuery.isError ? (

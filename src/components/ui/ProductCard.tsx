@@ -305,8 +305,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
       <div className="mt-auto pt-1.5 sm:pt-2.5">
         <div className="flex flex-wrap items-end gap-x-1 gap-y-0.5 sm:gap-x-1.5 sm:gap-y-1">
-          <strong className={`rounded px-1 py-0.5 text-[17px] font-black leading-none tracking-tight sm:rounded-md sm:px-1.5 sm:text-[21px] ${discount > 0 ? 'bg-[#eaf6f0] text-[#005931]' : 'text-slate-950'}`}>{money(price)}</strong>
-          <span className="pb-0.5 text-[9px] font-bold text-[#005931] sm:text-[11px]">ج.م</span>
+          <strong className={`rounded px-1 py-0.5 text-[17px] font-black leading-none tracking-tight sm:rounded-md sm:px-1.5 sm:text-[21px] ${discount > 0 ? 'bg-[#eaf6f0] text-[#005931]' : 'text-[#005931]'}`}>{money(price)}</strong>
+          <span className="pb-0.5 text-[9px] font-bold text-[#cf9700] sm:text-[11px]">ج.م</span>
           {discount > 0 && <del className="w-full text-[9px] font-medium text-slate-400 sm:w-auto sm:pb-0.5 sm:text-xs">{money(regularPrice)}</del>}
         </div>
 

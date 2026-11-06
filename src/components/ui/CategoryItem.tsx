@@ -25,11 +25,15 @@ const CategoryItem = ({ category, hideTitle = false, onClick, variant = 'default
         onClick={handleClick}
         aria-label={`تصفح قسم ${category.name}`}
       >
-        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-green-50 ring-1 ring-green-100 transition-transform group-hover:-translate-y-0.5">
+        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-[22px] bg-[#eaf7ef] shadow-[0_4px_14px_rgba(0,89,49,0.06)] ring-1 ring-[#d6eee0] transition-transform group-hover:-translate-y-0.5">
           {category.image_url ? (
             <img src={category.image_url} alt={category.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" decoding="async" />
           ) : (
-            <span className="text-2xl">{category.name.charAt(0)}</span>
+            // No artwork yet: a brand tile (mint, bag mark, green name) instead of a lone letter.
+            <span className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[linear-gradient(160deg,#eef9f2,#e0f3e7)] px-2 text-center">
+              <img src="/brand/super-marko-mark.svg" alt="" aria-hidden="true" className="h-10 w-auto opacity-90" />
+              <span className="line-clamp-2 text-sm font-black leading-5 text-[#005931]">{category.name}</span>
+            </span>
           )}
         </div>
         {!hideTitle && <span className="mt-2 line-clamp-2 text-center text-xs font-semibold leading-5 text-gray-800 sm:text-sm">{category.name}</span>}

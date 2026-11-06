@@ -141,7 +141,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
                 type="button"
                 key={banner.id}
                 onClick={() => setCurrentSlide(index)}
-                className={`h-2.5 rounded-full transition-[width,background-color] duration-150 ${currentSlide === index ? 'w-7 bg-white shadow-lg' : 'w-2.5 bg-white/60 hover:bg-white/80'}`}
+                className={`h-2.5 rounded-full transition-[width,background-color] duration-150 ${currentSlide === index ? 'w-7 bg-[#FFC120] shadow-[0_2px_8px_rgba(0,0,0,.18)]' : 'w-2.5 bg-white/75 hover:bg-white'}`}
                 aria-label={`الانتقال إلى البانر ${index + 1}`}
               />
             ))}

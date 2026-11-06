@@ -18,8 +18,8 @@ export default function HeaderDelivery({
     : null;
   return (
     <div className={`flex min-w-0 max-w-full flex-col items-end gap-1.5 ${compact ? 'text-[11px]' : 'text-xs'}`}>
-      <span className="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border border-[#c4e5d2] bg-white/90 px-2.5 py-1 font-extrabold text-[#005931]">
-        <Zap size={15} className="shrink-0 text-[#d6a000]" fill="currentColor" />
+      <span className="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border border-[#f1d78a] bg-[#fffaeb] px-2.5 py-1 font-extrabold text-[#005931] shadow-[0_2px_10px_rgba(207,151,0,0.12)]">
+        <Zap size={15} className="shrink-0 text-[#FFC120]" fill="currentColor" strokeWidth={2.2} />
         <span className="truncate">{minutes !== null ? `توصيل خلال ${minutes} دقيقة` : 'توصيل سريع لحد بابك'}</span>
       </span>
       <button

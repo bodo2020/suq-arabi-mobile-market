@@ -4,6 +4,7 @@ import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { getProductListWithVariants } from '@/utils/productUtils';
+import HomeSectionHeader, { HOME_SECTION_CARD } from './HomeSectionHeader';
 
 interface CollectionData {
   id: string;
@@ -45,13 +46,8 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
         if (collectionProducts.length === 0) return null;
         
         return (
-          <div key={collection.id} className="mb-7 rounded-3xl bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex flex-col gap-1">
-              <h2 className="text-xl font-bold">{collection.title}</h2>
-              {collection.description && (
-                <p className="text-xs leading-5 text-muted-foreground">{collection.description}</p>
-              )}
-            </div>
+          <div key={collection.id} className={`mb-7 ${HOME_SECTION_CARD}`}>
+            <HomeSectionHeader title={collection.title} subtitle={collection.description} />
             
             <ScrollArea className="w-full whitespace-nowrap rounded-2xl" dir="rtl">
               <div className="flex gap-3 pb-3">
