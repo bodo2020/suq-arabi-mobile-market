@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { useEffect, useState } from 'react';
 import BrandMark from './BrandMark';
 import BrandWordmark from './BrandWordmark';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -40,34 +39,20 @@ export default function BrandIntro() {
       setMode(null);
       // Let the status bar return to the page colour right away.
       window.setTimeout(() => window.dispatchEvent(new Event('brand-intro-done')), 0);
-    }, mode === 'intro' ? 2300 : 1350);
+    }, mode === 'intro' ? 2200 : 1350);
     return () => window.clearTimeout(timer);
   }, [mode]);
 
   if (!mode) return null;
-  // In the Android app the native splash already shows the full mark at the
-  // same size and place, so continue from it instead of redrawing it.
-  const native = Capacitor.isNativePlatform();
   return (
-    <div className={`brand-intro brand-intro--${mode} ${native ? 'brand-intro--native' : ''}`} aria-hidden="true" dir="rtl">
-      {mode === 'intro' && <>
-        <span className="brand-intro__blob brand-intro__blob--gold" />
-        <span className="brand-intro__blob brand-intro__blob--white" />
-        <span className="brand-intro__blob brand-intro__blob--small" />
-      </>}
+    <div className={`brand-intro brand-intro--${mode}`} aria-hidden="true" dir="rtl">
       <div className="brand-intro__stack">
         {mode === 'intro' ? (
-          <span className="brand-intro__hero">
-            <span className="brand-intro__sparks">
-              {[0, 45, 90, 135, 180, 225, 270, 315].map(angle => <i key={angle} style={{ '--a': `${angle}deg` } as React.CSSProperties} />)}
-            </span>
-            <BrandMark variant="mark" tone="onGreen" motion="reveal" className="brand-intro__mark" />
-          </span>
+          <BrandMark variant="mark" tone="onGreen" motion="reveal" className="brand-intro__mark" />
         ) : (
           <BrandLoader size="lg" tone="onGreen" label="جاري تحديث الصفحة" className="brand-intro__refresh-loader" />
         )}
         <BrandWordmark className="brand-name--intro" />
-        {mode === 'intro' && <span className="brand-intro__slogan">كل اللي محتاجه… لحد باب البيت</span>}
         {mode === 'refresh' && <span className="brand-intro__refresh-caption">جاري التحديث…</span>}
       </div>
     </div>

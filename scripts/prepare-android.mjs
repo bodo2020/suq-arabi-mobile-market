@@ -92,7 +92,8 @@ styles = upsertItemInStyle(styles, appThemeName, 'android:enforceNavigationBarCo
 if (styles.includes('name="AppTheme.NoActionBarLaunch"')) {
   styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:background', '@drawable/elmadawy_splash');
   styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', '@color/elmadawy_splash_background');
-  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenAnimatedIcon', '@drawable/elmadawy_splash_icon');
+  // Plain green native splash (no logo): the app intro assembles the mark itself.
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenAnimatedIcon', '@drawable/elmadawy_splash_empty');
   styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'postSplashScreenTheme', '@style/AppTheme.NoActionBar');
   // Brand green from the first frame: status and navigation bars match the splash.
   styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:statusBarColor', '@color/elmadawy_splash_background');
@@ -194,7 +195,10 @@ await writeFile(path.join(drawableDir, 'elmadawy_splash_mark.xml'), nativeSplash
 const splashIconXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/elmadawy_splash_mark" android:inset="0dp" />\n`;
 await writeFile(path.join(drawableDir, 'elmadawy_splash_icon.xml'), splashIconXml, 'utf8');
 
-const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:width="288dp" android:height="288dp" android:gravity="center" android:drawable="@drawable/elmadawy_splash_mark" />\n</layer-list>\n`;
+const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n</layer-list>\n`;
+// Transparent icon for the Android 12+ splash, which always requires one.
+const splashEmptyXml = `<?xml version="1.0" encoding="utf-8"?>\n<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">\n    <solid android:color="@android:color/transparent" />\n    <size android:width="288dp" android:height="288dp" />\n</shape>\n`;
+await writeFile(path.join(drawableDir, 'elmadawy_splash_empty.xml'), splashEmptyXml, 'utf8');
 await writeFile(path.join(drawableDir, 'elmadawy_splash.xml'), splashBackgroundXml, 'utf8');
 
-console.log('Android brand assets verified and applied: Super Marko launcher icon, adaptive icon, green splash screen, portrait lock and notification permission are active.');
+console.log('Android brand assets verified and applied: Super Marko launcher icon, adaptive icon, plain green splash screen, portrait lock and notification permission are active.');
