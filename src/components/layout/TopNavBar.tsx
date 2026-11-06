@@ -274,7 +274,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               <h1 className="app-header__title"><BrandText>{pageTitle || 'سوبر ماركو'}</BrandText></h1>
               {!hideCart ? (
                 <Link to="/cart" className="hdr-btn" aria-label={cartCount > 0 ? `الشنطة، ${cartCount} منتجات` : 'الشنطة'}>
-                  <BrandBagIcon size={21} strokeWidth={2.2} accent={cartCount > 0 ? '#E0A800' : 'currentColor'} />
+                  <BrandBagIcon size={21} strokeWidth={2.2} tone={cartCount > 0 ? 'brand' : 'mono'} />
                   {cartCount > 0 && <span className="hdr-badge">{cartCount > 99 ? '99+' : cartCount}</span>}
                 </Link>
               ) : <span className="hdr-spacer" aria-hidden="true" />}

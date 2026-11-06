@@ -89,7 +89,7 @@ export default function Cart() {
       <><CartEmptyState /><CartSuggestions title="ابدأ بالأساسيات" subtitle="اختيارات من أقسام سوبر ماركو تضيفها بضغطة" /></> : <>
       <div className="cart-heading">
         <div className="flex items-center gap-3">
-          <span className="cart-heading-icon"><BrandBagIcon size={26} strokeWidth={2.3} accent="#E0A800" /></span>
+          <span className="cart-heading-icon"><BrandBagIcon size={26} strokeWidth={2.3} tone="brand" /></span>
           <div><h1>شنطتك</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
         </div>
         <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />شنطتك محفوظة</> : 'شنطة الضيف جاهزة'}</div>

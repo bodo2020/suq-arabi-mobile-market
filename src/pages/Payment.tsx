@@ -366,7 +366,7 @@ const Payment = () => {
 
   const confirmButton = (className = '') => (
     <button type="button" onClick={onConfirm} disabled={submitBusy} className={`pay-confirm ${className}`}>
-      {submitBusy ? <span className="pay-confirm__spinner" aria-hidden="true" /> : <BrandBagIcon size={22} strokeWidth={2.4} accent="#FFC120" />}
+      {submitBusy ? <span className="pay-confirm__spinner" aria-hidden="true" /> : <BrandBagIcon size={22} strokeWidth={2.4} tone="onGreen" />}
       <span>{confirmLabel}</span>
       {!submitBusy && <ArrowLeft size={19} aria-hidden="true" className="pay-confirm__arrow" />}
     </button>

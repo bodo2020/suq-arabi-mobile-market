@@ -18,9 +18,10 @@ const MainLayout: React.FC<{children:React.ReactNode; hideBottomNav?:boolean}> =
  React.useEffect(()=>{lastNavCartCount=count;},[count]);
  const active=(to:string)=>to==='/'?pathname==='/':to==='/offers'?(pathname==='/offers'||pathname==='/flash-sale'):pathname.startsWith(to);
  return <div className={`app-main-layout min-h-screen bg-[#f6f8f7] ${hideBottomNav?'pb-6':'pb-24 md:pb-0'}`} dir="rtl"><main>{children}</main>{mobile&&!hideBottomNav&&<nav className="bottom-nav" aria-label="التنقل السفلي">{links.map(({to,label,icon:Icon})=><Link key={to} to={to} aria-current={active(to)?'page':undefined} className={`bottom-nav-item ${active(to)?'active':''}`}><span className="relative flex h-8 min-w-11 items-center justify-center rounded-xl">{to==='/cart'
-   // The cart is the brand bag itself: gold handle and smile once it has items,
+   // The cart is the brand bag itself, in the logo's own colours once it is the
+   // current tab or has items,
    // and a little hop each time the count changes.
-   ?<BrandBagIcon key={count} size={23} strokeWidth={active(to)?2.4:2} accent={count>0||active(to)?'#E0A800':'currentColor'} className={bagHop?'brand-bag-hop':undefined}/>
+   ?<BrandBagIcon key={count} size={23} strokeWidth={active(to)?2.4:2} tone={count>0||active(to)?'brand':'mono'} className={bagHop?'brand-bag-hop':undefined}/>
    :<Icon size={21} strokeWidth={active(to)?2.5:2}/>}{to==='/cart'&&count>0&&<span key={`n${count}`} className={`${bagHop?'brand-quantity-pop ':''}absolute -left-1.5 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FFC120] px-1 text-[10px] font-black text-[#005931] ring-2 ring-white`}>{count>99?'99+':count}</span>}</span><span>{label}</span></Link>)}</nav>}</div>;
 };
 export default MainLayout;
