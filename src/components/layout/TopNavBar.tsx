@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Grid, Heart, Home, Package } from 'lucide-react';
 import './home-header-motion.css';
+import './header/app-header.css';
+import BrandBagIcon from '@/components/brand/BrandBagIcon';
 import SearchBar from '@/components/ui/SearchBar';
 import CustomerNotificationBell from '@/components/CustomerNotificationBell';
 import HeaderBrand from './header/HeaderBrand';
@@ -170,6 +172,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   const showBrandOnCompact = !isSearch && !isTitle;
   const showSearch = !isTitle && !hideSearch;
   const signedIn = Boolean(user);
+  const cartCount = getTotalItems();
 
   // Other routes still reserve the height of their fixed navbar.
   // The home/categories sticky hero owns its height in normal document flow.
@@ -213,7 +216,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       className={`native-safe-top fixed inset-x-0 top-0 z-50 border-b text-[#005931] ${collapsibleHome ? 'home-top-nav' : ''} ${
         isHero
           ? 'border-[#d6eee0] bg-gradient-to-b from-[#e6f9ee] via-[#f1fbf5] to-white md:bg-white'
-          : 'border-emerald-100 bg-white'
+          : 'app-header border-transparent'
       }`}
     >
       {isHero && (
@@ -260,34 +263,37 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       )}
 
       <div className={isHero ? 'hidden md:block' : 'block'}>
-        <div className="mx-auto max-w-7xl px-3 py-2 sm:px-4">
-          <div className="flex min-h-11 items-center gap-2">
-            {needsBack && (
-              <button type="button" onClick={goBack} aria-label="رجوع" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 active:bg-emerald-100">
-                <ArrowRight size={21} />
-              </button>
-            )}
-            {showBrandOnCompact && (
-              <span className={`shrink-0 ${hideLogo ? 'md:hidden' : ''}`}>
-                <span className="md:hidden"><HeaderBrand compact iconOnly /></span>
-                <span className="hidden md:inline-flex"><HeaderBrand compact iconOnly={hideLogo} /></span>
-              </span>
-            )}
-            {isTitle ? (
-              <>
-                <h1 className="min-w-0 flex-1 truncate text-center text-base font-extrabold text-slate-900 sm:text-lg">
-                  {pageTitle || 'سوبر ماركو'}
-                </h1>
-                <HeaderBrand compact iconOnly />
-              </>
-            ) : showSearch ? (
-              <div className="min-w-0 flex-1 md:max-w-2xl">
-                {search(isSearch ? 'default' : 'category')}
+        <div className="mx-auto max-w-7xl px-3 sm:px-4">
+          {isTitle ? (
+            /* Title pages: back · centred title · cart (or an empty slot so the title stays centred). */
+            <div className="app-header__row">
+              {needsBack ? (
+                <button type="button" onClick={goBack} aria-label="رجوع" className="hdr-btn"><ArrowRight size={20} /></button>
+              ) : <span className="hdr-spacer" aria-hidden="true" />}
+              <h1 className="app-header__title">{pageTitle || 'سوبر ماركو'}</h1>
+              {!hideCart ? (
+                <Link to="/cart" className="hdr-btn" aria-label={cartCount > 0 ? `الشنطة، ${cartCount} منتجات` : 'الشنطة'}>
+                  <BrandBagIcon size={21} strokeWidth={2.2} accent={cartCount > 0 ? '#E0A800' : 'currentColor'} />
+                  {cartCount > 0 && <span className="hdr-badge">{cartCount > 99 ? '99+' : cartCount}</span>}
+                </Link>
+              ) : <span className="hdr-spacer" aria-hidden="true" />}
+            </div>
+          ) : (
+            /* Catalog/search pages: back · search · notifications (+ desktop actions). */
+            <div className={`app-header__row app-header__row--search ${needsBack ? '' : 'no-start'}`}>
+              {needsBack && <button type="button" onClick={goBack} aria-label="رجوع" className="hdr-btn"><ArrowRight size={20} /></button>}
+              <div className="flex min-w-0 items-center gap-2">
+                {showBrandOnCompact && !hideLogo && <span className="hidden shrink-0 md:inline-flex"><HeaderBrand compact /></span>}
+                {showSearch && <div className="min-w-0 flex-1 md:max-w-2xl">{search(isSearch ? 'default' : 'category')}</div>}
               </div>
-            ) : null}
-            {!isSearch && !isTitle && signedIn && <CustomerNotificationBell />}
-            {!isTitle && !isSearch && <HeaderActions cartCount={getTotalItems()} signedIn={signedIn} showCart={!hideCart} />}
-          </div>
+              {!isSearch && (
+                <div className="app-header__end">
+                  {signedIn && <CustomerNotificationBell />}
+                  <HeaderActions cartCount={cartCount} signedIn={signedIn} showCart={!hideCart} />
+                </div>
+              )}
+            </div>
+          )}
           <nav className="mt-2 hidden items-center gap-1 border-t border-gray-100 pt-2 md:flex" aria-label="التنقل الرئيسي">
             {desktopLinks.filter(item => !item.authOnly || signedIn).map(({ to, label, icon: Icon }) => (
               <Link

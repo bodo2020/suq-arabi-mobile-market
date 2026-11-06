@@ -66,3 +66,20 @@
     min-height: 52px;
   }
 }
+
+/* Shared app header (see header/app-header.css): same bar as every page. */
+.checkout .checkout-header,
+.checkout .checkout-header.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: block;
+  height: auto;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  border-bottom: 0;
+  padding: var(--safe-area-top) max(12px, var(--safe-area-right)) 0 max(12px, var(--safe-area-left));
+  background: rgba(255, 255, 255, .97);
+}
+.checkout .checkout-header .app-header__row { max-width: 1104px; margin: 0 auto; }

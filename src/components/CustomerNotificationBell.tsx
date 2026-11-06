@@ -33,11 +33,11 @@ const CustomerNotificationBell: React.FC = () => {
       onClick={() => navigate('/notifications')}
       title={latest?.title || 'الإشعارات'}
       aria-label={count ? `الإشعارات، ${count} غير مقروء` : 'الإشعارات'}
-      className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#005931] transition hover:bg-green-50 active:scale-95"
+      className="hdr-btn"
     >
       <Bell size={20} />
       {count > 0 && (
-        <span className="absolute -left-0.5 -top-0.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm">
+        <span className="hdr-badge">
           {count > 99 ? '99+' : count}
         </span>
       )}

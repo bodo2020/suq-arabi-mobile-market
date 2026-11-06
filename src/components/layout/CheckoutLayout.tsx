@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
-import HeaderBrand from '@/components/layout/header/HeaderBrand';
 import { useCart } from '@/contexts/useCart';
 import './checkout.css';
 import './checkout-native.css';
+import './header/app-header.css';
 
 /** A focused transactional header: only back, page context, and the brand.
  * The same system supports cart, addresses, single and combined payments.
@@ -22,17 +22,17 @@ export default function CheckoutLayout({
   const isCart = step === 1;
   return (
     <div className="checkout" dir="rtl">
-      <header className="checkout-header">
-        <Link to={backTo || (isCart ? '/' : '/cart')} className="checkout-back">
-          <ArrowRight size={21} aria-hidden="true" />
-          <span className="hidden sm:inline">{backLabel || (isCart ? 'كمّل تسوّقك' : 'رجوع للشنطة')}</span>
-        </Link>
-        <div className="checkout-header__context">
-          <strong>{isCart ? 'شنطة التسوق' : showSteps ? 'التوصيل والدفع' : 'العناوين'}</strong>
-          {isCart && items.length > 0 && <span>{items.length.toLocaleString('ar-EG')} أصناف</span>}
+      <header className="checkout-header app-header">
+        <div className="app-header__row">
+          <Link to={backTo || (isCart ? '/' : '/cart')} className="hdr-btn" aria-label={backLabel || (isCart ? 'كمّل تسوّقك' : 'رجوع للشنطة')}>
+            <ArrowRight size={20} aria-hidden="true" />
+          </Link>
+          <div className="app-header__title">
+            {isCart ? 'شنطة التسوق' : showSteps ? 'التوصيل والدفع' : 'العناوين'}
+            {isCart && items.length > 0 && <small>{items.length.toLocaleString('ar-EG')} أصناف</small>}
+          </div>
+          <span className="hdr-spacer" aria-hidden="true" />
         </div>
-        <HeaderBrand compact iconOnly className="sm:hidden" />
-        <HeaderBrand compact className="hidden sm:inline-flex" />
       </header>
       <main className="checkout-main">
         {showSteps && (
