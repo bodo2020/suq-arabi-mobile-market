@@ -36,7 +36,7 @@
 }
 .dm-hint svg { flex-shrink: 0; color: #FFC120; }
 .dm-hint.is-hidden { opacity: 0; transform: translate(-50%, -8px); }
-@media (max-width: 380px) { .dm-hint { white-space: normal; text-align: center; } }
+@media (max-width: 340px) { .dm-hint { white-space: normal; text-align: center; } }
 
 /* Center pin: tip sits exactly on the map center */
 .dm-pin {
@@ -156,7 +156,8 @@
 }
 .dm-sheet__title { color: #192b23; font-size: 15px; font-weight: 900; }
 .dm-sheet__text { margin-top: 2px; color: #5b6f63; font-size: 12.5px; line-height: 1.7; }
-.dm-sheet__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.dm-sheet__actions { display: flex; gap: 8px; margin-top: 10px; }
+.dm-sheet__actions button { white-space: nowrap; }
 .dm-sheet__primary {
   min-height: 42px;
   flex: 1;

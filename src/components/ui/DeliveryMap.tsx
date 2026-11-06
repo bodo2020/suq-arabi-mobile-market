@@ -147,7 +147,7 @@ export default function DeliveryMap({ value, onChange, autoLocate = true }: Prop
       {ready && <>
         <p className={`dm-hint ${moving ? 'is-hidden' : ''}`} aria-live="polite">
           <Hand size={15} aria-hidden="true" />
-          {busy ? 'بندوّر على موقعك…' : touched ? 'الدبوس على باب البيت؟ كمّل التفاصيل تحت' : 'حرّك الخريطة وحط الدبوس على باب البيت'}
+          {busy ? 'بندوّر على موقعك…' : touched ? 'تمام؟ كمّل التفاصيل تحت' : 'حط الدبوس على باب البيت'}
         </p>
 
         <div className="dm-pin" aria-hidden="true">
