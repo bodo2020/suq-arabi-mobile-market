@@ -47,27 +47,13 @@
   animation: brand-intro-arrive 360ms ease-out both;
 }
 /* Launch intro (2.2s), after a plain green native splash:
-   100–950ms the five strokes of the mark fly in from different sides and
-   assemble · 950ms small pop · 850–1450ms "ســوبـر" slides in from the right
-   and "مـاركو" from the left and they meet in the middle · 1650–2200ms the
-   mark and name shrink away and the green fades out to the app. */
+   the official mark is shown as-is (static, no animation) · 250–870ms
+   "ســــــوبـر" slides in from the right and "مــاركو" from the left and they
+   meet in the middle · 1650–2200ms mark and name shrink away and the green
+   fades out to the app. Only the name moves. */
 .brand-intro--intro { overflow: hidden; will-change: opacity; animation: brand-intro-out 2200ms linear both; }
 .brand-intro--intro .brand-intro__stack { gap: 18px; will-change: transform, opacity; animation: brand-intro-stack-out 2200ms linear both; }
 .brand-intro__mark { display: block; width: 92px; height: 122px; }
-.brand-intro--intro .brand-intro__mark { overflow: visible; animation: brand-intro-pop 460ms 950ms cubic-bezier(.3, 1.5, .5, 1) both; }
-.brand-intro--intro .brand-intro__mark svg { overflow: visible; }
-.brand-intro--intro .brand-intro__mark .brand-mark__stroke {
-  stroke-dashoffset: 0;
-  transform-box: fill-box;
-  transform-origin: 50% 50%;
-  animation: brand-intro-piece 700ms cubic-bezier(.2, 1.25, .4, 1) both;
-}
-/* Offsets are in the mark's SVG units (165 wide ≈ 92px). */
-.brand-intro--intro .brand-intro__mark .brand-mark__stroke--1 { --dx: -130px; --dy: 80px; --rot: -28deg; --s: .8; animation-delay: 100ms; }
-.brand-intro--intro .brand-intro__mark .brand-mark__stroke--2 { --dx: 130px; --dy: -90px; --rot: 24deg; --s: .8; animation-delay: 180ms; }
-.brand-intro--intro .brand-intro__mark .brand-mark__stroke--3 { --dx: 110px; --dy: 120px; --rot: 40deg; --s: .6; animation-delay: 260ms; }
-.brand-intro--intro .brand-intro__mark .brand-mark__stroke--5 { --dx: 0px; --dy: -140px; --rot: 0deg; --s: .5; animation-delay: 330ms; }
-.brand-intro--intro .brand-intro__mark .brand-mark__stroke--4 { --dx: 0px; --dy: 100px; --rot: 0deg; --s: .2; animation-delay: 420ms; }
 
 /* The homepage's actual BrandWordmark provides the exact lettering, stretching
  * and two-color treatment; do not replace this with manually typed text. */
@@ -80,22 +66,12 @@
   line-height: 1.5;
   animation: brand-wordmark-arrive 620ms 690ms both;
 }
-.brand-intro.brand-intro--intro .brand-name--intro { overflow: visible; animation: brand-intro-meet 360ms 1380ms cubic-bezier(.3, 1.5, .5, 1) both; }
+.brand-intro.brand-intro--intro .brand-name--intro { overflow: visible; animation: brand-intro-meet 360ms 820ms cubic-bezier(.3, 1.5, .5, 1) both; }
 .brand-intro--intro .brand-name--intro .brand-name__super,
 .brand-intro--intro .brand-name--intro .brand-name__marko { display: inline-block; }
-.brand-intro--intro .brand-name--intro .brand-name__super { animation: brand-intro-from-right 620ms 850ms cubic-bezier(.2, 1.05, .3, 1) both; }
-.brand-intro--intro .brand-name--intro .brand-name__marko { animation: brand-intro-from-left 620ms 850ms cubic-bezier(.2, 1.05, .3, 1) both; }
+.brand-intro--intro .brand-name--intro .brand-name__super { animation: brand-intro-from-right 620ms 250ms cubic-bezier(.2, 1.05, .3, 1) both; }
+.brand-intro--intro .brand-name--intro .brand-name__marko { animation: brand-intro-from-left 620ms 250ms cubic-bezier(.2, 1.05, .3, 1) both; }
 
-@keyframes brand-intro-piece {
-  0% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(var(--s)); }
-  35% { opacity: 1; }
-  100% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); }
-}
-@keyframes brand-intro-pop {
-  0% { transform: scale(1); }
-  45% { transform: scale(1.09); }
-  100% { transform: scale(1); }
-}
 @keyframes brand-intro-from-right {
   0% { opacity: 0; transform: translateX(150px); filter: blur(3px); }
   60% { opacity: 1; filter: blur(0); }

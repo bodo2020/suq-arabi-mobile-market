@@ -58,7 +58,7 @@ export default function BrandIntro() {
     <div className={`brand-intro brand-intro--${mode}`} aria-hidden="true" dir="rtl">
       <div className="brand-intro__stack">
         {mode === 'intro' ? (
-          <BrandMark variant="mark" tone="onGreen" motion="reveal" className="brand-intro__mark" />
+          <BrandMark variant="mark" tone="onGreen" className="brand-intro__mark" />
         ) : (
           <BrandLoader size="lg" tone="onGreen" label="جاري تحديث الصفحة" className="brand-intro__refresh-loader" />
         )}
