@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/useCart';
 import { Product, getRelatedProducts, getCompanyById, Company } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
+import '@/components/ui/product-badges.css';
 
 const ProductSuggestions = React.lazy(() => import('@/components/product/ProductSuggestions'));
 
@@ -546,6 +547,7 @@ const ProductDetail = () => {
     : 0;
   const unavailable = isPreviewOnly || (bulkMode ? maxBulkQuantity <= 0 : weighted ? maxWeight <= 0 : maxRegularQuantity <= 0);
   const limitedStock = !weighted && !unavailable && (bulkMode ? maxBulkQuantity : maxRegularQuantity) <= 5;
+  const stockLeft = bulkMode ? maxBulkQuantity : maxRegularQuantity;
 
   useEffect(() => {
     if (!id) return;
@@ -1132,7 +1134,7 @@ const ProductDetail = () => {
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400"><ImageIcon size={45} /><span>لا توجد صورة</span></div>
               )}
-              {discount > 0 && <span className="absolute bottom-4 right-4 rounded-xl bg-brand-yellow px-3 py-1.5 text-xs font-black text-[#005931]">خصم {discount}%</span>}
+              {discount > 0 && <span className="pb-sale pb-sale--lg absolute bottom-4 right-4">-{money(discount)}٪</span>}
               {images.length > 1 && (
                 <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1.5">
                   {images.map((_, index) => (
@@ -1169,19 +1171,32 @@ const ProductDetail = () => {
               </div>
             ) : (
             <section className="rounded-[24px] border border-slate-100 bg-white px-4 pb-4 pt-4">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${unavailable ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-[#005931]'}`}>
-                  {isPreviewOnly ? (loadError ? 'تعذر تحميل التفاصيل — تقدر تكمّل التقليب' : 'جاري تحديث بيانات المنتج') : unavailable ? 'غير متوفر حاليًا' : 'متوفر للطلب'}
-                </span>
-                {limitedStock && <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">كمية محدودة</span>}
-                {bulkMode && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-[#005931]">جملة</span>}
+              <div className="pd-chips mb-2">
+                {isPreviewOnly ? (
+                  <span className="pd-chip pd-chip--muted">{loadError ? 'تعذر تحميل التفاصيل — تقدر تكمّل التقليب' : 'جاري تحديث بيانات المنتج'}</span>
+                ) : unavailable ? (
+                  <span className="pd-chip pd-chip--muted">خلص دلوقتي</span>
+                ) : limitedStock ? (
+                  <span className="pd-chip pd-chip--low">فاضل {money(stockLeft)} بس، الحق اطلب</span>
+                ) : (
+                  <span className="pd-chip pd-chip--ok">متوفر للطلب</span>
+                )}
+                {discount > 0 && !isPreviewOnly && <span className="pd-chip pd-chip--sale">عرض · خصم {money(discount)}٪</span>}
+                {bulkMode && <span className="pd-chip pd-chip--bulk">جملة</span>}
               </div>
               <h1 className="text-[21px] font-black leading-[1.45] text-slate-950">{displayName}</h1>
               <p className="mt-1 text-xs font-medium text-slate-500">{weighted ? 'يباع بالوزن · ' : ''}{unitDescription}</p>
-              <div className="mt-4 flex flex-wrap items-end gap-x-2 gap-y-1 border-t border-slate-100 pt-4">
-                <strong className="text-[31px] font-black leading-none tracking-tight text-[#005931]">{isPreviewOnly ? pendingPreview?.price || '—' : money(displayPrice)}</strong>
-                <span className="pb-0.5 text-sm font-black text-[#005931]">ج.م</span>
-                {discount > 0 && <del className="mr-auto pb-0.5 text-xs font-medium text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del>}
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <div className="flex items-end gap-1.5">
+                  <strong className="text-[31px] font-black leading-none tracking-tight text-[#005931]">{isPreviewOnly ? pendingPreview?.price || '—' : money(displayPrice)}</strong>
+                  <span className="pb-0.5 text-sm font-black text-[#cf9700]">ج.م</span>
+                </div>
+                {discount > 0 && !isPreviewOnly && (
+                  <div className="pd-offer">
+                    <span>بدل <del>{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del></span>
+                    <span className="pb-save">هتوفّر {money((weighted ? originalWeightedPrice : regularPrice) - displayPrice)} ج.م</span>
+                  </div>
+                )}
               </div>
               {product.commerce_source === 'marketplace' && product.marketplace_branch_id && (
                 <button type="button" className="mt-4 flex w-full items-center justify-between rounded-xl bg-[#f1f8f4] px-3 py-2.5 text-right text-xs font-bold text-[#005931]" onClick={() => navigate(`/stores/${product.marketplace_branch_id}`)}>
@@ -1263,8 +1278,8 @@ const ProductDetail = () => {
               </div>
 
               <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
-                {discount > 0 && <span className="rounded-xl bg-[#ff6767] px-2.5 py-1.5 text-xs font-black text-white shadow-sm">خصم {discount}%</span>}
-                {bulkMode && <span className="rounded-xl bg-[#005931] px-2.5 py-1.5 text-xs font-black text-white">{bulkUnitType}</span>}
+                {discount > 0 && <span className="pb-sale pb-sale--lg">-{money(discount)}٪</span>}
+                {bulkMode && <span className="pd-chip pd-chip--bulk">{bulkUnitType}</span>}
               </div>
 
               {images.length > 1 && !bulkMode && (
@@ -1286,11 +1301,16 @@ const ProductDetail = () => {
           </section>
 
           <section className="rounded-[28px] bg-white p-5 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] sm:p-7 lg:sticky lg:top-[calc(var(--top-nav-height,68px)+16px)]">
-            <div className="flex flex-wrap items-center gap-2">
-              {weighted && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-[#005931]"><Scale size={13} />بالوزن</span>}
-              {limitedStock && <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">كمية محدودة</span>}
-              {!unavailable && <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600"><Check size={13} />متوفر</span>}
-              {unavailable && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500">غير متوفر</span>}
+            <div className="pd-chips">
+              {unavailable ? (
+                <span className="pd-chip pd-chip--muted">خلص دلوقتي</span>
+              ) : limitedStock ? (
+                <span className="pd-chip pd-chip--low">فاضل {money(stockLeft)} بس، الحق اطلب</span>
+              ) : (
+                <span className="pd-chip pd-chip--ok">متوفر للطلب</span>
+              )}
+              {discount > 0 && <span className="pd-chip pd-chip--sale">عرض · خصم {money(discount)}٪</span>}
+              {weighted && <span className="pd-chip pd-chip--ok"><Scale size={13} />بالوزن</span>}
             </div>
 
             <h1 className="mt-4 text-[25px] font-black leading-[1.45] text-slate-950 sm:text-3xl">{displayName}</h1>
@@ -1311,12 +1331,17 @@ const ProductDetail = () => {
             )}
 
             <div className="mt-5 border-y border-slate-100 py-5">
-              {discount > 0 && <div className="mb-1.5 flex items-center gap-2"><del className="text-sm font-medium text-slate-400">{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del><span className="rounded-md bg-brand-cream px-2 py-1 text-xs font-black text-brand-green">وفر {discount}%</span></div>}
               <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
-                <strong className="text-4xl font-black tracking-tight text-slate-950">{money(displayPrice)}</strong>
-                <span className="pb-1 text-sm font-black text-[#005931]">ج.م</span>
+                <strong className="text-4xl font-black tracking-tight text-[#005931]">{money(displayPrice)}</strong>
+                <span className="pb-1 text-sm font-black text-[#cf9700]">ج.م</span>
                 {weighted && <span className="pb-1 text-xs font-bold text-slate-500">/ {formatWeightAmount(currentWeight)}</span>}
               </div>
+              {discount > 0 && (
+                <div className="pd-offer">
+                  <span>بدل <del>{money(weighted ? originalWeightedPrice : regularPrice)} ج.م</del></span>
+                  <span className="pb-save">هتوفّر {money((weighted ? originalWeightedPrice : regularPrice) - displayPrice)} ج.م</span>
+                </div>
+              )}
               {company && <button type="button" onClick={() => navigate(`/company/${company.id}`)} className="mt-3 text-sm font-bold text-[#005931] underline decoration-emerald-200 underline-offset-4">منتجات {company.name}</button>}
             </div>
 

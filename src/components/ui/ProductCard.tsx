@@ -13,6 +13,7 @@ import FavoriteButton from './FavoriteButton';
 import WeightSelector from './WeightSelector';
 import SmartImage from './SmartImage';
 import { productCardImage } from '@/lib/productCardImage';
+import './product-badges.css';
 
 // Warm the lazily loaded detail page once the catalog is on screen, instead
 // of downloading the route only after the shopper taps a product.
@@ -217,7 +218,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className="relative mb-5 sm:mb-7">
         <a href={detailHref} onClick={openDetails} onPointerEnter={warmDetailModule} onTouchStart={warmDetailModule} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
-          <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5">
+          <div className={`relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5 ${unavailable ? 'pb-out-img' : ''}`}>
             <SmartImage
               src={productCardImage(imageSrc)}
               originalSrc={imageSrc}
@@ -234,12 +235,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className="absolute right-1 top-1 z-20 flex flex-col items-start gap-1 sm:right-2 sm:top-2 sm:gap-1.5">
-          {discount > 0 && (
-            <span className="rounded-lg bg-[#ff6767] px-1.5 py-1 text-[9px] font-black text-white shadow-sm sm:rounded-xl sm:px-2.5 sm:py-1.5 sm:text-[11px]">-{money(discount)}%</span>
-          )}
-          {bulk && <span className="rounded-md bg-[#005931] px-1.5 py-0.5 text-[8px] font-extrabold text-white sm:rounded-lg sm:px-2 sm:py-1 sm:text-[10px]">{bulkUnitType}</span>}
-          {unavailable && <span className="rounded-md bg-slate-800/85 px-1.5 py-0.5 text-[8px] font-bold text-white sm:rounded-lg sm:px-2 sm:py-1 sm:text-[10px]">غير متوفر</span>}
+          {discount > 0 && <span className="pb-sale" aria-label={`خصم ${money(discount)}٪`}>-{money(discount)}٪</span>}
+          {bulk && <span className="pb-bulk">{bulkUnitType}</span>}
         </div>
+
+        {unavailable && <span className="pb-out">خلص</span>}
+        {limitedStock && (
+          <span className="pb-low absolute bottom-1 right-1 z-20 sm:bottom-2 sm:right-2" aria-label={`فاضل ${money(maxCartQuantity)} بس`}>
+            فاضل {money(maxCartQuantity)}
+          </span>
+        )}
 
         {!unavailable && (
           <div className="absolute -bottom-4 left-1 z-30 max-w-[calc(100%-8px)] sm:-bottom-5 sm:left-2 sm:max-w-[calc(100%-16px)]">
@@ -300,15 +305,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {weighted ? <Scale className="h-2.5 w-2.5 text-[#005931] sm:h-[13px] sm:w-[13px]" /> : bulk ? <Package className="h-2.5 w-2.5 text-[#005931] sm:h-[13px] sm:w-[13px]" /> : null}
         <span className="truncate">{unitLabel}</span>
         {bulkAlternative && <span className="rounded-full bg-emerald-50 px-1 py-0.5 text-[8px] font-bold text-[#005931] sm:px-1.5 sm:text-[10px]">جملة</span>}
-        {limitedStock && <span className="mr-auto rounded-full bg-brand-cream px-1 py-0.5 text-[8px] font-bold text-brand-green sm:px-1.5 sm:text-[10px]">قليل</span>}
       </div>
 
       <div className="mt-auto pt-1.5 sm:pt-2.5">
-        <div className="flex flex-wrap items-end gap-x-1 gap-y-0.5 sm:gap-x-1.5 sm:gap-y-1">
-          <strong className={`rounded px-1 py-0.5 text-[17px] font-black leading-none tracking-tight sm:rounded-md sm:px-1.5 sm:text-[21px] ${discount > 0 ? 'bg-[#eaf6f0] text-[#005931]' : 'text-[#005931]'}`}>{money(price)}</strong>
-          <span className="pb-0.5 text-[9px] font-bold text-[#cf9700] sm:text-[11px]">ج.م</span>
-          {discount > 0 && <del className="w-full text-[9px] font-medium text-slate-400 sm:w-auto sm:pb-0.5 sm:text-xs">{money(regularPrice)}</del>}
+        <div className="flex items-baseline gap-1">
+          <strong className="text-[17px] font-black leading-none tracking-tight text-[#005931] sm:text-[21px]">{money(price)}</strong>
+          <span className="text-[9px] font-bold text-[#cf9700] sm:text-[11px]">ج.م</span>
         </div>
+        {discount > 0 && (
+          <div className="mt-0.5 flex flex-wrap items-center gap-1 sm:mt-1">
+            <del className="text-[9px] font-medium text-slate-400 sm:text-xs">{money(regularPrice)}</del>
+            <span className="pb-save">وفّر {money(regularPrice - price)}</span>
+          </div>
+        )}
 
         {weighted && item && (
           <p className="mt-1 truncate text-[8px] font-semibold text-slate-500 sm:mt-1.5 sm:text-[11px]">{formatWeightAmount(selectedWeight)}: <span className="font-black text-[#005931]">{money(selectedWeightPrice)} ج.م</span></p>

@@ -1,0 +1,130 @@
+/* Product signals shared by the product card and the product page:
+   offer tag, savings chip, low-stock and out-of-stock states. */
+
+/* Offer tag: brand yellow with green text (no more pink). */
+.pb-sale {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9px 9px 9px 3px;
+  background: #FFC120;
+  padding: 3px 6px;
+  color: #005931;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.15;
+  box-shadow: 0 3px 8px rgba(207, 151, 0, .28);
+}
+.pb-sale--lg { border-radius: 12px 12px 12px 4px; padding: 6px 11px; font-size: 13px; }
+@media (min-width: 640px) { .pb-sale { padding: 5px 9px; font-size: 12px; } }
+
+.pb-bulk {
+  display: inline-flex;
+  border-radius: 7px;
+  background: #005931;
+  padding: 2px 6px;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+}
+@media (min-width: 640px) { .pb-bulk { padding: 4px 8px; font-size: 10.5px; } }
+
+/* Low stock: amber pill with a soft pulsing dot. */
+.pb-low {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: #fff4e0;
+  padding: 2px 7px 2px 6px;
+  color: #b45309;
+  font-size: 9.5px;
+  font-weight: 900;
+  line-height: 1.3;
+  box-shadow: 0 0 0 1px #fde2b1;
+  white-space: nowrap;
+}
+.pb-low::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f59e0b;
+  animation: pb-pulse 1.4s ease-in-out infinite;
+}
+@media (min-width: 640px) { .pb-low { padding: 3px 9px 3px 8px; font-size: 11px; } }
+
+/* Out of stock: grey photo with a calm label in the middle. */
+.pb-out-img { filter: grayscale(1); opacity: .55; }
+.pb-out {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 10;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(30, 41, 59, .82);
+  padding: 4px 10px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Savings: how much you keep, in pounds. */
+.pb-save {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  background: hsl(var(--brand-yellow-soft));
+  padding: 1px 5px;
+  color: #7a5600;
+  font-size: 9px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+@media (min-width: 640px) { .pb-save { font-size: 11px; padding: 2px 7px; } }
+
+/* Product page chips and offer box. */
+.pd-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.pd-chip--ok { background: #e8f5ee; color: #005931; }
+.pd-chip--ok::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #22a35a; }
+.pd-chip--low { background: #fff4e0; color: #b45309; box-shadow: 0 0 0 1px #fde2b1; }
+.pd-chip--low::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; animation: pb-pulse 1.4s ease-in-out infinite; }
+.pd-chip--sale { background: #FFC120; color: #005931; }
+.pd-chip--muted { background: #f1f5f9; color: #64748b; }
+.pd-chip--bulk { background: #005931; color: #fff; }
+
+.pd-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  border: 1px dashed #f1d78a;
+  border-radius: 14px;
+  background: hsl(var(--brand-yellow-pale));
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.pd-offer del { color: #94a3b8; font-weight: 600; }
+.pd-offer strong { color: #8a6400; font-weight: 900; }
+.pd-offer .pb-save { font-size: 12px; padding: 3px 8px; }
+
+@keyframes pb-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(.6); opacity: .55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pb-low::before, .pd-chip--low::before { animation: none; }
+}
