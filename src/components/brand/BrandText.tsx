@@ -18,7 +18,7 @@ export function InlineBrand({ tone = 'light' }: { tone?: BrandTone }) {
 
 /**
  * Renders a sentence with every "سوبر ماركو" replaced by the official
- * wordmark (ســــــوبـرمــــاركو) in the colours that suit the background.
+ * wordmark (ســــــوبـرمــاركو) in the colours that suit the background.
  * Anything that is not a plain string is passed through untouched.
  */
 export default function BrandText({ children, tone = 'light' }: { children: ReactNode; tone?: BrandTone }) {

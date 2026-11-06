@@ -1,9 +1,9 @@
 import type { HTMLAttributes } from 'react';
 
 // Brand lettering approved for display. Preserve each tatweel (U+0640):
-// 6 after س, 1 after ب, and 4 after م. There is no space between the halves.
+// 6 after س, 1 after ب, and 2 after م. There is no space between the halves.
 const FIRST_HALF = 'ســــــوبـر';
-const SECOND_HALF = 'مــــاركو';
+const SECOND_HALF = 'مــاركو';
 export const SUPER_MARKO_WORDMARK = FIRST_HALF + SECOND_HALF;
 export const SUPER_MARKO_ACCESSIBLE_NAME = 'سوبر ماركو';
 
