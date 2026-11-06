@@ -148,7 +148,7 @@ export default function Offers() {
         {loading ? (
           <div className={HOME_SECTION_CARD}>
             <div className="skeleton-shimmer mb-4 h-6 w-40" />
-            <div className="grid grid-cols-2 gap-3">{Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}</div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">{Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}</div>
           </div>
         ) : error ? (
           <div className="rounded-2xl bg-red-50 p-6 text-center">
@@ -217,7 +217,7 @@ export default function Offers() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">{visible.slice(0, limit).map(p => <ProductCard key={p.id} product={p} />)}</div>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">{visible.slice(0, limit).map(p => <ProductCard key={p.id} product={p} />)}</div>
                 {visible.length > limit && <Button className="mx-auto mt-6 block rounded-full" variant="outline" onClick={() => setLimit(v => v + 30)}>عرض عروض أكتر</Button>}
               </>
             )}

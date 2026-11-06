@@ -129,7 +129,7 @@ const CategoryProducts = () => {
               <div className="sticky top-0 z-10 mb-4 bg-white">
                 <div className="h-12 animate-pulse rounded-lg bg-gray-100" />
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
                 {[...Array(12)].map((_, index) => <ProductCardSkeleton key={index} />)}
               </div>
             </div>
@@ -183,7 +183,7 @@ const CategoryProducts = () => {
                 data-next-category-path={nextCategory ? `/category/${nextCategory.id}` : undefined}
                 data-next-category-name={nextCategory?.name}
               >
-              <div ref={productsRef} className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
+              <div ref={productsRef} className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
                 {getProductListWithVariants(products).map(product => (
                   <ProductCard key={product.variantKey} product={product} />
                 ))}

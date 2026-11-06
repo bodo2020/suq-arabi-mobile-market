@@ -1248,7 +1248,7 @@ const ProductDetail = () => {
 
       {!isMobile && (
       <main className="mx-auto hidden max-w-6xl px-3 pb-40 pt-2 sm:px-5 md:block md:pb-10">
-        <div className="grid gap-4 lg:grid-cols-[1.06fr_.94fr] lg:items-start lg:gap-6">
+        <div className="grid gap-4 md:grid-cols-2 md:items-start lg:grid-cols-[1.06fr_.94fr] lg:gap-6">
           <section className="relative overflow-hidden rounded-[28px] bg-white p-3 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] sm:p-5">
             <div
               className={`relative aspect-square touch-pan-y overflow-hidden rounded-[24px] ${bulkMode && !bulkImageUrl ? 'bg-emerald-50' : 'bg-[#f7f8f7]'}`}
@@ -1300,7 +1300,7 @@ const ProductDetail = () => {
             )}
           </section>
 
-          <section className="rounded-[28px] bg-white p-5 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] sm:p-7 lg:sticky lg:top-[calc(var(--top-nav-height,68px)+16px)]">
+          <section className="rounded-[28px] bg-white p-5 shadow-[0_10px_35px_rgba(15,23,42,0.05)] ring-1 ring-black/[0.035] sm:p-7 md:sticky md:top-[calc(var(--top-nav-height,68px)+16px)]">
             <div className="pd-chips">
               {unavailable ? (
                 <span className="pd-chip pd-chip--muted">خلص دلوقتي</span>

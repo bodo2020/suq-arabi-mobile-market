@@ -111,7 +111,7 @@ const JourneyCategory = React.memo(function JourneyCategory({
       ) : !query.data ? (
         <div className="space-y-3" role="status" aria-label={`تحميل ${category.name}`}>
           <div className="h-6 w-32 animate-pulse rounded-lg bg-emerald-100" />
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
             {Array.from({ length: 6 }, (_, i) => <div key={i} className="aspect-[.67] animate-pulse rounded-2xl bg-white" />)}
           </div>
         </div>
@@ -130,7 +130,7 @@ const JourneyCategory = React.memo(function JourneyCategory({
                   <p className="text-xs text-slate-400">{section.products.length} منتج</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-6">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
                 {getProductListWithVariants(section.products).map(item => (
                   <ProductCard key={item.variantKey || item.id} product={item} />
                 ))}

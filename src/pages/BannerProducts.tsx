@@ -218,7 +218,7 @@ const BannerProducts = () => {
                   <div><p className="text-xs text-gray-500">القطعة والجملة داخل العرض</p><h2 className="mt-1 text-xl font-bold">{sourceLabel}</h2></div>
                   <span className="text-sm font-semibold text-gray-500">{products.length.toLocaleString('ar-EG')}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
                   {products.map(product => <ProductCard key={productCardKey(product)} product={product} />)}
                 </div>
               </section>

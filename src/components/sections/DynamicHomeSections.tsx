@@ -178,7 +178,7 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
         <HomeSectionHeader title={title} subtitle={subtitle} />
       </div>
       {loading ? (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}</div>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">{Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}</div>
       ) : products.length ? (
         <div className="hide-scrollbar flex gap-3 overflow-x-auto pb-3" dir="rtl">{getProductListWithVariants(products).map(product => <div key={product.variantKey} className="w-[112px] shrink-0 sm:w-[148px]"><ProductCard product={product} /></div>)}</div>
       ) : null}
@@ -202,11 +202,11 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
         <section className={HOME_SECTION_CARD}>
           <HomeSectionHeader title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle || 'وصل للي محتاجه بسرعة'} href="/categories" />
           {categoriesQuery.isLoading ? (
-            <div className="grid grid-cols-3 gap-3">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
           ) : categoriesQuery.isError ? (
             <div className="rounded-2xl bg-gray-50 p-6 text-center"><p className="mb-3 text-sm text-gray-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
               {categories.map((cat: MainCategory) => <div key={cat.id} className="min-w-0"><CategoryItem category={cat} hideTitle onClick={() => navigate(`/category/${cat.id}`)} /></div>)}
             </div>
           )}

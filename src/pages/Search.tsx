@@ -302,7 +302,7 @@ export default function Search() {
                 <BrandLoader size="md" /><span className="text-sm text-slate-500">بنبحث في منتجات فرعك…</span>
               </div>
             ) : visible.length ? (
-              <div className="brand-search-results-enter grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              <div className="brand-search-results-enter grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
                 {visible.map(product => (
                   <div className="min-w-0" key={product.variantKey || (product.displayType || 'regular') + ':' + product.id}>
                     {product.search_match_type === 'related' && (

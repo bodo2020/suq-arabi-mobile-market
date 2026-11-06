@@ -183,7 +183,7 @@ const Favorites = () => {
         )}
 
         {loading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
             {[...Array(8)].map((_, index) => <ProductCardSkeleton key={index} />)}
           </div>
         ) : !user ? (
@@ -198,7 +198,7 @@ const Favorites = () => {
         ) : favorites.length > 0 && visible.length === 0 ? (
           <div className="rounded-3xl bg-white p-8 text-center"><h2 className="text-lg font-bold">مفيش منتجات مطابقة</h2><p className="my-3 text-gray-500">جرّب كلمة بحث مختلفة.</p><Button variant="outline" onClick={() => setQuery('')}>مسح البحث</Button></div>
         ) : favorites.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
             {visible.map(product => {
               const variantId = product.displayType === 'bulk' ? product.bulk_variant_id || null : null;
               const reminderKey = backInStockReminderKey(product.id, variantId);

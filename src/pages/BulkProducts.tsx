@@ -104,7 +104,7 @@ const BulkProducts = () => {
             </section>
 
             {products.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
                 {products.map(product => (
                   <ProductCard key={product.id} product={{ ...product, displayType: 'bulk' }} />
                 ))}

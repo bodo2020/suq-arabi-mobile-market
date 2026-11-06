@@ -184,7 +184,7 @@ const CategoryDetail = () => {
           <div className="mb-5 flex gap-2 overflow-hidden">
             {Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-gray-100" />)}
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => <ProductCardSkeleton key={index} />)}
           </div>
         </div>
@@ -276,7 +276,7 @@ const CategoryDetail = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
                   {sectionProducts.map(product => <ProductCard key={product.variantKey || product.id} product={product} />)}
                 </div>
               </section>

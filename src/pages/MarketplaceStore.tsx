@@ -40,7 +40,7 @@ export default function MarketplaceStore() {
       <div className="relative mb-5"><Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="ابحث داخل المتجر" className="h-12 rounded-2xl pr-12" /></div>
 
       {productsQuery.isLoading ? <div className="flex justify-center py-16"><BrandLoader size="lg" /></div> : productsQuery.isError ? <div className="rounded-2xl bg-red-50 p-5 text-center text-red-700">تعذر تحميل منتجات المتجر.</div> : !productsQuery.data?.length ? <div className="rounded-2xl border border-dashed p-8 text-center text-gray-500">مفيش منتجات مطابقة للبحث حاليًا.</div> : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
           {productsQuery.data.map(product => {
             return <ProductCard key={product.marketplace_listing_id} product={product} />;
           })}
