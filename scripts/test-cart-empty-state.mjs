@@ -31,17 +31,21 @@ for (const path of ['/categories', '/offers']) {
   assert.ok(empty.includes(`to="${path}"`), `Missing ${path} shortcut`);
   assert.ok(routes.includes(`path="${path}"`), `Missing ${path} route`);
 }
-assert.match(css, /cart-empty-bag-shake 7\.2s/);
-assert.match(css, /cart-empty-moth-escape 7\.2s/);
-assert.match(css, /cart-empty-puff 7\.2s/);
-// Empty bag is sad: only the smile stroke is flipped into a frown.
+assert.match(css, /cart-empty-bag-mood 8s/);
+assert.match(css, /cart-empty-moth-escape 8s/);
+assert.match(css, /cart-empty-puff 8s/);
+// Empty bag is sad: only the smile stroke is flipped into a frown, and the
+// bag is never turned upside down (that would make the frown look like a smile).
 assert.match(css, /\.cart-empty-bag \.brand-mark__stroke--4 \{[^}]*scaleY\(-1\)/);
-assert.match(css, /cart-empty-frown 7\.2s/);
+assert.doesNotMatch(css, /rotate\((1[0-9]{2}|[2-9][0-9]{2})deg\)/, 'the sad bag must never flip over');
 assert.match(empty, /cart-empty-tear/);
+// Tapping the bag makes it hop.
+assert.match(empty, /is-poked/);
+assert.match(css, /cart-empty-poke 700ms/);
 assert.match(css, /@media \(max-width: 480px\)/);
 assert.match(css, /@media \(max-height: 660px\)/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(css, /\.brand-mark__stroke \{ stroke-dashoffset: 0 !important; opacity: 1 !important;/);
 assert.match(css, /\.cart-empty-moth, \.cart-empty-puffs, \.cart-empty-tear \{ display: none !important;/);
 
-console.log('PASS: animated empty-bag gag (shake, puffs, moth), shopping navigation, empty-stepper handling, and reduced-motion fallback.');
+console.log('PASS: sad empty bag (frown, breathe, moth, sigh + tear, tap hop), shopping navigation, empty-stepper handling, and reduced-motion fallback.');

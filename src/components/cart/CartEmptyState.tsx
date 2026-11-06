@@ -1,28 +1,46 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, BadgePercent, Grid2X2 } from 'lucide-react';
 import BrandMark from '@/components/brand/BrandMark';
 import './cart-empty-motion.css';
 
 /**
- * Empty bag gag: the official bag mark (never altered) flips upside down and
- * gets shaken, a few puffs of air and one bored moth fall out, then it flips
- * back with a sigh. Turning the bag over naturally turns its smile into a
- * frown. Transform/opacity only; static under prefers-reduced-motion.
+ * Empty bag: the Super Marko bag with its smile turned into a frown (only
+ * that stroke changes). A calm 8s loop: it breathes, rises looking for
+ * something, a little empty air and one bored moth drift out of the top,
+ * then it sighs and a tear rolls down. Tapping it makes it hop hopefully.
+ * Transform/opacity only; static and sad under prefers-reduced-motion.
  */
 export default function CartEmptyState() {
+  const [poked, setPoked] = useState(false);
+  const timer = useRef<number>();
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const poke = () => {
+    window.clearTimeout(timer.current);
+    setPoked(false);
+    // Restart the hop even on quick repeated taps.
+    window.requestAnimationFrame(() => {
+      setPoked(true);
+      timer.current = window.setTimeout(() => setPoked(false), 720);
+    });
+  };
+
   return (
     <section className="cart-empty-state" aria-labelledby="cart-empty-heading">
-      <div className="cart-empty-scene" aria-hidden="true">
-        <span className="cart-empty-scene__halo" />
-        <span className="cart-empty-scene__shadow" />
-        <span className="cart-empty-bag">
-          <BrandMark variant="mark" motion="reveal" className="cart-empty-bag__mark" />
-          <span className="cart-empty-tear" />
-        </span>
-        <span className="cart-empty-puffs">
-          <i style={{ '--dx': '-26px', '--dy': '6px' } as React.CSSProperties} />
-          <i style={{ '--dx': '2px', '--dy': '16px' } as React.CSSProperties} />
-          <i style={{ '--dx': '28px', '--dy': '4px' } as React.CSSProperties} />
+      <div className="cart-empty-scene">
+        <span className="cart-empty-scene__halo" aria-hidden="true" />
+        <span className="cart-empty-scene__shadow" aria-hidden="true" />
+        <button type="button" className={`cart-empty-bag-button ${poked ? 'is-poked' : ''}`} onClick={poke} aria-label="الشنطة الفاضية">
+          <span className="cart-empty-bag" aria-hidden="true">
+            <BrandMark variant="mark" motion="reveal" className="cart-empty-bag__mark" />
+            <span className="cart-empty-tear" />
+          </span>
+        </button>
+        <span className="cart-empty-puffs" aria-hidden="true">
+          <i />
+          <i />
+          <i />
         </span>
         <svg className="cart-empty-moth" viewBox="0 0 40 32" fill="none" focusable="false" aria-hidden="true">
           <g className="cart-empty-moth__wing cart-empty-moth__wing--left">
@@ -40,7 +58,7 @@ export default function CartEmptyState() {
 
       <h1 id="cart-empty-heading">شنطتك فاضية… وزعلانة!</h1>
       <p className="cart-empty-state__description">
-        هزّيناها كويس… ملقيناش غير شوية هوا وفراشة زهقانة.
+        مفيهاش غير شوية هوا وفراشة زهقانة.
         <span className="cart-empty-state__description-line">ضيف أول حاجة وهترجع تضحك تاني.</span>
       </p>
 
