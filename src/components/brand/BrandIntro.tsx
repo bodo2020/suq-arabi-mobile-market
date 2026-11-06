@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import BrandMark from './BrandMark';
 import BrandWordmark from './BrandWordmark';
 import BrandLoader from '@/components/ui/BrandLoader';
+import IntroGroceries from './IntroGroceries';
 
 type IntroMode = 'intro' | 'refresh' | null;
 
@@ -40,7 +41,7 @@ export default function BrandIntro() {
       setMode(null);
       // Let the status bar return to the page colour right away.
       window.setTimeout(() => window.dispatchEvent(new Event('brand-intro-done')), 0);
-    }, mode === 'intro' ? 2300 : 1350);
+    }, mode === 'intro' ? 2700 : 1350);
     return () => window.clearTimeout(timer);
   }, [mode]);
 
@@ -53,21 +54,24 @@ export default function BrandIntro() {
       {mode === 'intro' && <>
         <span className="brand-intro__blob brand-intro__blob--gold" />
         <span className="brand-intro__blob brand-intro__blob--white" />
-        <span className="brand-intro__blob brand-intro__blob--small" />
       </>}
       <div className="brand-intro__stack">
         {mode === 'intro' ? (
           <span className="brand-intro__hero">
+            <span className="brand-intro__trail"><i /><i /><i /></span>
             <span className="brand-intro__sparks">
               {[0, 45, 90, 135, 180, 225, 270, 315].map(angle => <i key={angle} style={{ '--a': `${angle}deg` } as React.CSSProperties} />)}
             </span>
-            <BrandMark variant="mark" tone="onGreen" motion="reveal" className="brand-intro__mark" />
+            <span className="brand-intro__bag">
+              <IntroGroceries />
+              <BrandMark variant="mark" tone="onGreen" motion="reveal" className="brand-intro__mark" />
+            </span>
           </span>
         ) : (
           <BrandLoader size="lg" tone="onGreen" label="جاري تحديث الصفحة" className="brand-intro__refresh-loader" />
         )}
         <BrandWordmark className="brand-name--intro" />
-        {mode === 'intro' && <span className="brand-intro__slogan">كل اللي محتاجه… لحد باب البيت</span>}
+        {mode === 'intro' && <span className="brand-intro__slogan">شنطتك مليانة… وجاية لحد بابك</span>}
         {mode === 'refresh' && <span className="brand-intro__refresh-caption">جاري التحديث…</span>}
       </div>
     </div>

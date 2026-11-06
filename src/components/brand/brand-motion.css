@@ -48,10 +48,11 @@
 }
 /* Same size and position as the native Android splash mark (scale .70 in
    prepare-android.mjs), so the hand-off from the native splash is invisible.
-   The wordmark hangs below the mark without moving it off centre. */
+   The wordmark and slogan hang below the bag without moving it off centre. */
 .brand-intro__stack { position: relative; }
 .brand-intro__hero { position: relative; display: block; }
-.brand-intro__mark { display: block; width: 84px; height: 111.5px; transform-origin: 50% 100%; }
+.brand-intro__bag { position: relative; display: block; transform-origin: 50% 100%; }
+.brand-intro__mark { position: relative; z-index: 1; display: block; width: 84px; height: 111.5px; }
 .brand-intro .brand-name--intro {
   position: absolute;
   top: calc(100% + 16px);
@@ -62,63 +63,41 @@
   justify-content: center;
 }
 
-/* Launch motion (2.3s total):
-   0–150ms hold (= native splash) · 150–1000ms happy hop with squash & stretch
-   · ~700ms landing: bigger smile + gold sparks · 650–1150ms wordmark written
-   right-to-left · 1050ms slogan · 1800–2300ms green closes in a circle to reveal the app. */
-.brand-intro--intro { overflow: hidden; animation: brand-intro-iris 2300ms cubic-bezier(.7, 0, .3, 1) both; }
-.brand-intro--intro .brand-intro__stack { animation: brand-intro-stack-out 2300ms cubic-bezier(.6, 0, .4, 1) both; }
-
-/* Soft brand circles, like the account headers: they grow in and drift. */
-.brand-intro__blob { position: absolute; border-radius: 50%; pointer-events: none; }
-.brand-intro__blob--gold {
-  left: -90px; top: -70px; width: 300px; height: 300px;
-  background: rgba(255, 193, 32, .16);
-  animation: brand-intro-blob 2300ms 0ms cubic-bezier(.2, .8, .2, 1) both;
-}
-.brand-intro__blob--white {
-  right: -110px; bottom: -80px; width: 320px; height: 320px;
-  background: rgba(255, 255, 255, .07);
-  animation: brand-intro-blob 2300ms 120ms cubic-bezier(.2, .8, .2, 1) both;
-}
-.brand-intro__blob--small {
-  left: 18%; bottom: 14%; width: 120px; height: 120px;
-  background: rgba(255, 193, 32, .1);
-  animation: brand-intro-blob 2300ms 240ms cubic-bezier(.2, .8, .2, 1) both;
-}
-.brand-intro__slogan {
-  position: absolute;
-  top: calc(100% + 82px);
-  left: 50%;
-  width: 300px;
-  margin-left: -150px;
-  color: rgba(255, 255, 255, .86);
-  font-family: 'Thmanyah', 'Cairo', sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  text-align: center;
-  white-space: nowrap;
-  animation: brand-intro-slogan 520ms 1050ms cubic-bezier(.2, .8, .2, 1) both;
-}
-@keyframes brand-intro-blob {
-  0% { opacity: 0; transform: scale(.4) translate3d(0, 0, 0); }
-  35% { opacity: 1; transform: scale(1) translate3d(0, 0, 0); }
-  100% { opacity: 1; transform: scale(1.08) translate3d(12px, 10px, 0); }
-}
-@keyframes brand-intro-slogan {
-  from { opacity: 0; transform: translate3d(0, 10px, 0); letter-spacing: .06em; }
-  to { opacity: 1; transform: none; letter-spacing: 0; }
-}
-.brand-intro--intro .brand-intro__mark { animation: brand-intro-hop 850ms 150ms cubic-bezier(.4, 0, .2, 1) both; }
+/* "The bag fills up" (2.7s):
+   0–200ms hold (= native splash) · bread, greens, carrot, milk drop in and the
+   bag squashes on each landing (630–1230ms) · full: happy hop, big smile,
+   gold sparks (1150–1550ms) · wordmark written right-to-left and slogan ·
+   2050ms the full bag dashes off like a delivery · 2250–2700ms reveal. */
+.brand-intro--intro { overflow: hidden; animation: brand-intro-iris 2700ms cubic-bezier(.7, 0, .3, 1) both; }
+.brand-intro--intro .brand-intro__stack { animation: none; }
+.brand-intro--intro .brand-intro__bag { animation: brand-intro-fill 1450ms 200ms linear both; }
+.brand-intro--intro .brand-intro__hero { animation: brand-intro-dash 520ms 2050ms cubic-bezier(.55, 0, .75, .2) both; }
 .brand-intro--intro .brand-intro__mark .brand-mark__stroke--4 {
   transform-box: fill-box;
   transform-origin: 50% 0%;
-  animation: brand-stroke-reveal 440ms 205ms cubic-bezier(.22,.9,.3,1) forwards, brand-intro-grin 520ms 640ms cubic-bezier(.3, 1.5, .5, 1) both;
+  animation: brand-stroke-reveal 440ms 205ms cubic-bezier(.22,.9,.3,1) forwards, brand-intro-grin 520ms 1260ms cubic-bezier(.3, 1.5, .5, 1) both;
 }
 /* In the app the native splash already showed the full mark: no redraw. */
 .brand-intro--native .brand-intro__mark .brand-mark__stroke { stroke-dashoffset: 0; animation: none; }
-.brand-intro--native .brand-intro__mark .brand-mark__stroke--4 { animation: brand-intro-grin 520ms 640ms cubic-bezier(.3, 1.5, .5, 1) both; }
-.brand-intro__sparks { position: absolute; left: 50%; top: 52%; width: 0; height: 0; }
+.brand-intro--native .brand-intro__mark .brand-mark__stroke--4 { animation: brand-intro-grin 520ms 1260ms cubic-bezier(.3, 1.5, .5, 1) both; }
+
+/* Groceries: clipped at the bag opening (≈16px below the mark's top). */
+.brand-intro__items {
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  bottom: calc(100% - 17px);
+  width: 84px;
+  height: 260px;
+  overflow: hidden;
+}
+.brand-intro__item { position: absolute; bottom: 0; opacity: 0; }
+.brand-intro__item--bread { left: 8px; width: 17px; height: 46px; margin-bottom: -16px; --r: -16deg; animation: brand-intro-drop 460ms 300ms both; }
+.brand-intro__item--greens { left: 22px; width: 34px; height: 37px; margin-bottom: -12px; --r: 4deg; animation: brand-intro-drop 460ms 500ms both; }
+.brand-intro__item--carrot { left: 44px; width: 21px; height: 45px; margin-bottom: -18px; --r: 14deg; animation: brand-intro-drop 460ms 700ms both; }
+.brand-intro__item--milk { left: 56px; width: 20px; height: 37px; margin-bottom: -12px; --r: 6deg; animation: brand-intro-drop 460ms 900ms both; }
+
+.brand-intro__sparks { position: absolute; left: 50%; top: 40%; width: 0; height: 0; }
 .brand-intro__sparks i {
   position: absolute;
   width: 7px;
@@ -128,42 +107,118 @@
   background: #FFC120;
   opacity: 0;
   transform: rotate(var(--a)) translateY(0) scale(.3);
-  animation: brand-intro-spark 620ms 690ms cubic-bezier(.15, .8, .3, 1) both;
+  animation: brand-intro-spark 640ms 1300ms cubic-bezier(.15, .8, .3, 1) both;
 }
 .brand-intro__sparks i:nth-child(even) { width: 5px; height: 5px; margin: -2.5px; background: #fff; }
-.brand-intro--intro .brand-name--intro { animation: brand-intro-wipe 520ms 650ms cubic-bezier(.4, 0, .2, 1) both; }
 
-@keyframes brand-intro-hop {
-  0% { transform: translateY(0) scale(1, 1); }
-  16% { transform: translateY(0) scale(1.08, .9); }
-  42% { transform: translateY(-26px) scale(.95, 1.06); }
-  64% { transform: translateY(0) scale(1.08, .92); }
-  80% { transform: translateY(-4px) scale(.98, 1.02); }
+/* Speed lines left behind when the bag dashes off. */
+.brand-intro__trail { position: absolute; left: 100%; top: 34%; width: 0; height: 0; }
+.brand-intro__trail i {
+  position: absolute;
+  left: 6px;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .7);
+  transform-origin: 0 50%;
+  opacity: 0;
+  animation: brand-intro-trail 420ms 2010ms ease-out both;
+}
+.brand-intro__trail i:nth-child(1) { top: 0; width: 46px; }
+.brand-intro__trail i:nth-child(2) { top: 16px; width: 64px; background: #FFC120; animation-delay: 2050ms; }
+.brand-intro__trail i:nth-child(3) { top: 32px; width: 38px; animation-delay: 2090ms; }
+
+.brand-intro.brand-intro--intro .brand-name--intro { animation: brand-intro-wipe 520ms 1250ms cubic-bezier(.4, 0, .2, 1) both, brand-intro-fade-out 300ms 2100ms ease-in forwards; }
+
+/* Soft brand circles, like the account headers: they grow in and drift. */
+.brand-intro__blob { position: absolute; border-radius: 50%; pointer-events: none; }
+.brand-intro__blob--gold {
+  left: -90px; top: -70px; width: 300px; height: 300px;
+  background: rgba(255, 193, 32, .13);
+  animation: brand-intro-blob 2700ms 0ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.brand-intro__blob--white {
+  right: -110px; bottom: -80px; width: 320px; height: 320px;
+  background: rgba(255, 255, 255, .06);
+  animation: brand-intro-blob 2700ms 120ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.brand-intro__slogan {
+  position: absolute;
+  top: calc(100% + 82px);
+  left: 50%;
+  width: 300px;
+  margin-left: -150px;
+  color: rgba(255, 255, 255, .88);
+  font-family: 'Thmanyah', 'Cairo', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  animation: brand-intro-slogan 520ms 1500ms cubic-bezier(.2, .8, .2, 1) both, brand-intro-fade-out 300ms 2100ms ease-in forwards;
+}
+
+@keyframes brand-intro-drop {
+  0% { opacity: 1; transform: translateY(-230px) rotate(calc(var(--r) - 25deg)); animation-timing-function: cubic-bezier(.5, 0, .9, .4); }
+  72% { opacity: 1; transform: translateY(4px) rotate(var(--r)); animation-timing-function: ease-out; }
+  86% { transform: translateY(-5px) rotate(var(--r)); animation-timing-function: ease-in; }
+  100% { opacity: 1; transform: translateY(0) rotate(var(--r)); }
+}
+/* Squash on each landing (300/500/700/900ms + 330ms fall), then the happy hop. */
+@keyframes brand-intro-fill {
+  /* Landings at 630 / 830 / 1030 / 1230ms (delay 200ms, 1450ms long). */
+  0%, 27% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(0) scale(1.05, .95); }
+  35%, 40% { transform: translateY(0) scale(1, 1); }
+  43% { transform: translateY(0) scale(1.05, .95); }
+  48%, 54% { transform: translateY(0) scale(1, 1); }
+  57% { transform: translateY(0) scale(1.06, .94); }
+  62%, 68% { transform: translateY(0) scale(1, 1); }
+  71% { transform: translateY(0) scale(1.1, .88); }
+  82% { transform: translateY(-30px) scale(.95, 1.07); }
+  92% { transform: translateY(0) scale(1.08, .92); }
+  97% { transform: translateY(-3px) scale(.99, 1.01); }
   100% { transform: translateY(0) scale(1, 1); }
+}
+
+@keyframes brand-intro-dash {
+  0% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(14px) rotate(4deg); }
+  100% { transform: translateX(-120vw) rotate(-10deg); }
+}
+@keyframes brand-intro-trail {
+  0% { opacity: 0; transform: scaleX(.1); }
+  40% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0; transform: translateX(-30px) scaleX(.4); }
 }
 @keyframes brand-intro-grin {
   0% { transform: scale(1, 1); }
   45% { transform: scale(1.12, 1.45); }
-  100% { transform: scale(1.04, 1.12); }
+  100% { transform: scale(1.04, 1.15); }
 }
 @keyframes brand-intro-spark {
   0% { opacity: 0; transform: rotate(var(--a)) translateY(-40px) scale(.3); }
   25% { opacity: 1; }
-  100% { opacity: 0; transform: rotate(var(--a)) translateY(-92px) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-96px) scale(1); }
 }
 @keyframes brand-intro-wipe {
   from { opacity: 0; clip-path: inset(-20% 0 -20% 100%); transform: translate3d(0, 8px, 0); }
   30% { opacity: 1; }
   to { opacity: 1; clip-path: inset(-20% 0 -20% 0); transform: none; }
 }
+@keyframes brand-intro-fade-out { to { opacity: 0; transform: translate3d(0, 6px, 0); } }
 @keyframes brand-intro-iris {
-  0%, 78% { clip-path: circle(150% at 50% 50%); }
+  0%, 83% { clip-path: circle(150% at 50% 50%); }
   100% { clip-path: circle(0% at 50% 50%); }
 }
-@keyframes brand-intro-stack-out {
-  0%, 76% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(.7); }
+@keyframes brand-intro-blob {
+  0% { opacity: 0; transform: scale(.4) translate3d(0, 0, 0); }
+  30% { opacity: 1; transform: scale(1) translate3d(0, 0, 0); }
+  100% { opacity: 1; transform: scale(1.08) translate3d(12px, 10px, 0); }
 }
+@keyframes brand-intro-slogan {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); letter-spacing: .06em; }
+  to { opacity: 1; transform: none; letter-spacing: 0; }
+}
+
 .brand-intro__mark .brand-mark__stroke { animation-duration: 900ms; }
 .brand-intro__mark .brand-mark__stroke--2 { animation-delay: 100ms; }
 .brand-intro__mark .brand-mark__stroke--3 { animation-delay: 240ms; }
@@ -321,7 +376,9 @@
   .brand-cart-feedback { bottom: 28px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .brand-intro__sparks, .brand-intro__blob { display: none; }
+  .brand-intro__sparks, .brand-intro__blob, .brand-intro__trail { display: none; }
+  .brand-intro__item { opacity: 1 !important; animation: none !important; }
+  .brand-intro__bag, .brand-intro__hero { animation: none !important; }
   .brand-intro__slogan { animation: none !important; }
   .brand-mark--pop, .brand-mark--reveal .brand-mark__stroke,
   .brand-intro__mark, .brand-intro .brand-mark__stroke--4,
