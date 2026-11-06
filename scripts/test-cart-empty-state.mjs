@@ -34,11 +34,14 @@ for (const path of ['/categories', '/offers']) {
 assert.match(css, /cart-empty-bag-shake 7\.2s/);
 assert.match(css, /cart-empty-moth-escape 7\.2s/);
 assert.match(css, /cart-empty-puff 7\.2s/);
-assert.doesNotMatch(css, /stroke--4/, 'the official mark must not be altered');
+// Empty bag is sad: only the smile stroke is flipped into a frown.
+assert.match(css, /\.cart-empty-bag \.brand-mark__stroke--4 \{[^}]*scaleY\(-1\)/);
+assert.match(css, /cart-empty-frown 7\.2s/);
+assert.match(empty, /cart-empty-tear/);
 assert.match(css, /@media \(max-width: 480px\)/);
 assert.match(css, /@media \(max-height: 660px\)/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(css, /\.brand-mark__stroke \{ stroke-dashoffset: 0 !important; opacity: 1 !important;/);
-assert.match(css, /\.cart-empty-moth, \.cart-empty-puffs \{ display: none !important;/);
+assert.match(css, /\.cart-empty-moth, \.cart-empty-puffs, \.cart-empty-tear \{ display: none !important;/);
 
 console.log('PASS: animated empty-bag gag (shake, puffs, moth), shopping navigation, empty-stepper handling, and reduced-motion fallback.');

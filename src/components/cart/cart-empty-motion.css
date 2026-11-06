@@ -61,6 +61,27 @@
   height: 100%;
 }
 
+/* Empty means sad: only the smile stroke is turned into a frown (the rest of
+   the logo is untouched). It flips while the bag is upside down so the face
+   stays sad on screen the whole time, and a small tear rolls down at rest. */
+.cart-empty-bag .brand-mark__stroke--4 {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: translateY(6px) scaleY(-1);
+  animation: cart-empty-frown 7.2s linear infinite;
+}
+.cart-empty-tear {
+  position: absolute;
+  left: 28%;
+  top: 47%;
+  width: 7px;
+  height: 10px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: #7cc4ea;
+  opacity: 0;
+  animation: cart-empty-tear 7.2s ease-in infinite;
+}
+
 /* Puffs of "nothing" that fall out while the bag is shaken. */
 .cart-empty-puffs {
   position: absolute;
@@ -186,6 +207,17 @@
   61% { transform: translateY(2px) rotate(360deg) scale(1.05, .94); }
   67%, 100% { transform: translateY(0) rotate(360deg) scale(1); }
 }
+@keyframes cart-empty-frown {
+  0%, 17.9% { transform: translateY(6px) scaleY(-1); }
+  18%, 50.9% { transform: translateY(-6px) scaleY(1); }
+  51%, 100% { transform: translateY(6px) scaleY(-1); }
+}
+@keyframes cart-empty-tear {
+  0%, 64% { opacity: 0; transform: translateY(0) scale(.4); }
+  68% { opacity: 1; transform: translateY(0) scale(1); }
+  82% { opacity: 1; transform: translateY(18px) scale(1); }
+  88%, 100% { opacity: 0; transform: translateY(24px) scale(.8); }
+}
 @keyframes cart-empty-shadow {
   0%, 14%, 58%, 100% { opacity: 1; transform: scaleX(1); }
   22%, 46% { opacity: .55; transform: scaleX(.72); }
@@ -236,5 +268,6 @@
   .checkout .cart-empty-scene *,
   .checkout .cart-empty-bag { animation: none !important; transition: none !important; }
   .checkout .cart-empty-bag .brand-mark__stroke { stroke-dashoffset: 0 !important; opacity: 1 !important; }
-  .cart-empty-moth, .cart-empty-puffs { display: none !important; }
+  .cart-empty-moth, .cart-empty-puffs, .cart-empty-tear { display: none !important; }
+  .cart-empty-bag .brand-mark__stroke--4 { transform: translateY(6px) scaleY(-1) !important; }
 }

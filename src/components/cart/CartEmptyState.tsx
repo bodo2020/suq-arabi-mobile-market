@@ -17,6 +17,7 @@ export default function CartEmptyState() {
         <span className="cart-empty-scene__shadow" />
         <span className="cart-empty-bag">
           <BrandMark variant="mark" motion="reveal" className="cart-empty-bag__mark" />
+          <span className="cart-empty-tear" />
         </span>
         <span className="cart-empty-puffs">
           <i style={{ '--dx': '-26px', '--dy': '6px' } as React.CSSProperties} />
@@ -37,10 +38,10 @@ export default function CartEmptyState() {
         </svg>
       </div>
 
-      <h1 id="cart-empty-heading">شنطتك فاضية خالص!</h1>
+      <h1 id="cart-empty-heading">شنطتك فاضية… وزعلانة!</h1>
       <p className="cart-empty-state__description">
         هزّيناها كويس… ملقيناش غير شوية هوا وفراشة زهقانة.
-        <span className="cart-empty-state__description-line">يلا نملاها بحاجات حلوة؟</span>
+        <span className="cart-empty-state__description-line">ضيف أول حاجة وهترجع تضحك تاني.</span>
       </p>
 
       <Link to="/" className="cart-empty-state__primary">
