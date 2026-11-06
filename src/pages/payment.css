@@ -155,7 +155,8 @@
 
 @media (max-width: 767px) {
   .checkout-steps { margin-bottom: 14px; }
-  .pay-grid { display: flex; flex-direction: column; gap: 12px; }
+  .pay-grid { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+  .pay-col, .pay-summary { width: 100%; min-width: 0; }
   .pay-summary { position: static; }
   .pay-confirm--desktop { display: none; }
   .pay-bar {
