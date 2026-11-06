@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+body { background: radial-gradient(120% 140% at 100% 0%, #0b7a47 0%, #005931 55%, #003f23 100%); }
+.blob1 { width: 560px; height: 560px; left: -120px; top: -200px; background: rgba(255,193,32,.14); }
+.blob2 { width: 380px; height: 380px; right: 420px; bottom: -220px; background: rgba(255,255,255,.06); }
+.text { position: absolute; right: 70px; top: 96px; width: 660px; color: #fff; }
+.wm { font-size: 58px; }
+h1 { margin-top: 30px; font-size: 100px; font-weight: 900; line-height: 1.05; }
+h1 span { display: block; color: #FFC120; }
+p { margin-top: 26px; color: rgba(255,255,255,.86); font-size: 36px; font-weight: 700; }
+.btn { position: absolute; right: 70px; bottom: 74px; background: #FFC120; color: #005931; box-shadow: 0 14px 30px rgba(0,0,0,.25); }
+.stage { position: absolute; left: 70px; top: 120px; width: 470px; height: 600px; }
+.ring { position: absolute; left: 50%; top: 50%; width: 430px; height: 430px; margin: -215px 0 0 -215px; border-radius: 50%; background: rgba(255,255,255,.07); box-shadow: inset 0 0 0 3px rgba(255,193,32,.35); }
+.bag { position: absolute; left: 50%; top: 50%; width: 250px; height: 332px; margin: -176px 0 0 -125px; transform: rotate(-6deg); filter: drop-shadow(0 18px 30px rgba(0,0,0,.25)); }
+.lines i { position: absolute; height: 12px; border-radius: 12px; background: rgba(255,255,255,.85); }
+.lines i:nth-child(1) { right: -10px; top: 210px; width: 120px; }
+.lines i:nth-child(2) { right: -20px; top: 250px; width: 130px; background: #FFC120; }
+.lines i:nth-child(3) { right: -20px; top: 290px; width: 110px; }
+.pin { position: absolute; left: 6px; top: 40px; width: 120px; height: 120px; border-radius: 50%; background: #FFC120; display: grid; place-items: center; box-shadow: 0 14px 28px rgba(0,0,0,.25); transform: rotate(-8deg); }
+.pin svg { width: 62px; height: 62px; }
+.badge { position: absolute; left: 10px; bottom: 50px; background: #fff; color: #005931; border-radius: 26px; padding: 16px 26px; font-size: 32px; font-weight: 900; box-shadow: 0 14px 28px rgba(0,0,0,.2); transform: rotate(4deg); }
+.badge b { color: #cf9700; }
+</style></head>
+<body>
+  <span class="blob blob1"></span><span class="blob blob2"></span>
+  <div class="text">
+    <span class="wm"><span class="a">ســــــوبـر</span><span class="b">مــاركو</span></span>
+    <h1>طلباتك<span>لحد باب البيت</span></h1>
+    <p>اختار من بيتك… وإحنا نوصّلهالك بسرعة</p>
+  </div>
+  <span class="btn">ابدأ تسوّق ←</span>
+  <div class="stage">
+    <span class="ring"></span>
+    <span class="lines"><i></i><i></i><i></i></span>
+    <img class="bag" src="../../public/brand/super-marko-mark-on-green.svg">
+    <span class="pin"><svg viewBox="0 0 24 24" fill="none" stroke="#005931" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+    <span class="badge">توصيل <b>سريع</b> 🛵</span>
+  </div>
+</body></html>

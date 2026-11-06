@@ -1,0 +1,10 @@
+@font-face { font-family: 'Thmanyah'; src: url('../../src/assets/fonts/thmanyahsans-Medium.otf'); font-weight: 500; }
+@font-face { font-family: 'Thmanyah'; src: url('../../src/assets/fonts/thmanyahsans-Bold.otf'); font-weight: 700; }
+@font-face { font-family: 'Thmanyah'; src: url('../../src/assets/fonts/thmanyahsans-Black.otf'); font-weight: 900; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1252px; height: 836px; overflow: hidden; }
+body { font-family: 'Thmanyah', sans-serif; direction: rtl; position: relative; }
+.wm { display: inline-flex; font-weight: 900; white-space: nowrap; }
+.wm .a { color: #fff; } .wm .b { color: #FFC120; }
+.blob { position: absolute; border-radius: 50%; }
+.btn { display: inline-flex; align-items: center; gap: 14px; border-radius: 999px; padding: 22px 44px; font-size: 40px; font-weight: 900; }
