@@ -40,7 +40,7 @@ export default function BrandIntro() {
       setMode(null);
       // Let the status bar return to the page colour right away.
       window.setTimeout(() => window.dispatchEvent(new Event('brand-intro-done')), 0);
-    }, mode === 'intro' ? 1900 : 1350);
+    }, mode === 'intro' ? 2300 : 1350);
     return () => window.clearTimeout(timer);
   }, [mode]);
 
@@ -50,6 +50,11 @@ export default function BrandIntro() {
   const native = Capacitor.isNativePlatform();
   return (
     <div className={`brand-intro brand-intro--${mode} ${native ? 'brand-intro--native' : ''}`} aria-hidden="true" dir="rtl">
+      {mode === 'intro' && <>
+        <span className="brand-intro__blob brand-intro__blob--gold" />
+        <span className="brand-intro__blob brand-intro__blob--white" />
+        <span className="brand-intro__blob brand-intro__blob--small" />
+      </>}
       <div className="brand-intro__stack">
         {mode === 'intro' ? (
           <span className="brand-intro__hero">
@@ -62,6 +67,7 @@ export default function BrandIntro() {
           <BrandLoader size="lg" tone="onGreen" label="جاري تحديث الصفحة" className="brand-intro__refresh-loader" />
         )}
         <BrandWordmark className="brand-name--intro" />
+        {mode === 'intro' && <span className="brand-intro__slogan">كل اللي محتاجه… لحد باب البيت</span>}
         {mode === 'refresh' && <span className="brand-intro__refresh-caption">جاري التحديث…</span>}
       </div>
     </div>

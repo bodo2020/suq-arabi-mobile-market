@@ -62,12 +62,53 @@
   justify-content: center;
 }
 
-/* Launch motion (1.9s total):
+/* Launch motion (2.3s total):
    0–150ms hold (= native splash) · 150–1000ms happy hop with squash & stretch
    · ~700ms landing: bigger smile + gold sparks · 650–1150ms wordmark written
-   right-to-left · 1450–1900ms green closes in a circle to reveal the app. */
-.brand-intro--intro { animation: brand-intro-iris 1900ms cubic-bezier(.7, 0, .3, 1) both; }
-.brand-intro--intro .brand-intro__stack { animation: brand-intro-stack-out 1900ms cubic-bezier(.6, 0, .4, 1) both; }
+   right-to-left · 1050ms slogan · 1800–2300ms green closes in a circle to reveal the app. */
+.brand-intro--intro { overflow: hidden; animation: brand-intro-iris 2300ms cubic-bezier(.7, 0, .3, 1) both; }
+.brand-intro--intro .brand-intro__stack { animation: brand-intro-stack-out 2300ms cubic-bezier(.6, 0, .4, 1) both; }
+
+/* Soft brand circles, like the account headers: they grow in and drift. */
+.brand-intro__blob { position: absolute; border-radius: 50%; pointer-events: none; }
+.brand-intro__blob--gold {
+  left: -90px; top: -70px; width: 300px; height: 300px;
+  background: rgba(255, 193, 32, .16);
+  animation: brand-intro-blob 2300ms 0ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.brand-intro__blob--white {
+  right: -110px; bottom: -80px; width: 320px; height: 320px;
+  background: rgba(255, 255, 255, .07);
+  animation: brand-intro-blob 2300ms 120ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.brand-intro__blob--small {
+  left: 18%; bottom: 14%; width: 120px; height: 120px;
+  background: rgba(255, 193, 32, .1);
+  animation: brand-intro-blob 2300ms 240ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.brand-intro__slogan {
+  position: absolute;
+  top: calc(100% + 82px);
+  left: 50%;
+  width: 300px;
+  margin-left: -150px;
+  color: rgba(255, 255, 255, .86);
+  font-family: 'Thmanyah', 'Cairo', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  animation: brand-intro-slogan 520ms 1050ms cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes brand-intro-blob {
+  0% { opacity: 0; transform: scale(.4) translate3d(0, 0, 0); }
+  35% { opacity: 1; transform: scale(1) translate3d(0, 0, 0); }
+  100% { opacity: 1; transform: scale(1.08) translate3d(12px, 10px, 0); }
+}
+@keyframes brand-intro-slogan {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); letter-spacing: .06em; }
+  to { opacity: 1; transform: none; letter-spacing: 0; }
+}
 .brand-intro--intro .brand-intro__mark { animation: brand-intro-hop 850ms 150ms cubic-bezier(.4, 0, .2, 1) both; }
 .brand-intro--intro .brand-intro__mark .brand-mark__stroke--4 {
   transform-box: fill-box;
@@ -116,11 +157,11 @@
   to { opacity: 1; clip-path: inset(-20% 0 -20% 0); transform: none; }
 }
 @keyframes brand-intro-iris {
-  0%, 76% { clip-path: circle(150% at 50% 50%); }
+  0%, 78% { clip-path: circle(150% at 50% 50%); }
   100% { clip-path: circle(0% at 50% 50%); }
 }
 @keyframes brand-intro-stack-out {
-  0%, 74% { opacity: 1; transform: scale(1); }
+  0%, 76% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(.7); }
 }
 .brand-intro__mark .brand-mark__stroke { animation-duration: 900ms; }
@@ -280,7 +321,8 @@
   .brand-cart-feedback { bottom: 28px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .brand-intro__sparks { display: none; }
+  .brand-intro__sparks, .brand-intro__blob { display: none; }
+  .brand-intro__slogan { animation: none !important; }
   .brand-mark--pop, .brand-mark--reveal .brand-mark__stroke,
   .brand-intro__mark, .brand-intro .brand-mark__stroke--4,
   .brand-intro, .brand-intro__stack, .brand-intro .brand-name--intro, .brand-intro__refresh-caption, .brand-cart-feedback,
