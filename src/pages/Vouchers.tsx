@@ -4,6 +4,7 @@ import { Gift, Sparkles, Ticket, WalletCards } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import BrandText from '@/components/brand/BrandText';
 import '@/components/account/account.css';
 import BrandLoader from '@/components/ui/BrandLoader';
 import LoyaltyBarcode from '@/components/ui/LoyaltyBarcode';
@@ -95,7 +96,7 @@ export default function Vouchers() {
         <section className="acc-hero sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} className="text-brand-yellow" /><span className="text-sm font-bold">نقاط سوبر ماركو</span></div>
+              <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} className="text-brand-yellow" /><span className="text-sm font-bold">نقاط <BrandText tone="dark">سوبر ماركو</BrandText></span></div>
               <div className="mt-2 text-4xl font-black text-brand-yellow">{Number(card?.points_balance || 0).toLocaleString('ar-EG')} <span className="text-lg font-semibold">نقطة</span></div>
               <p className="mt-2 text-sm text-emerald-50/90">كل {redemptionPoints.toLocaleString('ar-EG')} نقطة = كوبون خصم بقيمة {money(redemptionValue)}.</p>
             </div>
@@ -147,7 +148,7 @@ export default function Vouchers() {
                 <Card key={voucher.id} className="overflow-hidden rounded-3xl border-emerald-100 shadow-sm">
                   <div className="bg-gradient-to-l from-brand-ivory via-white to-emerald-50 p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <div><p className="text-xs font-bold text-primary">كوبون خصم سوبر ماركو</p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
+                      <div><p className="text-xs font-bold text-primary">كوبون خصم <BrandText>سوبر ماركو</BrandText></p><p dir="ltr" className="mt-1 text-right font-mono text-sm font-bold">{voucher.voucher_code}</p></div>
                       <Badge className={statusMeta[voucher.status].className}>{statusMeta[voucher.status].label}</Badge>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-3">

@@ -4,6 +4,7 @@ import { ArrowRight, Grid, Heart, Home, Package } from 'lucide-react';
 import './home-header-motion.css';
 import './header/app-header.css';
 import BrandBagIcon from '@/components/brand/BrandBagIcon';
+import BrandText from '@/components/brand/BrandText';
 import SearchBar from '@/components/ui/SearchBar';
 import CustomerNotificationBell from '@/components/CustomerNotificationBell';
 import HeaderBrand from './header/HeaderBrand';
@@ -270,7 +271,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
               {needsBack ? (
                 <button type="button" onClick={goBack} aria-label="رجوع" className="hdr-btn"><ArrowRight size={20} /></button>
               ) : <span className="hdr-spacer" aria-hidden="true" />}
-              <h1 className="app-header__title">{pageTitle || 'سوبر ماركو'}</h1>
+              <h1 className="app-header__title"><BrandText>{pageTitle || 'سوبر ماركو'}</BrandText></h1>
               {!hideCart ? (
                 <Link to="/cart" className="hdr-btn" aria-label={cartCount > 0 ? `الشنطة، ${cartCount} منتجات` : 'الشنطة'}>
                   <BrandBagIcon size={21} strokeWidth={2.2} accent={cartCount > 0 ? '#E0A800' : 'currentColor'} />

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Image as ImageIcon, Package, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import BrandText from '@/components/brand/BrandText';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductListStructuredData from '@/components/seo/ProductListStructuredData';
 import SEOHead from '@/components/seo/SEOHead';
@@ -171,8 +172,8 @@ const BannerProducts = () => {
                   onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent px-5 pb-5 pt-16 text-white sm:px-7 sm:pb-7">
-                  <p className="text-xs font-semibold text-white/80">عرض من سوبر ماركو</p>
-                  <h1 className="mt-1 text-2xl font-bold leading-relaxed sm:text-3xl">{title}</h1>
+                  <p className="text-xs font-semibold text-white/80"><BrandText tone="dark">عرض من سوبر ماركو</BrandText></p>
+                  <h1 className="mt-1 text-2xl font-bold leading-relaxed sm:text-3xl"><BrandText tone="dark">{title}</BrandText></h1>
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">

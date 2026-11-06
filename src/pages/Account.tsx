@@ -21,6 +21,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import BrandMark from '@/components/brand/BrandMark';
 import LoyaltyBarcode from '@/components/ui/LoyaltyBarcode';
 import AccountHero from '@/components/account/AccountHero';
+import BrandText from '@/components/brand/BrandText';
 import { supabase } from '@/lib/supabase';
 import { getMyLoyaltyCard } from '@/lib/loyalty';
 import '@/components/account/account.css';
@@ -126,7 +127,7 @@ const Account = () => {
             {/* Membership card with the barcode for the cashier */}
             <section className="acc-member" aria-label="بطاقة سوبر ماركو">
               <div className="acc-member__band">
-                <strong>بطاقة سوبر ماركو</strong>
+                <strong>بطاقة <BrandText tone="gold">سوبر ماركو</BrandText></strong>
                 {card?.membership_number && <span dir="ltr">{card.membership_number}</span>}
               </div>
               <div className="acc-member__body">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
+import BrandText from '@/components/brand/BrandText';
 import { supabase } from '@/lib/supabase';
 import { fetchCustomerNotificationCenterV2 } from '@/services/notificationCenterV2';
 import { initializeCustomerPushNotifications, requestCustomerPushPermissionAndRegister } from '@/services/pushNotifications';
@@ -107,7 +108,7 @@ export default function PushNotificationsBootstrap() {
               if (result !== 'granted') return;
               toast({
                 title: 'تم تفعيل الإشعارات',
-                description: 'هيوصلك تحديث الطلب والعروض المهمة من سوبر ماركو.',
+                description: <BrandText>هيوصلك تحديث الطلب والعروض المهمة من سوبر ماركو.</BrandText>,
               });
             }).catch(error => console.warn('Push permission request failed:', error));
           }, 2500);

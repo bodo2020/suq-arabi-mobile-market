@@ -388,7 +388,11 @@ html.native-platform [role="button"] {
 .brand-name__super { color: #fff; }
 .brand-name__marko { color: #FFC120; }
 /* Inline inside a chip on a green surface: white + yellow, no box. */
-.brand-name--inline { padding: 0; border-radius: 0; background: transparent; font-size: 1.15em; line-height: 1.2; }
+.brand-name--inline { display: inline-flex; vertical-align: baseline; max-width: none; padding: 0 .15em; border-radius: 0; background: transparent; font-size: 1.12em; line-height: 1.2; }
+.brand-name--on-light .brand-name__super { color: #005931; }
+.brand-name--on-light .brand-name__marko { color: #cf9700; }
+.brand-name--on-gold .brand-name__super { color: #005931; }
+.brand-name--on-gold .brand-name__marko { color: #fff; }
 .brand-name--header { font-size: clamp(.75rem, 2.7vw, 1.05rem); padding: .25em .35em; border-radius: 9px; }
 /* Home header: original Super Marko wordmark with our own green/yellow palette. */
 .brand-name--home {

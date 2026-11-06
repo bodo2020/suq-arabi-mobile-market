@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import BrandText from '@/components/brand/BrandText';
 
 /** Shared look for every home section card (categories, collections, rails). */
 export const HOME_SECTION_CARD =
@@ -21,10 +22,10 @@ export default function HomeSectionHeader({ title, subtitle, href, hrefLabel = '
         {title && (
           <div className="flex items-center gap-2">
             <span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-[#FFC120] to-[#cf9700]" />
-            <h2 className="truncate text-[19px] font-black leading-7 text-[#005931]">{title}</h2>
+            <h2 className="truncate text-[19px] font-black leading-7 text-[#005931]"><BrandText>{title}</BrandText></h2>
           </div>
         )}
-        {subtitle && <p className="mt-0.5 pr-3.5 text-xs font-medium leading-5 text-slate-500">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 pr-3.5 text-xs font-medium leading-5 text-slate-500"><BrandText>{subtitle}</BrandText></p>}
       </div>
       {href && (
         <Link
