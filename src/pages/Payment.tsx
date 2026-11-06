@@ -2,30 +2,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  CheckCheck,
-  Copy,
-  CreditCard,
-  DollarSign,
-  Gift,
-  MapPin,
-  RefreshCw,
-  ShieldCheck,
-  ShoppingCart,
-  Ticket,
-  Wallet,
+  ArrowLeft, Banknote, Check, CheckCheck, ChevronDown, ChevronLeft, Copy, Gift, MapPin, Plus,
+  ReceiptText, RefreshCw, ShieldCheck, ShoppingCart, Smartphone, StickyNote, Ticket, Truck, Wallet,
 } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
-import SwipeButton from '@/components/ui/SwipeButton';
-import AddressDisplay from '@/components/ui/AddressDisplay';
-import OrderNotes from '@/components/ui/OrderNotes';
 import SubstitutionPreferenceCard from '@/components/checkout/SubstitutionPreferenceCard';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import BrandBagIcon from '@/components/brand/BrandBagIcon';
+import './payment.css';
 import {
   Dialog,
   DialogContent,
@@ -69,6 +55,7 @@ const Payment = () => {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
   const [notes, setNotes] = useState('');
+  const [notesOpen, setNotesOpen] = useState(false);
   const [substitutionPolicy, setSubstitutionPolicy] = useState<SubstitutionPolicy>(DEFAULT_SUBSTITUTION_POLICY);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [pendingCheckout, setPendingCheckout] = useState<PendingCheckout | null>(null);
@@ -367,172 +354,245 @@ const Payment = () => {
   const quoteMessage = quoteQuery.error ? checkoutError(quoteQuery.error) : null;
   const submitBusy = isLoading || customerLoading || quoteQuery.isFetching || isSaving;
   const voucherLocked = !!pendingCheckout;
+  const onConfirm = paymentMethod === 'wallet' && payableTotal > 0 ? () => {
+    if (!pendingCheckout && (!quote || quoteMessage || syncError)) return;
+    setWalletDialogOpen(true);
+  } : handleSubmitOrder;
+  const confirmLabel = isLoading ? 'بنأكّد طلبك…' : quoteQuery.isFetching ? 'بنراجع الأسعار…' : 'تأكيد الطلب';
+  const address = customerData?.default_address;
+  const addressArea = [address?.neighborhoods?.name, address?.areas?.name].filter(Boolean).join('، ');
+  const itemCount = quote?.items?.length || lines.length;
+  const showNotes = notesOpen || Boolean(notes);
+
+  const confirmButton = (className = '') => (
+    <button type="button" onClick={onConfirm} disabled={submitBusy} className={`pay-confirm ${className}`}>
+      {submitBusy ? <span className="pay-confirm__spinner" aria-hidden="true" /> : <BrandBagIcon size={22} strokeWidth={2.4} accent="#FFC120" />}
+      <span>{confirmLabel}</span>
+      {!submitBusy && <ArrowLeft size={19} aria-hidden="true" className="pay-confirm__arrow" />}
+    </button>
+  );
 
   return (
     <CheckoutLayout step={2}>
-      <h1 className="checkout-title">آخر خطوة، وطلبك عندنا.</h1>
-      <p className="checkout-intro">السعر والتوصيل والتوفر وكوبون الخصم بيتراجعوا من السيرفر قبل إنشاء الطلب.</p>
+      <div className="pay-heading">
+        <h1>آخر خطوة!</h1>
+        <p>راجع العنوان وطريقة الدفع، وطلبك هيتجهّز على طول.</p>
+      </div>
 
       {pendingCheckout && (
-        <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <div className="flex items-start gap-2"><RefreshCw size={18} className="mt-0.5 shrink-0" /><div>
+        <div className="pay-pending" role="status">
+          <RefreshCw size={18} className="mt-0.5 shrink-0" />
+          <div>
             <p className="font-bold">في محاولة طلب سابقة محفوظة بأمان.</p>
             <p className="mt-1 leading-6">الطلب وكوبون الخصم مقفولين على نفس المحاولة عشان مايتخصمش كوبون الخصم مرتين. {hasSamePendingCart ? '' : 'الشنطة الحالية اتغيّرت؛ مش هنمسحها بعد استكمال المحاولة السابقة.'}</p>
-          </div></div>
+          </div>
         </div>
       )}
 
-      <div className="checkout-payment">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" />عنوان التوصيل</CardTitle></CardHeader>
-              <CardContent>
-                {customerData?.default_address ? (
-                  <div className="space-y-2">
-                    <AddressDisplay
-                      address={customerData.default_address.address || ''}
-                      areaName={customerData.default_address.areas?.name || undefined}
-                      neighborhoodName={customerData.default_address.neighborhoods?.name || undefined}
-                      onEdit={() => pendingCheckout ? undefined : navigate('/addresses?returnTo=%2Fpayment')}
-                    />
-                    <div className="flex items-center gap-1 text-xs text-gray-500"><div className="h-2 w-2 rounded-full bg-primary" />العنوان الافتراضي للتوصيل</div>
-                    {pendingCheckout && <p className="text-xs text-amber-700">العنوان مقفول مؤقتًا لحد ما نحدد نتيجة محاولة الطلب السابقة.</p>}
-                  </div>
-                ) : pendingCheckout ? (
-                  <p className="text-sm text-amber-800">المحاولة السابقة مرتبطة بعنوان محفوظ. أكد نفس المحاولة لتحديد نتيجتها.</p>
-                ) : (
-                  <div className="py-6 text-center"><p className="mb-4 text-muted-foreground">لا يوجد عنوان للتوصيل</p><Button variant="outline" onClick={() => navigate('/addresses?returnTo=%2Fpayment')}>إضافة عنوان جديد</Button></div>
-                )}
-              </CardContent>
-            </Card>
+      <div className="pay-grid">
+        <div className="pay-col">
+          {/* 1. Delivery address */}
+          <section className="pay-block pay-block--address">
+            <header className="pay-block__head"><span className="pay-block__icon"><MapPin size={18} /></span><h2>هنوصّل فين؟</h2></header>
+            {address ? (
+              <div className="pay-address">
+                <div className="min-w-0 flex-1">
+                  <p className="pay-address__line">{address.address || 'عنوان محدد على الخريطة'}</p>
+                  <p className="pay-address__meta">{addressArea ? `${addressArea} · ` : ''}العنوان الافتراضي</p>
+                </div>
+                {!pendingCheckout && <button type="button" className="pay-pill" onClick={() => navigate('/addresses?returnTo=%2Fpayment')}>تغيير</button>}
+              </div>
+            ) : pendingCheckout ? (
+              <p className="text-sm text-amber-800">المحاولة السابقة مرتبطة بعنوان محفوظ. أكد نفس المحاولة لتحديد نتيجتها.</p>
+            ) : (
+              <button type="button" className="pay-empty-row" onClick={() => navigate('/addresses?returnTo=%2Fpayment')}>
+                <Plus size={18} />أضف عنوان التوصيل
+              </button>
+            )}
+            {pendingCheckout && address && <p className="mt-2 text-xs text-amber-700">العنوان مقفول مؤقتًا لحد ما نحدد نتيجة محاولة الطلب السابقة.</p>}
+          </section>
 
-            <Card className="border-emerald-100">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Ticket className="h-5 w-5 text-primary" />استخدم كوبون خصم</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {voucherLocked ? (
-                  pendingCheckout?.voucherCode ? (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                      <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold text-emerald-700">كوبون الخصم للمحاولة الحالية</p><p dir="ltr" className="mt-1 text-right font-mono font-bold">{pendingCheckout.voucherCode}</p></div><Badge>مقفول للمحاولة</Badge></div>
-                      <div className="mt-3 text-sm">هيتخصم <strong className="text-primary">{money(Number(pendingCheckout.voucherAmount || 0))} ج.م</strong></div>
-                    </div>
-                  ) : <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">المحاولة الحالية اتبدأت بدون كوبون خصم.</p>
-                ) : vouchersQuery.isLoading ? (
-                  <div className="flex justify-center py-6"><BrandLoader size="sm" /></div>
-                ) : activeVouchers.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed p-5 text-center">
-                    <Gift className="mx-auto mb-2 text-brand-yellow" size={30} />
-                    <p className="font-semibold">مفيش كوبون خصم متاح حاليًا</p>
-                    <p className="mt-1 text-xs text-gray-500">حوّل نقاطك إلى كوبون خصم الأول.</p>
-                    <Button variant="outline" className="mt-3" onClick={() => navigate('/vouchers')}>كوبوناتي وتحويل النقاط</Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <button type="button" onClick={() => setSelectedVoucherId('none')} className={`w-full rounded-2xl border p-4 text-right transition ${selectedVoucherId === 'none' ? 'border-brand-yellow bg-brand-ivory' : 'hover:bg-brand-ivory'}`}>
-                      <div className="flex items-center justify-between"><span className="font-semibold">بدون كوبون خصم</span>{selectedVoucherId === 'none' && <Badge>مختار</Badge>}</div>
+          {/* 2. Payment method */}
+          <section className="pay-block">
+            <header className="pay-block__head"><span className="pay-block__icon"><Wallet size={18} /></span><h2>هتدفع إزاي؟</h2></header>
+            {payableTotal <= 0 && grossTotal > 0 ? (
+              <div className="pay-note"><Gift size={18} /><span><strong>مش مطلوب دفع.</strong> كوبون الخصم مغطّي الطلب كله.</span></div>
+            ) : (
+              <div className="pay-methods" role="radiogroup" aria-label="طريقة الدفع">
+                {([
+                  { value: 'cash', icon: Banknote, title: 'كاش عند الاستلام', sub: 'ادفع للمندوب لما طلبك يوصل' },
+                  { value: 'wallet', icon: Smartphone, title: 'محفظة إلكترونية', sub: 'فودافون كاش أو إنستا باي' },
+                ] as const).map(option => {
+                  const Icon = option.icon;
+                  const selected = paymentMethod === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={voucherLocked}
+                      onClick={() => setPaymentMethod(option.value)}
+                      className={`pay-method ${selected ? 'is-selected' : ''}`}
+                    >
+                      <span className="pay-method__tick" aria-hidden="true"><Check size={13} strokeWidth={3} /></span>
+                      <span className="pay-method__icon"><Icon size={22} /></span>
+                      <strong>{option.title}</strong>
+                      <small>{option.sub}</small>
                     </button>
-                    {activeVouchers.map(voucher => {
-                      const applied = Math.min(Number(voucher.remaining_value_egp || 0), grossTotal);
-                      const selected = selectedVoucherId === voucher.id;
-                      return (
-                        <button key={voucher.id} type="button" onClick={() => setSelectedVoucherId(voucher.id)} className={`w-full rounded-2xl border p-4 text-right transition ${selected ? 'border-brand-yellow bg-brand-ivory shadow-sm' : 'hover:border-brand-yellow/60 hover:bg-brand-ivory'}`}>
-                          <div className="flex items-start justify-between gap-3">
-                            <div><p dir="ltr" className="text-right font-mono text-sm font-bold">{voucher.voucher_code}</p><p className="mt-1 text-xs text-gray-500">رصيده {money(voucher.remaining_value_egp)} ج.م</p></div>
-                            <div className="text-left"><div className="font-black text-primary">- {money(applied)} ج.م</div>{selected && <Badge className="mt-1">مختار</Badge>}</div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                    <Button variant="ghost" className="w-full" onClick={() => navigate('/vouchers')}>إدارة كوبونات الخصم</Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" />طريقة الدفع</CardTitle></CardHeader>
-              <CardContent>
-                {payableTotal <= 0 ? (
-                  <div className="rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900"><strong>مش مطلوب دفع إضافي.</strong><p className="mt-1 text-xs">كوبون الخصم يغطي كامل الطلب.</p></div>
-                ) : (
-                  <RadioGroup value={paymentMethod} onValueChange={value => setPaymentMethod(value as 'cash' | 'wallet')} className="space-y-4" disabled={voucherLocked}>
-                    <div className="flex items-start space-x-3 space-x-reverse rounded-lg border p-4 transition-colors hover:bg-accent/50">
-                      <RadioGroupItem value="cash" id="cash" className="mt-1" /><div className="flex-1"><Label htmlFor="cash" className="flex cursor-pointer items-center gap-2 font-medium"><DollarSign className="h-4 w-4" />الدفع عند الاستلام</Label><p className="mt-1 text-sm text-muted-foreground">ادفع {money(payableTotal)} ج.م عند وصول طلبك</p></div>
-                    </div>
-                    <div className="flex items-start space-x-3 space-x-reverse rounded-lg border p-4 transition-colors hover:bg-accent/50">
-                      <RadioGroupItem value="wallet" id="wallet" className="mt-1" /><div className="flex-1"><Label htmlFor="wallet" className="flex cursor-pointer items-center gap-2 font-medium"><Wallet className="h-4 w-4" />المحفظة الإلكترونية</Label><p className="mt-1 text-sm text-muted-foreground">حوّل {money(payableTotal)} ج.م فقط بعد خصم كوبون الخصم</p></div>
-                    </div>
-                  </RadioGroup>
-                )}
-              </CardContent>
-            </Card>
-
-            <SubstitutionPreferenceCard
-              value={pendingCheckout?.substitutionPolicy || substitutionPolicy}
-              onChange={setSubstitutionPolicy}
-              disabled={!!pendingCheckout}
-            />
-
-            <Card>
-              <CardHeader><CardTitle>ملاحظة للطلب <span className="text-sm font-normal text-muted-foreground">(اختياري)</span></CardTitle></CardHeader>
-              <CardContent>{pendingCheckout ? <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-700">{pendingCheckout.notes || 'بدون ملاحظات'}</p> : <OrderNotes value={notes} onChange={setNotes} />}</CardContent>
-            </Card>
-          </div>
-
-          <div className="lg:col-span-1">
-            <Card className="sticky top-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5" />ملخص الطلب</CardTitle>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><span>مرجع الطلب:</span><Badge variant="secondary" className="max-w-full break-all">{orderReference}</Badge></div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 rounded-xl bg-green-50 p-3 text-xs text-green-800"><ShieldCheck size={18} className="shrink-0" /><span>الأسعار والمخزون وكوبون الخصم بيتأكدوا من السيرفر وقت إنشاء الطلب.</span></div>
-
-                <div className="space-y-3">
-                  {!pendingCheckout && quote?.items?.length ? quote.items.map(item => (
-                    <div key={`${item.product_id}-${item.is_bulk ? 'bulk' : 'regular'}`} className="flex justify-between gap-3 py-2">
-                      <div className="min-w-0 flex-1"><p className="text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-muted-foreground">{item.unit_of_measure === 'weight' ? `${item.quantity} كجم` : item.is_bulk ? `${item.quantity} عبوة × ${item.bulk_quantity || 1} قطعة` : `${item.quantity} قطعة`}</p></div>
-                      <span className="whitespace-nowrap font-medium">{money(item.total)} ج.م</span>
-                    </div>
-                  )) : <div className="py-5 text-center text-sm text-muted-foreground">{pendingCheckout ? 'جارٍ استكمال المحاولة المحفوظة.' : quoteQuery.isFetching ? 'بنراجع الأسعار والمخزون…' : 'الملخص النهائي هيظهر بعد مراجعة السيرفر.'}</div>}
+          {/* 3. Voucher */}
+          <section className="pay-block">
+            <header className="pay-block__head">
+              <span className="pay-block__icon pay-block__icon--gold"><Ticket size={18} /></span>
+              <h2>كوبون خصم</h2>
+              {!voucherLocked && activeVouchers.length > 0 && <span className="pay-count">{activeVouchers.length.toLocaleString('ar-EG')} متاح</span>}
+            </header>
+            {voucherLocked ? (
+              pendingCheckout?.voucherCode ? (
+                <div className="pay-ticket is-selected is-static">
+                  <span className="pay-ticket__amount">- {money(Number(pendingCheckout.voucherAmount || 0))} <small>ج.م</small></span>
+                  <span dir="ltr" className="pay-ticket__code">{pendingCheckout.voucherCode}</span>
+                  <span className="pay-ticket__meta">مقفول على المحاولة الحالية</span>
                 </div>
+              ) : <p className="pay-muted">المحاولة الحالية اتبدأت بدون كوبون خصم.</p>
+            ) : vouchersQuery.isLoading ? (
+              <div className="flex gap-2"><span className="pay-ticket-skeleton" /><span className="pay-ticket-skeleton" /></div>
+            ) : activeVouchers.length === 0 ? (
+              <button type="button" className="pay-empty-row" onClick={() => navigate('/vouchers')}>
+                <Gift size={18} className="text-[#cf9700]" />
+                <span className="flex-1 text-right">مفيش كوبونات دلوقتي · <b>حوّل نقاطك لكوبون</b></span>
+                <ChevronLeft size={18} />
+              </button>
+            ) : (
+              <div className="pay-tickets hide-scrollbar">
+                <button type="button" onClick={() => setSelectedVoucherId('none')} className={`pay-ticket pay-ticket--none ${selectedVoucherId === 'none' ? 'is-selected' : ''}`}>
+                  <span className="pay-ticket__amount">بدون</span>
+                  <span className="pay-ticket__meta">مش هستخدم كوبون</span>
+                </button>
+                {activeVouchers.map(voucher => {
+                  const balance = Number(voucher.remaining_value_egp || 0);
+                  const applied = grossTotal > 0 ? Math.min(balance, grossTotal) : balance;
+                  const selected = selectedVoucherId === voucher.id;
+                  return (
+                    <button key={voucher.id} type="button" onClick={() => setSelectedVoucherId(voucher.id)} className={`pay-ticket ${selected ? 'is-selected' : ''}`}>
+                      {selected && <span className="pay-ticket__tick" aria-hidden="true"><Check size={12} strokeWidth={3} /></span>}
+                      <span className="pay-ticket__amount">- {money(applied)} <small>ج.م</small></span>
+                      <span dir="ltr" className="pay-ticket__code">{voucher.voucher_code}</span>
+                      <span className="pay-ticket__meta">رصيده {money(balance)} ج.م</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
-                <Separator />
-                {quote && !pendingCheckout && <div className="space-y-2"><div className="flex justify-between"><span>قيمة المنتجات</span><span className="font-bold">{money(quote.subtotal)} ج.م</span></div><div className="flex justify-between"><span>التوصيل</span><span className="font-bold">{quote.free_delivery ? <span className="text-green-600">مجاناً</span> : `${money(displayedShipping)} ج.م`}</span></div></div>}
-                <div className="flex justify-between text-sm"><span>إجمالي الطلب</span><span className="font-bold">{grossTotal > 0 ? `${money(grossTotal)} ج.م` : '—'}</span></div>
-                {voucherAmount > 0 && <div className="flex justify-between rounded-xl bg-brand-ivory px-3 py-2 text-sm text-brand-green"><span>كوبون خصم</span><strong>- {money(voucherAmount)} ج.م</strong></div>}
-                <Separator />
-                <div className="flex justify-between text-lg font-bold"><span>المطلوب دفعه</span><span className="text-primary">{grossTotal > 0 ? `${money(payableTotal)} ج.م` : '—'}</span></div>
+          {/* 4. Substitutions */}
+          <SubstitutionPreferenceCard
+            value={pendingCheckout?.substitutionPolicy || substitutionPolicy}
+            onChange={setSubstitutionPolicy}
+            disabled={!!pendingCheckout}
+          />
 
-                {(customerError || (!pendingCheckout && syncError) || quoteMessage) && <div role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{(!pendingCheckout && syncError) || (customerError ? 'تعذر تحميل بيانات الحساب.' : quoteMessage)}{quoteMessage && !pendingCheckout && <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => void quoteQuery.refetch()}>إعادة المراجعة</Button>}</div>}
-
-                <div className="pt-2">
-                  <SwipeButton
-                    completeText="تأكيد الطلب"
-                    onComplete={paymentMethod === 'wallet' && payableTotal > 0 ? () => {
-                      if (!pendingCheckout && (!quote || quoteMessage || syncError)) return;
-                      setWalletDialogOpen(true);
-                    } : handleSubmitOrder}
-                    isLoading={submitBusy}
-                    className="checkout-submit w-full"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* 5. Notes (collapsed until needed) */}
+          <section className="pay-block">
+            {pendingCheckout ? (
+              <>
+                <header className="pay-block__head"><span className="pay-block__icon"><StickyNote size={18} /></span><h2>ملاحظة للطلب</h2></header>
+                <p className="pay-muted">{pendingCheckout.notes || 'بدون ملاحظات'}</p>
+              </>
+            ) : showNotes ? (
+              <>
+                <header className="pay-block__head"><span className="pay-block__icon"><StickyNote size={18} /></span><h2>ملاحظة للطلب</h2><span className="pay-count">اختياري</span></header>
+                <textarea
+                  className="pay-textarea"
+                  rows={3}
+                  value={notes}
+                  autoFocus={notesOpen && !notes}
+                  onChange={event => setNotes(event.target.value)}
+                  placeholder="مثلًا: رن الجرس مرتين، أو العمارة جنب الصيدلية…"
+                />
+              </>
+            ) : (
+              <button type="button" className="pay-add-note" onClick={() => setNotesOpen(true)}>
+                <span className="pay-block__icon"><StickyNote size={18} /></span>
+                <span className="flex-1 text-right"><strong>أضف ملاحظة للطلب</strong><small>علامة مميزة، ميعاد، أو أي طلب خاص</small></span>
+                <Plus size={18} />
+              </button>
+            )}
+          </section>
         </div>
+
+        {/* Summary */}
+        <aside className="pay-summary">
+          <header className="pay-block__head">
+            <span className="pay-block__icon"><ReceiptText size={18} /></span>
+            <h2>ملخص الطلب</h2>
+            <span className="pay-count">{itemCount.toLocaleString('ar-EG')} {itemCount === 1 ? 'صنف' : 'أصناف'}</span>
+          </header>
+
+          {!pendingCheckout && quote?.items?.length ? (
+            <details className="pay-items">
+              <summary>عرض المنتجات<ChevronDown size={16} /></summary>
+              <ul>
+                {quote.items.map(item => (
+                  <li key={`${item.product_id}-${item.is_bulk ? 'bulk' : 'regular'}`}>
+                    <span className="min-w-0 flex-1"><b>{item.name}</b><small>{item.unit_of_measure === 'weight' ? `${item.quantity} كجم` : item.is_bulk ? `${item.quantity} عبوة × ${item.bulk_quantity || 1} قطعة` : `${item.quantity} قطعة`}</small></span>
+                    <span className="whitespace-nowrap font-bold">{money(item.total)} ج.م</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : (
+            <p className="pay-muted">{pendingCheckout ? 'جارٍ استكمال المحاولة المحفوظة.' : quoteQuery.isFetching ? 'بنراجع الأسعار والمخزون…' : 'الملخص النهائي هيظهر بعد مراجعة الأسعار.'}</p>
+          )}
+
+          <dl className="pay-rows">
+            {quote && !pendingCheckout && <>
+              <div><dt>قيمة المنتجات</dt><dd>{money(quote.subtotal)} ج.م</dd></div>
+              <div><dt><Truck size={15} />التوصيل</dt><dd>{quote.free_delivery ? <span className="pay-free">مجاني</span> : `${money(displayedShipping)} ج.م`}</dd></div>
+            </>}
+            {voucherAmount > 0 && <div className="pay-rows__voucher"><dt><Ticket size={15} />كوبون الخصم</dt><dd>- {money(voucherAmount)} ج.م</dd></div>}
+          </dl>
+          <div className="pay-total">
+            <span>المطلوب دفعه</span>
+            <strong>{grossTotal > 0 ? <>{money(payableTotal)} <small>ج.م</small></> : '—'}</strong>
+          </div>
+
+          {(customerError || (!pendingCheckout && syncError) || quoteMessage) && (
+            <div role="alert" className="pay-error">
+              {(!pendingCheckout && syncError) || (customerError ? 'تعذر تحميل بيانات الحساب.' : quoteMessage)}
+              {quoteMessage && !pendingCheckout && <button type="button" className="pay-pill mt-3 w-full" onClick={() => void quoteQuery.refetch()}>إعادة المراجعة</button>}
+            </div>
+          )}
+
+          {confirmButton('pay-confirm--desktop')}
+          <p className="pay-secure"><ShieldCheck size={15} />الأسعار والمخزون بيتأكدوا تاني لحظة تأكيد الطلب.</p>
+        </aside>
+      </div>
+
+      {/* Mobile: total + confirm always in reach */}
+      <div className="pay-bar">
+        <div className="pay-bar__total">
+          <span>{paymentMethod === 'wallet' && payableTotal > 0 ? 'هتحوّل' : 'هتدفع'}</span>
+          <strong>{grossTotal > 0 ? <>{money(payableTotal)} <small>ج.م</small></> : '—'}</strong>
+        </div>
+        {confirmButton()}
       </div>
 
       <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>
         <DialogContent className="mx-auto max-w-md">
           <DialogHeader><DialogTitle className="text-center">تحويل المبلغ عبر المحفظة الإلكترونية</DialogTitle><DialogDescription className="text-center">القيمة دي بعد خصم كوبون الخصم. استخدم مرجع الطلب مع التحويل.</DialogDescription></DialogHeader>
           <div className="space-y-4">
-            <Card><CardContent className="p-4 text-center"><p className="mb-2">المبلغ المطلوب:</p><p className="text-2xl font-bold text-primary">{money(payableTotal)} ج.م</p>{voucherAmount > 0 && <p className="mt-1 text-xs text-emerald-700">تم خصم {money(voucherAmount)} ج.م بكوبون الخصم</p>}</CardContent></Card>
-            <div className="space-y-3"><p className="text-sm">حوّل المبلغ عبر فودافون كاش أو انستا باي إلى:</p><div className="flex items-center justify-between rounded-lg bg-muted p-3"><span className="font-mono text-lg font-bold">{WALLET_PHONE_NUMBER}</span><Button variant="ghost" size="sm" onClick={() => copyToClipboard(WALLET_PHONE_NUMBER, 'phone')} className="h-8 w-8 p-0">{copiedPhone ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}</Button></div></div>
-            <div className="space-y-3"><p className="text-sm">مرجع الطلب:</p><div className="flex items-center justify-between gap-2 rounded-lg bg-muted p-3"><span className="min-w-0 break-all font-mono text-xs font-medium">{orderReference}</span><Button variant="ghost" size="sm" onClick={() => copyToClipboard(orderReference, 'order')} className="h-8 w-8 shrink-0 p-0">{copiedOrderNumber ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}</Button></div></div>
-            <Button onClick={handleSubmitOrder} className="w-full" disabled={isLoading}>{isLoading ? 'جاري تأكيد الطلب...' : 'تأكيد الطلب'}</Button>
+            <div className="rounded-2xl bg-[#fffaeb] p-4 text-center ring-1 ring-[#f1d78a]"><p className="mb-1 text-sm">المبلغ المطلوب</p><p className="text-2xl font-black text-[#005931]">{money(payableTotal)} ج.م</p>{voucherAmount > 0 && <p className="mt-1 text-xs text-emerald-700">تم خصم {money(voucherAmount)} ج.م بكوبون الخصم</p>}</div>
+            <div className="space-y-2"><p className="text-sm">حوّل المبلغ عبر فودافون كاش أو انستا باي إلى:</p><div className="flex items-center justify-between rounded-xl bg-muted p-3"><span className="font-mono text-lg font-bold">{WALLET_PHONE_NUMBER}</span><Button variant="ghost" size="sm" onClick={() => copyToClipboard(WALLET_PHONE_NUMBER, 'phone')} className="h-8 w-8 p-0">{copiedPhone ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}</Button></div></div>
+            <div className="space-y-2"><p className="text-sm">مرجع الطلب:</p><div className="flex items-center justify-between gap-2 rounded-xl bg-muted p-3"><span className="min-w-0 break-all font-mono text-xs font-medium">{orderReference}</span><Button variant="ghost" size="sm" onClick={() => copyToClipboard(orderReference, 'order')} className="h-8 w-8 shrink-0 p-0">{copiedOrderNumber ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}</Button></div></div>
+            <button type="button" onClick={handleSubmitOrder} className="pay-confirm" disabled={isLoading}>{isLoading ? 'جاري تأكيد الطلب...' : 'حوّلت، أكّد الطلب'}</button>
           </div>
         </DialogContent>
       </Dialog>
