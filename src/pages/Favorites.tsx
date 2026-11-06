@@ -4,6 +4,7 @@ import { Heart, ShoppingBag } from 'lucide-react';
 import BrandMark from '@/components/brand/BrandMark';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import AccountHero from '@/components/account/AccountHero';
 import ProductCard from '@/components/ui/ProductCard';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -166,14 +167,17 @@ const Favorites = () => {
     <MainLayout>
       <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="المفضلة" />
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
-        <div className="mb-6 rounded-3xl bg-green-50 p-5 sm:p-7">
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-primary"><Heart size={25} />حاجات بتحبها</h1>
-          <p className="mt-2 text-sm leading-6 text-gray-600">المفضلة بتفضل محفوظة حتى لو المنتج خلص. ولو مش متوفر تقدر تفعل «نبّهني عند التوفر» وهنبلغك أول ما يرجع في فرعك.</p>
-        </div>
+        <AccountHero
+          className="mb-4"
+          icon={Heart}
+          title="حاجات بتحبها"
+          subtitle="محفوظة حتى لو المنتج خلص، ولو مش متوفر فعّل «نبّهني» وهنبلغك أول ما يرجع."
+          stats={user && !loading && !error && favorites.length > 0 ? [{ label: 'في المفضلة', value: favorites.length.toLocaleString('ar-EG'), unit: 'منتج' }] : undefined}
+        />
 
         {user && !loading && !error && favorites.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-3">
-            <input type="search" aria-label="البحث في المفضلة" placeholder="دور في المفضلة…" value={query} onChange={event => setQuery(event.target.value)} className="min-h-12 min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4" />
+            <input type="search" aria-label="البحث في المفضلة" placeholder="دور في المفضلة…" value={query} onChange={event => setQuery(event.target.value)} className="min-h-12 min-w-0 flex-1 rounded-2xl border border-[#dfe7e2] bg-white px-4 outline-none focus:border-[#FFC120] focus:ring-2 focus:ring-[#FFC120]/30" />
             <p role="status" className="w-full text-sm text-gray-500">{visible.length} من {favorites.length} اختيار في المفضلة</p>
           </div>
         )}

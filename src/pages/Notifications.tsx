@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import AccountHero from '@/components/account/AccountHero';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/contexts/UserContext';
@@ -149,36 +150,21 @@ const Notifications = () => {
           <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل الإشعارات" /></div>
         ) : !session || !user ? null : (
           <div className="space-y-4">
-            <section className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-50 text-primary">
-                  <Bell size={22} />
-                </span>
-                <div className="min-w-0">
-                  <h1 className="text-lg font-black text-gray-950">الإشعارات</h1>
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    {unreadCount > 0 ? `${unreadCount.toLocaleString('ar-EG')} جديد` : 'كل الإشعارات مقروءة'}
-                  </p>
-                </div>
-              </div>
+            <AccountHero
+              icon={Bell}
+              title="الإشعارات"
+              subtitle={unreadCount > 0 ? `عندك ${unreadCount.toLocaleString('ar-EG')} إشعار جديد` : 'كل الإشعارات مقروءة'}
+              actions={unreadCount > 0 ? (
+                <button type="button" className="acc-hero__btn acc-hero__btn--gold" onClick={() => void markAllRead()} disabled={markingAll}>
+                  {markingAll ? <BrandLoader size="sm" /> : <CheckCheck size={15} />}
+                  {markingAll ? 'جاري الحفظ' : 'علّم الكل كمقروء'}
+                </button>
+              ) : undefined}
+            />
 
-              {unreadCount > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void markAllRead()}
-                  disabled={markingAll}
-                  className="min-h-10 shrink-0 rounded-xl border-green-200 px-3 text-xs font-bold text-primary"
-                >
-                  {markingAll ? <BrandLoader size="sm" /> : <CheckCheck size={16} className="ml-1.5" />}
-                  {markingAll ? 'جاري الحفظ' : 'قراءة الكل'}
-                </Button>
-              )}
-            </section>
-
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5">
-              <button type="button" onClick={() => setFilter('all')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>الكل</button>
-              <button type="button" onClick={() => setFilter('unread')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'unread' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>غير مقروء ({unreadCount.toLocaleString('ar-EG')})</button>
+            <div className="acc-tabs grid-cols-2">
+              <button type="button" onClick={() => setFilter('all')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'all' ? 'is-active' : ''}`}>الكل</button>
+              <button type="button" onClick={() => setFilter('unread')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'unread' ? 'is-active' : ''}`}>غير مقروء ({unreadCount.toLocaleString('ar-EG')})</button>
             </div>
 
             {notifications.isLoading ? (

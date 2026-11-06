@@ -1,0 +1,111 @@
+/* Account area: one family of brand surfaces for the account page and every
+   page inside it (orders, vouchers, favorites, notifications, returns…). */
+.acc-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background: radial-gradient(120% 140% at 100% 0%, #0b7a47 0%, #005931 55%, #004425 100%);
+  padding: 20px;
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0, 89, 49, .2);
+  animation: acc-in .42s cubic-bezier(.2, .8, .2, 1) both;
+}
+.acc-hero::before, .acc-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.acc-hero::before { left: -40px; top: -48px; width: 160px; height: 160px; background: rgba(255, 193, 32, .14); }
+.acc-hero::after { left: 70px; bottom: -60px; width: 120px; height: 120px; background: rgba(255, 255, 255, .07); }
+.acc-hero > * { position: relative; }
+.acc-hero__top { display: flex; align-items: center; gap: 14px; }
+.acc-hero__icon {
+  display: grid; flex-shrink: 0; place-items: center;
+  width: 52px; height: 52px; border-radius: 18px;
+  background: #FFC120; color: #005931;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .16);
+  transform: rotate(-6deg);
+}
+.acc-hero__eyebrow { color: rgba(255, 255, 255, .72); font-size: 12px; font-weight: 700; }
+.acc-hero__title { font-size: 23px; font-weight: 900; line-height: 1.3; }
+.acc-hero__sub { margin-top: 4px; color: rgba(255, 255, 255, .84); font-size: 13px; line-height: 1.75; }
+.acc-hero__stats { display: grid; gap: 8px; margin-top: 16px; }
+.acc-hero__stat { border-radius: 16px; background: rgba(255, 255, 255, .12); padding: 10px 12px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.acc-hero__stat span { display: block; color: rgba(255, 255, 255, .75); font-size: 11.5px; font-weight: 700; }
+.acc-hero__stat strong { display: block; margin-top: 2px; color: #FFC120; font-size: 22px; font-weight: 900; line-height: 1.2; }
+.acc-hero__stat small { color: rgba(255, 255, 255, .8); font-size: 12px; font-weight: 700; }
+.acc-hero__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.acc-hero__btn {
+  display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 7px;
+  border-radius: 999px; background: rgba(255, 255, 255, .14); padding: 0 16px;
+  color: #fff; font-size: 13px; font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+  transition: background-color .15s, transform .12s;
+}
+.acc-hero__btn:active { transform: scale(.97); }
+.acc-hero__btn:disabled { opacity: .6; }
+.acc-hero__btn--gold { background: #FFC120; color: #005931; box-shadow: none; }
+
+/* Cards and rows */
+.acc-card { border: 1px solid #e3ebe6; border-radius: 24px; background: #fff; animation: acc-in .42s cubic-bezier(.2, .8, .2, 1) both; }
+.acc-stack > :nth-child(2) { animation-delay: 50ms; }
+.acc-stack > :nth-child(3) { animation-delay: 100ms; }
+.acc-stack > :nth-child(4) { animation-delay: 150ms; }
+.acc-stack > :nth-child(5) { animation-delay: 200ms; }
+.acc-stack > :nth-child(6) { animation-delay: 250ms; }
+.acc-section-title { margin: 4px 4px 8px; color: #64756c; font-size: 12.5px; font-weight: 800; }
+
+.acc-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.acc-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  min-height: 96px; border: 1px solid #e3ebe6; border-radius: 20px; background: #fff;
+  color: #192b23; font-size: 13.5px; font-weight: 850; text-align: center;
+  transition: transform .12s, border-color .15s;
+}
+.acc-tile:active { transform: scale(.97); }
+.acc-tile__icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 15px; background: #e8f5ee; color: #005931; }
+.acc-tile--gold .acc-tile__icon { background: hsl(var(--brand-yellow-soft)); color: #b07d00; }
+.acc-tile--rose .acc-tile__icon { background: #fdecef; color: #d23f5d; }
+
+.acc-row {
+  display: flex; min-height: 64px; align-items: center; gap: 12px;
+  border-bottom: 1px solid #edf2ef; padding: 12px 16px; color: #192b23;
+  transition: background-color .15s;
+}
+.acc-row:last-child { border-bottom: 0; }
+.acc-row:active { background: #f4f9f6; }
+.acc-row__icon { display: grid; flex-shrink: 0; place-items: center; width: 40px; height: 40px; border-radius: 14px; background: #e8f5ee; color: #005931; }
+.acc-row__text { min-width: 0; flex: 1; }
+.acc-row__text strong { display: block; font-size: 14.5px; font-weight: 850; }
+.acc-row__text small { display: block; margin-top: 1px; overflow: hidden; color: #7a8a80; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.acc-row__chev { flex-shrink: 0; color: #a7b5ad; }
+.acc-row--danger { color: #b42318; }
+.acc-row--danger .acc-row__icon { background: #fff1f0; color: #d92d20; }
+.acc-badge { flex-shrink: 0; border-radius: 999px; background: #FFC120; padding: 2px 9px; color: #005931; font-size: 11.5px; font-weight: 900; }
+
+/* Membership card */
+.acc-member { overflow: hidden; border-radius: 24px; background: #fff; border: 1px solid #e3ebe6; animation: acc-in .42s cubic-bezier(.2, .8, .2, 1) both; }
+.acc-member__band { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: linear-gradient(90deg, #FFC120, #ffd35c); padding: 10px 16px; color: #005931; }
+.acc-member__band strong { font-size: 14px; font-weight: 900; }
+.acc-member__band span { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+.acc-member__body { padding: 12px 14px 14px; }
+.acc-member__hint { margin-bottom: 6px; color: #64756c; font-size: 12px; font-weight: 700; text-align: center; }
+.acc-member__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.acc-member__actions a { display: flex; min-height: 46px; align-items: center; justify-content: center; gap: 6px; border-radius: 14px; font-size: 13px; font-weight: 850; }
+.acc-member__primary { background: #005931; color: #fff; }
+.acc-member__primary svg { color: #FFC120; }
+.acc-member__secondary { background: #e8f5ee; color: #005931; }
+
+/* Segmented tabs used by orders / notifications / returns */
+.acc-tabs { display: grid; gap: 4px; border-radius: 18px; background: #eaf3ee; padding: 4px; }
+.acc-tabs button { min-height: 44px; border-radius: 14px; color: #4b5d53; font-size: 13.5px; font-weight: 800; transition: background-color .18s, color .18s; }
+.acc-tabs button[aria-pressed="true"], .acc-tabs button.is-active { background: #005931; color: #fff; box-shadow: 0 6px 14px rgba(0, 89, 49, .18); }
+
+.acc-skeleton { border-radius: 20px; background: linear-gradient(90deg, #eef3f0 25%, #e3ebe6 50%, #eef3f0 75%); background-size: 200% 100%; animation: acc-shimmer 1.2s linear infinite; }
+
+@keyframes acc-in { from { opacity: 0; transform: translate3d(0, 10px, 0); } to { opacity: 1; transform: none; } }
+@keyframes acc-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .acc-hero, .acc-card, .acc-member, .acc-skeleton { animation: none !important; }
+}

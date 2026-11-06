@@ -22,6 +22,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import AccountHero from '@/components/account/AccountHero';
 import OrderTimeline from '@/components/orders/OrderTimeline';
 import { supabase } from '@/lib/supabase';
 import {
@@ -242,29 +243,24 @@ export default function PurchaseHistory() {
           </section>
         ) : (
           <div className="space-y-5">
-            <section className="rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-7">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-primary"><ReceiptText size={24} /><h1 className="text-2xl font-bold">مشترياتك كلها</h1></div>
-                  <p className="mt-2 text-sm leading-6 text-gray-600">طلبات التوصيل وفواتير الفرع المرتبطة بباركود العضوية في سجل واحد.</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="min-h-11 rounded-xl bg-white" disabled={isFetching} onClick={() => void refetch()}><RefreshCw size={16} className={`ml-2 ${isFetching ? 'animate-spin' : ''}`} />تحديث</Button>
-                  <Button variant="outline" className="min-h-11 rounded-xl bg-white" onClick={() => navigate('/return-requests')}>طلبات الاسترجاع</Button>
-                </div>
-              </div>
-              {!isLoading && !isError && (
-                <div className="mt-5 grid grid-cols-3 gap-3 sm:max-w-lg">
-                  <div className="rounded-2xl bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">جارية</p><p className="mt-1 text-2xl font-bold text-primary">{current.length}</p></div>
-                  <div className="rounded-2xl bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">من الفرع</p><p className="mt-1 text-2xl font-bold">{storeCount}</p></div>
-                  <div className="rounded-2xl bg-white p-4 shadow-sm"><p className="text-xs text-gray-500">أونلاين</p><p className="mt-1 text-2xl font-bold">{onlineCount}</p></div>
-                </div>
-              )}
-            </section>
+            <AccountHero
+              icon={ReceiptText}
+              title="مشترياتك كلها"
+              subtitle="طلبات التوصيل وفواتير الفرع في مكان واحد."
+              stats={!isLoading && !isError ? [
+                { label: 'جارية', value: current.length.toLocaleString('ar-EG') },
+                { label: 'من الفرع', value: storeCount.toLocaleString('ar-EG') },
+                { label: 'أونلاين', value: onlineCount.toLocaleString('ar-EG') },
+              ] : undefined}
+              actions={<>
+                <button type="button" className="acc-hero__btn" disabled={isFetching} onClick={() => void refetch()}><RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />تحديث</button>
+                <button type="button" className="acc-hero__btn" onClick={() => navigate('/return-requests')}>طلبات الاسترجاع</button>
+              </>}
+            />
 
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5">
-              <button type="button" onClick={() => setActiveTab('current')} className={`min-h-12 rounded-xl px-3 text-sm font-semibold transition ${activeTab === 'current' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>الجارية ({current.length})</button>
-              <button type="button" onClick={() => setActiveTab('previous')} className={`min-h-12 rounded-xl px-3 text-sm font-semibold transition ${activeTab === 'previous' ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}>السابقة ({previous.length})</button>
+            <div className="acc-tabs grid-cols-2">
+              <button type="button" onClick={() => setActiveTab('current')} className={`min-h-12 rounded-xl px-3 text-sm font-semibold transition ${activeTab === 'current' ? 'is-active' : ''}`}>الجارية ({current.length})</button>
+              <button type="button" onClick={() => setActiveTab('previous')} className={`min-h-12 rounded-xl px-3 text-sm font-semibold transition ${activeTab === 'previous' ? 'is-active' : ''}`}>السابقة ({previous.length})</button>
             </div>
 
             {isLoading ? (

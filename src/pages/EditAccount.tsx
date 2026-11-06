@@ -1,9 +1,10 @@
 import BrandLoader from '@/components/ui/BrandLoader';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Phone, Mail, MapPin, ChevronLeft } from 'lucide-react';
+import { User, UserRound, Phone, Mail, MapPin, ChevronLeft } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import AccountHero from '@/components/account/AccountHero';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 
@@ -101,12 +102,13 @@ const EditAccount = () => {
       <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="تعديل بياناتي" showBackButton onBack={() => navigate('/account')} />
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
         {loading ? <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل بيانات الحساب" /></div> : <div className="space-y-5">
-          <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
-            <div className="mb-6">
-              <p className="text-xs font-semibold text-primary">بيانات الحساب</p>
-              <h1 className="mt-1 text-2xl font-bold">خلّي بياناتك محدثة</h1>
-              <p className="mt-2 text-sm leading-6 text-gray-500">اسمك ورقمك هما البيانات الأساسية اللي بنستخدمها في الطلب والتواصل.</p>
-            </div>
+          <AccountHero
+            icon={UserRound}
+            eyebrow="بيانات الحساب"
+            title="خلّي بياناتك محدثة"
+            subtitle="اسمك ورقمك هما اللي بنستخدمهم في الطلب والتواصل."
+          />
+          <section className="acc-card p-5 sm:p-7">
 
             <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isSubmitting}>
               <div>

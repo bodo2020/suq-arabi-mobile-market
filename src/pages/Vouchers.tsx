@@ -4,6 +4,7 @@ import { Gift, Sparkles, Ticket, WalletCards } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import '@/components/account/account.css';
 import BrandLoader from '@/components/ui/BrandLoader';
 import LoyaltyBarcode from '@/components/ui/LoyaltyBarcode';
 import { Button } from '@/components/ui/button';
@@ -91,7 +92,7 @@ export default function Vouchers() {
     <MainLayout>
       <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="كوبونات الخصم" showBackButton onBack={() => navigate('/account')} />
       <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6" dir="rtl">
-        <section className="overflow-hidden rounded-3xl bg-[#005931] p-5 text-white shadow-lg sm:p-7">
+        <section className="acc-hero sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2 text-emerald-100"><Sparkles size={18} className="text-brand-yellow" /><span className="text-sm font-bold">نقاط سوبر ماركو</span></div>

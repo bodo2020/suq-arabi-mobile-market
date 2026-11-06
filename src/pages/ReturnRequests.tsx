@@ -6,6 +6,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
+import AccountHero from '@/components/account/AccountHero';
 import ReturnRequestDetails from '@/components/ui/ReturnRequestDetails';
 import { ReturnRequest, ReturnRequestStatus, supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
@@ -83,62 +84,28 @@ const ReturnRequests = () => {
           </section>
         ) : (
           <div className="space-y-5">
-            <section className="rounded-3xl border border-green-100 bg-green-50/70 p-5 sm:p-7">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-primary">
-                    <RotateCcw size={24} />
-                    <h1 className="text-2xl font-bold">طلبات الاسترجاع</h1>
-                  </div>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
-                    تابع طلباتك من وقت الإرسال لحد قرار المراجعة، وشوف المنتجات والملاحظات والصور في مكان واحد.
-                  </p>
-                </div>
+            <AccountHero
+              icon={RotateCcw}
+              title="طلبات الاسترجاع"
+              subtitle="تابع أي استرجاع من وقت ما تبعته لحد قرار المراجعة."
+              stats={!isLoading && !isError ? [
+                { label: 'قيد المراجعة', value: Number(counts.pending).toLocaleString('ar-EG') },
+                { label: 'مقبولة', value: Number(counts.approved).toLocaleString('ar-EG') },
+                { label: 'مرفوضة', value: Number(counts.rejected).toLocaleString('ar-EG') },
+              ] : undefined}
+              actions={<>
+                <button type="button" className="acc-hero__btn" disabled={isFetching} onClick={() => void refetch()}><RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />تحديث</button>
+                <button type="button" className="acc-hero__btn" onClick={() => navigate('/orders')}>مشترياتي</button>
+              </>}
+            />
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    className="min-h-11 rounded-xl bg-white"
-                    disabled={isFetching}
-                    onClick={() => void refetch()}
-                  >
-                    <RefreshCw size={16} className={`ml-2 ${isFetching ? 'animate-spin' : ''}`} />
-                    تحديث
-                  </Button>
-                  <Button variant="outline" className="min-h-11 rounded-xl bg-white" onClick={() => navigate('/orders')}>
-                    طلباتي
-                  </Button>
-                </div>
-              </div>
-
-              {!isLoading && !isError && (
-                <div className="mt-5 grid grid-cols-3 gap-2 sm:max-w-lg sm:gap-3">
-                  <div className="rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-                    <Clock3 size={18} className="text-amber-600" />
-                    <p className="mt-2 text-xs text-gray-500">قيد المراجعة</p>
-                    <p className="mt-1 text-xl font-bold">{counts.pending}</p>
-                  </div>
-                  <div className="rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-                    <CheckCircle2 size={18} className="text-green-600" />
-                    <p className="mt-2 text-xs text-gray-500">مقبولة</p>
-                    <p className="mt-1 text-xl font-bold">{counts.approved}</p>
-                  </div>
-                  <div className="rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-                    <XCircle size={18} className="text-red-600" />
-                    <p className="mt-2 text-xs text-gray-500">مرفوضة</p>
-                    <p className="mt-1 text-xl font-bold">{counts.rejected}</p>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1.5 sm:grid-cols-4">
+            <div className="acc-tabs grid-cols-2 sm:grid-cols-4">
               {FILTERS.map(item => (
                 <button
                   key={item.key}
                   type="button"
                   onClick={() => setFilter(item.key)}
-                  className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition ${filter === item.key ? 'bg-white text-primary shadow-sm' : 'text-gray-600'}`}
+                  className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition ${filter === item.key ? 'is-active' : ''}`}
                 >
                   {item.label}
                 </button>

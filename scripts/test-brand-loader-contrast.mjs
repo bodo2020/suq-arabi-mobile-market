@@ -40,7 +40,8 @@ const greenCtas = {
   'src/pages/Address.tsx': 2,
   'src/pages/CombinedPayment.tsx': 1,
   'src/pages/MarketplacePayment.tsx': 1,
-  'src/pages/Account.tsx': 1,
+  // The account page no longer has a loader on a green surface (light card now).
+  'src/pages/Account.tsx': 0,
 };
 for (const [path, expected] of Object.entries(greenCtas)) {
   const count = (read(path).match(/<BrandLoader[^>]+tone="onGreen"/g) || []).length;

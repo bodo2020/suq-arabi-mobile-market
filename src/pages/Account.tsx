@@ -2,34 +2,30 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  User,
+  Bell,
+  ChevronLeft,
+  Heart,
+  LogOut,
   MapPin,
   Package,
-  Heart,
-  ChevronLeft,
   Pencil,
-  LogOut,
-  RotateCcw,
   Plus,
-  Bell,
-  Gift,
-  Sparkles,
+  RotateCcw,
   Ticket,
+  UserRound,
 } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import BrandLoader from '@/components/ui/BrandLoader';
+import BrandMark from '@/components/brand/BrandMark';
 import LoyaltyBarcode from '@/components/ui/LoyaltyBarcode';
-import { Button } from '@/components/ui/button';
+import AccountHero from '@/components/account/AccountHero';
 import { supabase } from '@/lib/supabase';
 import { getMyLoyaltyCard } from '@/lib/loyalty';
+import '@/components/account/account.css';
 
-const shortcuts = [
-  { to: '/orders', label: 'مشترياتي', description: 'مشتريات الفرع وطلبات الأونلاين في مكان واحد', icon: Package },
-  { to: '/vouchers', label: 'كوبوناتي', description: 'حوّل نقاطك لكوبون خصم واستخدمه في الفرع أو التطبيق', icon: Ticket },
-  { to: '/favorites', label: 'المفضلة', description: 'منتجاتك المفضلة جاهزة للتسوق', icon: Heart },
-];
+const number = (value: number, digits = 0) => Number(value || 0).toLocaleString('ar-EG', { maximumFractionDigits: digits });
 
 const Account = () => {
   const { user, authLoading } = useUser();
@@ -71,8 +67,11 @@ const Account = () => {
   });
 
   const name = profile.data?.name || user?.user_metadata?.name || 'أهلًا بيك';
+  const firstName = String(name).trim().split(/\s+/)[0] || name;
+  const initial = String(name).trim().charAt(0) || '؟';
   const address = defaultAddress.data;
-  const locationLabel = [address?.cities?.name, address?.areas?.name, address?.neighborhoods?.name].filter(Boolean).join(' - ');
+  const locationLabel = [address?.areas?.name, address?.neighborhoods?.name].filter(Boolean).join('، ');
+  const card = loyalty.data;
 
   const logout = async () => {
     if (signingOut) return;
@@ -92,131 +91,105 @@ const Account = () => {
   return (
     <MainLayout>
       <TopNavBar variant="title" hideLogo hideSearch hideCart pageTitle="حسابي" />
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-2xl px-4 pb-8 pt-4" dir="rtl">
         {authLoading ? (
           <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل حسابك" /></div>
         ) : !user ? (
-          <section className="mx-auto max-w-md rounded-3xl border border-gray-100 bg-white p-7 text-center shadow-sm">
-            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-cream text-brand-green"><User size={30} /></span>
-            <h1 className="text-2xl font-bold">أهلًا بيك في سوبر ماركو</h1>
-            <p className="mb-6 mt-3 text-sm leading-7 text-gray-500">سجّل برقم موبايلك عشان تتابع مشترياتك ونقاطك وتحفظ عناوينك ومنتجاتك المفضلة.</p>
-            <Button className="min-h-12 w-full rounded-xl text-base" onClick={() => navigate('/phone-login')}>تسجيل الدخول أو إنشاء حساب</Button>
-            <Link to="/" className="mt-3 flex min-h-12 items-center justify-center rounded-xl text-sm font-semibold text-primary">كمّل تصفح المنتجات</Link>
-          </section>
+          <div className="acc-stack space-y-3">
+            <AccountHero
+              badge={<BrandMark variant="mark" className="h-8 w-8" />}
+              eyebrow="أهلًا بيك في سوبر ماركو"
+              title="سجّل وخلّي كل حاجة محفوظة"
+              subtitle="تابع طلباتك ونقاطك، واحفظ عناوينك والمنتجات اللي بتحبها."
+              actions={<>
+                <button type="button" className="acc-hero__btn acc-hero__btn--gold" onClick={() => navigate('/phone-login')}>تسجيل الدخول أو إنشاء حساب</button>
+                <Link to="/" className="acc-hero__btn">كمّل تسوّق</Link>
+              </>}
+            />
+          </div>
         ) : (
-          <div className="space-y-6">
-            <section className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
-              <div className="flex items-center gap-4">
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-cream text-brand-green"><User size={30} /></span>
-                <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-xs text-gray-500">حسابك في سوبر ماركو</p>
-                  <h1 className="break-words text-xl font-bold sm:text-2xl">{profile.isLoading ? 'جاري تحميل بياناتك…' : name}</h1>
-                  {user.phone && <p dir="ltr" className="mt-2 text-right text-sm text-gray-500">+{user.phone.replace(/^\+/, '')}</p>}
-                </div>
+          <div className="acc-stack space-y-3">
+            {/* Who you are + your points */}
+            <AccountHero
+              badge={<span className="text-2xl font-black">{initial}</span>}
+              eyebrow="حسابك في سوبر ماركو"
+              title={profile.isLoading ? 'بنحمّل بياناتك…' : `أهلًا، ${firstName}`}
+              subtitle={user.phone ? <span dir="ltr">+{user.phone.replace(/^\+/, '')}</span> : undefined}
+              stats={loyalty.data ? [
+                { label: 'رصيد نقاطك', value: <span key={Number(loyalty.data.points_balance || 0)} className="brand-quantity-pop inline-block">{number(loyalty.data.points_balance)}</span>, unit: 'نقطة' },
+                { label: 'تقدر تحوّله لكوبون', value: <span key={Number(loyalty.data.redeemable_credit_egp || 0)} className="brand-quantity-pop inline-block">{number(loyalty.data.redeemable_credit_egp, 2)}</span>, unit: 'ج.م' },
+              ] : undefined}
+              actions={<Link to="/edit-account" className="acc-hero__btn"><Pencil size={15} />تعديل بياناتي</Link>}
+            />
+            {profile.isError && <div role="alert" className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">تعذّر تحميل بياناتك.<button onClick={() => profile.refetch()} className="mr-2 underline">إعادة المحاولة</button></div>}
+
+            {/* Membership card with the barcode for the cashier */}
+            <section className="acc-member" aria-label="بطاقة سوبر ماركو">
+              <div className="acc-member__band">
+                <strong>بطاقة سوبر ماركو</strong>
+                {card?.membership_number && <span dir="ltr">{card.membership_number}</span>}
               </div>
-              {profile.isError && <div role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">تعذّر تحميل بياناتك.<button onClick={() => profile.refetch()} className="mr-2 min-h-11 underline">إعادة المحاولة</button></div>}
-              <Link to="/edit-account" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold transition hover:bg-brand-ivory"><Pencil size={17} />تعديل بياناتي</Link>
-            </section>
-
-            <section className="overflow-hidden rounded-3xl border border-emerald-100 bg-[#005931] text-white shadow-[0_18px_50px_rgba(0,89,49,0.18)]" aria-label="بطاقة ولاء سوبر ماركو">
-              <div className="p-5 sm:p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-emerald-100"><Gift size={18} className="text-brand-yellow" />بطاقة سوبر ماركو</div>
-                    <h2 className="mt-1 text-xl font-black">نقاطك ومشترياتك في مكان واحد</h2>
-                  </div>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10"><Sparkles size={22} className="text-brand-yellow" /></span>
-                </div>
-
+              <div className="acc-member__body">
                 {loyalty.isLoading ? (
-                  <div className="flex min-h-36 items-center justify-center"><BrandLoader size="sm" tone="onGreen" /></div>
-                ) : loyalty.isError || !loyalty.data ? (
-                  <div className="mt-5 rounded-2xl bg-white/10 p-4 text-sm text-emerald-50">
-                    تعذّر تحميل بطاقة الولاء حاليًا.
-                    <button onClick={() => loyalty.refetch()} className="mr-2 font-bold underline">إعادة المحاولة</button>
-                  </div>
+                  <div className="acc-skeleton h-24" />
+                ) : loyalty.isError || !card ? (
+                  <p className="rounded-2xl bg-gray-50 p-4 text-center text-sm text-gray-600">
+                    تعذّر تحميل البطاقة حاليًا.
+                    <button onClick={() => loyalty.refetch()} className="mr-2 font-bold text-[#005931] underline">إعادة المحاولة</button>
+                  </p>
                 ) : (
                   <>
-                    <div className="mt-5 grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl bg-white/10 p-4">
-                        <p className="text-xs text-emerald-100">رصيد النقاط</p>
-                        <strong key={Number(loyalty.data.points_balance || 0)} className="brand-quantity-pop mt-1 block text-2xl font-black text-brand-yellow">{Number(loyalty.data.points_balance || 0).toLocaleString('ar-EG')}</strong>
-                        <span className="text-xs text-emerald-100">نقطة</span>
-                      </div>
-                      <div className="rounded-2xl bg-white/10 p-4">
-                        <p className="text-xs text-emerald-100">قابل للتحويل لكوبون خصم</p>
-                        <strong key={Number(loyalty.data.redeemable_credit_egp || 0)} className="brand-quantity-pop mt-1 block text-2xl font-black text-brand-yellow">{Number(loyalty.data.redeemable_credit_egp || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 })}</strong>
-                        <span className="text-xs text-emerald-100">ج.م</span>
-                      </div>
-                    </div>
-
-                    <Link to="/vouchers" className="mt-4 flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-[#005931] shadow-sm transition hover:bg-emerald-50">
-                      <Ticket size={19} />
-                      تحويل النقاط إلى كوبون خصم / عرض كوبوناتي
-                    </Link>
-
-                    <div className="mt-4 rounded-2xl bg-white p-3 text-gray-900 shadow-inner">
-                      <div className="mb-2 flex items-center justify-between gap-3 px-1 text-xs">
-                        <span className="font-bold text-[#005931]">امسح الباركود عند الكاشير</span>
-                        <span className="font-mono text-gray-500">{loyalty.data.membership_number}</span>
-                      </div>
-                      <LoyaltyBarcode value={loyalty.data.barcode_token} />
-                    </div>
+                    <p className="acc-member__hint">ورّي الباركود للكاشير وانت بتدفع في الفرع</p>
+                    <LoyaltyBarcode value={card.barcode_token} />
                   </>
                 )}
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/80 via-white to-brand-ivory p-5 shadow-sm sm:p-6" aria-label="العنوان الأساسي">
-              <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-green text-brand-yellow shadow-sm"><MapPin size={22} /></span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-primary">العنوان الأساسي</p>
-                  {defaultAddress.isLoading ? <p className="mt-2 text-sm text-gray-500">جاري تحميل عنوانك…</p> : address ? <>
-                    <h2 className="mt-1 font-bold text-gray-900">{locationLabel || 'عنوان التوصيل'}</h2>
-                    <p className="mt-2 break-words text-sm leading-6 text-gray-600">{address.address}</p>
-                  </> : <>
-                    <h2 className="mt-1 font-bold text-gray-900">ضيف عنوان التوصيل</h2>
-                    <p className="mt-2 text-sm leading-6 text-gray-600">احفظ عنوانك الأساسي عشان الطلب الجاي يبقى أسرع.</p>
-                  </>}
-                  {defaultAddress.isError && <p className="mt-2 text-sm text-amber-800">تعذّر تحميل العنوان حاليًا.</p>}
+                <div className="acc-member__actions">
+                  <Link to="/vouchers" className="acc-member__primary"><Ticket size={17} />حوّل نقاطك</Link>
+                  <Link to="/vouchers" className="acc-member__secondary">كوبوناتي</Link>
                 </div>
               </div>
-              <Link to={address ? '/address-manager' : '/add-address'} className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white">
-                {address ? <MapPin size={17} /> : <Plus size={17} />}
-                {address ? 'إدارة أو تغيير العنوان' : 'إضافة عنوان'}
-              </Link>
             </section>
 
-            <section aria-label="التسوق والطلبات" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-              {shortcuts.map(({ to, label, description, icon: Icon }) => (
-                <Link key={to} to={to} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-green-200 sm:p-5">
-                  <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-cream text-brand-green"><Icon size={23} /></span>
-                  <h2 className="font-bold">{label}</h2>
-                  <p className="mt-2 text-xs leading-6 text-gray-500">{description}</p>
-                </Link>
-              ))}
-            </section>
+            {/* Quick tiles */}
+            <nav className="acc-tiles" aria-label="التسوق">
+              <Link to="/orders" className="acc-tile"><span className="acc-tile__icon"><Package size={22} /></span>مشترياتي</Link>
+              <Link to="/vouchers" className="acc-tile acc-tile--gold"><span className="acc-tile__icon"><Ticket size={22} /></span>كوبوناتي</Link>
+              <Link to="/favorites" className="acc-tile acc-tile--rose"><span className="acc-tile__icon"><Heart size={22} /></span>المفضلة</Link>
+            </nav>
 
-            <section aria-label="إدارة الحساب" className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+            {/* Default address */}
+            <Link to={address ? '/address-manager' : '/add-address'} className="acc-card acc-row !min-h-[76px]">
+              <span className="acc-row__icon"><MapPin size={20} /></span>
+              <span className="acc-row__text">
+                <strong>{defaultAddress.isLoading ? 'بنحمّل عنوانك…' : address ? (locationLabel || 'عنوان التوصيل') : 'ضيف عنوان التوصيل'}</strong>
+                <small>{address ? address.address : 'احفظ عنوانك عشان طلبك الجاي يبقى أسرع'}</small>
+              </span>
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#e8f5ee] px-3 py-1.5 text-xs font-extrabold text-[#005931]">
+                {address ? 'تغيير' : <><Plus size={14} />إضافة</>}
+              </span>
+            </Link>
+
+            {/* Settings */}
+            <p className="acc-section-title">حسابك</p>
+            <nav className="acc-card overflow-hidden" aria-label="إدارة الحساب">
               {[
-                { to: '/notifications', label: 'الإشعارات', description: 'تابع تحديثات الطلب والدفع أول بأول', icon: Bell },
-                { to: '/address-manager', label: 'عناوين التوصيل', description: 'ضيف عنوان أو اختار عنوانك الافتراضي', icon: MapPin },
-                { to: '/return-requests', label: 'طلبات الاسترجاع', description: 'راجع طلبات الاسترجاع وتابع حالتها', icon: RotateCcw },
+                { to: '/notifications', label: 'الإشعارات', description: 'تحديثات طلباتك والعروض', icon: Bell },
+                { to: '/address-manager', label: 'عناوين التوصيل', description: 'ضيف عنوان أو اختار الافتراضي', icon: MapPin },
+                { to: '/return-requests', label: 'طلبات الاسترجاع', description: 'تابع حالة أي استرجاع', icon: RotateCcw },
+                { to: '/edit-account', label: 'بياناتي', description: 'الاسم ورقم الموبايل', icon: UserRound },
               ].map(({ to, label, description, icon: Icon }) => (
-                <Link key={to} to={to} className="flex min-h-24 items-center gap-3 border-b border-gray-100 p-5 last:border-0 hover:bg-brand-ivory">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-cream text-brand-green"><Icon size={21} /></span>
-                  <span className="min-w-0 flex-1"><strong className="block text-sm">{label}</strong><span className="mt-1 block text-xs leading-5 text-gray-500">{description}</span></span>
-                  <ChevronLeft size={19} className="shrink-0 text-gray-400" />
+                <Link key={to} to={to} className="acc-row">
+                  <span className="acc-row__icon"><Icon size={19} /></span>
+                  <span className="acc-row__text"><strong>{label}</strong><small>{description}</small></span>
+                  <ChevronLeft size={18} className="acc-row__chev" />
                 </Link>
               ))}
-            </section>
-
+              <button type="button" disabled={signingOut} onClick={logout} className="acc-row acc-row--danger w-full text-right disabled:opacity-60">
+                <span className="acc-row__icon">{signingOut ? <BrandLoader size="sm" /> : <LogOut size={19} />}</span>
+                <span className="acc-row__text"><strong>{signingOut ? 'جاري تسجيل الخروج…' : 'تسجيل الخروج'}</strong></span>
+              </button>
+            </nav>
             {logoutError && <p role="alert" className="text-sm text-red-700">تعذّر تسجيل الخروج. راجع اتصالك وحاول تاني.</p>}
-            <button disabled={signingOut} onClick={logout} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-white text-sm font-semibold text-red-700 disabled:opacity-50">
-              {signingOut ? <BrandLoader size="sm" /> : <LogOut size={18} />}
-              {signingOut ? 'جاري تسجيل الخروج…' : 'تسجيل الخروج'}
-            </button>
           </div>
         )}
       </div>
