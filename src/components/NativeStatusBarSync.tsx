@@ -28,6 +28,8 @@ function colorAtTop(): string {
   // The pull-to-refresh panel ignores pointer events, so elementFromPoint
   // would see past it; while it is open the top of the screen is mint.
   if (document.querySelector('.brand-pull-panel')) return FALLBACK;
+  // The launch intro is brand green, continuing the native splash.
+  if (document.querySelector('.brand-intro')) return '#005931';
   let el = document.elementFromPoint(window.innerWidth / 2, 1) as HTMLElement | null;
   while (el) {
     const style = getComputedStyle(el);
@@ -89,12 +91,14 @@ export default function NativeStatusBarSync() {
     window.addEventListener('resize', schedule);
     // Pull-to-refresh opens/closes without scrolling the page.
     window.addEventListener('brand-pull-change', schedule);
+    window.addEventListener('brand-intro-done', schedule);
     return () => {
       timers.forEach(window.clearTimeout);
       if (frame != null) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
       window.removeEventListener('brand-pull-change', schedule);
+      window.removeEventListener('brand-intro-done', schedule);
     };
   }, [location.pathname, location.search]);
 

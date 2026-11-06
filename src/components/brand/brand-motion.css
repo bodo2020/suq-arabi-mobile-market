@@ -34,7 +34,8 @@
   display: grid;
   place-items: center;
   pointer-events: none;
-  background: #fff;
+  /* Same brand green as the native Android splash, so launch feels seamless. */
+  background: #005931;
   animation: brand-intro-exit 1900ms ease-out both;
 }
 .brand-intro--refresh { animation-duration: 1350ms; }
@@ -45,7 +46,27 @@
   gap: 14px;
   animation: brand-intro-arrive 360ms ease-out both;
 }
-.brand-intro__mark { width: 96px; height: 128px; }
+/* Same size and position as the native Android splash mark (104x138dp,
+   centred), so the hand-off from the native splash is invisible. The
+   wordmark hangs below the mark without moving it off centre. */
+.brand-intro__stack { position: relative; }
+.brand-intro__mark { width: 104px; height: 138px; }
+.brand-intro .brand-name--intro {
+  position: absolute;
+  top: calc(100% + 18px);
+  left: 50%;
+  margin-left: -150px;
+  width: 300px;
+  max-width: none;
+  justify-content: center;
+}
+.brand-intro--native .brand-intro__stack { animation: none; }
+.brand-intro--native .brand-intro__mark { animation: brand-intro-settle 700ms 120ms cubic-bezier(.3, 1.3, .5, 1) both; }
+@keyframes brand-intro-settle {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
 .brand-intro__mark .brand-mark__stroke { animation-duration: 900ms; }
 .brand-intro__mark .brand-mark__stroke--2 { animation-delay: 100ms; }
 .brand-intro__mark .brand-mark__stroke--3 { animation-delay: 240ms; }

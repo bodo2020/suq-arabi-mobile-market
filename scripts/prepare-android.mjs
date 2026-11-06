@@ -45,6 +45,14 @@ if (!manifest.includes('android:windowSoftInputMode=')) {
   );
 }
 
+// The app is designed for portrait phones only: never rotate to landscape.
+if (!manifest.includes('android:screenOrientation=')) {
+  manifest = manifest.replace(
+    'android:exported="true"',
+    'android:exported="true"\n            android:screenOrientation="portrait"',
+  );
+}
+
 await writeFile(manifestPath, manifest, 'utf8');
 
 let styles;
@@ -86,6 +94,11 @@ if (styles.includes('name="AppTheme.NoActionBarLaunch"')) {
   styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', '@color/elmadawy_splash_background');
   styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenAnimatedIcon', '@drawable/elmadawy_splash_icon');
   styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'postSplashScreenTheme', '@style/AppTheme.NoActionBar');
+  // Brand green from the first frame: status and navigation bars match the splash.
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:statusBarColor', '@color/elmadawy_splash_background');
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:navigationBarColor', '@color/elmadawy_splash_background');
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:windowLightStatusBar', 'false');
+  styles = upsertItemInStyle(styles, 'AppTheme.NoActionBarLaunch', 'android:windowLightNavigationBar', 'false');
 }
 await writeFile(stylesPath, styles, 'utf8');
 
@@ -107,7 +120,7 @@ const upsertColor = (name, value) => {
   }
 };
 upsertColor('elmadawy_icon_background', '#005931');
-upsertColor('elmadawy_splash_background', '#FFFFFF');
+upsertColor('elmadawy_splash_background', '#005931');
 await writeFile(colorsPath, colors, 'utf8');
 
 // Remove every default Capacitor launcher bitmap so Android cannot select a stale density asset.
@@ -156,20 +169,31 @@ for (const entry of resourceDirs) {
 await rm(path.join(drawableDir, 'splash.png'), { force: true });
 await rm(path.join(drawableDir, 'splash.xml'), { force: true });
 
-// The native splash is deliberately static; React animates the exact same mark
-// after WebView mount. Keep the launcher badge unchanged.
-const nativeSplashMark = `<?xml version="1.0" encoding="utf-8"?>\n<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="121dp" android:height="161dp" android:viewportWidth="121" android:viewportHeight="161">
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#005931" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M8,23.0552 V107.166 C8,116.555 15.6112,124.166 25,124.166 H84.2226" />
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#FFC120" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M8,22.6663 H96.0005 C105.389,22.6663 113.001,30.2775 113.001,39.6663 V148.666" />
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#005931" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M84.2205,124.182 L113.001,148.667" />
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#005931" android:strokeWidth="8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M38.3335,63.8893 C38.3335,87.2226 82.2782,89.1671 82.2782,63.8893" />
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#FFC120" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M82.2782,22.2364 C82.2782,-1.09694 38.3335,-3.04139 38.3335,22.2364" />
-</vector>\n`;
+// The native splash is deliberately static; React animates the same mark right
+// after WebView mount. White/gold "on green" version of the official mark,
+// centred in a 288dp canvas: Android 12+ shows the middle 192dp circle, so the
+// whole bag stays visible and large. Keep the launcher badge unchanged.
+const markPaths = [
+  ['#FFC120', 'M8,23.0552 V107.166 C8,116.555 15.6112,124.166 25,124.166 H84.2226', ''],
+  ['#FFFFFF', 'M8,22.6663 H96.0005 C105.389,22.6663 113.001,30.2775 113.001,39.6663 V148.666', ''],
+  ['#FFC120', 'M84.2205,124.182 L113.001,148.667', ''],
+  ['#FFC120', 'M38.3335,63.8893 C38.3335,87.2226 82.2782,89.1671 82.2782,63.8893', ' android:strokeLineJoin="round"'],
+  ['#FFFFFF', 'M82.2782,22.2364 C82.2782,-1.09694 38.3335,-3.04139 38.3335,22.2364', ''],
+].map(([color, d, extra]) => `        <path android:fillColor="@android:color/transparent" android:strokeColor="${color}" android:strokeWidth="9" android:strokeLineCap="round"${extra} android:pathData="${d}" />`).join('\n');
+// Mark box is 121x161 (plus stroke); scale 0.86 -> ~104x138, centred in 288.
+const nativeSplashMark = `<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="288dp" android:height="288dp" android:viewportWidth="288" android:viewportHeight="288">
+    <group android:translateX="91.5" android:translateY="74" android:scaleX="0.86" android:scaleY="0.86">
+${markPaths}
+    </group>
+</vector>
+`;
 await writeFile(path.join(drawableDir, 'elmadawy_splash_mark.xml'), nativeSplashMark, 'utf8');
-const splashIconXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/elmadawy_splash_mark" android:inset="22%" />\n`;
+// Android 12+ icon: the canvas above already has the right padding.
+const splashIconXml = `<?xml version="1.0" encoding="utf-8"?>\n<inset xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/elmadawy_splash_mark" android:inset="0dp" />\n`;
 await writeFile(path.join(drawableDir, 'elmadawy_splash_icon.xml'), splashIconXml, 'utf8');
 
-const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:drawable="@drawable/elmadawy_splash_icon" />\n</layer-list>\n`;
+const splashBackgroundXml = `<?xml version="1.0" encoding="utf-8"?>\n<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n    <item android:drawable="@color/elmadawy_splash_background" />\n    <item android:width="288dp" android:height="288dp" android:gravity="center" android:drawable="@drawable/elmadawy_splash_mark" />\n</layer-list>\n`;
 await writeFile(path.join(drawableDir, 'elmadawy_splash.xml'), splashBackgroundXml, 'utf8');
 
-console.log('Android brand assets verified and applied: Super Marko launcher icon, adaptive icon, splash screen and notification permission are active.');
+console.log('Android brand assets verified and applied: Super Marko launcher icon, adaptive icon, green splash screen, portrait lock and notification permission are active.');

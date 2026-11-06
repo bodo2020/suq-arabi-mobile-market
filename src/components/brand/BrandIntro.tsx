@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import BrandMark from './BrandMark';
 import BrandWordmark from './BrandWordmark';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -35,20 +36,27 @@ export default function BrandIntro() {
     } catch {
       // Restricted storage must not interrupt the animation.
     }
-    const timer = window.setTimeout(() => setMode(null), mode === 'intro' ? 1900 : 1350);
+    const timer = window.setTimeout(() => {
+      setMode(null);
+      // Let the status bar return to the page colour right away.
+      window.setTimeout(() => window.dispatchEvent(new Event('brand-intro-done')), 0);
+    }, mode === 'intro' ? 1900 : 1350);
     return () => window.clearTimeout(timer);
   }, [mode]);
 
   if (!mode) return null;
+  // In the Android app the native splash already shows the full mark at the
+  // same size and place, so continue from it instead of redrawing it.
+  const native = Capacitor.isNativePlatform();
   return (
-    <div className={`brand-intro brand-intro--${mode}`} aria-hidden="true" dir="rtl">
+    <div className={`brand-intro brand-intro--${mode} ${native ? 'brand-intro--native' : ''}`} aria-hidden="true" dir="rtl">
       <div className="brand-intro__stack">
         {mode === 'intro' ? (
-          <BrandMark variant="mark" motion="reveal" className="brand-intro__mark" />
+          <BrandMark variant="mark" tone="onGreen" motion={native ? 'none' : 'reveal'} className="brand-intro__mark" />
         ) : (
-          <BrandLoader size="lg" label="جاري تحديث الصفحة" className="brand-intro__refresh-loader" />
+          <BrandLoader size="lg" tone="onGreen" label="جاري تحديث الصفحة" className="brand-intro__refresh-loader" />
         )}
-        <BrandWordmark className="brand-name--home brand-name--intro" />
+        <BrandWordmark className="brand-name--intro" />
         {mode === 'refresh' && <span className="brand-intro__refresh-caption">جاري التحديث…</span>}
       </div>
     </div>
