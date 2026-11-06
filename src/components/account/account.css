@@ -32,7 +32,7 @@
 .acc-hero__sub { margin-top: 4px; color: rgba(255, 255, 255, .84); font-size: 13px; line-height: 1.75; }
 .acc-hero__stats { display: grid; gap: 8px; margin-top: 16px; }
 .acc-hero__stat { border-radius: 16px; background: rgba(255, 255, 255, .12); padding: 10px 12px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
-.acc-hero__stat span { display: block; color: rgba(255, 255, 255, .75); font-size: 11.5px; font-weight: 700; }
+.acc-hero__stat > span { display: block; color: rgba(255, 255, 255, .75); font-size: 11.5px; font-weight: 700; }
 .acc-hero__stat strong { display: block; margin-top: 2px; color: #FFC120; font-size: 22px; font-weight: 900; line-height: 1.2; }
 .acc-hero__stat small { color: rgba(255, 255, 255, .8); font-size: 12px; font-weight: 700; }
 .acc-hero__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
