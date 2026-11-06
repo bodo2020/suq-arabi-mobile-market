@@ -92,6 +92,7 @@ export default function NativeStatusBarSync() {
     // Pull-to-refresh opens/closes without scrolling the page.
     window.addEventListener('brand-pull-change', schedule);
     window.addEventListener('brand-intro-done', schedule);
+    window.addEventListener('hero-tint-change', schedule);
     return () => {
       timers.forEach(window.clearTimeout);
       if (frame != null) window.cancelAnimationFrame(frame);
@@ -99,6 +100,7 @@ export default function NativeStatusBarSync() {
       window.removeEventListener('resize', schedule);
       window.removeEventListener('brand-pull-change', schedule);
       window.removeEventListener('brand-intro-done', schedule);
+      window.removeEventListener('hero-tint-change', schedule);
     };
   }, [location.pathname, location.search]);
 

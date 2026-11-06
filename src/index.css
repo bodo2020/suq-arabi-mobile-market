@@ -535,3 +535,8 @@ html.native-platform [role="button"] {
   .product-sheet-stage { display: flex; }
 }
 .product-sheet-card { display: flex; flex-direction: column; }
+
+/* Home hero header: takes a soft tint from the current banner (see heroTint),
+   and hands the same colour down to the band behind the banner. */
+.home-hero-bg { background: linear-gradient(180deg, var(--hero-tint, #e6f9ee) 0%, var(--hero-tint-mid, #f1fbf5) 100%); }
+@media (min-width: 768px) { .home-hero-bg { background: #fff; border-color: #d6eee0 !important; } }

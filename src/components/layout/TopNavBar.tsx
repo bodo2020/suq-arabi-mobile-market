@@ -216,7 +216,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
       data-home-collapsed={collapsibleHome ? String(homeCollapsed) : undefined}
       className={`native-safe-top fixed inset-x-0 top-0 z-50 border-b text-[#005931] ${collapsibleHome ? 'home-top-nav' : ''} ${
         isHero
-          ? 'border-[#d6eee0] bg-gradient-to-b from-[#e6f9ee] via-[#f1fbf5] to-white md:bg-white'
+          ? 'home-hero-bg border-transparent'
           : 'app-header border-transparent'
       }`}
     >

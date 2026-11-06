@@ -193,7 +193,7 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
     if (section.section_type === 'hero_banners') {
       if (bannersQuery.isLoading) return <BannerSkeleton />;
       if (!bannersQuery.data?.length) return null;
-      return <div className="overflow-hidden rounded-[28px] shadow-[0_8px_24px_rgba(0,89,49,0.10)] ring-1 ring-[#d6eee0]"><BannersContainer banners={bannersQuery.data} /></div>;
+      return <BannersContainer banners={bannersQuery.data} />;
     }
 
     if (section.section_type === 'categories') {

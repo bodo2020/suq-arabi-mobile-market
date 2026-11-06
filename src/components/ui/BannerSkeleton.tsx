@@ -1,23 +1,17 @@
 import React from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
+import './hero-banner.css';
 
 interface BannerSkeletonProps {
   className?: string;
 }
 
-const BannerSkeleton: React.FC<BannerSkeletonProps> = ({ className = "" }) => {
-  return (
-    <div className={`relative w-full overflow-hidden rounded-lg ${className}`}>
-      <Skeleton className="w-full h-40 md:h-56 lg:h-64 rounded-lg" />
-      
-      {/* نقط وهمية للتنقل */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="w-3 h-3 rounded-full" />
-        ))}
-      </div>
+/** Same shape as the hero banner (3:2 on phones, 21:8 on larger screens), so nothing jumps when it loads. */
+const BannerSkeleton: React.FC<BannerSkeletonProps> = ({ className = '' }) => (
+  <div className={`hero-banner ${className}`} role="status" aria-label="جاري تحميل العروض">
+    <div className="hero-banner__track">
+      <div className="hero-banner__slide skeleton-shimmer" />
     </div>
-  );
-};
+  </div>
+);
 
 export default BannerSkeleton;

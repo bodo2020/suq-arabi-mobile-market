@@ -1,0 +1,78 @@
+/* Home hero banner: swipeable, blends into the tinted header above it. */
+@property --hero-tint { syntax: '<color>'; inherits: true; initial-value: #e6f9ee; }
+@property --hero-tint-mid { syntax: '<color>'; inherits: true; initial-value: #f1fbf5; }
+:root { transition: --hero-tint .6s ease, --hero-tint-mid .6s ease; }
+
+/* Band behind the banner continues the header colour into the page. */
+.hero-banner {
+  position: relative;
+  margin: -8px -12px 0;
+  padding: 8px 12px 6px;
+  background: linear-gradient(180deg, var(--hero-tint-mid, #f1fbf5) 0%, #f6f8f7 100%);
+}
+@media (min-width: 640px) { .hero-banner { margin-inline: -16px; padding-inline: 16px; } }
+@media (min-width: 768px) { .hero-banner { margin: 0; padding: 0; background: none; } }
+
+.hero-banner__track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.hero-banner__track::-webkit-scrollbar { display: none; }
+
+.hero-banner__slide {
+  position: relative;
+  flex: 0 0 100%;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #e9f1ec;
+  aspect-ratio: 3 / 2;
+  scroll-snap-align: start;
+  box-shadow: 0 10px 26px rgba(0, 50, 28, .12);
+  transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .3s;
+  -webkit-tap-highlight-color: transparent;
+}
+.hero-banner--multi .hero-banner__slide { flex-basis: calc(100% - 30px); }
+.hero-banner--multi .hero-banner__slide:not(.is-active) { transform: scale(.95); opacity: .8; }
+.hero-banner__slide:active { transform: scale(.985); }
+.hero-banner__slide img { width: 100%; height: 100%; object-fit: cover; }
+.hero-banner__slide.is-active img { animation: hero-kenburns 6s ease-out both; }
+@media (min-width: 768px) {
+  .hero-banner__slide { aspect-ratio: 21 / 8; border-radius: 28px; }
+  .hero-banner--multi .hero-banner__slide { flex-basis: 100%; }
+  .hero-banner--multi .hero-banner__slide:not(.is-active) { transform: none; opacity: 1; }
+}
+
+/* Story-style progress: the active pill fills until the next slide. */
+.hero-banner__dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+.hero-banner__dot {
+  position: relative;
+  width: 8px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 89, 49, .18);
+  transition: width .3s ease;
+}
+.hero-banner__dot.is-active { width: 30px; }
+.hero-banner__dot.is-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #005931;
+  transform-origin: right center;
+  animation: hero-dot-fill var(--hero-interval, 5s) linear both;
+}
+.hero-banner.is-paused .hero-banner__dot.is-active::after { animation-play-state: paused; }
+
+@keyframes hero-dot-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes hero-kenburns { from { transform: scale(1.06); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .hero-banner__slide.is-active img, .hero-banner__dot.is-active::after { animation: none; }
+  .hero-banner__dot.is-active::after { transform: none; }
+}
