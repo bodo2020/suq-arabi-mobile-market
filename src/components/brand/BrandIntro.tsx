@@ -27,6 +27,16 @@ function initialIntroMode(): IntroMode {
 export default function BrandIntro() {
   const [mode, setMode] = useState<IntroMode>(initialIntroMode);
 
+  // The page starts brand green (index.html) so nothing white shows before
+  // the intro. Hand back the normal background as soon as the intro starts
+  // to fade out, or right away when there is no intro.
+  useEffect(() => {
+    const removeBoot = () => document.getElementById('boot-green')?.remove();
+    if (mode !== 'intro') { removeBoot(); return; }
+    const timer = window.setTimeout(removeBoot, 1650);
+    return () => window.clearTimeout(timer);
+  }, [mode]);
+
   // Always recreate the timer after StrictMode cleanup.
   useEffect(() => {
     if (!mode) return;

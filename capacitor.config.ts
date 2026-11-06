@@ -7,6 +7,8 @@ const config: CapacitorConfig = {
   appName: 'سوبر ماركو',
   webDir: 'dist',
   appendUserAgent: 'ElmadawyCustomer/1.2.156',
+  // Green WebView before the page paints: no white flash after the splash.
+  backgroundColor: '#005931',
   server: liveReloadUrl
     ? {
         url: liveReloadUrl,

@@ -49,10 +49,10 @@
 /* Launch intro (2.2s), after a plain green native splash:
    100–950ms the five strokes of the mark fly in from different sides and
    assemble · 950ms small pop · 850–1450ms "ســوبـر" slides in from the right
-   and "مـاركو" from the left and they meet in the middle · 1750–2200ms the
-   green closes in a circle to reveal the app. */
-.brand-intro--intro { overflow: hidden; animation: brand-intro-iris 2200ms cubic-bezier(.7, 0, .3, 1) both; }
-.brand-intro--intro .brand-intro__stack { gap: 18px; animation: brand-intro-stack-out 2200ms ease-in both; }
+   and "مـاركو" from the left and they meet in the middle · 1650–2200ms the
+   mark and name shrink away and the green fades out to the app. */
+.brand-intro--intro { overflow: hidden; will-change: opacity; animation: brand-intro-out 2200ms linear both; }
+.brand-intro--intro .brand-intro__stack { gap: 18px; will-change: transform, opacity; animation: brand-intro-stack-out 2200ms linear both; }
 .brand-intro__mark { display: block; width: 92px; height: 122px; }
 .brand-intro--intro .brand-intro__mark { overflow: visible; animation: brand-intro-pop 460ms 950ms cubic-bezier(.3, 1.5, .5, 1) both; }
 .brand-intro--intro .brand-intro__mark svg { overflow: visible; }
@@ -112,13 +112,16 @@
   40% { transform: scale(1.06, .94); }
   100% { transform: scale(1); }
 }
-@keyframes brand-intro-iris {
-  0%, 80% { clip-path: circle(150% at 50% 50%); }
-  100% { clip-path: circle(0% at 50% 50%); }
+/* Smooth hand-off: the mark and name shrink away first (1650–1980ms), then
+   the green fades out (1760–2200ms) to the app underneath. Opacity and
+   transform only, so it stays on the compositor. */
+@keyframes brand-intro-out {
+  0%, 80% { opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  100% { opacity: 0; }
 }
 @keyframes brand-intro-stack-out {
-  0%, 80% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(.8); }
+  0%, 75% { opacity: 1; transform: scale(1); animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  90%, 100% { opacity: 0; transform: scale(.9); }
 }
 .brand-intro__refresh-loader.brand-loader { width: 82px; height: 108px; }
 .brand-intro__refresh-caption {
