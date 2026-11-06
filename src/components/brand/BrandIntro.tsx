@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import BrandMark from './BrandMark';
 import BrandWordmark from './BrandWordmark';
@@ -52,7 +52,12 @@ export default function BrandIntro() {
     <div className={`brand-intro brand-intro--${mode} ${native ? 'brand-intro--native' : ''}`} aria-hidden="true" dir="rtl">
       <div className="brand-intro__stack">
         {mode === 'intro' ? (
-          <BrandMark variant="mark" tone="onGreen" motion={native ? 'none' : 'reveal'} className="brand-intro__mark" />
+          <span className="brand-intro__hero">
+            <span className="brand-intro__sparks">
+              {[0, 45, 90, 135, 180, 225, 270, 315].map(angle => <i key={angle} style={{ '--a': `${angle}deg` } as React.CSSProperties} />)}
+            </span>
+            <BrandMark variant="mark" tone="onGreen" motion="reveal" className="brand-intro__mark" />
+          </span>
         ) : (
           <BrandLoader size="lg" tone="onGreen" label="جاري تحديث الصفحة" className="brand-intro__refresh-loader" />
         )}

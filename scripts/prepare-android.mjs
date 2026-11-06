@@ -179,11 +179,12 @@ const markPaths = [
   ['#FFC120', 'M84.2205,124.182 L113.001,148.667', ''],
   ['#FFC120', 'M38.3335,63.8893 C38.3335,87.2226 82.2782,89.1671 82.2782,63.8893', ' android:strokeLineJoin="round"'],
   ['#FFFFFF', 'M82.2782,22.2364 C82.2782,-1.09694 38.3335,-3.04139 38.3335,22.2364', ''],
-].map(([color, d, extra]) => `        <path android:fillColor="@android:color/transparent" android:strokeColor="${color}" android:strokeWidth="9" android:strokeLineCap="round"${extra} android:pathData="${d}" />`).join('\n');
-// Mark box is 121x161 (plus stroke); scale 0.86 -> ~104x138, centred in 288.
+].map(([color, d, extra]) => `        <path android:fillColor="@android:color/transparent" android:strokeColor="${color}" android:strokeWidth="9.5" android:strokeLineCap="round"${extra} android:pathData="${d}" />`).join('\n');
+// Mark box is 121x161 (plus stroke); scale 0.70 -> ~85x113, centred in 288.
+// Must match .brand-intro__mark in brand-motion.css (84x111.5).
 const nativeSplashMark = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="288dp" android:height="288dp" android:viewportWidth="288" android:viewportHeight="288">
-    <group android:translateX="91.5" android:translateY="74" android:scaleX="0.86" android:scaleY="0.86">
+    <group android:translateX="101.6" android:translateY="93" android:scaleX="0.70" android:scaleY="0.70">
 ${markPaths}
     </group>
 </vector>
