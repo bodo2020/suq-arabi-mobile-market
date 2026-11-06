@@ -68,7 +68,8 @@
   transform-box: fill-box;
   transform-origin: 50% 50%;
   transform: translateY(6px) scaleY(-1);
-  animation: cart-empty-frown 7.2s linear infinite;
+  /* Keep the logo draw-in (brand-stroke-reveal) and add the frown on top. */
+  animation: brand-stroke-reveal 440ms 205ms cubic-bezier(.22,.9,.3,1) forwards, cart-empty-frown 7.2s linear infinite;
 }
 .cart-empty-tear {
   position: absolute;
