@@ -4,6 +4,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import BrandText from '@/components/brand/BrandText';
+import { ToastAction } from '@/components/ui/toast';
+import { notificationMeta, notificationTarget } from '@/lib/notificationMeta';
+import '@/pages/notifications.css';
 import { supabase } from '@/lib/supabase';
 import { fetchCustomerNotificationCenterV2 } from '@/services/notificationCenterV2';
 import { initializeCustomerPushNotifications, requestCustomerPushPermissionAndRegister } from '@/services/pushNotifications';
@@ -41,9 +44,18 @@ export default function PushNotificationsBootstrap() {
               void queryClient.invalidateQueries({ queryKey: ['customer-notification-unread', user.id] });
 
               if (!item) return;
+              const meta = notificationMeta(item.category, item.severity);
+              const Icon = meta.icon;
+              const target = notificationTarget(item);
               toast({
-                title: item.title || 'إشعار جديد من سوبر ماركو',
+                title: (
+                  <span className="nt-toast-title">
+                    <span className={`nt-icon nt-icon--${meta.tone}`}><Icon size={17} /></span>
+                    {item.title || 'إشعار جديد'}
+                  </span>
+                ) as unknown as string,
                 description: item.body || undefined,
+                action: target ? <ToastAction altText="افتح الإشعار" onClick={() => navigate(target)}>افتح</ToastAction> : undefined,
               });
             } catch {
               void queryClient.invalidateQueries({ queryKey: ['customer-notification-center-v2', user.id] });

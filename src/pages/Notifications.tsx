@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, CheckCheck, Clock3, Gift, Package, Sparkles } from 'lucide-react';
+import { Bell, BellRing, CheckCheck, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
@@ -16,42 +16,19 @@ import {
   type CustomerNotificationCenterV2,
   type CustomerNotificationItemV2,
 } from '@/services/notificationCenterV2';
+import { dayGroup, notificationMeta, notificationTarget, relativeTime } from '@/lib/notificationMeta';
+import './notifications.css';
 
 type Filter = 'all' | 'unread';
 
-const formatDate = (value: string) => {
-  try {
-    return new Intl.DateTimeFormat('ar-EG', {
-      day: 'numeric',
-      month: 'short',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(new Date(value));
-  } catch {
-    return '';
-  }
-};
-
-const categoryLabel = (category: string) => {
-  if (category === 'orders') return 'الطلبات';
-  if (category === 'returns') return 'المرتجعات';
-  if (category === 'marketing') return 'العروض';
-  if (category === 'loyalty') return 'النقاط والمكافآت';
-  if (category === 'customers') return 'حسابك';
-  return 'إشعار';
-};
-
-const categoryIcon = (item: CustomerNotificationItemV2) => {
-  if (item.category === 'marketing') return Sparkles;
-  if (item.category === 'loyalty') return Gift;
-  return Package;
-};
-
-const severityClasses = (severity: CustomerNotificationItemV2['severity']) => {
-  if (severity === 'critical') return 'border-red-100 bg-red-50/70 text-red-700';
-  if (severity === 'high') return 'border-amber-100 bg-amber-50/70 text-amber-700';
-  return 'border-green-100 bg-green-50/70 text-primary';
-};
+type Category = 'all' | 'orders' | 'marketing' | 'loyalty' | 'returns';
+const CATEGORY_FILTERS: Array<{ key: Category; label: string }> = [
+  { key: 'all', label: 'كل الأنواع' },
+  { key: 'orders', label: 'الطلبات' },
+  { key: 'marketing', label: 'العروض' },
+  { key: 'loyalty', label: 'النقاط' },
+  { key: 'returns', label: 'المرتجعات' },
+];
 
 const markCenterRead = (current: CustomerNotificationCenterV2 | undefined, clearItems = false) => {
   if (!current) return current;
@@ -70,6 +47,7 @@ const Notifications = () => {
   const { toast } = useToast();
   const [filter, setFilter] = useState<Filter>('all');
   const [markingAll, setMarkingAll] = useState(false);
+  const [category, setCategory] = useState<Category>('all');
 
   const notifications = useQuery({
     queryKey: ['customer-notification-center-v2', user?.id, filter],
@@ -81,8 +59,19 @@ const Notifications = () => {
     retry: 1,
   });
 
-  const items = notifications.data?.items || [];
+  const allItems = notifications.data?.items || [];
   const unreadCount = notifications.data?.summary.unread || 0;
+  const todayCount = notifications.data?.summary.today || 0;
+  const items = category === 'all' ? allItems : allItems.filter(item => item.category === category);
+  const countFor = (key: Category) => key === 'all' ? allItems.length : allItems.filter(item => item.category === key).length;
+  const visibleFilters = CATEGORY_FILTERS.filter(entry => entry.key === 'all' || countFor(entry.key) > 0);
+  const groups = items.reduce<Array<{ label: string; items: CustomerNotificationItemV2[] }>>((acc, item) => {
+    const label = dayGroup(item.created_at);
+    const last = acc[acc.length - 1];
+    if (last && last.label === label) last.items.push(item);
+    else acc.push({ label, items: [item] });
+    return acc;
+  }, []);
 
   const invalidateNotificationCaches = () => {
     void queryClient.invalidateQueries({ queryKey: ['customer-notification-center-v2', user?.id] });
@@ -133,13 +122,8 @@ const Notifications = () => {
       // فتح الإجراء أهم من تعطيل العميل بسبب تعذر تحديث حالة القراءة مؤقتًا.
     }
 
-    if (item.action_url?.startsWith('/')) {
-      navigate(item.action_url);
-      return;
-    }
-
-    const orderId = typeof item.metadata?.order_id === 'string' ? item.metadata.order_id : null;
-    navigate(orderId ? `/orders?order_id=${encodeURIComponent(orderId)}` : '/notifications');
+    const target = notificationTarget(item);
+    if (target) navigate(target);
   };
 
   return (
@@ -153,7 +137,11 @@ const Notifications = () => {
             <AccountHero
               icon={Bell}
               title="الإشعارات"
-              subtitle={unreadCount > 0 ? `عندك ${unreadCount.toLocaleString('ar-EG')} إشعار جديد` : 'كل الإشعارات مقروءة'}
+              subtitle={unreadCount > 0 ? `عندك ${unreadCount.toLocaleString('ar-EG')} إشعار جديد` : 'كله مقروء، مفيش حاجة فايتاك'}
+              stats={notifications.data ? [
+                { label: 'جديد', value: unreadCount.toLocaleString('ar-EG') },
+                { label: 'النهارده', value: todayCount.toLocaleString('ar-EG') },
+              ] : undefined}
               actions={unreadCount > 0 ? (
                 <button type="button" className="acc-hero__btn acc-hero__btn--gold" onClick={() => void markAllRead()} disabled={markingAll}>
                   {markingAll ? <BrandLoader size="sm" /> : <CheckCheck size={15} />}
@@ -167,50 +155,68 @@ const Notifications = () => {
               <button type="button" onClick={() => setFilter('unread')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'unread' ? 'is-active' : ''}`}>غير مقروء ({unreadCount.toLocaleString('ar-EG')})</button>
             </div>
 
+            {allItems.length > 0 && visibleFilters.length > 1 && (
+              <div className="nt-filters hide-scrollbar" role="tablist" aria-label="نوع الإشعار">
+                {visibleFilters.map(entry => (
+                  <button key={entry.key} type="button" role="tab" aria-selected={category === entry.key} onClick={() => setCategory(entry.key)} className={`nt-filter ${category === entry.key ? 'is-active' : ''}`}>
+                    {entry.label}<small>{countFor(entry.key).toLocaleString('ar-EG')}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {notifications.isLoading ? (
-              <div className="flex min-h-64 items-center justify-center"><BrandLoader label="جاري تحميل الإشعارات" /></div>
+              <div className="nt-list" role="status" aria-label="جاري تحميل الإشعارات">
+                {[0, 1, 2, 3].map(index => <div key={index} className="nt-skeleton" />)}
+              </div>
             ) : notifications.isError ? (
-              <section role="alert" className="rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm">
-                <h2 className="text-xl font-bold">تعذر تحميل الإشعارات</h2>
-                <p className="mt-2 text-sm text-gray-500">راجع اتصالك وحاول مرة تانية.</p>
+              <section role="alert" className="nt-empty">
+                <h2>تعذر تحميل الإشعارات</h2>
+                <p>راجع اتصالك وحاول مرة تانية.</p>
                 <Button className="mt-5 rounded-xl" onClick={() => void notifications.refetch()}>إعادة المحاولة</Button>
               </section>
             ) : items.length === 0 ? (
-              <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 text-gray-400"><Bell size={30} /></span>
-                <h2 className="mt-4 text-xl font-bold">{filter === 'unread' ? 'مفيش إشعارات جديدة' : 'مفيش إشعارات لسه'}</h2>
+              <section className="nt-empty">
+                <span className="nt-empty__icon"><BellRing size={32} /></span>
+                <h2>{filter === 'unread' ? 'مفيش إشعارات جديدة' : 'مفيش إشعارات هنا لسه'}</h2>
+                <p>أول ما طلبك يتحرك أو يبقى في عرض جديد، هتلاقيه هنا على طول.</p>
               </section>
             ) : (
-              <div className="space-y-3">
-                {items.map(item => {
-                  const Icon = categoryIcon(item);
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => void openNotification(item)}
-                      className={`w-full rounded-2xl border p-4 text-right shadow-sm transition active:scale-[0.995] sm:p-5 ${item.read_at ? 'border-gray-100 bg-white' : 'border-green-100 bg-green-50/40'}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${severityClasses(item.severity)}`}>
-                          <Icon size={21} />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-center justify-between gap-2">
-                            <strong className="text-sm sm:text-base">{item.title}</strong>
-                            <span className="inline-flex items-center text-[11px] text-gray-500"><Clock3 size={13} className="ml-1" />{formatDate(item.created_at)}</span>
-                          </span>
-                          <span className="mt-1.5 block text-sm leading-6 text-gray-600">{item.body}</span>
-                          <span className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">{categoryLabel(item.category)}</span>
-                            {(item.action_url || item.metadata?.order_id) && <span className="font-semibold text-primary">{item.action_label || 'فتح التفاصيل'}</span>}
-                          </span>
-                        </span>
-                        {!item.read_at && <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label="غير مقروء" />}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div>
+                {groups.map(group => (
+                  <section key={group.label} aria-label={group.label}>
+                    <h2 className="nt-group">{group.label}</h2>
+                    <div className="nt-list">
+                      {group.items.map(item => {
+                        const meta = notificationMeta(item.category, item.severity);
+                        const Icon = meta.icon;
+                        const target = notificationTarget(item);
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => void openNotification(item)}
+                            className={`nt-card ${item.read_at ? 'is-read' : 'is-unread'}`}
+                          >
+                            <span className={`nt-icon nt-icon--${meta.tone}`}><Icon size={21} /></span>
+                            <span className="nt-body">
+                              <span className="nt-top">
+                                <strong className="nt-title">{item.title}</strong>
+                                <span className="nt-time">{relativeTime(item.created_at)}</span>
+                              </span>
+                              {item.body && <span className="nt-text">{item.body}</span>}
+                              <span className="nt-foot">
+                                <span className="nt-tag">{meta.label}</span>
+                                {target && <span className="nt-action">{item.action_label || 'افتح'}<ChevronLeft size={14} /></span>}
+                              </span>
+                            </span>
+                            {!item.read_at && <span className="nt-dot" aria-label="غير مقروء" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
               </div>
             )}
           </div>
