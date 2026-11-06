@@ -128,7 +128,7 @@ const Account = () => {
             <section className="acc-member" aria-label="بطاقة سوبر ماركو">
               <div className="acc-member__band">
                 <strong>بطاقة <BrandText tone="dark">سوبر ماركو</BrandText></strong>
-                {card?.membership_number && <span dir="ltr">{card.membership_number}</span>}
+                {card?.membership_number && <span dir="ltr" className="acc-member__number">{card.membership_number}</span>}
               </div>
               <div className="acc-member__body">
                 {loyalty.isLoading ? (
