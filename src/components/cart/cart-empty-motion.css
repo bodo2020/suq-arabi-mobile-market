@@ -77,7 +77,7 @@
 .cart-empty-bag .brand-mark__stroke--4 {
   transform-box: fill-box;
   transform-origin: 50% 50%;
-  transform: translateY(6px) scaleY(-1);
+  transform: translateY(8px) scaleY(-1);
 }
 .cart-empty-tear {
   position: absolute;

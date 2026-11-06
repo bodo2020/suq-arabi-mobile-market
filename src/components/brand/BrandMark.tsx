@@ -35,8 +35,8 @@ export default function BrandMark({
           alt=""
           draggable={false}
           decoding="async"
-          width={variant === 'badge' ? 321 : tone === 'onGreen' ? 165 : 121}
-          height={variant === 'badge' ? 320 : tone === 'onGreen' ? 219 : 161}
+          width={variant === 'badge' ? 321 : 165}
+          height={variant === 'badge' ? 320 : 219}
         />
       </span>
     );
@@ -73,15 +73,31 @@ export default function BrandMark({
     );
   }
 
+  // Official light-background artwork (Group 139): same geometry as the
+  // on-green mark, green + yellow strokes, with its soft drop shadow.
   if (variant === 'mark') {
     return (
       <span className={classes} style={style} {...aria}>
-        <svg viewBox="0 0 121 161" fill="none" aria-hidden="true">
-          <path className="brand-mark__stroke brand-mark__stroke--1" pathLength={100} d="M8 23.0552V107.166C8 116.555 15.6112 124.166 25 124.166H84.2226" stroke="#005931" strokeWidth="8" strokeLinecap="round"/>
-          <path className="brand-mark__stroke brand-mark__stroke--2" pathLength={100} d="M8 22.6663H96.0005C105.389 22.6663 113.001 30.2775 113.001 39.6663V148.666" stroke="#FFC120" strokeWidth="8" strokeLinecap="round"/>
-          <path className="brand-mark__stroke brand-mark__stroke--3" pathLength={100} d="M84.2205 124.182L113.001 148.667" stroke="#005931" strokeWidth="8" strokeLinecap="round"/>
-          <path className="brand-mark__stroke brand-mark__stroke--4" pathLength={100} d="M38.3335 63.8893C38.3335 87.2226 82.2782 89.1671 82.2782 63.8893" stroke="#005931" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-          <path className="brand-mark__stroke brand-mark__stroke--5" pathLength={100} d="M82.2782 22.2364C82.2782 -1.09694 38.3335 -3.04139 38.3335 22.2364" stroke="#FFC120" strokeWidth="8" strokeLinecap="round" strokeLinejoin="bevel"/>
+        <svg viewBox="0 0 165 219" fill="none" aria-hidden="true">
+          <defs>
+            <filter id={filterId} x="0" y="0" width="164.465" height="218.661" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+              <feFlood floodOpacity="0" result="BackgroundImageFix" />
+              <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+              <feOffset dy="4" />
+              <feGaussianBlur stdDeviation="2" />
+              <feComposite in2="hardAlpha" operator="out" />
+              <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+              <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow" />
+              <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape" />
+            </filter>
+          </defs>
+          <g filter={`url(#${filterId})`}>
+            <path className="brand-mark__stroke brand-mark__stroke--1" pathLength={100} d="M10.5 32.535V153.686C10.5 163.074 18.1112 170.686 27.5 170.686H114.644" stroke="#005931" strokeWidth={13} strokeLinecap="round" />
+            <path className="brand-mark__stroke brand-mark__stroke--2" pathLength={100} d="M10.5 32.004H136.964C146.353 32.004 153.964 39.6151 153.964 49.004V204.161" stroke="#FFC120" strokeWidth={13} strokeLinecap="round" />
+            <path className="brand-mark__stroke brand-mark__stroke--3" pathLength={100} d="M114.642 170.707L153.964 204.161" stroke="#005931" strokeWidth={13} strokeLinecap="round" />
+            <path className="brand-mark__stroke brand-mark__stroke--4" pathLength={100} d="M51.9445 88.3275C51.9445 120.208 111.987 122.865 111.987 88.3275" stroke="#005931" strokeWidth={13} strokeLinecap="round" strokeLinejoin="round" />
+            <path className="brand-mark__stroke brand-mark__stroke--5" pathLength={100} d="M111.988 31.4169C111.988 -0.464026 51.9454 -3.12077 51.9454 31.4169" stroke="#FFC120" strokeWidth={13} strokeLinecap="round" strokeLinejoin="bevel" />
+          </g>
         </svg>
       </span>
     );

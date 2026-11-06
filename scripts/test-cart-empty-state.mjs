@@ -23,7 +23,7 @@ assert.match(checkout, /showSteps = true/);
 assert.match(empty, /<BrandMark variant="mark" motion="reveal"/);
 assert.match(empty, /cart-empty-moth/);
 assert.match(empty, /cart-empty-puffs/);
-assert.match(mark, /M38\.3335 63\.8893C38\.3335 87\.2226 82\.2782 89\.1671 82\.2782 63\.8893/);
+assert.match(mark, /M51\.9445 88\.3275C51\.9445 120\.208 111\.987 122\.865 111\.987 88\.3275/);
 assert.match(empty, /aria-hidden="true"/);
 assert.match(empty, /aria-labelledby="cart-empty-heading"/);
 assert.match(empty, /<Link to="\/"/);

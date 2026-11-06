@@ -64,6 +64,33 @@
   font-size: clamp(1.22rem, 5.6vw, 1.7rem);
   line-height: 1.55;
 }
+/* Login: the logo stays still; only the name moves. "ســــــوبـر" slides in
+   from the right and "مــاركو" from the left, and they meet in the middle. */
+.auth-welcome-wordmark { overflow: visible; animation: auth-name-meet 360ms 820ms cubic-bezier(.3, 1.5, .5, 1) both; }
+.auth-welcome-wordmark .brand-name__super,
+.auth-welcome-wordmark .brand-name__marko { display: inline-block; }
+.auth-welcome-wordmark .brand-name__super { animation: auth-name-from-right 620ms 250ms cubic-bezier(.2, 1.05, .3, 1) both; }
+.auth-welcome-wordmark .brand-name__marko { animation: auth-name-from-left 620ms 250ms cubic-bezier(.2, 1.05, .3, 1) both; }
+.auth-welcome-greeting { animation: auth-greeting-in 420ms 80ms ease-out both; }
+@keyframes auth-name-from-right {
+  0% { opacity: 0; transform: translateX(120px); filter: blur(3px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateX(0); filter: none; }
+}
+@keyframes auth-name-from-left {
+  0% { opacity: 0; transform: translateX(-120px); filter: blur(3px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateX(0); filter: none; }
+}
+@keyframes auth-name-meet {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06, .94); }
+  100% { transform: scale(1); }
+}
+@keyframes auth-greeting-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
 
 .auth-surface { width: 100%; max-width: 440px; margin-inline: auto; }
 .auth-heading { text-align: right; margin: 0 4px 17px; }
