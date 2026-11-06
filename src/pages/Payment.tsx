@@ -206,11 +206,11 @@ const Payment = () => {
       return;
     }
     if (syncError && !pendingCheckout) {
-      toast({ title: 'سلتك لم تُحفظ بعد', description: 'أعد محاولة حفظ السلة قبل تأكيد الطلب.', variant: 'destructive' });
+      toast({ title: 'شنطتك لم تُحفظ بعد', description: 'أعد محاولة حفظ الشنطة قبل تأكيد الطلب.', variant: 'destructive' });
       return;
     }
     if (!items.length && !pendingCheckout) {
-      toast({ title: 'السلة فارغة', description: 'أضف منتجات إلى السلة أولاً.', variant: 'destructive' });
+      toast({ title: 'الشنطة فارغة', description: 'أضف منتجات إلى الشنطة أولاً.', variant: 'destructive' });
       return;
     }
     if (!pendingCheckout && (quoteQuery.isFetching || !quote)) {
@@ -355,8 +355,8 @@ const Payment = () => {
         <div className="flex min-h-screen items-center justify-center">
           <Card className="mx-4 w-full max-w-md"><CardContent className="py-8 text-center">
             <ShoppingCart className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-            <h2 className="mb-2 text-xl font-bold">السلة فارغة</h2>
-            <p className="mb-4 text-muted-foreground">لا توجد منتجات في سلة التسوق</p>
+            <h2 className="mb-2 text-xl font-bold">الشنطة فارغة</h2>
+            <p className="mb-4 text-muted-foreground">لا توجد منتجات في شنطة التسوق</p>
             <Button onClick={() => navigate('/')}>تصفح المنتجات</Button>
           </CardContent></Card>
         </div>
@@ -377,7 +377,7 @@ const Payment = () => {
         <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <div className="flex items-start gap-2"><RefreshCw size={18} className="mt-0.5 shrink-0" /><div>
             <p className="font-bold">في محاولة طلب سابقة محفوظة بأمان.</p>
-            <p className="mt-1 leading-6">الطلب وكوبون الخصم مقفولين على نفس المحاولة عشان مايتخصمش كوبون الخصم مرتين. {hasSamePendingCart ? '' : 'السلة الحالية اتغيّرت؛ مش هنمسحها بعد استكمال المحاولة السابقة.'}</p>
+            <p className="mt-1 leading-6">الطلب وكوبون الخصم مقفولين على نفس المحاولة عشان مايتخصمش كوبون الخصم مرتين. {hasSamePendingCart ? '' : 'الشنطة الحالية اتغيّرت؛ مش هنمسحها بعد استكمال المحاولة السابقة.'}</p>
           </div></div>
         </div>
       )}

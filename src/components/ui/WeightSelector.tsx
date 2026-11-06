@@ -125,7 +125,7 @@ export default function WeightSelector({ product, isOpen, onClose, initialWeight
             </div>
 
             <Button className="h-14 w-full rounded-2xl bg-[#005931] text-base font-black" disabled={!valid || !isInitialized} onClick={save}>
-              {existing || onSelect ? 'تأكيد الوزن' : 'إضافة للسلة'}
+              {existing || onSelect ? 'تأكيد الوزن' : 'إضافة للشنطة'}
             </Button>
           </div>
         </div>

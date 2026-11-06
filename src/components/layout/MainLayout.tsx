@@ -5,7 +5,7 @@ import BrandBagIcon from '@/components/brand/BrandBagIcon';
 import { useCart } from '@/contexts/useCart';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const links=[{to:'/',label:'الرئيسية',icon:Home},{to:'/categories',label:'الأقسام',icon:Grid},{to:'/offers',label:'العروض',icon:Tag},{to:'/cart',label:'السلة',icon:BrandBagIcon},{to:'/account',label:'الحساب',icon:User}];
+const links=[{to:'/',label:'الرئيسية',icon:Home},{to:'/categories',label:'الأقسام',icon:Grid},{to:'/offers',label:'العروض',icon:Tag},{to:'/cart',label:'الشنطة',icon:BrandBagIcon},{to:'/account',label:'الحساب',icon:User}];
 
 // Last cart count the nav showed (across page changes), so the bag only hops
 // when something was actually added, not on every navigation.

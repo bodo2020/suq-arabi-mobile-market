@@ -28,7 +28,7 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
     if (!user) {
       toast({
         title: "يجب تسجيل الدخول",
-        description: "يرجى تسجيل الدخول أولاً لإضافة المنتجات للسلة",
+        description: "يرجى تسجيل الدخول أولاً لإضافة المنتجات للشنطة",
         variant: "destructive"
       });
       onClose();
@@ -69,7 +69,7 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-md mx-auto">
         <DialogHeader>
-          <DialogTitle>إضافة للسلة</DialogTitle>
+          <DialogTitle>إضافة للشنطة</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 p-4">
           <div className="space-y-2">
@@ -102,7 +102,7 @@ const AddToCartModal = ({ product, isOpen, onClose }: AddToCartModalProps) => {
             onClick={handleAddToCart}
             className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors"
           >
-            إضافة للسلة
+            إضافة للشنطة
           </button>
         </div>
       </DialogContent>

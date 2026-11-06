@@ -124,7 +124,7 @@ export default function CombinedPayment() {
     if (!addressId) return navigate('/addresses?returnTo=%2Fcombined-payment');
     if (syncError && !pending) {
       return toast({
-        title: 'السلة لم تُحفظ بعد',
+        title: 'الشنطة لم تُحفظ بعد',
         description: 'أعد المحاولة قبل تأكيد الطلب.',
         variant: 'destructive',
       });
@@ -206,7 +206,7 @@ export default function CombinedPayment() {
     return <CheckoutLayout step={2}>
       <div className="mx-auto max-w-md py-20 text-center">
         <Store className="mx-auto h-12 w-12 text-primary" />
-        <h1 className="mt-4 text-xl font-black">السلة فارغة</h1>
+        <h1 className="mt-4 text-xl font-black">الشنطة فارغة</h1>
         <Button className="mt-5" onClick={() => navigate('/')}>ابدأ التسوق</Button>
       </div>
     </CheckoutLayout>;

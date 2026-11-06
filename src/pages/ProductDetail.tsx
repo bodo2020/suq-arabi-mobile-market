@@ -723,7 +723,7 @@ const ProductDetail = () => {
     setSelectedImageIndex(0);
   }, [bulkMode]);
 
-  const notifyAdded = () => toast({ title: 'تمت الإضافة', description: `اتضاف ${displayName || 'المنتج'} للسلة.` });
+  const notifyAdded = () => toast({ title: 'تمت الإضافة', description: `اتضاف ${displayName || 'المنتج'} للشنطة.` });
 
   const openRegular = () => {
     if (!product) return;
@@ -919,7 +919,7 @@ const ProductDetail = () => {
             type="button"
             onClick={() => changePieceQuantity(bulkMode, -1)}
             className="flex h-14 w-14 items-center justify-center"
-            aria-label={currentCartQuantity <= 1 ? 'حذف من السلة' : 'تقليل الكمية'}
+            aria-label={currentCartQuantity <= 1 ? 'حذف من الشنطة' : 'تقليل الكمية'}
           >
             {currentCartQuantity <= 1 ? <Trash2 size={20} /> : <Minus size={20} />}
           </button>
@@ -953,7 +953,7 @@ const ProductDetail = () => {
             className="h-12 min-w-0 flex-1 rounded-2xl bg-[#005931] px-3 text-sm font-black shadow-[0_8px_20px_rgba(0,89,49,0.14)] md:h-14 md:w-full md:flex-none md:text-base"
           >
             <span className="flex w-full items-center justify-between gap-2">
-              <span className="flex shrink-0 items-center gap-1"><Plus size={17} />أضف للسلة</span>
+              <span className="flex shrink-0 items-center gap-1"><Plus size={17} />أضف للشنطة</span>
               <span className="truncate text-xs md:text-base">{money(purchaseTotal)} ج.م</span>
             </span>
           </Button>
@@ -966,7 +966,7 @@ const ProductDetail = () => {
     <div className="space-y-3">
       {weightedCartItem ? (
         <div className="flex h-14 items-center justify-between overflow-hidden rounded-2xl bg-[#eef9f3] text-[#005931]">
-          <button type="button" onClick={() => changeWeight(-1)} className="flex h-14 w-14 items-center justify-center" aria-label={currentWeight <= weightStep ? 'حذف من السلة' : 'تقليل الوزن'}>
+          <button type="button" onClick={() => changeWeight(-1)} className="flex h-14 w-14 items-center justify-center" aria-label={currentWeight <= weightStep ? 'حذف من الشنطة' : 'تقليل الوزن'}>
             {currentWeight <= weightStep ? <Trash2 size={20} /> : <Minus size={20} />}
           </button>
           <button type="button" onClick={() => setWeightOpen(true)} className="min-w-0 flex-1 text-center" aria-label="تعديل الوزن">
@@ -1322,7 +1322,7 @@ const ProductDetail = () => {
 
             <div className="mt-5 hidden md:block">
               {weighted ? weightedPurchaseControl : piecePurchaseControl}
-              {activeCartItem && <button type="button" onClick={() => navigate('/cart')} className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 text-sm font-bold text-[#005931]"><ShoppingCart size={17} />مراجعة السلة</button>}
+              {activeCartItem && <button type="button" onClick={() => navigate('/cart')} className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 text-sm font-bold text-[#005931]"><ShoppingCart size={17} />مراجعة الشنطة</button>}
             </div>
           </section>
         </div>

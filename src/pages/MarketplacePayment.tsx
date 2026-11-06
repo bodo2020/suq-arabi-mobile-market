@@ -101,7 +101,7 @@ export default function MarketplacePayment() {
     if (!user) return navigate('/phone-verify?returnTo=%2Fmarketplace-payment');
     if (!customerQuery.data?.customer?.id || !customerQuery.data.customer.name?.trim()) return navigate('/register?returnTo=%2Fmarketplace-payment');
     if (!addressId) return navigate('/addresses?returnTo=%2Fmarketplace-payment');
-    if (syncError && !pending) return toast({ title: 'السلة لم تُحفظ بعد', description: 'أعد المحاولة قبل تأكيد الطلب.', variant: 'destructive' });
+    if (syncError && !pending) return toast({ title: 'الشنطة لم تُحفظ بعد', description: 'أعد المحاولة قبل تأكيد الطلب.', variant: 'destructive' });
     if (!pending && (!quote || quoteQuery.isFetching)) return toast({ title: 'لسه بنراجع الطلب', description: quoteQuery.error ? marketplaceCheckoutError(quoteQuery.error) : 'انتظر مراجعة السعر والمخزون والتوصيل.', variant: 'destructive' });
     if (!pending && quote && !quote.minimum_order_met) return toast({ title: 'الحد الأدنى للطلب', description: `الطلب من المتجر ده لازم يكون على الأقل ${money(quote.min_order_amount)} ج.م.`, variant: 'destructive' });
 
@@ -175,7 +175,7 @@ export default function MarketplacePayment() {
   };
 
   if (authLoading || !isInitialized || !user) return <CheckoutLayout step={2}><div className="flex justify-center py-20"><BrandLoader size="lg" /></div></CheckoutLayout>;
-  if (!items.length && !pending) return <CheckoutLayout step={2}><div className="mx-auto max-w-md py-20 text-center"><Store className="mx-auto h-12 w-12 text-primary" /><h1 className="mt-4 text-xl font-black">السلة فارغة</h1><Button className="mt-5" onClick={() => navigate('/stores')}>تصفح المتاجر</Button></div></CheckoutLayout>;
+  if (!items.length && !pending) return <CheckoutLayout step={2}><div className="mx-auto max-w-md py-20 text-center"><Store className="mx-auto h-12 w-12 text-primary" /><h1 className="mt-4 text-xl font-black">الشنطة فارغة</h1><Button className="mt-5" onClick={() => navigate('/stores')}>تصفح المتاجر</Button></div></CheckoutLayout>;
 
   return <CheckoutLayout step={2}>
     <h1 className="checkout-title">تأكيد طلب المتجر</h1>

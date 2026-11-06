@@ -4,28 +4,43 @@ import BrandMark from '@/components/brand/BrandMark';
 import './cart-empty-motion.css';
 
 /**
- * Empty-state microinteraction only: never changes the immutable BrandMark.
- * The original smile is temporarily hidden while a traced + occupies its
- * exact position, then the original smile returns.
+ * Empty bag gag: the official bag mark (never altered) flips upside down and
+ * gets shaken, a few puffs of air and one bored moth fall out, then it flips
+ * back with a sigh. Turning the bag over naturally turns its smile into a
+ * frown. Transform/opacity only; static under prefers-reduced-motion.
  */
 export default function CartEmptyState() {
   return (
     <section className="cart-empty-state" aria-labelledby="cart-empty-heading">
       <div className="cart-empty-scene" aria-hidden="true">
         <span className="cart-empty-scene__halo" />
+        <span className="cart-empty-scene__shadow" />
         <span className="cart-empty-bag">
           <BrandMark variant="mark" motion="reveal" className="cart-empty-bag__mark" />
-          <svg className="cart-empty-bag__plus" viewBox="0 0 121 161" fill="none" focusable="false" aria-hidden="true">
-            <path className="cart-empty-plus-line cart-empty-plus-line--horizontal" pathLength={100} d="M49 74H72" stroke="#FFC120" strokeWidth={8} strokeLinecap="round" />
-            <path className="cart-empty-plus-line cart-empty-plus-line--vertical" pathLength={100} d="M60.5 62.5V85.5" stroke="#FFC120" strokeWidth={8} strokeLinecap="round" />
-          </svg>
         </span>
+        <span className="cart-empty-puffs">
+          <i style={{ '--dx': '-26px', '--dy': '6px' } as React.CSSProperties} />
+          <i style={{ '--dx': '2px', '--dy': '16px' } as React.CSSProperties} />
+          <i style={{ '--dx': '28px', '--dy': '4px' } as React.CSSProperties} />
+        </span>
+        <svg className="cart-empty-moth" viewBox="0 0 40 32" fill="none" focusable="false" aria-hidden="true">
+          <g className="cart-empty-moth__wing cart-empty-moth__wing--left">
+            <ellipse cx="12" cy="14" rx="10" ry="7.5" transform="rotate(-24 12 14)" fill="#dfe8e2" stroke="#8ea597" strokeWidth="1.6" />
+            <circle cx="10" cy="13" r="2" fill="#c3d2c8" />
+          </g>
+          <g className="cart-empty-moth__wing cart-empty-moth__wing--right">
+            <ellipse cx="28" cy="14" rx="10" ry="7.5" transform="rotate(24 28 14)" fill="#dfe8e2" stroke="#8ea597" strokeWidth="1.6" />
+            <circle cx="30" cy="13" r="2" fill="#c3d2c8" />
+          </g>
+          <ellipse cx="20" cy="17" rx="3.2" ry="8" fill="#6d8476" />
+          <path d="M18.6 9.6C17.4 6.6 15.6 5 13.8 4.4M21.4 9.6C22.6 6.6 24.4 5 26.2 4.4" stroke="#6d8476" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
       </div>
 
-      <h1 id="cart-empty-heading">سلتك لسه فاضية</h1>
+      <h1 id="cart-empty-heading">شنطتك فاضية خالص!</h1>
       <p className="cart-empty-state__description">
-        دوس على علامة + جنب أي منتج يعجبك،
-        <span className="cart-empty-state__description-line">وهتلاقيه هنا على طول.</span>
+        هزّيناها كويس… ملقيناش غير شوية هوا وفراشة زهقانة.
+        <span className="cart-empty-state__description-line">يلا نملاها بحاجات حلوة؟</span>
       </p>
 
       <Link to="/" className="cart-empty-state__primary">
@@ -43,7 +58,7 @@ export default function CartEmptyState() {
           شوف العروض
         </Link>
       </nav>
-      <p className="cart-empty-state__note">اختار براحتك، مش لازم تسجّل دخول عشان تضيف للسلة.</p>
+      <p className="cart-empty-state__note">اختار براحتك، مش لازم تسجّل دخول عشان تضيف للشنطة.</p>
     </section>
   );
 }

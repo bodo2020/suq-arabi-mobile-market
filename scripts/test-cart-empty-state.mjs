@@ -21,11 +21,9 @@ assert.match(page, /const proceed = \(\) =>/);
 assert.match(checkout, /showSteps = true/);
 
 assert.match(empty, /<BrandMark variant="mark" motion="reveal"/);
-assert.match(empty, /cart-empty-bag__plus/);
-assert.match(empty, /viewBox="0 0 121 161"/);
+assert.match(empty, /cart-empty-moth/);
+assert.match(empty, /cart-empty-puffs/);
 assert.match(mark, /M38\.3335 63\.8893C38\.3335 87\.2226 82\.2782 89\.1671 82\.2782 63\.8893/);
-assert.match(empty, /cart-empty-plus-line--horizontal/);
-assert.match(empty, /cart-empty-plus-line--vertical/);
 assert.match(empty, /aria-hidden="true"/);
 assert.match(empty, /aria-labelledby="cart-empty-heading"/);
 assert.match(empty, /<Link to="\/"/);
@@ -33,14 +31,14 @@ for (const path of ['/categories', '/offers']) {
   assert.ok(empty.includes(`to="${path}"`), `Missing ${path} shortcut`);
   assert.ok(routes.includes(`path="${path}"`), `Missing ${path} route`);
 }
-assert.match(css, /cart-empty-smile-to-plus 6\.4s/);
-assert.match(css, /cart-empty-plus-draw 6\.4s/);
-assert.match(css, /cart-empty-bag-bob 6\.4s/);
-assert.match(css, /\.brand-mark__stroke--4/);
+assert.match(css, /cart-empty-bag-shake 7\.2s/);
+assert.match(css, /cart-empty-moth-escape 7\.2s/);
+assert.match(css, /cart-empty-puff 7\.2s/);
+assert.doesNotMatch(css, /stroke--4/, 'the official mark must not be altered');
 assert.match(css, /@media \(max-width: 480px\)/);
 assert.match(css, /@media \(max-height: 660px\)/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(css, /\.brand-mark__stroke \{ stroke-dashoffset: 0 !important; opacity: 1 !important;/);
-assert.match(css, /\.cart-empty-bag__plus \{ display: none !important;/);
+assert.match(css, /\.cart-empty-moth, \.cart-empty-puffs \{ display: none !important;/);
 
-console.log('PASS: animated empty-cart brand, plus conversion, shopping navigation, empty-stepper handling, and reduced-motion fallback.');
+console.log('PASS: animated empty-bag gag (shake, puffs, moth), shopping navigation, empty-stepper handling, and reduced-motion fallback.');

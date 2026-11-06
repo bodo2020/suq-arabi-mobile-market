@@ -27,8 +27,8 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
     if (!isOutOfStock) {
       addToCart(product);
       toast({
-        title: "تمت الإضافة إلى السلة",
-        description: `تم إضافة ${product.name} إلى سلة التسوق`,
+        title: "تمت الإضافة إلى الشنطة",
+        description: `تم إضافة ${product.name} إلى شنطة التسوق`,
       });
     }
   };
@@ -119,10 +119,10 @@ const FavoriteProductCard: React.FC<FavoriteProductCardProps> = ({ product }) =>
             <button
               onClick={handleAddToCart}
               className="add-to-cart-btn empty w-full hover-scale"
-              aria-label="إضافة إلى السلة"
+              aria-label="إضافة إلى الشنطة"
             >
               <Plus size={18} color="white" />
-              إضافة للسلة
+              إضافة للشنطة
             </button>
           ) : (
             <div className="add-to-cart-btn has-items" onClick={(e) => e.preventDefault()}>

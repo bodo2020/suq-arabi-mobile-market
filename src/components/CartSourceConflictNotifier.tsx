@@ -17,7 +17,7 @@ export default function CartSourceConflictNotifier() {
       if (detail.reason === 'partner_limit') {
         toast({
           title: 'وصلت للحد الأقصى للمحلات الشريكة',
-          description: 'تقدر تجمع فرع المعداوي مع محلين شركاء بحد أقصى. احذف محل شريك من السلة قبل إضافة ' + (detail.incomingMerchant || 'المتجر الجديد') + '.',
+          description: 'تقدر تجمع فرع المعداوي مع محلين شركاء بحد أقصى. احذف محل شريك من الشنطة قبل إضافة ' + (detail.incomingMerchant || 'المتجر الجديد') + '.',
           variant: 'destructive',
         });
         return;

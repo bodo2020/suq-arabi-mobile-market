@@ -72,10 +72,10 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
         onClick={addSelectedWeight}
         disabled={!isInitialized || stockGrams <= 0}
         className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#005931] px-4 font-semibold text-white disabled:opacity-40"
-        aria-label={`إضافة المنتج للسلة بوزن ${formatWeightAmount(activeWeight)}`}
+        aria-label={`إضافة المنتج للشنطة بوزن ${formatWeightAmount(activeWeight)}`}
       >
         <Plus size={19} />
-        إضافة للسلة
+        إضافة للشنطة
       </button>
     );
   }
@@ -87,7 +87,7 @@ export default function WeightedPurchaseControl({ product, onWeightChange }: Wei
           type="button"
           onClick={decrease}
           disabled={!isInitialized}
-          aria-label={activeWeight <= step ? 'حذف المنتج من السلة' : `تقليل الوزن بمقدار ${formatWeightAmount(step)}`}
+          aria-label={activeWeight <= step ? 'حذف المنتج من الشنطة' : `تقليل الوزن بمقدار ${formatWeightAmount(step)}`}
           className="flex h-14 w-14 items-center justify-center disabled:opacity-25"
         >
           {activeWeight <= step ? <Trash2 size={20} /> : <Minus size={20} />}

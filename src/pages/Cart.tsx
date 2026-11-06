@@ -69,7 +69,7 @@ export default function Cart() {
   };
 
   const cta = <Button className="cart-primary" onClick={proceed} disabled={blocked}>
-    {isSaving ? <><BrandLoader size="sm" tone="onGreen" />جارٍ حفظ سلتك</> : quotePending ? <><BrandLoader size="sm" tone="onGreen" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
+    {isSaving ? <><BrandLoader size="sm" tone="onGreen" />جارٍ حفظ شنطتك</> : quotePending ? <><BrandLoader size="sm" tone="onGreen" />بنحسب الطريق والأسعار</> : <>متابعة الطلب<ArrowLeft size={18} /></>}
   </Button>;
 
   const subtotal = Number(quote?.subtotal ?? getTotalPrice());
@@ -85,14 +85,14 @@ export default function Cart() {
     {syncError && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{syncError}</span><Button variant="outline" onClick={retrySync}>إعادة المحاولة</Button></div>}
     {(branchError || quoteError) && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{branchError || quoteError}</span><Button variant="outline" onClick={() => void retryQuote()}><RefreshCw size={16} />إعادة المراجعة</Button></div>}
 
-    {!isInitialized ? <div className="cart-loading"><BrandLoader size="lg" /><span>{syncError ? 'سلتك المحفوظة لم تُحمّل بعد' : 'بنجهّز سلتك'}</span></div> : !items.length ?
+    {!isInitialized ? <div className="cart-loading"><BrandLoader size="lg" /><span>{syncError ? 'شنطتك المحفوظة لم تُحمّل بعد' : 'بنجهّز شنطتك'}</span></div> : !items.length ?
       <><CartEmptyState /><CartSuggestions title="ابدأ بالأساسيات" subtitle="اختيارات من أقسام سوبر ماركو تضيفها بضغطة" /></> : <>
       <div className="cart-heading">
         <div className="flex items-center gap-3">
           <span className="cart-heading-icon"><BrandBagIcon size={26} strokeWidth={2.3} accent="#E0A800" /></span>
-          <div><h1>سلتك</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
+          <div><h1>شنطتك</h1><p>{money(items.length)} أصناف · راجع اختياراتك وكمّل طلبك</p></div>
         </div>
-        <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />سلتك محفوظة</> : 'سلة الضيف جاهزة'}</div>
+        <div className="cart-status" role="status">{isSaving ? <><BrandLoader size="sm" />جارٍ الحفظ</> : quotePending ? <><BrandLoader size="sm" />تحديث الطريق والسعر والمخزون</> : syncError ? 'التعديل لم يُحفظ بعد' : user ? <><Check size={16} />شنطتك محفوظة</> : 'شنطة الضيف جاهزة'}</div>
       </div>
 
       {branch && <div className="cart-info" role="status">
@@ -108,7 +108,7 @@ export default function Cart() {
         <span><strong>{quote.delivery_campaign.name}</strong> · وفّرت {money(Number(quote.delivery_campaign.discount || 0))} ج.م من التوصيل</span>
       </div>}
 
-      <div className="cart-grid"><section className="cart-list" aria-label="منتجات السلة">
+      <div className="cart-grid"><section className="cart-list" aria-label="منتجات الشنطة">
         {items.map(item => {
           const line = quoteLines.get(itemKey(item));
           const unitPrice = Number(line?.price ?? localItemPrice(item));
@@ -176,7 +176,7 @@ export default function Cart() {
           </article>;
         })}
       </section><aside className="cart-summary">
-        <h2>ملخص سلتك</h2>
+        <h2>ملخص شنطتك</h2>
         <div className="cart-summary-row"><span>قيمة المنتجات</span><strong>{quotePending ? '...' : `${money(subtotal)} ج.م`}</strong></div>
         <div className="cart-summary-row"><span>التوصيل</span>{quotePending ? <small>جاري الحساب</small> : shipping <= 0 ? <strong className="text-primary">مجاني</strong> : <strong>{money(shipping)} ج.م</strong>}</div>
         {quote?.delivery_campaign && Number(quote.delivery_campaign.discount || 0) > 0 && <div className="cart-summary-row"><span>{quote.delivery_campaign.name}</span><small className="text-primary">خصم {money(Number(quote.delivery_campaign.discount || 0))} ج.م</small></div>}
@@ -187,7 +187,7 @@ export default function Cart() {
         {!user && <p className="cart-help">سجّل برقم موبايلك وكلمة المرور عشان تكمّل الطلب.</p>}
       </aside></div>
 
-      <div className="cart-after-list"><CartSuggestions title="كمّل سلتك" subtitle="حاجات ممكن تكون نسيتها" excludeIds={items.map(item => item.product.id)} /></div>
+      <div className="cart-after-list"><CartSuggestions title="كمّل شنطتك" subtitle="حاجات ممكن تكون نسيتها" excludeIds={items.map(item => item.product.id)} /></div>
 
       <div className="cart-mobile-action"><div className="border-r-[3px] border-brand-yellow pr-2"><span>الإجمالي شامل التوصيل</span><strong>{quotePending ? '...' : `${money(total)} ج.م`}</strong></div>{cta}</div>
     </>}

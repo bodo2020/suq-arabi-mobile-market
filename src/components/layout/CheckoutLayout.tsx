@@ -25,10 +25,10 @@ export default function CheckoutLayout({
       <header className="checkout-header">
         <Link to={backTo || (isCart ? '/' : '/cart')} className="checkout-back">
           <ArrowRight size={21} aria-hidden="true" />
-          <span className="hidden sm:inline">{backLabel || (isCart ? 'كمّل تسوّقك' : 'رجوع للسلة')}</span>
+          <span className="hidden sm:inline">{backLabel || (isCart ? 'كمّل تسوّقك' : 'رجوع للشنطة')}</span>
         </Link>
         <div className="checkout-header__context">
-          <strong>{isCart ? 'سلة التسوق' : showSteps ? 'التوصيل والدفع' : 'العناوين'}</strong>
+          <strong>{isCart ? 'شنطة التسوق' : showSteps ? 'التوصيل والدفع' : 'العناوين'}</strong>
           {isCart && items.length > 0 && <span>{items.length.toLocaleString('ar-EG')} أصناف</span>}
         </div>
         <HeaderBrand compact iconOnly className="sm:hidden" />
@@ -38,7 +38,7 @@ export default function CheckoutLayout({
         {showSteps && (
           <ol className="checkout-steps" aria-label="خطوات الطلب">
             <li aria-current={isCart ? 'step' : undefined}>
-              <span>{isCart ? '١' : <Check size={16} />}</span>سلتك
+              <span>{isCart ? '١' : <Check size={16} />}</span>شنطتك
             </li>
             <li className={isCart ? 'upcoming' : 'current'} aria-current={!isCart ? 'step' : undefined}>
               <span>٢</span>التوصيل والدفع

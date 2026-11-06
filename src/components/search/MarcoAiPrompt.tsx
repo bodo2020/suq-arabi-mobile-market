@@ -161,7 +161,7 @@ export default function MarcoAiPrompt() {
           </button>
         ))}
       </div>
-      <p className="mt-2 text-[11px] leading-5 text-[#557264]">ماركو بيقترح بس. المنتجات والأسعار من كتالوج فرع التوصيل، وأي إضافة للسلة باختيارك.</p>
+      <p className="mt-2 text-[11px] leading-5 text-[#557264]">ماركو بيقترح بس. المنتجات والأسعار من كتالوج فرع التوصيل، وأي إضافة للشنطة باختيارك.</p>
 
       {reply && (
         <div className="mt-4 space-y-3 border-t border-[#d3e8da] pt-4" aria-label="رد ماركو على طلبك">

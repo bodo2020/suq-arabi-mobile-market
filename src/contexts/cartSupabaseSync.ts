@@ -235,7 +235,7 @@ export function useCartSync(
           saved.current = JSON.stringify(local);
           setItems(local);
           setIsInitialized(true);
-          setSyncError('أنت بدون إنترنت. تعديلات السلة محفوظة على الجهاز وهتتزامن تلقائيًا لما الشبكة ترجع.');
+          setSyncError('أنت بدون إنترنت. تعديلات الشنطة محفوظة على الجهاز وهتتزامن تلقائيًا لما الشبكة ترجع.');
           return;
         }
 
@@ -280,8 +280,8 @@ export function useCartSync(
           saved.current = JSON.stringify(local);
           setItems(local);
           setIsInitialized(true);
-          setSyncError('الاتصال انقطع. سلتك محفوظة على الجهاز وهتتزامن لما الشبكة ترجع.');
-        } else setSyncError('تعذر تحميل السلة المحفوظة. أعد المحاولة قبل تعديلها.');
+          setSyncError('الاتصال انقطع. شنطتك محفوظة على الجهاز وهتتزامن لما الشبكة ترجع.');
+        } else setSyncError('تعذر تحميل الشنطة المحفوظة. أعد المحاولة قبل تعديلها.');
       }
     }
     void load();
@@ -292,14 +292,14 @@ export function useCartSync(
     if (!isInitialized || owner.current === undefined || owner.current !== (user?.id || null)) return;
     const serialized = JSON.stringify(items);
     if (owner.current === null) {
-      try { localStorage.setItem('guest_cart', serialized); } catch { setSyncError('تعذر حفظ السلة على الجهاز.'); }
+      try { localStorage.setItem('guest_cart', serialized); } catch { setSyncError('تعذر حفظ الشنطة على الجهاز.'); }
       return;
     }
 
     const userId = owner.current;
     const pendingKey = pendingCartKey(userId);
     const shadowKey = offlineCartKey(userId);
-    try { localStorage.setItem(shadowKey, serialized); } catch { setSyncError('تعذر حفظ نسخة السلة على الجهاز.'); }
+    try { localStorage.setItem(shadowKey, serialized); } catch { setSyncError('تعذر حفظ نسخة الشنطة على الجهاز.'); }
     if (!navigator.onLine || !customer.current) {
       try {
         localStorage.setItem(pendingKey, serialized);
@@ -347,14 +347,14 @@ export function useCartSync(
         } catch {
           if (generation.current === run) {
             setSyncError(navigator.onLine
-              ? 'تعذر حفظ آخر تعديل. سلتك ما زالت هنا؛ أعد المحاولة.'
+              ? 'تعذر حفظ آخر تعديل. شنطتك ما زالت هنا؛ أعد المحاولة.'
               : 'الاتصال انقطع. آخر تعديل محفوظ على الجهاز وهيتزامن تلقائيًا.');
           }
         } finally {
           if (generation.current === run) setIsSaving(false);
         }
       }).catch(() => {
-        if (generation.current === run) setSyncError('تعذر حفظ السلة. أعد المحاولة.');
+        if (generation.current === run) setSyncError('تعذر حفظ الشنطة. أعد المحاولة.');
       });
     }, 350);
     return () => clearTimeout(timeout);

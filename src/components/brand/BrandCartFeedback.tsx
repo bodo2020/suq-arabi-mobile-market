@@ -46,7 +46,7 @@ export default function BrandCartFeedback() {
       {sequence > 0 && (
         <div key={sequence} className="brand-cart-feedback" role="status" aria-live="polite">
           <BrandMark variant="badge" motion="pop" className="brand-cart-feedback__mark" />
-          <span>اتضاف للسلة</span>
+          <span>اتضاف للشنطة</span>
           <Check size={15} aria-hidden="true" />
         </div>
       )}

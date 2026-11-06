@@ -168,7 +168,7 @@ export default function SmartGroupDetail() {
   };
 
   const addGroup = async () => {
-    if (!isInitialized) return toast({title:'استنى ثانية لحد ما السلة تجهز'});
+    if (!isInitialized) return toast({title:'استنى ثانية لحد ما الشنطة تجهز'});
     if (adding) return;
     const chosen = lines.filter(line => line.enabled);
     if (!chosen.length) return toast({title:'اختار حاجات تضيفها'});
@@ -203,7 +203,7 @@ export default function SmartGroupDetail() {
       }
       const result = addBundleToCart(cartLines);
       if (result !== 'added') throw new Error('CART_CONFLICT');
-      toast({title:'اتضافت طلباتك للسلة'});
+      toast({title:'اتضافت طلباتك للشنطة'});
       navigate('/cart');
     } catch(e) {
       const code = (e as Error).message;
@@ -432,7 +432,7 @@ export default function SmartGroupDetail() {
                     disabled={adding || !isInitialized || summary.products === 0 || summary.missing > 0}
                     className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#005931] font-black text-white disabled:opacity-50">
                     {adding ? <BrandLoader size="sm" /> : <ShoppingBag size={19}/>}
-                    {adding?'بنراجع التوفر…':'ضيف الطلبات للسلة'}
+                    {adding?'بنراجع التوفر…':'ضيف الطلبات للشنطة'}
                   </button>
                   {summary.uncertain > 0 && <p className="mt-1 text-center text-[11px] text-slate-500">
                     راجع أحجام العبوات والكميات قبل الإضافة

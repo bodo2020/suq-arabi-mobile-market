@@ -147,7 +147,7 @@ const Favorites = () => {
       });
 
       if (result.available) {
-        toast({ title: 'المنتج متوفر دلوقتي', description: 'حدّثنا المفضلة علشان تقدر تضيفه للسلة.' });
+        toast({ title: 'المنتج متوفر دلوقتي', description: 'حدّثنا المفضلة علشان تقدر تضيفه للشنطة.' });
         setRetry(value => value + 1);
         return;
       }
