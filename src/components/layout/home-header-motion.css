@@ -22,7 +22,8 @@
     top: calc(-1 * var(--home-collapse-distance));
     isolation: isolate;
     border-bottom: 0;
-    background: linear-gradient(180deg, #e6f9ee 0%, #edf9f1 55%, #f4fbf6 100%);
+    /* Tinted by the current banner (heroTint); mint when there is none. */
+    background: linear-gradient(180deg, var(--hero-tint, #e6f9ee) 0%, var(--hero-tint-mid, #f1fbf5) 100%);
   }
 
   /* Fade from soft green to white as the header settles into its search rail. */
@@ -86,7 +87,7 @@
 
   /* Matches the last hero gradient stop, continuing underneath the banners. */
   .home-hero-content {
-    background: linear-gradient(180deg, #f4fbf6 0px, #f6f8f7 190px);
+    background: linear-gradient(180deg, var(--hero-tint-mid, #f4fbf6) 0px, #f6f8f7 190px);
   }
 }
 
