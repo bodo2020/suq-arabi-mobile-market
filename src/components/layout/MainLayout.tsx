@@ -10,6 +10,9 @@ const links=[{to:'/',label:'الرئيسية',icon:Home},{to:'/categories',label
 // Last cart count the nav showed (across page changes), so the bag only hops
 // when something was actually added, not on every navigation.
 let lastNavCartCount: number | null = null;
+// Tab the bubble sat behind on the previous page: each page mounts its own
+// nav, so start there and slide to the new tab instead of jumping.
+let lastNavIndex: number | null = null;
 
 const MainLayout: React.FC<{children:React.ReactNode; hideBottomNav?:boolean}> = ({children,hideBottomNav=false}) => {
  const {pathname}=useLocation(); const {getTotalItems}=useCart(); const mobile=useIsMobile(); const count=getTotalItems();
@@ -18,10 +21,16 @@ const MainLayout: React.FC<{children:React.ReactNode; hideBottomNav?:boolean}> =
  React.useEffect(()=>{lastNavCartCount=count;},[count]);
  const active=(to:string)=>to==='/'?pathname==='/':to==='/offers'?(pathname==='/offers'||pathname==='/flash-sale'):pathname.startsWith(to);
  const activeIndex = links.findIndex(link => active(link.to));
+ const [bubbleIndex, setBubbleIndex] = React.useState(() => (lastNavIndex !== null && lastNavIndex >= 0 && activeIndex >= 0 ? lastNavIndex : activeIndex));
+ React.useEffect(() => {
+  const frame = window.requestAnimationFrame(() => setBubbleIndex(activeIndex));
+  lastNavIndex = activeIndex;
+  return () => window.cancelAnimationFrame(frame);
+ }, [activeIndex]);
  return <div className={`app-main-layout min-h-screen bg-[#f6f8f7] ${hideBottomNav?'pb-6':'pb-24 md:pb-0'}`} dir="rtl"><main>{children}</main>{mobile&&!hideBottomNav&&(
   <nav className="bottom-nav" aria-label="التنقل السفلي">
    {/* Green bubble that slides behind the current tab. */}
-   <span aria-hidden="true" className={`bottom-nav__indicator ${activeIndex < 0 ? 'is-hidden' : ''}`} style={{ '--i': Math.max(0, activeIndex) } as React.CSSProperties} />
+   <span aria-hidden="true" className={`bottom-nav__indicator ${activeIndex < 0 ? 'is-hidden' : ''}`} style={{ '--i': Math.max(0, bubbleIndex) } as React.CSSProperties} />
    {links.map(({to,label,icon:Icon})=>{
     const isActive = active(to);
     return (
