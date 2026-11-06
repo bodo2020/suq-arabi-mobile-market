@@ -80,7 +80,7 @@
 .cart-info strong{color:#005931}
 .cart-info--gold{border-color:#f1d78a;background:#fffaeb}
 .cart-info--gold svg{color:#cf9700}
-@media(max-width:767px){.cart-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.cart-status{margin-top:0;font-size:12px}}
+@media(max-width:767px){.cart-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.cart-status{margin-top:0;font-size:12px;white-space:nowrap;flex-shrink:0}}
 /* On phones the fixed total/CTA bar covers the bottom: reserve its space after
    the suggestions rail instead of after the cart grid. */
 @media(max-width:767px){.cart-grid{padding-bottom:0}.cart-after-list{padding-bottom:150px}}
