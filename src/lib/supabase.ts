@@ -173,7 +173,8 @@ export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Pr
 
   const point = await loadSelectedDeliveryPoint();
   if (!point) throw new Error('DELIVERY_ADDRESS_REQUIRED');
-  const { data, error } = await catalogRpc('get_customer_discovery_catalog_v1', {
+  // Shared 60-second server copy for category browsing (search/barcode stay live).
+  const { data, error } = await catalogRpc('get_customer_discovery_catalog_cached_v1', {
     p_branch_id: runtime.delivery_branch_id,
     p_latitude: point.latitude,
     p_longitude: point.longitude,
