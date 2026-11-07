@@ -30,4 +30,40 @@
   .dark .checkout-header img {
     mix-blend-mode: normal;
   }
+
+  /* Cart & checkout: the cream/ivory brand surfaces turn brown on dark, so here
+     they become the same green-grey family as the cards; yellow stays an accent
+     (thin lines and icons), and green text uses the light brand green. */
+  .dark .checkout {
+    --brand-yellow-soft: 150 16% 17%;
+    --brand-yellow-pale: 150 18% 12%;
+  }
+  .dark .cart-heading-icon {
+    box-shadow: inset 0 0 0 1px rgb(255 193 32 / 0.25);
+  }
+  .dark .cart-summary-total {
+    background: rgb(126 241 189 / 0.07);
+    border-top-color: rgb(255 193 32 / 0.45);
+  }
+  .dark .cart-summary-total strong {
+    color: #7ef1bd;
+  }
+  .dark .cart-info--gold {
+    border-color: rgb(255 193 32 / 0.3);
+    background: rgb(255 193 32 / 0.07);
+    color: rgb(243 226 176);
+  }
+  .dark .cart-info--gold strong {
+    color: rgb(255 210 92);
+  }
+  /* Main action: the brand green is too deep on a dark page; a brighter green keeps it the obvious next step. */
+  .dark .cart-primary,
+  .dark .checkout-submit {
+    background: #0b7a46;
+    border-color: transparent;
+  }
+  .dark .cart-primary:hover,
+  .dark .checkout-submit:hover {
+    background: #0d8a50;
+  }
 }
