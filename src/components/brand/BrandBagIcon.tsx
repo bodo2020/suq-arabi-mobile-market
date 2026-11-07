@@ -54,7 +54,7 @@ export default function BrandBagIcon({
       strokeLinejoin="round"
       aria-hidden="true"
       focusable="false"
-      className={className}
+      className={`brand-bag ${className ?? ''}`.trim()}
       {...props}
     >
       {PATHS.map((d, index) => (

@@ -66,4 +66,27 @@
   .dark .checkout-submit:hover {
     background: #0d8a50;
   }
+
+  /* Brand on dark: the official white + yellow bag (the on-green artwork), never
+     dark green strokes on a dark page; the wordmark follows with a white "سوبر". */
+  .dark .brand-bag path[stroke="#005931"],
+  .dark .brand-mark--default path[stroke="#005931"] {
+    stroke: #fff;
+  }
+  .dark .brand-mark--default img[src$="/brand/super-marko-mark.svg"] {
+    content: url("/brand/super-marko-mark-on-green.svg");
+  }
+  .dark .brand-name--on-light .brand-name__super,
+  .dark .brand-name--home .brand-name__super {
+    color: #fff;
+  }
+  .dark .cart-heading-icon {
+    background: hsl(150 14% 15%);
+  }
+  /* Offer tags keep the brand yellow with deep green text, as in light mode. */
+  .dark .pb-sale,
+  .dark .pd-chip--sale {
+    color: #00391f;
+    box-shadow: none;
+  }
 }
