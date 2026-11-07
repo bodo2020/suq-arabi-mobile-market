@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { applyHeroTint, bannerTint } from '@/lib/heroTint';
+import { applyHeroBleed, applyHeroTint, bannerTint, type Tint } from '@/lib/heroTint';
 import './hero-banner.css';
 
 interface BannerItem {
@@ -19,6 +19,8 @@ interface BannersContainerProps {
 }
 
 const INTERVAL = 5000;
+// Fill behind the header while a banner's colour is still being read.
+const DEFAULT_EDGE = '#E6F9EE';
 
 /**
  * Home hero: swipeable banners (the next one peeks in), story-style progress
@@ -34,6 +36,51 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   const visibleRef = useRef(true);
   const frameRef = useRef<number | null>(null);
   const multi = banners.length > 1;
+  // Phones: when the banners are the first home section they run full width,
+  // up behind the transparent hero header (one surface, like a cover image).
+  const [bleed, setBleed] = useState(false);
+  const [tints, setTints] = useState<Record<string, Tint | null>>({});
+
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof window.matchMedia !== 'function') return;
+    const phone = window.matchMedia('(max-width: 767px)');
+    const check = () => {
+      const content = root.closest('.home-hero-content');
+      const header = document.querySelector('.home-top-nav[data-customer-header="hero"]');
+      // Only when nothing sits between the header and the banners.
+      const first = Boolean(content && root.getBoundingClientRect().top - content.getBoundingClientRect().top < 32);
+      setBleed(phone.matches && Boolean(header) && first);
+    };
+    check();
+    phone.addEventListener?.('change', check);
+    window.addEventListener('resize', check, { passive: true });
+    return () => {
+      phone.removeEventListener?.('change', check);
+      window.removeEventListener('resize', check);
+    };
+  }, [banners.length]);
+
+  useLayoutEffect(() => {
+    if (!bleed) return;
+    const root = document.documentElement;
+    root.classList.add('has-hero-bleed');
+    return () => {
+      root.classList.remove('has-hero-bleed');
+      applyHeroBleed(null);
+    };
+  }, [bleed]);
+
+  // Every slide's colours, so each one carries its own fill while swiping.
+  useEffect(() => {
+    let alive = true;
+    banners.forEach(banner => {
+      void bannerTint(banner.image_url).then(tint => {
+        if (alive) setTints(previous => (banner.image_url in previous ? previous : { ...previous, [banner.image_url]: tint }));
+      });
+    });
+    return () => { alive = false; };
+  }, [banners]);
 
   // Bring slide `index` to the start edge of the track (works in RTL too).
   const goTo = useCallback((index: number, smooth = true) => {
@@ -85,13 +132,18 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
     return () => observer.disconnect();
   }, []);
 
-  // Header + band take the current banner's colour.
+  // Header + band take the current banner's colour. In full-bleed mode the
+  // status bar switches together with the slide (the colour is already cached).
   useEffect(() => {
     const src = banners[current]?.image_url;
     let alive = true;
-    void bannerTint(src).then(tint => { if (alive) applyHeroTint(tint); });
+    void bannerTint(src).then(tint => {
+      if (!alive) return;
+      applyHeroTint(tint);
+      if (bleed) applyHeroBleed(tint);
+    });
     return () => { alive = false; };
-  }, [current, banners]);
+  }, [current, banners, bleed]);
   useEffect(() => () => applyHeroTint(null), []);
 
   useEffect(() => { if (current >= banners.length) setCurrent(0); }, [banners.length, current]);
@@ -109,7 +161,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   return (
     <section
       ref={rootRef}
-      className={`hero-banner ${multi ? 'hero-banner--multi' : ''} ${paused ? 'is-paused' : ''}`}
+      className={`hero-banner ${multi ? 'hero-banner--multi' : ''} ${bleed ? 'hero-banner--bleed' : ''} ${paused ? 'is-paused' : ''}`}
       aria-roledescription="carousel"
       aria-label="عروض سوبر ماركو"
       style={{ '--hero-interval': `${INTERVAL}ms` } as React.CSSProperties}
@@ -125,6 +177,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
             key={banner.id}
             type="button"
             className={`hero-banner__slide ${index === current ? 'is-active' : ''}`}
+            style={bleed ? { '--slide-edge': tints[banner.image_url]?.edge || DEFAULT_EDGE } as React.CSSProperties : undefined}
             onClick={() => open(banner)}
             aria-label={banner.title || 'فتح العرض'}
           >

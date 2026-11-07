@@ -205,7 +205,7 @@
 .dark .bg-white\/15.text-\[\#005931\],.dark .bg-white\/15 .text-\[\#005931\]{color:rgb(0 89 49)}
 .dark .bg-white\/15.text-\[\#b45309\],.dark .bg-white\/15 .text-\[\#b45309\]{color:rgb(180 83 9)}
 }
-/* ---- component CSS files: 338 declarations ---- */
+/* ---- component CSS files: 340 declarations ---- */
 /* App.css */
 @media screen {
 .dark .read-the-docs{color:rgb(173 173 173)}
@@ -539,7 +539,7 @@
 }
 /* components/layout/header/app-header.css */
 @media screen {
-.dark .app-header{background:rgb(23 28 26 / 0.97)}
+.dark .app-header{background:rgb(23 28 26)}
 }
 @media screen {
 .dark .app-header__title{color:rgb(156 211 184)}
@@ -565,6 +565,9 @@
 }
 @media screen and (max-width: 767px) {
 .dark .home-top-nav::before{background:rgb(23 28 26)}
+}
+@media screen and (max-width: 767px) {
+html.dark.has-hero-bleed[data-hero-ink='light'] .home-top-nav:not([data-home-collapsed='true']) .home-hero-brand .brand-name__marko{color:rgb(237 196 90)}
 }
 @media screen and (max-width: 767px) {
 .dark .home-hero-content{background:linear-gradient(180deg, var(--hero-tint-mid, rgb(24 48 31)) 0px, rgb(27 31 29) 190px)}
@@ -629,6 +632,9 @@
 }
 @media screen {
 .dark .hero-banner__slide{background:rgb(34 47 39)}
+}
+@media screen and (max-width: 767px) {
+.dark .hero-banner.hero-banner--bleed .hero-banner__slide{background:var(--slide-edge, rgb(26 53 37))}
 }
 /* components/ui/product-badges.css */
 @media screen {

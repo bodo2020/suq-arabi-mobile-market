@@ -136,8 +136,11 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         const safeTop = Number.parseFloat(window.getComputedStyle(header).paddingTop) || 0;
         // Keep only the 68px compact search rail visible after the hero scrolls away.
         // Measuring the real height also handles dynamic text and Android safe areas.
-        collapseDistanceRef.current = Math.max(1, Math.ceil(header.getBoundingClientRect().height - safeTop - 68));
+        const height = header.getBoundingClientRect().height;
+        collapseDistanceRef.current = Math.max(1, Math.ceil(height - safeTop - 68));
         header.style.setProperty('--home-collapse-distance', `${collapseDistanceRef.current}px`);
+        // A full-bleed home banner runs up behind the header by exactly this much.
+        document.documentElement.style.setProperty('--home-hero-height', `${Math.ceil(height)}px`);
       }
       scheduleUpdate();
     };
@@ -150,6 +153,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
     window.addEventListener('orientationchange', measure);
     return () => {
       observer?.disconnect();
+      document.documentElement.style.removeProperty('--home-hero-height');
       window.removeEventListener('scroll', scheduleUpdate);
       window.removeEventListener('resize', measure);
       window.removeEventListener('orientationchange', measure);

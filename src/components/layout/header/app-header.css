@@ -1,7 +1,9 @@
 /* One header language for every page except the home/categories hero:
-   white bar with a soft edge, round mint icon buttons, centred titles. */
+   white bar with a soft edge, round mint icon buttons, centred titles.
+   Solid, not translucent: scrolled content (e.g. the search title) must not
+   ghost through the header and the status-bar area above the search box. */
 .app-header {
-  background: rgba(255, 255, 255, .97);
+  background: #fff;
   box-shadow: 0 1px 0 #e6eee9, 0 6px 18px rgba(0, 63, 35, .045);
 }
 .app-header__row {

@@ -30,6 +30,16 @@ function colorAtTop(): string {
   if (document.querySelector('.brand-pull-panel')) return document.documentElement.classList.contains('dark') ? '#101713' : FALLBACK;
   // The launch intro is brand green, continuing the native splash.
   if (document.querySelector('.brand-intro')) return '#005931';
+  // Full-bleed home banner behind a see-through header: elementFromPoint only
+  // finds the header, so use the current banner's edge colour directly (set
+  // the moment the slide changes) until the header turns white on collapse.
+  const root = document.documentElement;
+  if (root.classList.contains('has-hero-bleed')) {
+    const header = document.querySelector<HTMLElement>('.home-top-nav[data-customer-header="hero"]');
+    const progress = Number.parseFloat(header?.style.getPropertyValue('--home-scroll-progress') || '0') || 0;
+    if (progress < 0.75) return root.style.getPropertyValue('--hero-edge').trim() || FALLBACK;
+    return root.classList.contains('dark') ? '#171C1A' : '#FFFFFF';
+  }
   let el = document.elementFromPoint(window.innerWidth / 2, 1) as HTMLElement | null;
   while (el) {
     const style = getComputedStyle(el);
@@ -92,7 +102,16 @@ export default function NativeStatusBarSync() {
     // Pull-to-refresh opens/closes without scrolling the page.
     window.addEventListener('brand-pull-change', schedule);
     window.addEventListener('brand-intro-done', schedule);
-    window.addEventListener('hero-tint-change', schedule);
+    // The tinted header eases to the new banner colour over 0.6s (see
+    // hero-banner.css), so sample again once that transition has finished;
+    // otherwise the bar keeps the previous banner's colour.
+    let tintTimer: number | null = null;
+    const onTint = () => {
+      schedule();
+      if (tintTimer != null) window.clearTimeout(tintTimer);
+      tintTimer = window.setTimeout(schedule, 650);
+    };
+    window.addEventListener('hero-tint-change', onTint);
     // Light / dark switch: recolour the bar and its icons.
     const themeObserver = new MutationObserver(schedule);
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -103,7 +122,8 @@ export default function NativeStatusBarSync() {
       window.removeEventListener('resize', schedule);
       window.removeEventListener('brand-pull-change', schedule);
       window.removeEventListener('brand-intro-done', schedule);
-      window.removeEventListener('hero-tint-change', schedule);
+      window.removeEventListener('hero-tint-change', onTint);
+      if (tintTimer != null) window.clearTimeout(tintTimer);
       themeObserver.disconnect();
     };
   }, [location.pathname, location.search]);
