@@ -26,11 +26,23 @@ const getCategoryContent = async (categoryId: string): Promise<CategoryContent> 
   };
 };
 
+/** Main-category tabs row + subcategory chips row, fixed under the top nav. */
+const TABS_ROW = 44;
 const topOffset = () => {
-  if (typeof document === 'undefined') return 155;
+  if (typeof document === 'undefined') return 199;
   const nav = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top-nav-height')) || 68;
-  // Original fixed glass rail: 40px chips + 20px padding + borders + heading gap.
-  return nav + 76;
+  // Tabs row + chips rail (40px chips + 20px padding + borders) + heading gap.
+  return nav + TABS_ROW + 76;
+};
+
+/** Centre `item` inside the horizontal `rail` without scrolling the page. */
+const centreInRail = (rail: HTMLElement | null, item: HTMLElement | null) => {
+  if (!rail || !item) return;
+  const railRect = rail.getBoundingClientRect();
+  const itemRect = item.getBoundingClientRect();
+  const distance = itemRect.left + itemRect.width / 2 - (railRect.left + railRect.width / 2);
+  if (Math.abs(distance) < 12) return;
+  rail.scrollBy({ left: distance, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 };
 
 const jumpTo = (element: HTMLElement | null, smooth = true) => {
@@ -167,6 +179,8 @@ export default function CategoryJourney() {
   const [visibleIndex, setVisibleIndex] = useState(0);
   const subRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const railRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const tabsRailRef = useRef<HTMLDivElement | null>(null);
   const scrollStartedFor = useRef<string | null>(null);
   const userScrolledBeforeAnchor = useRef(false);
 
@@ -261,30 +275,21 @@ export default function CategoryJourney() {
     };
   }, [categories, isReady]);
 
+  // scrollIntoView() would also scroll the page; only the horizontal rails move.
   useEffect(() => {
-    const rail = railRef.current;
-    const active = subRefs.current[`${activeCategory}:${activeSubcategory}`];
-    if (!rail || !active) return;
-
-    // scrollIntoView() also scrolls ancestors (including the entire page).
-    // Move only the horizontal chip rail, leaving vertical touch scrolling
-    // and the user's current product/category position completely untouched.
-    const railRect = rail.getBoundingClientRect();
-    const activeRect = active.getBoundingClientRect();
-    const distance = activeRect.left + activeRect.width / 2
-      - (railRect.left + railRect.width / 2);
-    if (Math.abs(distance) < 12) return;
-    rail.scrollBy({
-      left: distance,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
+    centreInRail(railRef.current, subRefs.current[`${activeCategory}:${activeSubcategory}`]);
   }, [activeSubcategory, activeCategory]);
+  useEffect(() => {
+    centreInRail(tabsRailRef.current, tabRefs.current[activeCategory]);
+  }, [activeCategory, categories.length]);
+  // A new main category in view: its chips start from the beginning.
+  useEffect(() => {
+    railRef.current?.scrollTo({ left: 0, behavior: 'auto' });
+  }, [activeCategory]);
 
-  // The one rail spans all loaded subcategories in catalog order. Adjacent
-  // main categories are prefetched before their chips reach the viewport.
-  const chips = useMemo<JourneyChip[]>(() => categories.flatMap(category =>
-    (subChips[category.id] || []).map(chip => ({ ...chip, categoryId: category.id }))
-  ), [categories, subChips]);
+  // Chips show the subcategories of the main category in view only.
+  const chips = useMemo<JourneyChip[]>(() => (subChips[activeCategory] || []).map(chip => ({ ...chip, categoryId: activeCategory })),
+    [activeCategory, subChips]);
 
   useEffect(() => {
     if (!categories.length || !activeCategory) return;
@@ -316,10 +321,30 @@ export default function CategoryJourney() {
       <TopNavBar variant="catalog" hideLogo showBackButton onBack={() => navigate('/categories')} searchPlaceholder="دور داخل القسم…" onSearchFocus={() => navigate('/search', { state: { focusSearch: true } })} searchProps={{ appearance: 'category' }} />
       {/* Fixed to the viewport: scrolled products pass behind translucent glass. */}
       <div
-        className="fixed inset-x-0 z-[45] border-y border-emerald-100/70 bg-white py-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
+        className="fixed inset-x-0 z-[45] border-y border-emerald-100/70 bg-white pb-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
         style={{ top: 'var(--top-nav-height, 68px)' }}
       >
         <div className="mx-auto w-full max-w-7xl">
+          {/* Main categories: the one in view is underlined and kept in the centre */}
+          <div ref={tabsRailRef} className="hide-scrollbar mb-2.5 flex w-full flex-nowrap gap-5 overflow-x-auto border-b border-slate-100 px-3 sm:px-5" style={{ height: TABS_ROW }} dir="rtl" role="tablist" aria-label="الأقسام الرئيسية">
+            {categories.map(category => {
+              const selected = category.id === activeCategory;
+              return (
+                <button
+                  key={category.id}
+                  ref={node => { tabRefs.current[category.id] = node; }}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => jumpTo(document.getElementById(`journey-category-${category.id}`))}
+                  className={`relative h-full shrink-0 whitespace-nowrap text-sm font-black transition-colors sm:text-[15px] ${selected ? 'text-[#005931]' : 'text-slate-400'}`}
+                >
+                  {category.name}
+                  <span aria-hidden="true" className={`absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-[#005931] transition-opacity ${selected ? 'opacity-100' : 'opacity-0'}`} />
+                </button>
+              );
+            })}
+          </div>
           <div ref={railRef} className="hide-scrollbar flex h-10 w-full flex-nowrap items-center gap-1.5 overflow-x-auto scroll-smooth px-3 sm:gap-2 sm:px-5" dir="rtl" aria-label="الأقسام الفرعية المتصلة">
             {chips.length ? chips.map(chip => {
               const selected = chip.categoryId === activeCategory && chip.id === activeSubcategory;
@@ -341,7 +366,7 @@ export default function CategoryJourney() {
         </div>
       </div>
       <div className="mx-auto max-w-7xl pb-20">
-        <div data-continuous-category-journey className="space-y-8 px-3 pt-[78px] sm:px-5">
+        <div data-continuous-category-journey className="space-y-8 px-3 pt-[122px] sm:px-5">
           {categories.map((category, index) => (
             <JourneyCategory
               key={category.id}
