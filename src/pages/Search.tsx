@@ -234,7 +234,7 @@ export default function Search() {
                   onClick={() => navigate('/product/' + product.id)}
                   className="brand-search-suggestion-enter flex min-h-16 w-full items-center gap-3 border-b border-slate-50 py-2 text-right last:border-b-0 hover:bg-emerald-50"
                 >
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-50">
+                  <span className="photo-surface flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-50">
                     {product.image_urls?.[0]
                       ? <img src={product.image_urls[0]} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain" />
                       : <SearchIcon size={21} className="text-slate-300" />}

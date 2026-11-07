@@ -7,7 +7,7 @@ export const SHEET_ROUND_BUTTON =
 
 /** Full-bleed photo area at the very top of the sheet (no title bar). */
 export const SHEET_GALLERY =
-  'relative -mx-3 flex h-[min(42dvh,350px)] items-center justify-center overflow-hidden rounded-b-[28px] bg-white';
+  'photo-surface relative -mx-3 flex h-[min(42dvh,350px)] items-center justify-center overflow-hidden rounded-b-[28px] bg-white';
 
 /** The product photo inside the gallery; side padding leaves room for the buttons. */
 export const SHEET_IMAGE = 'h-full w-full object-contain px-16 pb-5 pt-6';

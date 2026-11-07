@@ -15,4 +15,19 @@
   .dark .hero-banner {
     background: linear-gradient(180deg, color-mix(in srgb, var(--hero-tint-mid, #f1fbf5) 10%, #0f1411) 0%, hsl(150 12% 6%) 100%);
   }
+
+  /* Product photos are shot for light backgrounds: in dark mode the photo area stays
+     a soft light surface (not pure white, so it does not glare), and the cart photo
+     keeps its multiply blend on that light surface. */
+  .dark .photo-surface,
+  .dark .cart-image {
+    background: #eef2ef;
+  }
+  /* Cut-out photos that blend into their container: no multiply on dark containers. */
+  .dark .smart-product-cutout,
+  .dark .ala-mazagak-group-card img,
+  .dark .ala-mazagak-product-rail img,
+  .dark .checkout-header img {
+    mix-blend-mode: normal;
+  }
 }

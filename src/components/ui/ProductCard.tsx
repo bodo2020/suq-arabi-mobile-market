@@ -218,7 +218,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className="relative mb-5 sm:mb-7">
         <a href={detailHref} onClick={openDetails} onPointerEnter={warmDetailModule} onTouchStart={warmDetailModule} className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931] sm:rounded-[18px]">
-          <div className={`relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5 ${unavailable ? 'pb-out-img' : ''}`}>
+          <div className={`photo-surface relative aspect-square overflow-hidden rounded-[14px] bg-white p-2 sm:rounded-[18px] sm:p-3.5 ${unavailable ? 'pb-out-img' : ''}`}>
             <SmartImage
               src={productCardImage(imageSrc)}
               originalSrc={imageSrc}
