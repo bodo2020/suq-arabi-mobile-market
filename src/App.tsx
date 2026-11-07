@@ -21,6 +21,7 @@ import BrandIntro from '@/components/brand/BrandIntro';
 import BrandPullToRefresh from '@/components/brand/BrandPullToRefresh';
 import BrandCartFeedback from '@/components/brand/BrandCartFeedback';
 import '@/styles/brand-micro-motion.css';
+import { AppThemeProvider } from '@/components/theme/AppThemeProvider';
 
 const PhoneLogin = lazy(() => import('./pages/PhoneLogin'));
 const PhoneVerify = lazy(() => import('./pages/PhoneVerify'));
@@ -134,6 +135,7 @@ function CustomerRoutes() {
 function App() {
   return (
     <HelmetProvider>
+      <AppThemeProvider>
       <UserProvider>
         <BranchProvider>
           <CartProvider>
@@ -161,6 +163,7 @@ function App() {
           </CartProvider>
         </BranchProvider>
       </UserProvider>
+      </AppThemeProvider>
     </HelmetProvider>
   );
 }

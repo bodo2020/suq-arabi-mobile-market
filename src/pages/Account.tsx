@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { ThemeRow } from '@/components/theme/ThemeRow';
 import {
   Bell,
   ChevronLeft,
@@ -185,6 +186,7 @@ const Account = () => {
                   <ChevronLeft size={18} className="acc-row__chev" />
                 </Link>
               ))}
+              <ThemeRow />
               <button type="button" disabled={signingOut} onClick={logout} className="acc-row acc-row--danger w-full text-right disabled:opacity-60">
                 <span className="acc-row__icon">{signingOut ? <BrandLoader size="sm" /> : <LogOut size={19} />}</span>
                 <span className="acc-row__text"><strong>{signingOut ? 'جاري تسجيل الخروج…' : 'تسجيل الخروج'}</strong></span>

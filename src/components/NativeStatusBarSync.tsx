@@ -27,7 +27,7 @@ const toHex = ([r, g, b]: Rgba) =>
 function colorAtTop(): string {
   // The pull-to-refresh panel ignores pointer events, so elementFromPoint
   // would see past it; while it is open the top of the screen is mint.
-  if (document.querySelector('.brand-pull-panel')) return FALLBACK;
+  if (document.querySelector('.brand-pull-panel')) return document.documentElement.classList.contains('dark') ? '#101713' : FALLBACK;
   // The launch intro is brand green, continuing the native splash.
   if (document.querySelector('.brand-intro')) return '#005931';
   let el = document.elementFromPoint(window.innerWidth / 2, 1) as HTMLElement | null;
@@ -93,6 +93,9 @@ export default function NativeStatusBarSync() {
     window.addEventListener('brand-pull-change', schedule);
     window.addEventListener('brand-intro-done', schedule);
     window.addEventListener('hero-tint-change', schedule);
+    // Light / dark switch: recolour the bar and its icons.
+    const themeObserver = new MutationObserver(schedule);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => {
       timers.forEach(window.clearTimeout);
       if (frame != null) window.cancelAnimationFrame(frame);
@@ -101,6 +104,7 @@ export default function NativeStatusBarSync() {
       window.removeEventListener('brand-pull-change', schedule);
       window.removeEventListener('brand-intro-done', schedule);
       window.removeEventListener('hero-tint-change', schedule);
+      themeObserver.disconnect();
     };
   }, [location.pathname, location.search]);
 

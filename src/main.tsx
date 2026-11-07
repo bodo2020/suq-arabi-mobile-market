@@ -4,6 +4,9 @@ import App from './App.tsx'
 import './index.css'
 import { installThmanyahFont } from './lib/installThmanyahFont'
 import './styles/product-card-layout.css'
+// Dark counterparts of hard-coded colours (generated) + runtime-colour pieces. Must load last.
+import './styles/dark-theme.generated.css'
+import './styles/dark-theme.custom.css'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { hydrateOfflineCatalog, subscribeOfflineCatalog } from './lib/offlineCatalogCache'
 

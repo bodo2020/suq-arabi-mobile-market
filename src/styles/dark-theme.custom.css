@@ -1,0 +1,18 @@
+/*
+ * Dark theme pieces the generator cannot see (colours set from code at runtime).
+ * Screen only: print stays light.
+ */
+@media screen {
+  /* Home header + band behind the banner: the banner tint (always a light pastel,
+     see lib/heroTint) becomes a dark surface with a touch of that tint. */
+  .dark .home-top-nav[data-customer-header='hero'],
+  .dark .home-hero-bg {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--hero-tint, #e6f9ee) 18%, #101713) 0%,
+      color-mix(in srgb, var(--hero-tint-mid, #f1fbf5) 10%, #0f1411) 100%);
+  }
+  .dark .home-hero-content,
+  .dark .hero-banner {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--hero-tint-mid, #f1fbf5) 10%, #0f1411) 0%, hsl(150 12% 6%) 100%);
+  }
+}
