@@ -31,6 +31,7 @@ import {
 } from '@/lib/orderGroupOperations';
 import { useUser } from '@/contexts/UserContext';
 
+import { useMyCustomerId } from '@/hooks/useMyCustomerId';
 type TabType = 'current' | 'previous';
 
 type PurchaseItem = {
@@ -204,14 +205,16 @@ export default function PurchaseHistory() {
     staleTime: 10_000,
   });
 
+  // Only this customer's orders (see Orders.tsx).
+  const myCustomerId = useMyCustomerId(user?.id);
   useEffect(() => {
-    if (!user?.id || !session) return;
+    if (!user?.id || !session || !myCustomerId) return;
     const channel = supabase
       .channel(`customer-purchases:${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'online_orders' }, () => void queryClient.invalidateQueries({ queryKey: ['purchase-history', user.id] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'online_orders', filter: `customer_id=eq.${myCustomerId}` }, () => void queryClient.invalidateQueries({ queryKey: ['purchase-history', user.id] }))
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [user?.id, session, queryClient]);
+  }, [user?.id, session, queryClient, myCustomerId]);
 
   const current = purchases.filter(row => row.source_channel === 'online' && !['delivered', 'cancelled'].includes(row.status));
   const previous = purchases.filter(row => row.source_channel === 'store' || ['delivered', 'cancelled'].includes(row.status));

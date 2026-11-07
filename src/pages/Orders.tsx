@@ -32,6 +32,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 
+import { useMyCustomerId } from '@/hooks/useMyCustomerId';
 type TabType = 'current' | 'previous';
 
 type OrderItem = {
@@ -336,13 +337,16 @@ const Orders = () => {
     staleTime: 10_000,
   });
 
+  // Only this customer's orders: an unfiltered subscription makes the realtime
+  // server check every order change against every open customer app.
+  const myCustomerId = useMyCustomerId(user?.id);
   useEffect(() => {
-    if (!user?.id || !session) return;
+    if (!user?.id || !session || !myCustomerId) return;
     const channel = supabase
       .channel(`customer-orders:${user.id}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'online_orders' },
+        { event: '*', schema: 'public', table: 'online_orders', filter: `customer_id=eq.${myCustomerId}` },
         () => void queryClient.invalidateQueries({ queryKey: ['orders', user.id] }),
       )
       .subscribe();
@@ -350,7 +354,7 @@ const Orders = () => {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [user?.id, session, queryClient]);
+  }, [user?.id, session, queryClient, myCustomerId]);
 
   const currentOrders = orders.filter(order => !['delivered', 'cancelled'].includes(order.status));
   const previousOrders = orders.filter(order => ['delivered', 'cancelled'].includes(order.status));
