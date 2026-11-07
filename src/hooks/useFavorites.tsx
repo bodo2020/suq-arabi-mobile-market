@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { customerRpc } from '@/lib/customerPersistence';
+import { loadMyAddresses, loadMyCustomer } from '@/lib/customerProfileCache';
 
 const pending = new Set<string>();
 const favoriteKey = (productId: string, variantId?: string | null) =>
@@ -17,9 +18,7 @@ export function useFavorites() {
     queryKey,
     enabled: !!user && !authLoading,
     queryFn: async () => {
-      const { data: customer, error: profileError } = await supabase.from('customers')
-        .select('id').eq('user_id', user!.id).maybeSingle();
-      if (profileError) throw profileError;
+      const customer = await loadMyCustomer(user!.id);
       if (!customer) return { customerId: null, favorites: {} as Record<string, boolean> };
       const { data, error } = await supabase.from('favorites')
         .select('product_id,variant_id')

@@ -15,7 +15,8 @@ export default function ProfileCompletionGate() {
     queryKey: ['onboarding-state', user?.id],
     enabled: !skip,
     queryFn: () => loadOnboardingState(user!.id),
-    staleTime: 0,
+    // Name/default address rarely change; saving either refreshes this query.
+    staleTime: 60_000,
   });
   useEffect(() => {
     if (skip || !state.isSuccess || state.isFetching || !state.data) return;

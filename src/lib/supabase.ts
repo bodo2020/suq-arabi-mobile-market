@@ -1,5 +1,6 @@
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 import { loadBranchRuntimeContext, loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
+import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 
 export const supabase = configuredSupabase;
 
@@ -287,6 +288,7 @@ export async function createOrUpdateCustomer(customerData: {
     name: customerData.name || `${customerData.first_name} ${customerData.last_name}`.trim(),
   };
   const { data, error } = await supabase.from('customers').upsert(dataWithName, { onConflict: 'user_id' });
+  invalidateMyCustomer();
   if (error) console.error(`Error creating/updating customer:`, error);
   return data;
 }

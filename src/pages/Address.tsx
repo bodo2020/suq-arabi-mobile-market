@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { safeReturnTo } from '@/lib/onboarding';
 import { customerRpc } from '@/lib/customerPersistence';
+import { invalidateMyAddresses } from '@/lib/customerProfileCache';
 import {
   readGuestAddress,
   resolveDeliveryLocation,
@@ -213,6 +214,8 @@ export default function Address() {
         }
       }
 
+      // Drop the shared address copy first so every refetch below sees the new address.
+      invalidateMyAddresses();
       await client.invalidateQueries({ queryKey: ['customerData'] });
       await client.invalidateQueries({ queryKey: ['onboarding-state', user.id] });
       await client.invalidateQueries({ queryKey: ['addresses', user.id] });

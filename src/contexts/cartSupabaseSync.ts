@@ -6,6 +6,7 @@ import { customerRpc } from '@/lib/customerPersistence';
 import { getCurrentDeliveryBranchId } from '@/lib/supabase';
 import { getProductsByIds } from '@/lib/branchProductIds';
 import { getMarketplaceStoreCatalog } from '@/lib/marketplace';
+import { loadMyAddresses, loadMyCustomer } from '@/lib/customerProfileCache';
 
 const offlineCartKey = (userId: string) => `offline_cart:${userId}`;
 const pendingCartKey = (userId: string) => `pending_cart:${userId}`;
@@ -239,8 +240,7 @@ export function useCartSync(
           return;
         }
 
-        const { data: profile, error: profileError } = await supabase.from('customers').select('id').eq('user_id', userId).maybeSingle();
-        if (profileError) throw profileError;
+        const profile = await loadMyCustomer(userId);
         if (!current()) return;
         if (!profile) {
           owner.current = userId;

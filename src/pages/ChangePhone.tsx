@@ -11,6 +11,7 @@ import { egyptianMobileDigits, egyptianMobileE164, egyptianPhoneStartError, isVa
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { normalizeDigits } from '@/utils/authUi';
+import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 
 const ChangePhone = () => {
   const navigate = useNavigate();
@@ -154,6 +155,7 @@ const ChangePhone = () => {
         .from('customers')
         .update({ phone: fullPhone })
         .eq('user_id', userId);
+      invalidateMyCustomer();
       if (customerError) throw customerError;
 
       localStorage.setItem('userPhone', fullPhone);

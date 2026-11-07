@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { supabase } from '@/lib/supabase';
 import { loadOnboardingState, nextOnboardingPath, safeReturnTo } from '@/lib/onboarding';
+import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -93,6 +94,7 @@ export default function Register() {
         last_name: rest.join(' ') || null,
         phone: `+${data.user.phone.replace(/^\+/, '')}`,
       }, { onConflict: 'user_id' });
+      invalidateMyCustomer();
       if (saveError) throw saveError;
 
       await queryClient.invalidateQueries({ queryKey: ['customerData', data.user.id] });

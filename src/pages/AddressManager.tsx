@@ -10,6 +10,7 @@ import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { customerRpc } from '@/lib/customerPersistence';
 import { readGuestAddress } from '@/lib/deliveryAddress';
+import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 
 type MapAddress = {
   id: string;
@@ -77,6 +78,7 @@ const AddressManager = () => {
         return;
       }
       const { error } = await customerRpc('set_default_customer_address', { p_address_id: addressId });
+      invalidateMyAddresses();
       if (error) throw error;
       localStorage.setItem('userAddress', selected.address || '');
       localStorage.setItem('userArea', 'عنوان على الخريطة');
@@ -96,11 +98,13 @@ const AddressManager = () => {
       const target = addresses.find(item => item.id === addressId);
       const client = supabase as any;
       const { error } = await client.from('customer_addresses').delete().eq('id', addressId).eq('user_id', user.id);
+      invalidateMyAddresses();
       if (error) throw error;
       const remaining = addresses.filter(item => item.id !== addressId);
       if (target?.is_default) {
         const next = remaining.find(item => item.latitude != null && item.longitude != null && item.is_deliverable);
         if (next) await customerRpc('set_default_customer_address', { p_address_id: next.id });
+        invalidateMyAddresses();
       }
       await queryClient.invalidateQueries({ queryKey: ['customerData'] });
       await fetchAddresses();

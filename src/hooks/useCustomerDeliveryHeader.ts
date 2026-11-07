@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { readGuestAddress } from '@/lib/deliveryAddress';
+import { loadMyAddresses, loadMyCustomer } from '@/lib/customerProfileCache';
 
 /**
  * Share one delivery-location source for the home and main categories headers.
@@ -31,14 +32,9 @@ export function useCustomerDeliveryHeader(returnTo: '/' | '/categories' = '/') {
     queryKey: ['home-default-address', user?.id],
     enabled: Boolean(user) && !authLoading,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customer_addresses')
-        .select('address,latitude,longitude')
-        .eq('user_id', user!.id)
-        .eq('is_default', true)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
+      const list = await loadMyAddresses(user!.id);
+      const found = list.find(item => item.is_default);
+      return found ? { address: found.address, latitude: found.latitude, longitude: found.longitude } : null;
     },
     staleTime: 30_000,
   });

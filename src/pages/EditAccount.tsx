@@ -7,6 +7,7 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import AccountHero from '@/components/account/AccountHero';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 
 const EditAccount = () => {
   const navigate = useNavigate();
@@ -74,6 +75,7 @@ const EditAccount = () => {
         .from('customers')
         .update({ name: cleanName })
         .eq('user_id', userId);
+      invalidateMyCustomer();
       if (customerError) throw customerError;
 
       const { error: authMetadataError } = await supabase.auth.updateUser({ data: { name: cleanName } });

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { loadMyAddresses, loadMyCustomer } from '@/lib/customerProfileCache';
 
 /** The signed-in user's customer row id (cached; it never changes for a user). */
 export function useMyCustomerId(userId: string | null | undefined) {
@@ -9,12 +10,7 @@ export function useMyCustomerId(userId: string | null | undefined) {
     staleTime: Infinity,
     gcTime: Infinity,
     queryFn: async () => {
-      const { data: customer, error } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('user_id', userId!)
-        .maybeSingle();
-      if (error) throw error;
+      const customer = await loadMyCustomer(userId!);
       return customer?.id ?? null;
     },
   });

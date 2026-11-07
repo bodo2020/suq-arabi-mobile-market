@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { readGuestAddress, resolveDeliveryLocation } from '@/lib/deliveryAddress';
+import { loadMyAddresses, loadMyCustomer } from '@/lib/customerProfileCache';
 
 export type BranchRuntimeContext = {
   delivery_branch_id: string;
@@ -110,20 +111,9 @@ export async function loadSelectedDeliveryPoint(): Promise<SelectedDeliveryPoint
     };
   }
 
-  const client = supabase as any;
-  const { data, error } = await client
-    .from('customer_addresses')
-    .select('id,latitude,longitude,is_deliverable,is_default,updated_at')
-    .eq('user_id', userId)
-    .eq('is_deliverable', true)
-    .not('latitude', 'is', null)
-    .not('longitude', 'is', null)
-    .order('is_default', { ascending: false })
-    .order('updated_at', { ascending: false })
-    .limit(1);
-  if (error) throw error;
-
-  const address = data?.[0];
+  // Already ordered default-first, newest-first.
+  const address = (await loadMyAddresses(userId))
+    .find(item => item.is_deliverable === true && item.latitude != null && item.longitude != null);
   if (!address) return null;
   return {
     address_id: address.id,

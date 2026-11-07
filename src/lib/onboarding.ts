@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { loadMyAddresses, loadMyCustomer } from '@/lib/customerProfileCache';
 
 export const RETURN_PATHS = ['/', '/cart', '/payment', '/addresses', '/add-address', '/account'];
 
@@ -9,15 +10,10 @@ export function safeReturnTo(value: string | null | undefined) {
 export type OnboardingState = { hasName: boolean; hasDefaultAddress: boolean };
 
 export async function loadOnboardingState(userId: string): Promise<OnboardingState> {
-  const [customer, address] = await Promise.all([
-    supabase.from('customers').select('name').eq('user_id', userId).maybeSingle(),
-    supabase.from('customer_addresses').select('id').eq('user_id', userId).eq('is_default', true).limit(1).maybeSingle(),
-  ]);
-  if (customer.error) throw customer.error;
-  if (address.error) throw address.error;
+  const [customer, list] = await Promise.all([loadMyCustomer(userId), loadMyAddresses(userId)]);
   return {
-    hasName: (customer.data?.name?.trim().length || 0) >= 2,
-    hasDefaultAddress: Boolean(address.data?.id),
+    hasName: (customer?.name?.trim().length || 0) >= 2,
+    hasDefaultAddress: list.some(item => item.is_default),
   };
 }
 

@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { customerRpc } from '@/lib/customerPersistence';
 import { readGuestAddress } from '@/lib/deliveryAddress';
+import { loadMyAddresses, loadMyCustomer } from '@/lib/customerProfileCache';
+import { invalidateMyAddresses } from '@/lib/customerProfileCache';
 
 interface AddressDisplayProps {
   address?: string;
@@ -43,14 +45,7 @@ const AddressDisplay = ({ address, className, showAddressSelector = false, onEdi
     queryKey: ['addresses', user?.id],
     queryFn: async () => {
       if (!user?.id) return [] as MapAddress[];
-      const client = supabase as any;
-      const { data, error } = await client
-        .from('customer_addresses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('is_default', { ascending: false });
-      if (error) throw error;
-      return (data || []) as MapAddress[];
+      return (await loadMyAddresses(user.id)) as unknown as MapAddress[];
     },
     enabled: !!user?.id,
   });
@@ -90,6 +85,7 @@ const AddressDisplay = ({ address, className, showAddressSelector = false, onEdi
     if (!user) return;
     try {
       const { error } = await customerRpc('set_default_customer_address', { p_address_id: addressId });
+      invalidateMyAddresses();
       if (error) throw error;
       const selected = addresses.find(item => item.id === addressId);
       if (selected) {
