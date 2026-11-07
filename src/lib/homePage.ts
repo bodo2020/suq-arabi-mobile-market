@@ -112,6 +112,43 @@ export const getHomeRecommendationIds = async (branchId?: string | null, limit =
   }
 };
 
+type QueuedHomeEvent = {
+  home_page_id: string;
+  section_id: string;
+  branch_id: string | null;
+  session_key: string;
+  event_type: HomeEventType;
+  metadata: Record<string, unknown>;
+};
+
+// Analytics are batched: one request every few seconds (or when the app is
+// hidden) instead of one per impression/click.
+const HOME_EVENT_FLUSH_MS = 10_000;
+const HOME_EVENT_MAX_BATCH = 50;
+let homeEventQueue: QueuedHomeEvent[] = [];
+let homeEventTimer: ReturnType<typeof setTimeout> | null = null;
+
+const flushHomeEvents = async () => {
+  if (homeEventTimer) { clearTimeout(homeEventTimer); homeEventTimer = null; }
+  if (!homeEventQueue.length) return;
+  const batch = homeEventQueue.slice(0, HOME_EVENT_MAX_BATCH);
+  homeEventQueue = homeEventQueue.slice(HOME_EVENT_MAX_BATCH);
+  try {
+    const client = supabase as any;
+    const { error } = await client.rpc('track_home_events_batch_v1', { p_events: batch });
+    if (error) throw error;
+  } catch (error) {
+    console.debug('Home analytics batch skipped:', error);
+  }
+  if (homeEventQueue.length) void flushHomeEvents();
+};
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') void flushHomeEvents();
+  });
+}
+
 export const trackHomeEvent = async (
   pageId: string,
   sectionId: string,
@@ -119,18 +156,14 @@ export const trackHomeEvent = async (
   eventType: HomeEventType,
   metadata: Record<string, unknown> = {},
 ) => {
-  try {
-    const client = supabase as any;
-    const { error } = await client.rpc('track_home_event', {
-      p_home_page_id: pageId,
-      p_section_id: sectionId,
-      p_branch_id: branchId || null,
-      p_session_key: getHomeAnalyticsSessionKey(),
-      p_event_type: eventType,
-      p_metadata: metadata,
-    });
-    if (error) throw error;
-  } catch (error) {
-    console.debug('Home analytics event skipped:', error);
-  }
+  homeEventQueue.push({
+    home_page_id: pageId,
+    section_id: sectionId,
+    branch_id: branchId || null,
+    session_key: getHomeAnalyticsSessionKey(),
+    event_type: eventType,
+    metadata,
+  });
+  if (homeEventQueue.length >= HOME_EVENT_MAX_BATCH) { void flushHomeEvents(); return; }
+  if (!homeEventTimer) homeEventTimer = setTimeout(() => { void flushHomeEvents(); }, HOME_EVENT_FLUSH_MS);
 };

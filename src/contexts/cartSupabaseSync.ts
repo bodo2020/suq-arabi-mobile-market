@@ -356,7 +356,9 @@ export function useCartSync(
       }).catch(() => {
         if (generation.current === run) setSyncError('تعذر حفظ الشنطة. أعد المحاولة.');
       });
-    }, 350);
+    // Wait for the taps to stop (each + / − resets this) so a burst of quantity
+    // changes is one save. The latest cart is already on the device meanwhile.
+    }, 1000);
     return () => clearTimeout(timeout);
   }, [items, isInitialized, user?.id]);
 
