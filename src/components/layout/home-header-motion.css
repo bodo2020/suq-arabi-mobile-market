@@ -36,6 +36,17 @@
   .home-top-nav[data-customer-header='hero'] .hdr-delivery-address:focus-visible { outline-color: #FFC120; }
   .home-top-nav[data-customer-header='hero'] .hdr-delivery-pin { color: #FFC120; }
 
+  /* The header green carries on under the full-width banner, then fades
+     gradually down the page into the page colour. 66.7vw = banner height. */
+  html.has-home-top-nav .home-hero-content {
+    background: linear-gradient(180deg,
+      var(--home-green) 0,
+      var(--home-green) calc(66.7vw + 24px),
+      color-mix(in srgb, var(--home-green) 55%, var(--home-page-bg)) calc(66.7vw + 170px),
+      color-mix(in srgb, var(--home-green) 22%, var(--home-page-bg)) calc(66.7vw + 330px),
+      var(--home-page-bg) calc(66.7vw + 520px));
+  }
+
   /* Fade from soft green to white as the header settles into its search rail. */
   .home-top-nav::before {
     content: '';
