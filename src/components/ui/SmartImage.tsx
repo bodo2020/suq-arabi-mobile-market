@@ -1,4 +1,5 @@
 import React, { ImgHTMLAttributes, useEffect, useRef, useState } from 'react';
+import { saveImageToDisk, useDiskCachedImage } from '@/lib/imageDiskCache';
 
 interface SmartImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src?: string | null;
@@ -61,21 +62,29 @@ const SmartImage: React.FC<SmartImageProps> = ({
   };
 
   const finalSource = failed ? fallbackSrc : useOriginal && originalSrc ? originalSrc : source;
+  // The copy saved on the phone when there is one (no download, works offline).
+  const [skipDisk, setSkipDisk] = useState(false);
+  useEffect(() => setSkipDisk(false), [finalSource]);
+  const displaySource = useDiskCachedImage(finalSource, shouldLoad && !skipDisk);
+  const fromDisk = Boolean(displaySource && displaySource !== finalSource);
 
   return (
     <span ref={hostRef} className="relative block h-full w-full overflow-hidden bg-white">
       {/* Static placeholder: a pulse here ran on every not-yet-loaded card (including
           off-screen lazy ones) and forced a style recalc every frame. */}
       {!loaded && <span className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100" aria-hidden="true" />}
-      {shouldLoad && (
+      {shouldLoad && displaySource && (
         <img
-          key={`${finalSource}:${attempt}`}
-          src={finalSource}
+          key={`${displaySource}:${attempt}`}
+          src={displaySource}
           alt={alt}
           decoding="async"
           loading="eager"
-          onLoad={() => setLoaded(true)}
-          onError={retry}
+          onLoad={() => {
+            setLoaded(true);
+            if (!fromDisk) saveImageToDisk(finalSource);
+          }}
+          onError={() => (fromDisk ? setSkipDisk(true) : retry())}
           className={`${className} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           {...props}
         />

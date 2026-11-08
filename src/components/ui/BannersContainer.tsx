@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { applyHeroTint, bannerTint } from '@/lib/heroTint';
+import { saveImageToDisk, useDiskCachedImage } from '@/lib/imageDiskCache';
 import './hero-banner.css';
 
 interface BannerItem {
@@ -19,6 +20,23 @@ interface BannersContainerProps {
 }
 
 const INTERVAL = 5000;
+
+/** Banner photo, from the copy saved on the phone when there is one. */
+const BannerImage: React.FC<{ src: string; alt: string; eager: boolean }> = ({ src, alt, eager }) => {
+  const display = useDiskCachedImage(src || '/placeholder.svg');
+  if (!display) return null;
+  return (
+    <img
+      src={display}
+      alt={alt}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      draggable={false}
+      onLoad={() => { if (display === src) saveImageToDisk(src); }}
+      onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = src && display !== src ? src : '/placeholder.svg'; }}
+    />
+  );
+};
 
 /**
  * Home hero: swipeable banners (the next one peeks in), story-style progress
@@ -128,14 +146,11 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
             onClick={() => open(banner)}
             aria-label={banner.title || 'فتح العرض'}
           >
-            <img
+            <BannerImage
               key={index === current ? `${banner.id}-on` : banner.id}
-              src={banner.image_url || '/placeholder.svg'}
+              src={banner.image_url}
               alt={banner.title || 'عرض من سوبر ماركو'}
-              loading={index === 0 ? 'eager' : 'lazy'}
-              decoding="async"
-              draggable={false}
-              onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder.svg'; }}
+              eager={index === 0}
             />
           </button>
         ))}
