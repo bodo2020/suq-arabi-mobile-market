@@ -1,18 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, WifiOff } from 'lucide-react';
-import { hasOfflineCatalogCache } from '@/lib/offlineCatalogCache';
+import { hasDeviceCache } from '@/lib/deviceQueryCache';
 
 interface AddressGuardProps { children: React.ReactNode; }
 
 const AddressGuard: React.FC<AddressGuardProps> = ({ children }) => {
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' ? true : navigator.onLine);
-  const hasCache = useMemo(() => hasOfflineCatalogCache(), []);
+  const hasCache = useMemo(() => hasDeviceCache(), []);
 
   useEffect(() => {
     const goOffline = () => setOnline(false);
     const goOnline = () => {
       setOnline(true);
-      window.location.reload();
+      // With the saved copy on screen, React Query refreshes it by itself on
+      // reconnect; only the blocking screen needs a full reload.
+      if (!hasCache) window.location.reload();
     };
 
     window.addEventListener('offline', goOffline);
@@ -21,7 +23,26 @@ const AddressGuard: React.FC<AddressGuardProps> = ({ children }) => {
       window.removeEventListener('offline', goOffline);
       window.removeEventListener('online', goOnline);
     };
-  }, []);
+  }, [hasCache]);
+
+  // Offline with a saved copy: the app works from it, with a quiet note.
+  if (!online && hasCache) {
+    return (
+      <>
+        {children}
+        <div
+          role="status"
+          className="pointer-events-none fixed inset-x-0 bottom-[92px] z-[60] flex justify-center px-4 md:bottom-4"
+          dir="rtl"
+        >
+          <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/85 px-3.5 py-2 text-xs font-bold text-white shadow-lg">
+            <WifiOff size={14} aria-hidden="true" />
+            من غير نت · بتتفرج على آخر نسخة محفوظة
+          </span>
+        </div>
+      </>
+    );
+  }
 
   if (!online) {
     return (

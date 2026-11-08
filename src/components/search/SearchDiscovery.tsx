@@ -174,7 +174,7 @@ export default function SearchDiscovery({ recent, onSearch, onClearRecent }: Sea
             ))}
           </div>
         </section>
-      ) : catalog.isError ? (
+      ) : catalog.isError && !catalog.data ? (
         <div className="rounded-2xl bg-white p-4 text-center">
           <button type="button" onClick={() => void catalog.refetch()} className="min-h-10 rounded-full bg-emerald-50 px-4 text-sm font-bold text-[#005931]">
             إعادة المحاولة

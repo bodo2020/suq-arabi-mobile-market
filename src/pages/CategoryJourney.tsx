@@ -116,7 +116,8 @@ const JourneyCategory = React.memo(function JourneyCategory({
         {category.name}
       </h2>
 
-      {query.isError ? (
+      {/* A saved copy keeps showing when a refresh fails (offline). */}
+      {query.isError && !query.data ? (
         <button type="button" onClick={() => { setNear(true); void query.refetch(); }} className="w-full rounded-2xl bg-white p-5 text-[#005931]">
           تعذّر تحميل المنتجات · اضغط لإعادة المحاولة
         </button>

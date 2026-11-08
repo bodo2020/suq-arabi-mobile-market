@@ -3,6 +3,9 @@ import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { deactivateCurrentPushDevice } from '@/services/pushNotifications';
 import { egyptianMobileE164, isValidEgyptianMobile } from '@/utils/egyptPhone';
+import { useQueryClient } from '@tanstack/react-query';
+import { clearPersonalQueries } from '@/lib/deviceQueryCache';
+import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 
 type UserContextType = {
   user: User | null;
@@ -48,6 +51,7 @@ export const useUser = () => {
 };
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -58,6 +62,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       (_event: AuthChangeEvent, nextSession: Session | null) => {
         if (_event === 'SIGNED_OUT') {
           for (const key of ['userAddress', 'userArea', 'userNeighborhood', 'selectedAddress']) localStorage.removeItem(key);
+          // The customer's own saved screens (orders, addresses, favourites…)
+          // leave the phone with them; the shared catalog copy stays.
+          clearPersonalQueries(queryClient);
+          invalidateMyCustomer();
+          invalidateMyAddresses();
         }
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
@@ -74,7 +83,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [queryClient]);
 
   const signIn = async (username: string, password: string) => {
     try {

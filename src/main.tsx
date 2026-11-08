@@ -7,8 +7,9 @@ import './styles/product-card-layout.css'
 // Dark counterparts of hard-coded colours (generated) + runtime-colour pieces. Must load last.
 import './styles/dark-theme.generated.css'
 import './styles/dark-theme.custom.css'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { hydrateOfflineCatalog, subscribeOfflineCatalog } from './lib/offlineCatalogCache'
+import { QueryClient, onlineManager } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+import { DEVICE_CACHE_BUSTER, DEVICE_CACHE_MAX_AGE, deviceQueryPersister, isSavedOnDevice, keepSavedQueriesInMemory } from './lib/deviceQueryCache'
 
 // Bundled font faces are provided inside the app, not via public /fonts URLs.
 installThmanyahFont()
@@ -29,10 +30,14 @@ const queryClient = new QueryClient({
   },
 })
 
-// Restore only non-sensitive public shopping data so a previously opened store
-// can still show categories/products when Android starts without connectivity.
-hydrateOfflineCatalog(queryClient)
-subscribeOfflineCatalog(queryClient)
+// Shopping screens are kept on the phone (IndexedDB) and restored on launch, so
+// the app opens instantly and can be browsed offline; see deviceQueryCache.
+keepSavedQueriesInMemory(queryClient)
+// React Query assumes it starts online and only listens for changes; when the
+// app is opened offline it must know, so it shows saved copies instead of failing.
+if (typeof navigator !== 'undefined') onlineManager.setOnline(navigator.onLine)
+// The old 4 MB localStorage snapshot is replaced by the device cache.
+try { localStorage.removeItem('elmadawy_public_catalog_cache_v1') } catch { /* optional */ }
 
 // Mark the native runtime once so shared UI can adapt to Android/iOS safe areas.
 if (Capacitor.isNativePlatform()) {
@@ -97,8 +102,16 @@ if (root) {
     root.classList.add('hide-scrollbar');
   }
   createRoot(root).render(
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: deviceQueryPersister,
+        maxAge: DEVICE_CACHE_MAX_AGE,
+        buster: DEVICE_CACHE_BUSTER,
+        dehydrateOptions: { shouldDehydrateQuery: isSavedOnDevice },
+      }}
+    >
       <App />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

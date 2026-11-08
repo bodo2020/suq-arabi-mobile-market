@@ -38,7 +38,7 @@ export default function MarketplaceStores() {
         <div><p className="text-xs font-bold text-primary">Marketplace</p><h1 className="text-2xl font-black">متاجر قريبة منك</h1><p className="mt-1 text-sm text-gray-500">النتائج حسب عنوان التوصيل الحالي، وكل طلب من متجر واحد.</p></div>
       </div>
 
-      {query.isLoading ? <div className="flex justify-center py-20"><BrandLoader size="lg" /></div> : query.isError ? (
+      {query.isLoading ? <div className="flex justify-center py-20"><BrandLoader size="lg" /></div> : query.isError && !query.data ? (
         <div className="rounded-2xl border border-red-100 bg-red-50 p-5 text-center"><p className="font-bold text-red-700">تعذر تحميل المتاجر القريبة.</p><Button className="mt-4" variant="outline" onClick={() => void query.refetch()}><RefreshCw size={16} />إعادة المحاولة</Button></div>
       ) : !query.data?.length ? (
         <div className="rounded-3xl border border-dashed border-green-200 bg-green-50/50 p-8 text-center"><Store className="mx-auto h-12 w-12 text-primary" /><h2 className="mt-3 text-lg font-black">مفيش متجر شريك متاح للعنوان ده حاليًا</h2><p className="mt-2 text-sm text-gray-600">غيّر عنوان التوصيل أو ارجع لمنتجات المعداوي.</p><Button className="mt-5" onClick={() => navigate('/address-manager')}><MapPin size={17} />مراجعة العنوان</Button></div>
