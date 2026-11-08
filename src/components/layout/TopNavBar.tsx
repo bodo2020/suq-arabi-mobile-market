@@ -139,8 +139,6 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         const height = header.getBoundingClientRect().height;
         collapseDistanceRef.current = Math.max(1, Math.ceil(height - safeTop - 68));
         header.style.setProperty('--home-collapse-distance', `${collapseDistanceRef.current}px`);
-        // A full-bleed home banner runs up behind the header by exactly this much.
-        document.documentElement.style.setProperty('--home-hero-height', `${Math.ceil(height)}px`);
       }
       scheduleUpdate();
     };
@@ -153,7 +151,6 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
     window.addEventListener('orientationchange', measure);
     return () => {
       observer?.disconnect();
-      document.documentElement.style.removeProperty('--home-hero-height');
       window.removeEventListener('scroll', scheduleUpdate);
       window.removeEventListener('resize', measure);
       window.removeEventListener('orientationchange', measure);

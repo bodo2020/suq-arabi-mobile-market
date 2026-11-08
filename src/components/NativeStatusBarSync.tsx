@@ -3,8 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
-// Matches the light green top of the home/categories hero header and the
-// Android theme's launch color, so there is no jump on first paint.
+// The Android theme's launch colour, used when nothing can be sampled.
 const FALLBACK = '#E6F9EE';
 // The light page under the product sheet's 50% slate backdrop.
 const SHEET_DIM = '#757C80';
@@ -30,19 +29,6 @@ function colorAtTop(): string {
   if (document.querySelector('.brand-pull-panel')) return document.documentElement.classList.contains('dark') ? '#101713' : FALLBACK;
   // The launch intro is brand green, continuing the native splash.
   if (document.querySelector('.brand-intro')) return '#005931';
-  // Full-bleed home banner behind a see-through header: elementFromPoint only
-  // finds the header, so use the top of the current slide's gradient (set the
-  // moment the slide changes) until the header turns white on collapse.
-  const root = document.documentElement;
-  if (root.classList.contains('has-hero-bleed')) {
-    const header = document.querySelector<HTMLElement>('.home-top-nav[data-customer-header="hero"]');
-    const progress = Number.parseFloat(header?.style.getPropertyValue('--home-scroll-progress') || '0') || 0;
-    const dark = root.classList.contains('dark');
-    if (progress < 0.75) {
-      return root.style.getPropertyValue(dark ? '--hero-status-dark' : '--hero-status').trim() || (dark ? '#142019' : FALLBACK);
-    }
-    return dark ? '#171C1A' : '#FFFFFF';
-  }
   let el = document.elementFromPoint(window.innerWidth / 2, 1) as HTMLElement | null;
   while (el) {
     const style = getComputedStyle(el);
@@ -65,8 +51,8 @@ function isLight(hex: string) {
 
 /**
  * Keeps the Android status bar the same colour as the app header on every
- * screen (mint on home/categories, white elsewhere) instead of a fixed dark
- * green bar, with dark icons on light backgrounds.
+ * screen (brand green on the home/categories header, white elsewhere), with
+ * dark icons on light backgrounds and light icons on dark ones.
  */
 export default function NativeStatusBarSync() {
   const location = useLocation();
@@ -105,16 +91,6 @@ export default function NativeStatusBarSync() {
     // Pull-to-refresh opens/closes without scrolling the page.
     window.addEventListener('brand-pull-change', schedule);
     window.addEventListener('brand-intro-done', schedule);
-    // The tinted header eases to the new banner colour over 0.6s (see
-    // hero-banner.css), so sample again once that transition has finished;
-    // otherwise the bar keeps the previous banner's colour.
-    let tintTimer: number | null = null;
-    const onTint = () => {
-      schedule();
-      if (tintTimer != null) window.clearTimeout(tintTimer);
-      tintTimer = window.setTimeout(schedule, 650);
-    };
-    window.addEventListener('hero-tint-change', onTint);
     // Light / dark switch: recolour the bar and its icons.
     const themeObserver = new MutationObserver(schedule);
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -125,8 +101,6 @@ export default function NativeStatusBarSync() {
       window.removeEventListener('resize', schedule);
       window.removeEventListener('brand-pull-change', schedule);
       window.removeEventListener('brand-intro-done', schedule);
-      window.removeEventListener('hero-tint-change', onTint);
-      if (tintTimer != null) window.clearTimeout(tintTimer);
       themeObserver.disconnect();
     };
   }, [location.pathname, location.search]);

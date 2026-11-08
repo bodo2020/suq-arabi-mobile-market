@@ -22,9 +22,19 @@
     top: calc(-1 * var(--home-collapse-distance));
     isolation: isolate;
     border-bottom: 0;
-    /* Tinted by the current banner (heroTint); mint when there is none. */
-    background: linear-gradient(180deg, var(--hero-tint, #e6f9ee) 0%, var(--hero-tint-mid, #f1fbf5) 100%);
+    /* Solid brand green; the banner card below sits on its lower edge. */
+    background: linear-gradient(180deg, var(--home-green-top) 0%, var(--home-green) 100%);
   }
+
+  /* Header content on green: white/yellow brand, white address, yellow pin. */
+  .home-top-nav[data-customer-header='hero'] .brand-name--home .brand-name__super { color: #fff; }
+  .home-top-nav[data-customer-header='hero'] .brand-name--home .brand-name__marko { color: #FFC120; }
+  .home-top-nav[data-customer-header='hero'] .brand-mark--default img[src$="/brand/super-marko-mark.svg"] {
+    content: url("/brand/super-marko-mark-on-green.svg");
+  }
+  .home-top-nav[data-customer-header='hero'] .hdr-delivery-address { color: rgb(255 255 255 / .88); }
+  .home-top-nav[data-customer-header='hero'] .hdr-delivery-address:focus-visible { outline-color: #FFC120; }
+  .home-top-nav[data-customer-header='hero'] .hdr-delivery-pin { color: #FFC120; }
 
   /* Fade from soft green to white as the header settles into its search rail. */
   .home-top-nav::before {
@@ -85,15 +95,6 @@
     box-shadow: 0 5px 16px rgba(0, 65, 36, .07);
   }
 
-  /* Full-bleed banner (see hero-banner.css): the header is see-through over
-     it until the white collapse layer (::before) fades in. */
-  html.has-hero-bleed .home-top-nav[data-customer-header='hero'] {
-    background: transparent;
-  }
-  /* Matches the last hero gradient stop, continuing underneath the banners. */
-  .home-hero-content {
-    background: linear-gradient(180deg, var(--hero-tint-mid, #f4fbf6) 0px, #f6f8f7 190px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

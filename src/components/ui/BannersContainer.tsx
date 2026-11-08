@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { applyHeroBleed, applyHeroTint, bannerTint, type Tint } from '@/lib/heroTint';
 import './hero-banner.css';
 
 interface BannerItem {
@@ -19,13 +18,11 @@ interface BannersContainerProps {
 }
 
 const INTERVAL = 5000;
-// Gradient behind the header while a banner's colour is still being read.
-const DEFAULT_TOP = '#E6F9EE';
-const DEFAULT_MID = '#F1FBF5';
 
 /**
- * Home hero: swipeable banners (the next one peeks in), story-style progress
- * dots, and the header/band above take a soft tint from the current banner.
+ * Home hero: swipeable banner cards (the next one peeks in) with story-style
+ * progress dots. On phones, when the banners come right under the green home
+ * header, the green continues behind the top half of the cards.
  */
 const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   const [current, setCurrent] = useState(0);
@@ -37,10 +34,8 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   const visibleRef = useRef(true);
   const frameRef = useRef<number | null>(null);
   const multi = banners.length > 1;
-  // Phones: when the banners are the first home section they run full width,
-  // up behind the transparent hero header (one surface, like a cover image).
-  const [bleed, setBleed] = useState(false);
-  const [tints, setTints] = useState<Record<string, Tint | null>>({});
+  // Phones: banners right under the green home header sit on its edge.
+  const [attached, setAttached] = useState(false);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -51,7 +46,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
       const header = document.querySelector('.home-top-nav[data-customer-header="hero"]');
       // Only when nothing sits between the header and the banners.
       const first = Boolean(content && root.getBoundingClientRect().top - content.getBoundingClientRect().top < 32);
-      setBleed(phone.matches && Boolean(header) && first);
+      setAttached(phone.matches && Boolean(header) && first);
     };
     check();
     phone.addEventListener?.('change', check);
@@ -61,27 +56,6 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
       window.removeEventListener('resize', check);
     };
   }, [banners.length]);
-
-  useLayoutEffect(() => {
-    if (!bleed) return;
-    const root = document.documentElement;
-    root.classList.add('has-hero-bleed');
-    return () => {
-      root.classList.remove('has-hero-bleed');
-      applyHeroBleed(null);
-    };
-  }, [bleed]);
-
-  // Every slide's colours, so each one carries its own fill while swiping.
-  useEffect(() => {
-    let alive = true;
-    banners.forEach(banner => {
-      void bannerTint(banner.image_url).then(tint => {
-        if (alive) setTints(previous => (banner.image_url in previous ? previous : { ...previous, [banner.image_url]: tint }));
-      });
-    });
-    return () => { alive = false; };
-  }, [banners]);
 
   // Bring slide `index` to the start edge of the track (works in RTL too).
   const goTo = useCallback((index: number, smooth = true) => {
@@ -133,20 +107,6 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
     return () => observer.disconnect();
   }, []);
 
-  // Header + band take the current banner's colour. In full-bleed mode the
-  // status bar switches together with the slide (the colour is already cached).
-  useEffect(() => {
-    const src = banners[current]?.image_url;
-    let alive = true;
-    void bannerTint(src).then(tint => {
-      if (!alive) return;
-      applyHeroTint(tint);
-      if (bleed) applyHeroBleed(tint);
-    });
-    return () => { alive = false; };
-  }, [current, banners, bleed]);
-  useEffect(() => () => applyHeroTint(null), []);
-
   useEffect(() => { if (current >= banners.length) setCurrent(0); }, [banners.length, current]);
 
   const open = (banner: BannerItem) => {
@@ -162,7 +122,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   return (
     <section
       ref={rootRef}
-      className={`hero-banner ${multi ? 'hero-banner--multi' : ''} ${bleed ? 'hero-banner--bleed' : ''} ${paused ? 'is-paused' : ''}`}
+      className={`hero-banner ${multi ? 'hero-banner--multi' : ''} ${attached ? 'hero-banner--attached' : ''} ${paused ? 'is-paused' : ''}`}
       aria-roledescription="carousel"
       aria-label="عروض سوبر ماركو"
       style={{ '--hero-interval': `${INTERVAL}ms` } as React.CSSProperties}
@@ -178,11 +138,6 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
             key={banner.id}
             type="button"
             className={`hero-banner__slide ${index === current ? 'is-active' : ''}`}
-            style={bleed ? {
-              '--slide-top': tints[banner.image_url]?.top || DEFAULT_TOP,
-              '--slide-mid': tints[banner.image_url]?.mid || DEFAULT_MID,
-              '--slide-edge': tints[banner.image_url]?.edge || DEFAULT_MID,
-            } as React.CSSProperties : undefined}
             onClick={() => open(banner)}
             aria-label={banner.title || 'فتح العرض'}
           >

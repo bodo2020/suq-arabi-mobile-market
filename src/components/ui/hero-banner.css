@@ -1,14 +1,8 @@
-/* Home hero banner: swipeable, blends into the tinted header above it. */
-@property --hero-tint { syntax: '<color>'; inherits: true; initial-value: #e6f9ee; }
-@property --hero-tint-mid { syntax: '<color>'; inherits: true; initial-value: #f1fbf5; }
-:root { transition: --hero-tint .6s ease, --hero-tint-mid .6s ease; }
-
-/* Band behind the banner continues the header colour into the page. */
+/* Home hero banner: swipeable cards; on phones they sit on the green header edge. */
 .hero-banner {
   position: relative;
   margin: -8px -12px 0;
   padding: 8px 12px 6px;
-  background: linear-gradient(180deg, var(--hero-tint-mid, #f1fbf5) 0%, #f6f8f7 100%);
 }
 @media (min-width: 640px) { .hero-banner { margin-inline: -16px; padding-inline: 16px; } }
 @media (min-width: 768px) { .hero-banner { margin: 0; padding: 0; background: none; } }
@@ -77,41 +71,22 @@
   .hero-banner__dot.is-active::after { transform: none; }
 }
 
-/* Phones, banners first on home: full width and up behind the transparent
-   hero header. Behind the header each slide has its own soft gradient: a
-   light pastel of the banner at the top (logo and address stay readable),
-   easing into the banner's own colour where the photo fades in. Header and
-   banner read as one surface and swipe together. --home-hero-height comes
-   from TopNavBar. */
+/* Phones, banners right under the green home header: the green continues
+   behind the top half of the cards, ending in a soft rounded edge. */
 @media (max-width: 767px) {
-  html .hero-banner.hero-banner--bleed {
-    margin: calc(-8px - var(--home-hero-height, 0px)) -12px 0;
-    padding: 0 0 2px;
-    background: none;
-  }
-  .hero-banner--bleed .hero-banner__track { gap: 0; }
-  .hero-banner.hero-banner--bleed .hero-banner__slide {
-    display: block;
-    flex-basis: 100%;
-    aspect-ratio: auto;
-    padding-top: var(--home-hero-height, 0px);
+  .hero-banner.hero-banner--attached::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: calc(33vw - 6px);
+    background: var(--home-green);
     border-radius: 0 0 28px 28px;
-    background: linear-gradient(180deg,
-      var(--slide-top, #e6f9ee) 0%,
-      var(--slide-mid, #f1fbf5) 62%,
-      color-mix(in srgb, var(--slide-edge, #f1fbf5) 55%, var(--slide-mid, #f1fbf5)) calc(var(--home-hero-height, 0px) + 6px));
-    box-shadow: 0 10px 24px rgba(0, 50, 28, .1);
-    transform: none;
-    opacity: 1;
+    pointer-events: none;
   }
-  .hero-banner--bleed .hero-banner__slide img {
-    display: block;
-    height: auto;
-    aspect-ratio: 3 / 2;
-    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 48px);
-    mask-image: linear-gradient(180deg, transparent 0, #000 48px);
+  .hero-banner--attached .hero-banner__track,
+  .hero-banner--attached .hero-banner__dots {
+    position: relative;
+    z-index: 1;
   }
-}
-@media (min-width: 640px) and (max-width: 767px) {
-  html .hero-banner.hero-banner--bleed { margin-inline: -16px; }
+  .hero-banner--attached .hero-banner__slide { box-shadow: 0 12px 28px rgba(0, 40, 22, .18); }
 }
