@@ -10,6 +10,7 @@ import './styles/dark-theme.custom.css'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { pruneImageDiskCache } from './lib/imageDiskCache'
+import { scheduleImagePrefetch } from './lib/imagePrefetch'
 import { DEVICE_CACHE_BUSTER, DEVICE_CACHE_MAX_AGE, deviceQueryPersister, isSavedOnDevice, keepSavedQueriesInMemory } from './lib/deviceQueryCache'
 
 // Bundled font faces are provided inside the app, not via public /fonts URLs.
@@ -41,6 +42,8 @@ if (typeof navigator !== 'undefined') onlineManager.setOnline(navigator.onLine)
 try { localStorage.removeItem('elmadawy_public_catalog_cache_v1') } catch { /* optional */ }
 // Saved images are capped; trim the oldest a little after launch.
 window.setTimeout(() => { void pruneImageDiskCache() }, 8000)
+// Card thumbnails are preloaded on Wi-Fi only, at most once a day (see imagePrefetch).
+scheduleImagePrefetch()
 
 // Mark the native runtime once so shared UI can adapt to Android/iOS safe areas.
 if (Capacitor.isNativePlatform()) {

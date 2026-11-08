@@ -145,3 +145,22 @@ export function useDiskCachedImage(url: string | null | undefined, enabled = tru
 
   return resolved;
 }
+
+/**
+ * Save one image for later (background preloading). Resolves with what
+ * happened; never throws. Skips images already on the phone.
+ */
+export async function storeImageForLater(url: string): Promise<'had' | 'saved' | 'skipped'> {
+  if (!isDiskCacheable(url)) return 'skipped';
+  try {
+    const cache = await openCache();
+    if (await cache.match(url)) return 'had';
+    const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+    const type = response.headers.get('content-type') || '';
+    if (!response.ok || !type.startsWith('image/')) return 'skipped';
+    await cache.put(url, response);
+    return 'saved';
+  } catch {
+    return 'skipped';
+  }
+}
