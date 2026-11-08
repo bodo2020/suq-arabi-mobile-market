@@ -31,14 +31,17 @@ function colorAtTop(): string {
   // The launch intro is brand green, continuing the native splash.
   if (document.querySelector('.brand-intro')) return '#005931';
   // Full-bleed home banner behind a see-through header: elementFromPoint only
-  // finds the header, so use the current banner's edge colour directly (set
-  // the moment the slide changes) until the header turns white on collapse.
+  // finds the header, so use the top of the current slide's gradient (set the
+  // moment the slide changes) until the header turns white on collapse.
   const root = document.documentElement;
   if (root.classList.contains('has-hero-bleed')) {
     const header = document.querySelector<HTMLElement>('.home-top-nav[data-customer-header="hero"]');
     const progress = Number.parseFloat(header?.style.getPropertyValue('--home-scroll-progress') || '0') || 0;
-    if (progress < 0.75) return root.style.getPropertyValue('--hero-edge').trim() || FALLBACK;
-    return root.classList.contains('dark') ? '#171C1A' : '#FFFFFF';
+    const dark = root.classList.contains('dark');
+    if (progress < 0.75) {
+      return root.style.getPropertyValue(dark ? '--hero-status-dark' : '--hero-status').trim() || (dark ? '#142019' : FALLBACK);
+    }
+    return dark ? '#171C1A' : '#FFFFFF';
   }
   let el = document.elementFromPoint(window.innerWidth / 2, 1) as HTMLElement | null;
   while (el) {

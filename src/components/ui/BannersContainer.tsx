@@ -19,8 +19,9 @@ interface BannersContainerProps {
 }
 
 const INTERVAL = 5000;
-// Fill behind the header while a banner's colour is still being read.
-const DEFAULT_EDGE = '#E6F9EE';
+// Gradient behind the header while a banner's colour is still being read.
+const DEFAULT_TOP = '#E6F9EE';
+const DEFAULT_MID = '#F1FBF5';
 
 /**
  * Home hero: swipeable banners (the next one peeks in), story-style progress
@@ -177,7 +178,11 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
             key={banner.id}
             type="button"
             className={`hero-banner__slide ${index === current ? 'is-active' : ''}`}
-            style={bleed ? { '--slide-edge': tints[banner.image_url]?.edge || DEFAULT_EDGE } as React.CSSProperties : undefined}
+            style={bleed ? {
+              '--slide-top': tints[banner.image_url]?.top || DEFAULT_TOP,
+              '--slide-mid': tints[banner.image_url]?.mid || DEFAULT_MID,
+              '--slide-edge': tints[banner.image_url]?.edge || DEFAULT_MID,
+            } as React.CSSProperties : undefined}
             onClick={() => open(banner)}
             aria-label={banner.title || 'فتح العرض'}
           >

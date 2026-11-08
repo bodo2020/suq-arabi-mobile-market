@@ -90,22 +90,6 @@
   html.has-hero-bleed .home-top-nav[data-customer-header='hero'] {
     background: transparent;
   }
-  /* Dark banner colour: white + yellow brand and a white address line. */
-  html.has-hero-bleed[data-hero-ink='light'] .home-top-nav:not([data-home-collapsed='true']) .home-hero-brand .brand-name__super {
-    color: #fff;
-  }
-  html.has-hero-bleed[data-hero-ink='light'] .home-top-nav:not([data-home-collapsed='true']) .home-hero-brand .brand-name__marko {
-    color: #ffc120;
-  }
-  html.has-hero-bleed[data-hero-ink='light'] .home-top-nav:not([data-home-collapsed='true']) .home-hero-brand img[src$="/brand/super-marko-mark.svg"] {
-    content: url("/brand/super-marko-mark-on-green.svg");
-  }
-  html.has-hero-bleed[data-hero-ink='light'] .home-top-nav:not([data-home-collapsed='true']) .home-hero-delivery button,
-  html.has-hero-bleed[data-hero-ink='light'] .home-top-nav:not([data-home-collapsed='true']) .home-hero-delivery button svg {
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, .25);
-  }
-
   /* Matches the last hero gradient stop, continuing underneath the banners. */
   .home-hero-content {
     background: linear-gradient(180deg, var(--hero-tint-mid, #f4fbf6) 0px, #f6f8f7 190px);
