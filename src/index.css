@@ -543,6 +543,6 @@ html.native-platform [role="button"] {
 /* Home hero header: takes a soft tint from the current banner (see heroTint),
    and hands the same colour down to the band behind the banner. */
 /* Home/categories header green (phones); the banner card sits on its edge. */
-:root { --home-green-top: #004b29; --home-green: #005931; --home-page-bg: #f6f8f7; }
+:root { --home-green-top: #0b7a45; --home-green: #1a9a5c; --home-page-bg: #f6f8f7; }
 .home-hero-bg { background: linear-gradient(180deg, var(--home-green-top) 0%, var(--home-green) 100%); }
 @media (min-width: 768px) { .home-hero-bg { background: #fff; border-color: #d6eee0 !important; } }

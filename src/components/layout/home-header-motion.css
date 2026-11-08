@@ -41,10 +41,10 @@
   html.has-home-top-nav .home-hero-content {
     background: linear-gradient(180deg,
       var(--home-green) 0,
-      var(--home-green) calc(66.7vw + 24px),
-      color-mix(in srgb, var(--home-green) 55%, var(--home-page-bg)) calc(66.7vw + 170px),
-      color-mix(in srgb, var(--home-green) 22%, var(--home-page-bg)) calc(66.7vw + 330px),
-      var(--home-page-bg) calc(66.7vw + 520px));
+      color-mix(in srgb, var(--home-green) 80%, var(--home-page-bg)) calc(66.7vw + 24px),
+      color-mix(in srgb, var(--home-green) 45%, var(--home-page-bg)) calc(66.7vw + 200px),
+      color-mix(in srgb, var(--home-green) 16%, var(--home-page-bg)) calc(66.7vw + 400px),
+      var(--home-page-bg) calc(66.7vw + 620px));
   }
 
   /* Fade from soft green to white as the header settles into its search rail. */
