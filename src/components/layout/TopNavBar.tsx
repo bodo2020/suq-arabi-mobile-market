@@ -136,8 +136,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         const safeTop = Number.parseFloat(window.getComputedStyle(header).paddingTop) || 0;
         // Keep only the 68px compact search rail visible after the hero scrolls away.
         // Measuring the real height also handles dynamic text and Android safe areas.
-        const height = header.getBoundingClientRect().height;
-        collapseDistanceRef.current = Math.max(1, Math.ceil(height - safeTop - 68));
+        collapseDistanceRef.current = Math.max(1, Math.ceil(header.getBoundingClientRect().height - safeTop - 68));
         header.style.setProperty('--home-collapse-distance', `${collapseDistanceRef.current}px`);
       }
       scheduleUpdate();

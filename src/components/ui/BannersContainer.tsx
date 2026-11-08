@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { applyHeroTint, bannerTint } from '@/lib/heroTint';
 import './hero-banner.css';
 
 interface BannerItem {
@@ -20,9 +21,8 @@ interface BannersContainerProps {
 const INTERVAL = 5000;
 
 /**
- * Home hero: swipeable banner cards (the next one peeks in) with story-style
- * progress dots. On phones, when the banners come right under the green home
- * header, the green continues behind the top half of the cards.
+ * Home hero: swipeable banners (the next one peeks in), story-style progress
+ * dots, and the header/band above take a soft tint from the current banner.
  */
 const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   const [current, setCurrent] = useState(0);
@@ -34,28 +34,6 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   const visibleRef = useRef(true);
   const frameRef = useRef<number | null>(null);
   const multi = banners.length > 1;
-  // Phones: banners right under the green home header sit on its edge.
-  const [attached, setAttached] = useState(false);
-
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!root || typeof window.matchMedia !== 'function') return;
-    const phone = window.matchMedia('(max-width: 767px)');
-    const check = () => {
-      const content = root.closest('.home-hero-content');
-      const header = document.querySelector('.home-top-nav[data-customer-header="hero"]');
-      // Only when nothing sits between the header and the banners.
-      const first = Boolean(content && root.getBoundingClientRect().top - content.getBoundingClientRect().top < 32);
-      setAttached(phone.matches && Boolean(header) && first);
-    };
-    check();
-    phone.addEventListener?.('change', check);
-    window.addEventListener('resize', check, { passive: true });
-    return () => {
-      phone.removeEventListener?.('change', check);
-      window.removeEventListener('resize', check);
-    };
-  }, [banners.length]);
 
   // Bring slide `index` to the start edge of the track (works in RTL too).
   const goTo = useCallback((index: number, smooth = true) => {
@@ -107,6 +85,15 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
     return () => observer.disconnect();
   }, []);
 
+  // Header + band take the current banner's colour.
+  useEffect(() => {
+    const src = banners[current]?.image_url;
+    let alive = true;
+    void bannerTint(src).then(tint => { if (alive) applyHeroTint(tint); });
+    return () => { alive = false; };
+  }, [current, banners]);
+  useEffect(() => () => applyHeroTint(null), []);
+
   useEffect(() => { if (current >= banners.length) setCurrent(0); }, [banners.length, current]);
 
   const open = (banner: BannerItem) => {
@@ -122,7 +109,7 @@ const BannersContainer: React.FC<BannersContainerProps> = ({ banners }) => {
   return (
     <section
       ref={rootRef}
-      className={`hero-banner ${multi ? 'hero-banner--multi' : ''} ${attached ? 'hero-banner--attached' : ''} ${paused ? 'is-paused' : ''}`}
+      className={`hero-banner ${multi ? 'hero-banner--multi' : ''} ${paused ? 'is-paused' : ''}`}
       aria-roledescription="carousel"
       aria-label="عروض سوبر ماركو"
       style={{ '--hero-interval': `${INTERVAL}ms` } as React.CSSProperties}

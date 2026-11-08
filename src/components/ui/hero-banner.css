@@ -1,8 +1,14 @@
-/* Home hero banner: swipeable cards; on phones they sit on the green header edge. */
+/* Home hero banner: swipeable, blends into the tinted header above it. */
+@property --hero-tint { syntax: '<color>'; inherits: true; initial-value: #e6f9ee; }
+@property --hero-tint-mid { syntax: '<color>'; inherits: true; initial-value: #f1fbf5; }
+:root { transition: --hero-tint .6s ease, --hero-tint-mid .6s ease; }
+
+/* Band behind the banner continues the header colour into the page. */
 .hero-banner {
   position: relative;
   margin: -8px -12px 0;
   padding: 8px 12px 6px;
+  background: linear-gradient(180deg, var(--hero-tint-mid, #f1fbf5) 0%, #f6f8f7 100%);
 }
 @media (min-width: 640px) { .hero-banner { margin-inline: -16px; padding-inline: 16px; } }
 @media (min-width: 768px) { .hero-banner { margin: 0; padding: 0; background: none; } }
@@ -69,29 +75,4 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-banner__slide.is-active img, .hero-banner__dot.is-active::after { animation: none; }
   .hero-banner__dot.is-active::after { transform: none; }
-}
-
-/* Phones, banners right under the green home header: full screen width, edge
-   to edge, on the green that fades down the page (home-header-motion.css). */
-@media (max-width: 767px) {
-  html .hero-banner.hero-banner--attached {
-    margin: -8px -12px 0;
-    padding: 8px 0 4px;
-  }
-  .hero-banner--attached .hero-banner__track { gap: 0; }
-  .hero-banner.hero-banner--attached .hero-banner__slide,
-  .hero-banner.hero-banner--attached.hero-banner--multi .hero-banner__slide {
-    flex-basis: 100%;
-    border-radius: 0;
-    box-shadow: none;
-    transform: none;
-    opacity: 1;
-  }
-  .hero-banner--attached .hero-banner__slide:active { transform: none; }
-  /* Dots sit on the green. */
-  .hero-banner--attached .hero-banner__dot { background: rgb(255 255 255 / .35); }
-  .hero-banner--attached .hero-banner__dot.is-active::after { background: #FFC120; }
-}
-@media (min-width: 640px) and (max-width: 767px) {
-  html .hero-banner.hero-banner--attached { margin-inline: -16px; }
 }

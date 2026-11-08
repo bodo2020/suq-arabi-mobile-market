@@ -25,11 +25,11 @@ export default function HeaderDelivery({
       <button
         type="button"
         onClick={onAddressClick}
-        className="hdr-delivery-address flex min-h-7 max-w-full items-center gap-1 rounded-lg px-1 text-[#29624b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
+        className="flex min-h-7 max-w-full items-center gap-1 rounded-lg px-1 text-[#29624b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#005931]"
         title={addressLabel || 'حدد عنوان التوصيل'}
         aria-label={addressLabel ? `تغيير عنوان التوصيل: ${addressLabel}` : 'تحديد عنوان التوصيل'}
       >
-        <MapPin size={14} className="hdr-delivery-pin shrink-0 text-[#005931]" />
+        <MapPin size={14} className="shrink-0 text-[#005931]" />
         <span className="min-w-0 truncate text-right" dir="auto">
           {addressLoading ? 'جاري تحميل عنوانك…' : addressLabel || 'حدد عنوان التوصيل'}
         </span>
