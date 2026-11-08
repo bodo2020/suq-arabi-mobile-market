@@ -1,4 +1,5 @@
 import { productCardImage } from '@/lib/productCardImage';
+import { cachedImageUrl, isDiskCacheable, saveImageToDisk } from '@/lib/imageDiskCache';
 import type { ProductPreview } from '@/lib/productBrowsing';
 
 /**
@@ -54,7 +55,11 @@ function decodeImage(url: string): Promise<boolean> {
         resolve(entry.ready);
       }
     };
-    image.onload = markReady;
+    let fromDisk = false;
+    image.onload = () => {
+      if (!fromDisk) saveImageToDisk(url);
+      markReady();
+    };
     image.onerror = () => {
       entries.delete(url);
       failedAt.set(url, Date.now());
@@ -65,8 +70,19 @@ function decodeImage(url: string): Promise<boolean> {
       }
       resolve(false);
     };
-    image.src = url;
-    if (image.complete && image.naturalWidth > 0) markReady();
+    const start = (src: string) => {
+      image.src = src;
+      if (image.complete && image.naturalWidth > 0) markReady();
+    };
+    // The copy saved on the phone first: no download for images seen before.
+    if (isDiskCacheable(url)) {
+      void cachedImageUrl(url).then(hit => {
+        fromDisk = Boolean(hit);
+        start(hit || url);
+      });
+    } else {
+      start(url);
+    }
   });
   entries.set(url, entry);
   trimEntries();
