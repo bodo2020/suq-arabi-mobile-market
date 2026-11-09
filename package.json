@@ -24,13 +24,12 @@
     "test:checkout-recovery": "node scripts/test-checkout-ambiguous-result.mjs"
   },
   "dependencies": {
-    "@capacitor/android": "^7.2.0",
-    "@capacitor/cli": "^7.2.0",
-    "@capacitor/core": "^7.2.0",
-    "@capacitor/geolocation": "7.1.8",
-    "@capacitor/ios": "^7.2.0",
-    "@capacitor/push-notifications": "^7.0.7",
-    "@capacitor/status-bar": "^7.0.6",
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/geolocation": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/push-notifications": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0",
     "@googlemaps/js-api-loader": "^1.16.10",
     "@hookform/resolvers": "^3.9.0",
     "@huggingface/transformers": "^3.5.0",
@@ -92,6 +91,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.0.0",
     "@eslint/js": "^9.9.0",
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.5.5",

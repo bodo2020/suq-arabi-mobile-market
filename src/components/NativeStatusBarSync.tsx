@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Capacitor, registerPlugin } from '@capacitor/core';
-import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor, SystemBars, SystemBarsStyle, SystemBarType } from '@capacitor/core';
 
 // Matches the light green top of the home/categories hero header and the
 // Android theme's launch color, so there is no jump on first paint.
@@ -11,9 +10,12 @@ const SHEET_DIM = '#757C80';
 
 type Rgba = [number, number, number, number];
 
-// Native helper in MainActivity (NavigationBarPlugin.java): colours the
-// Android bar under the app (system buttons / gesture line).
-const NavigationBar = registerPlugin<{ setColor(options: { color: string; darkButtons: boolean }): Promise<void> }>('NavigationBar');
+// Android 16 is edge-to-edge: the page itself is drawn under both system
+// bars (the header behind the status bar, the page behind the navigation
+// bar), so their background always matches. We only pick dark or light
+// icons for each bar from the colour behind it.
+const setBarIcons = (bar: SystemBarType, background: string) =>
+  void SystemBars.setStyle({ bar, style: isLight(background) ? SystemBarsStyle.Light : SystemBarsStyle.Dark }).catch(() => {});
 
 function parseColor(value: string | null | undefined): Rgba | null {
   const match = value?.match(/rgba?\(([^)]+)\)/i);
@@ -91,14 +93,13 @@ export default function NativeStatusBarSync() {
       const color = colorAtBottom();
       if (color === lastBottom) return;
       lastBottom = color;
-      void NavigationBar.setColor({ color, darkButtons: isLight(color) }).catch(() => {});
+      setBarIcons(SystemBarType.NavigationBar, color);
     };
     // A product sheet dims the page behind it, so the bar takes the dimmed
     // tone (light icons). A fixed colour also avoids sampling, which forced
     // style/layout on every swipe because each product is its own route.
     if (location.pathname.startsWith('/product/')) {
-      void StatusBar.setBackgroundColor({ color: SHEET_DIM }).catch(() => {});
-      void StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+      setBarIcons(SystemBarType.StatusBar, SHEET_DIM);
       // The sheet itself reaches the bottom; take its colour once it has opened.
       const sheetTimers = [0, 350].map(ms => window.setTimeout(applyBottom, ms));
       return () => sheetTimers.forEach(window.clearTimeout);
@@ -112,8 +113,7 @@ export default function NativeStatusBarSync() {
       const color = colorAtTop();
       if (color === last) return;
       last = color;
-      void StatusBar.setBackgroundColor({ color }).catch(() => {});
-      void StatusBar.setStyle({ style: isLight(color) ? Style.Light : Style.Dark }).catch(() => {});
+      setBarIcons(SystemBarType.StatusBar, color);
     };
     const schedule = () => {
       if (frame == null) frame = window.requestAnimationFrame(apply);
