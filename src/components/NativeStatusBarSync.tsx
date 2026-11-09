@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
 // Matches the light green top of the home/categories hero header and the
@@ -10,6 +10,10 @@ const FALLBACK = '#E6F9EE';
 const SHEET_DIM = '#757C80';
 
 type Rgba = [number, number, number, number];
+
+// Native helper in MainActivity (NavigationBarPlugin.java): colours the
+// Android bar under the app (system buttons / gesture line).
+const NavigationBar = registerPlugin<{ setColor(options: { color: string; darkButtons: boolean }): Promise<void> }>('NavigationBar');
 
 function parseColor(value: string | null | undefined): Rgba | null {
   const match = value?.match(/rgba?\(([^)]+)\)/i);
@@ -21,6 +25,28 @@ function parseColor(value: string | null | undefined): Rgba | null {
 
 const toHex = ([r, g, b]: Rgba) =>
   `#${[r, g, b].map(n => Math.round(n).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+
+function colorAt(y: number): string | null {
+  let el = document.elementFromPoint(window.innerWidth / 2, y) as HTMLElement | null;
+  while (el) {
+    const style = getComputedStyle(el);
+    const solid = parseColor(style.backgroundColor);
+    if (solid && solid[3] > 0.5) return toHex(solid);
+    if (style.backgroundImage.includes('gradient')) {
+      const stop = parseColor(style.backgroundImage);
+      if (stop && stop[3] > 0.5) return toHex(stop);
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
+
+// The page colour right above the navigation bar (under the floating tab bar).
+function colorAtBottom(): string {
+  if (document.querySelector('.brand-intro')) return '#005931';
+  const dark = document.documentElement.classList.contains('dark');
+  return colorAt(window.innerHeight - 1) || (dark ? '#101713' : '#FFFFFF');
+}
 
 // The page colour right under the status bar: the first opaque background
 // (or the first stop of a gradient) found from the top-centre element upward.
@@ -60,19 +86,29 @@ export default function NativeStatusBarSync() {
 
   useEffect(() => {
     if (Capacitor.getPlatform() !== 'android') return;
+    let lastBottom = '';
+    const applyBottom = () => {
+      const color = colorAtBottom();
+      if (color === lastBottom) return;
+      lastBottom = color;
+      void NavigationBar.setColor({ color, darkButtons: isLight(color) }).catch(() => {});
+    };
     // A product sheet dims the page behind it, so the bar takes the dimmed
     // tone (light icons). A fixed colour also avoids sampling, which forced
     // style/layout on every swipe because each product is its own route.
     if (location.pathname.startsWith('/product/')) {
       void StatusBar.setBackgroundColor({ color: SHEET_DIM }).catch(() => {});
       void StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-      return;
+      // The sheet itself reaches the bottom; take its colour once it has opened.
+      const sheetTimers = [0, 350].map(ms => window.setTimeout(applyBottom, ms));
+      return () => sheetTimers.forEach(window.clearTimeout);
     }
     let last = '';
     let frame: number | null = null;
 
     const apply = () => {
       frame = null;
+      applyBottom();
       const color = colorAtTop();
       if (color === last) return;
       last = color;
