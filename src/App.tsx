@@ -46,6 +46,7 @@ const MarketplaceStore = lazy(() => import('./pages/MarketplaceStore'));
 const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
 const Account = lazy(() => import('./pages/Account'));
 const EditAccount = lazy(() => import('./pages/EditAccount'));
+const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 const Vouchers = lazy(() => import('./pages/Vouchers'));
 const Orders = lazy(() => import('./pages/PurchaseHistory'));
 const Notifications = lazy(() => import('./pages/Notifications'));
@@ -102,6 +103,7 @@ function CustomerRoutes() {
                       <Route path="/order-success" element={<OrderSuccess />} />
                       <Route path="/account" element={<Account />} />
                       <Route path="/edit-account" element={<EditAccount />} />
+                      <Route path="/delete-account" element={<DeleteAccount />} />
                       <Route path="/vouchers" element={<Vouchers />} />
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/notifications" element={<Notifications />} />
