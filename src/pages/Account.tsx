@@ -194,7 +194,12 @@ const Account = () => {
             </nav>
             {logoutError && <p role="alert" className="text-sm text-red-700">تعذّر تسجيل الخروج. راجع اتصالك وحاول تاني.</p>}
             {/* Google Play: account deletion must be reachable in the app. Kept low-key. */}
-            <Link to="/delete-account" className="block py-3 text-center text-xs font-bold text-muted-foreground underline-offset-4 hover:underline">حذف الحساب</Link>
+            <div className="flex items-center justify-center gap-4 py-3 text-xs font-bold text-muted-foreground">
+              {/* Static page bundled with the app (public/privacy.html); also linked from the store listing. */}
+              <a href="/privacy.html" className="underline-offset-4 hover:underline">سياسة الخصوصية</a>
+              <span aria-hidden="true">·</span>
+              <Link to="/delete-account" className="underline-offset-4 hover:underline">حذف الحساب</Link>
+            </div>
           </div>
         )}
       </div>
