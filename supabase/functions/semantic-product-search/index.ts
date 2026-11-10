@@ -10,6 +10,8 @@ const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
 const MODEL = 'gemini-embedding-001';
 const DIMENSIONS = 768;
+const MIN_SIMILARITY = 0.66;
+const NEAR_BEST = 0.03;
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization,apikey,content-type,x-client-info',
@@ -73,9 +75,14 @@ Deno.serve(async req => {
     }
   }
 
-  const { data, error } = await admin.rpc('match_products_by_meaning_v1', { p_embedding: vector, p_limit: limit, p_min_similarity: 0.55 });
+  const { data, error } = await admin.rpc('match_products_by_meaning_v1', { p_embedding: vector, p_limit: limit, p_min_similarity: MIN_SIMILARITY });
   if (error) return json({ items: [], error: 'match_failed' });
-  const items = ((data || []) as Array<{ product_id: string; similarity: number }>)
+  // Gemini scores sit close together (unrelated ~0.64, related ~0.70), so keep
+  // only products near the best one.
+  const rows = (data || []) as Array<{ product_id: string; similarity: number }>;
+  const best = rows.length ? Number(rows[0].similarity) : 0;
+  const items = rows
+    .filter(row => Number(row.similarity) >= best - NEAR_BEST)
     .map(row => ({ id: row.product_id, score: Math.round(Number(row.similarity) * 1000) / 1000 }));
   return json({ items });
 });

@@ -98,7 +98,9 @@ export async function searchBranchProductsIncludingUnavailable(
   const branchId = await requireDeliveryBranchId();
   const count = Math.min(300, Math.max(1, limit));
   // Started now so its wait overlaps the name searches.
-  const wantsMeaning = includeSynonyms && cleaned.length >= 3 && !/^\d+$/.test(cleaned);
+  // Only for a submitted search (full results), never for the suggestions shown
+  // while typing: every new phrase costs one Gemini call.
+  const wantsMeaning = includeSynonyms && count >= 12 && cleaned.length >= 3 && !/^\d+$/.test(cleaned);
   const meaning = wantsMeaning ? findByMeaning(cleaned) : Promise.resolve([]);
   const [owned, discovery] = await Promise.all([
     searchOwnedProducts(branchId, cleaned, count),
