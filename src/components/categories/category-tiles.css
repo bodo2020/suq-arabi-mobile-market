@@ -22,7 +22,10 @@
   border-radius: 20px;
   padding: 11px 10px 0;
   text-align: right;
-  background: var(--tile, #eef4f0);
+  /* One brand look for every card (mint like the app header); the artwork
+     brings the variety. */
+  background: linear-gradient(180deg, #f3faf6 0%, #e3f3e9 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 89, 49, .07);
   transition: transform .15s ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -32,7 +35,7 @@
   position: relative;
   z-index: 4;
   display: block;
-  color: #10241a;
+  color: #005931;
   font-size: 14px;
   font-weight: 900;
   line-height: 1.28;
@@ -116,7 +119,8 @@
 
 /* Dark mode: same soft colours, slightly deeper so they sit on the dark page
    (the photos keep blending because the card stays light). */
-.dark .cat-tile { background: color-mix(in srgb, var(--tile, #eef4f0) 92%, #0f1612); }
+.dark .cat-tile { background: linear-gradient(180deg, #1a2a21 0%, #14221a 100%); box-shadow: inset 0 0 0 1px rgba(111, 211, 158, .10); }
+.dark .cat-tile__name { color: #cfeedd; }
 .dark .cat-offers { background: linear-gradient(90deg, #f2d27a, #e9b93c); }
 .dark .cat-chip { border-color: #2a3a31; background: #17211b; color: #dbe8e0; }
 .dark .cat-chip.is-on { border-color: #1f8a55; background: #1f8a55; color: #fff; }
