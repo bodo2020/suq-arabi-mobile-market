@@ -62,6 +62,30 @@ async function getSearchSynonyms(query: string, max: number): Promise<string[]> 
   return terms.slice(0, max);
 }
 
+// Search by meaning (Gemini embeddings on the server): "حاجة للفطار" finds
+// فول / جبنة / عيش even when no product name contains those words. Product ids
+// only; prices and stock always come from the branch catalog below.
+const meaningCache = new Map<string, { at: number; items: Array<{ id: string; score: number }> }>();
+
+async function findByMeaning(query: string): Promise<Array<{ id: string; score: number }>> {
+  const key = query.trim().toLowerCase();
+  const cached = meaningCache.get(key);
+  if (cached && Date.now() - cached.at < 600000) return cached.items;
+  try {
+    const call = supabase.functions.invoke('semantic-product-search', { body: { query: key, limit: 30 } });
+    const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 4500));
+    const result = await Promise.race([call, timeout]);
+    const items = result && !result.error && Array.isArray((result.data as { items?: unknown })?.items)
+      ? ((result.data as { items: Array<{ id: string; score: number }> }).items)
+      : [];
+    if (meaningCache.size >= 100) meaningCache.clear();
+    if (result) meaningCache.set(key, { at: Date.now(), items });
+    return items;
+  } catch {
+    return [];
+  }
+}
+
 /** Match exact products first, safe Egyptian synonyms next and labelled related
  * categories last. All three passes use the actual branch-scoped catalog. */
 export async function searchBranchProductsIncludingUnavailable(
@@ -73,6 +97,9 @@ export async function searchBranchProductsIncludingUnavailable(
   if (!cleaned) return [];
   const branchId = await requireDeliveryBranchId();
   const count = Math.min(300, Math.max(1, limit));
+  // Started now so its wait overlaps the name searches.
+  const wantsMeaning = includeSynonyms && cleaned.length >= 3 && !/^\d+$/.test(cleaned);
+  const meaning = wantsMeaning ? findByMeaning(cleaned) : Promise.resolve([]);
   const [owned, discovery] = await Promise.all([
     searchOwnedProducts(branchId, cleaned, count),
     getBranchCatalog({ search: cleaned, limit: count }),
@@ -132,6 +159,23 @@ export async function searchBranchProductsIncludingUnavailable(
       }
     } catch (error) {
       console.warn('Fuzzy search skipped', error);
+    }
+  }
+
+  const meaningHits = await meaning;
+  if (meaningHits.length) {
+    try {
+      const catalog = await getBranchCatalog({ limit: 1500 });
+      const byId = new Map<string, Product>();
+      for (const row of catalog) if (!byId.has(row.id)) byId.set(row.id, row);
+      for (const hit of meaningHits) {
+        const row = byId.get(hit.id);
+        if (!row) continue;
+        const key = keyFor(row);
+        if (!merged.has(key)) merged.set(key, { ...row, search_match_type: 'semantic', semantic_score: hit.score });
+      }
+    } catch (error) {
+      console.warn('Meaning search skipped', error);
     }
   }
 

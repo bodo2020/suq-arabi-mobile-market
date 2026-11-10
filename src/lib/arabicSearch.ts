@@ -86,7 +86,9 @@ export function relatedSearches(term: string): string[] {
 export type SearchMatchProduct = Product & {
   search_rank?: number | string;
   manufacturer_name?: string | null;
-  search_match_type?: 'direct' | 'synonym' | 'related' | 'fuzzy';
+  search_match_type?: 'direct' | 'synonym' | 'related' | 'fuzzy' | 'semantic';
+  /** 0..1 closeness of meaning (semantic search only). */
+  semantic_score?: number;
 };
 
 /** Exact query > real synonym > similarly-related product. */
@@ -124,6 +126,8 @@ export function relevanceScore(product: SearchMatchProduct, query: string): numb
   const safeServerRank = Number.isFinite(serverRank) && serverRank > 0 ? Math.min(serverRank, 180) : 0;
   if (product.search_match_type === 'related') return 70 + Math.min(safeServerRank, 100) / 20;
   if (product.search_match_type === 'fuzzy') return 60;
+  // Matched by meaning: below real names and synonyms, above related categories.
+  if (product.search_match_type === 'semantic') return 100 + Math.min(1, Number(product.semantic_score) || 0) * 200;
   if (product.search_match_type === 'synonym') return 370 + Math.min(safeServerRank, 100) / 10;
   return safeServerRank;
 }
