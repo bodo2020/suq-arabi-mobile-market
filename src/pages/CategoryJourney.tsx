@@ -323,7 +323,10 @@ export default function CategoryJourney() {
       {/* Fixed to the viewport: scrolled products pass behind translucent glass. */}
       <div
         className="fixed inset-x-0 z-[45] border-y border-emerald-100/70 bg-white pb-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
-        style={{ top: 'var(--top-nav-height, 68px)' }}
+        // Own compositing layer: on very long pages the Android WebView could
+        // skip painting this fixed bar during fast finger scrolls ("it
+        // disappears"); a promoted layer is always drawn above the content.
+        style={{ top: 'var(--top-nav-height, 68px)', transform: 'translateZ(0)', willChange: 'transform', backfaceVisibility: 'hidden' }}
       >
         <div className="mx-auto w-full max-w-7xl">
           {/* Main categories: the one in view is underlined and kept in the centre */}
