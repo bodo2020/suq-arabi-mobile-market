@@ -11,13 +11,15 @@ import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import ProductCard from '@/components/ui/ProductCard';
 import { Button } from '@/components/ui/button';
 import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
-import HomeQuickLinks from '@/components/sections/HomeQuickLinks';
 import HomeCategoryRails from '@/components/sections/HomeCategoryRails';
 import { inStock, inStockCounts, orderCategoriesForHome, useBranchCatalog } from '@/hooks/useBranchCatalog';
+import { pickForRail } from '@/lib/homeRanking';
 import HomeSectionHeader, { HOME_SECTION_CARD } from '@/components/sections/HomeSectionHeader';
 import {
   defaultHomeSections,
   getHomeAnalyticsSessionKey,
+  getHomeBestSellers,
+  getMyBuyAgainIds,
   getHomeRecommendationIds,
   getPublicHomePage,
   HomeSectionConfig,
@@ -33,23 +35,15 @@ const eventMetadata = (section: HomeSectionConfig) => ({
   experiment_variant: section.experiment_variant || null,
 });
 
-/** Targets for the home shortcuts ("الأكثر طلبًا" / "وصل جديد"). */
-const SECTION_ANCHORS: Partial<Record<HomeSectionConfig['section_type'], string>> = {
-  smart_recommendations: 'home-popular',
-  new_arrivals: 'home-new',
-};
-
 const TrackedSection = ({
   pageId,
   branchId,
   section,
-  anchor,
   children,
 }: {
   pageId?: string | null;
   branchId?: string | null;
   section: HomeSectionConfig;
-  anchor?: string;
   children: React.ReactNode;
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -73,8 +67,6 @@ const TrackedSection = ({
   return (
     <div
       ref={ref}
-      id={anchor}
-      className={anchor ? 'scroll-mt-28' : undefined}
       onClickCapture={event => {
         if (!pageId || section.id.startsWith('fallback-')) return;
         const metadata = eventMetadata(section);
@@ -137,8 +129,10 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
   const needsSmart = sections.some(section => section.section_type === 'smart_recommendations');
   const needsRails = sections.some(section => section.section_type === 'category_rails');
   const needsNew = sections.some(section => section.section_type === 'new_arrivals');
+  const needsBest = sections.some(section => section.section_type === 'best_sellers');
+  const needsBuyAgain = sections.some(section => section.section_type === 'buy_again');
   // The catalog also tells the categories grid which sections have stock.
-  const needsCatalog = needsFeatured || needsSmart || needsRails || needsNew || needsCategories;
+  const needsCatalog = needsFeatured || needsSmart || needsRails || needsNew || needsCategories || needsBest || needsBuyAgain;
   const recommendationLimit = React.useMemo(() => Math.max(12, ...sections
     .filter(section => section.section_type === 'smart_recommendations')
     .map(section => Math.max(3, Math.min(24, Number(section.data_source?.limit || 12))))), [sections]);
@@ -174,6 +168,43 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
   const homeCategories = React.useMemo(
     () => orderCategoriesForHome(categoriesQuery.data || [], catalogQuery.data ? inStockCounts(catalogQuery.data) : null),
     [categoriesQuery.data, catalogQuery.data],
+  );
+
+  // Month's best sellers: their own rail, and the weight that ranks products inside every other rail.
+  const bestSellersQuery = useQuery({
+    queryKey: ['home-best-sellers', branchQuery.data],
+    queryFn: () => getHomeBestSellers(branchQuery.data || null),
+    enabled: needsCatalog && Boolean(branchQuery.data),
+    staleTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const buyAgainQuery = useQuery({
+    queryKey: ['home-buy-again', user?.id],
+    queryFn: getMyBuyAgainIds,
+    enabled: needsBuyAgain && Boolean(user?.id),
+    staleTime: 5 * 60_000,
+  });
+
+  const sold = bestSellersQuery.data?.sold;
+  const productById = React.useMemo(() => new Map(availableCatalog.map(product => [product.id, product])), [availableCatalog]);
+  const byIds = React.useCallback((ids: string[] | undefined) => (ids || [])
+    .map(id => productById.get(id))
+    .filter((product): product is Product => Boolean(product)), [productById]);
+
+  // The customer's usual products, most bought first, lightly reshuffled each open.
+  const buyAgainPicks = React.useMemo(
+    () => pickForRail(byIds(buyAgainQuery.data).slice(0, 24), { limit: 12, rotation: 1, perFamily: 3 }),
+    [byIds, buyAgainQuery.data],
+  );
+  // Top sellers that are in stock, rotating among the top 30.
+  const bestPicks = React.useMemo(() => pickForRail(byIds(bestSellersQuery.data?.ids).slice(0, 30), {
+    limit: 12, sold, rotation: 1.2, exclude: new Set(buyAgainPicks.map(product => product.id)),
+  }), [byIds, bestSellersQuery.data, sold, buyAgainPicks]);
+  // Lower rails skip what these two already show.
+  const shownAbove = React.useMemo(
+    () => new Set([...buyAgainPicks, ...bestPicks].map(product => product.id)),
+    [buyAgainPicks, bestPicks],
   );
 
   const recommendationQuery = useQuery({
@@ -215,21 +246,16 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
 
     if (section.section_type === 'categories') {
       const categories = homeCategories;
-      // Shortcuts sit right above the sections grid, so they show even when
-      // the banners are switched off or hidden by an A/B test.
       return (
-        <div className="space-y-5">
-        <HomeQuickLinks />
         <section className={HOME_SECTION_CARD}>
-          <HomeSectionHeader title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle || 'وصل للي محتاجه بسرعة'} href="/categories" />
+          <HomeSectionHeader title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle} />
           {categoriesQuery.isLoading ? (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">{Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)}</div>
           ) : categoriesQuery.isError && !categoriesQuery.data ? (
             <div className="rounded-2xl bg-gray-50 p-6 text-center"><p className="mb-3 text-sm text-gray-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
           ) : (
-            // Same cards as the categories page (3D artwork, brand mint), smaller,
-            // and every section that has something to order.
-            <div className="cat-grid cat-grid--compact">
+            // Same cards as the categories page; every section that has something to order.
+            <div className="cat-grid">
               {categories.map((cat: MainCategory, index: number) => (
                 <CategoryTile
                   key={cat.id}
@@ -244,8 +270,22 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
             </div>
           )}
         </section>
-        </div>
       );
+    }
+
+    if (section.section_type === 'buy_again') {
+      // Only for customers who have bought more than 5 different products (the server returns nothing before that).
+      if (!user?.id || !buyAgainPicks.length) return null;
+      return renderProductRail(buyAgainPicks, false, sectionTitle || 'اشتريها تاني', sectionSubtitle || 'الحاجات اللي بتشتريها على طول');
+    }
+
+    if (section.section_type === 'best_sellers') {
+      if (!branchQuery.data) return null;
+      const loading = catalogQuery.isLoading || bestSellersQuery.isLoading;
+      if (!loading && !bestPicks.length) return null;
+      const windowDays = bestSellersQuery.data?.windowDays || 7;
+      const subtitle = windowDays <= 7 ? 'أكتر حاجات اتباعت الأسبوع ده' : windowDays <= 31 ? 'أكتر حاجات اتباعت الشهر ده' : 'أكتر حاجات بيطلبها عملاءنا';
+      return renderProductRail(bestPicks, loading, sectionTitle || 'الأكثر مبيعًا', sectionSubtitle || subtitle);
     }
 
     if (section.section_type === 'featured_products') {
@@ -273,16 +313,17 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
     if (section.section_type === 'new_arrivals') {
       if (!branchQuery.data) return null;
       const limit = Math.max(3, Math.min(24, Number(source.limit || 12)));
-      const newest = [...availableCatalog]
+      // Rotate among the newest arrivals rather than always the same latest few.
+      const newest = pickForRail([...availableCatalog]
         .filter(product => product.created_at)
         .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-        .slice(0, limit);
+        .slice(0, limit * 3), { limit, rotation: 3, exclude: shownAbove });
       return renderProductRail(newest, catalogQuery.isLoading, sectionTitle || 'وصل جديد', sectionSubtitle || 'أحدث المنتجات اللي نزلت المحل');
     }
 
     if (section.section_type === 'category_rails') {
       if (!branchQuery.data) return null;
-      return <HomeCategoryRails categories={homeCategories} catalog={catalog} loading={catalogQuery.isLoading || categoriesQuery.isLoading} />;
+      return <HomeCategoryRails categories={homeCategories} catalog={catalog} sold={sold} exclude={shownAbove} loading={catalogQuery.isLoading || categoriesQuery.isLoading} />;
     }
 
     if (section.section_type === 'product_collection') {
@@ -300,7 +341,7 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
         const content = renderSection(section);
         if (!content) return null;
         return (
-          <TrackedSection key={section.section_key || section.id} pageId={homeQuery.data?.id} branchId={branchQuery.data} section={section} anchor={SECTION_ANCHORS[section.section_type]}>
+          <TrackedSection key={section.section_key || section.id} pageId={homeQuery.data?.id} branchId={branchQuery.data} section={section}>
             {content}
           </TrackedSection>
         );

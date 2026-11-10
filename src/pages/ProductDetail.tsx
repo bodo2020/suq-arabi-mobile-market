@@ -27,6 +27,8 @@ import { useCart } from '@/contexts/useCart';
 import { Product, getRelatedProducts, getCompanyById, Company } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 import '@/components/ui/product-badges.css';
+import { useIsBestSeller } from '@/hooks/useBestSellers';
+import { useProductSoldTier } from '@/hooks/useProductSoldTier';
 
 const ProductSuggestions = React.lazy(() => import('@/components/product/ProductSuggestions'));
 
@@ -181,6 +183,8 @@ const ProductDetail = () => {
     unit_of_measure: 'قطعة',
   } as Product) : null, [id, isPreviewOnly, pendingPreview?.name, pendingPreview?.image]);
   const product: Product | null = serverProduct || previewDisplayProduct;
+  const bestSeller = useIsBestSeller(product?.id);
+  const soldTier = useProductSoldTier(product?.id);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [extrasForId, setExtrasForId] = useState<string | null>(null);
@@ -1182,6 +1186,8 @@ const ProductDetail = () => {
                   <span className="pd-chip pd-chip--ok">متوفر للطلب</span>
                 )}
                 {discount > 0 && !isPreviewOnly && <span className="pd-chip pd-chip--sale">عرض · خصم {money(discount)}٪</span>}
+                {!isPreviewOnly && bestSeller && <span className="pd-chip pd-chip--hot">الأكثر طلبًا</span>}
+                {!isPreviewOnly && soldTier && <span className="pd-chip pd-chip--sold">اتباع منه +{money(soldTier)} في آخر شهر</span>}
                 {bulkMode && <span className="pd-chip pd-chip--bulk">جملة</span>}
               </div>
               <h1 className="text-[21px] font-black leading-[1.45] text-slate-950">{displayName}</h1>
@@ -1310,6 +1316,8 @@ const ProductDetail = () => {
                 <span className="pd-chip pd-chip--ok">متوفر للطلب</span>
               )}
               {discount > 0 && <span className="pd-chip pd-chip--sale">عرض · خصم {money(discount)}٪</span>}
+              {bestSeller && <span className="pd-chip pd-chip--hot">الأكثر طلبًا</span>}
+              {soldTier && <span className="pd-chip pd-chip--sold">اتباع منه +{money(soldTier)} في آخر شهر</span>}
               {weighted && <span className="pd-chip pd-chip--ok"><Scale size={13} />بالوزن</span>}
             </div>
 

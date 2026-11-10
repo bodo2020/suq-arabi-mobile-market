@@ -5,14 +5,32 @@ import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import HomeSectionHeader, { HOME_SECTION_CARD } from '@/components/sections/HomeSectionHeader';
 import { categoryArt } from '@/lib/categoryStyle';
 import { getSubcategories, type MainCategory, type Product } from '@/lib/supabase';
-import { displayOrder, inStock } from '@/hooks/useBranchCatalog';
+import { inStock } from '@/hooks/useBranchCatalog';
+import { pickForRail } from '@/lib/homeRanking';
 import { getProductListWithVariants } from '@/utils/productUtils';
 
 type Subcategory = { id: string; name: string; category_id: string };
 
-const RAIL_LIMIT = 12;
+type Group = {
+  key: string;
+  title: string;
+  subtitle?: string;
+  icon: string | null;
+  href: string;
+  products: Product[];
+  score: number;
+};
 
-/** Mounts its children only once the box gets near the screen (15 rails of cards is a lot to paint at once). */
+/** Products per group row. */
+const GROUP_LIMIT = 10;
+/** Groups shown per app open; the rest rotate in on later opens (all are in the sections grid). */
+const GROUPS_PER_OPEN = 8;
+/** A group needs at least this many orderable products. */
+const MIN_GROUP_PRODUCTS = 4;
+
+const OPEN_SEED = Math.random();
+
+/** Mounts its children only once the box gets near the screen. */
 function NearScreen({ minHeight, children }: { minHeight: number; children: React.ReactNode }) {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const [near, setNear] = React.useState(false);
@@ -29,44 +47,15 @@ function NearScreen({ minHeight, children }: { minHeight: number; children: Reac
   return <div ref={ref} style={near ? undefined : { minHeight }}>{near ? children : null}</div>;
 }
 
-function CategoryRail({ category, products, subcategories }: { category: MainCategory; products: Product[]; subcategories: Subcategory[] }) {
-  const [selected, setSelected] = React.useState<string | null>(null);
-
-  // Only subsections that have something to order right now get a chip.
-  const chips = React.useMemo(() => {
-    const withStock = new Set(products.map(product => product.subcategory_id).filter(Boolean));
-    return subcategories.filter(sub => withStock.has(sub.id));
-  }, [products, subcategories]);
-
-  const shown = React.useMemo(() => {
-    const list = selected ? products.filter(product => product.subcategory_id === selected) : products;
-    return getProductListWithVariants(displayOrder(list).slice(0, RAIL_LIMIT));
-  }, [products, selected]);
-
+function GroupRail({ group, sold, exclude }: { group: Group; sold?: Map<string, number>; exclude?: Set<string> }) {
+  const shown = React.useMemo(
+    () => getProductListWithVariants(pickForRail(group.products, { limit: GROUP_LIMIT, sold, exclude })),
+    [group.products, sold, exclude],
+  );
+  if (!shown.length) return null;
   return (
     <section className={HOME_SECTION_CARD}>
-      <HomeSectionHeader title={category.name.trim()} icon={categoryArt(category.id)} href={`/category/${category.id}`} />
-      {chips.length > 1 && (
-        <div className="hide-scrollbar -mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1" dir="rtl" role="tablist" aria-label={`أقسام ${category.name}`}>
-          {[{ id: null as string | null, name: 'الكل' }, ...chips].map(chip => {
-            const on = selected === chip.id;
-            return (
-              <button
-                key={chip.id || 'all'}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                onClick={() => setSelected(chip.id)}
-                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${on
-                  ? 'border-[#005931] bg-[#005931] text-white'
-                  : 'border-[#dfe8e3] bg-white text-[#23382d] dark:border-white/10 dark:bg-[#17211b] dark:text-[#dbe8e0]'}`}
-              >
-                {chip.name.trim()}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      <HomeSectionHeader title={group.title} subtitle={group.subtitle} icon={group.icon} href={group.href} />
       <div className="hide-scrollbar flex gap-3 overflow-x-auto pb-2" dir="rtl">
         {shown.map(product => (
           <div key={product.variantKey} className="w-[112px] shrink-0 sm:w-[148px]"><ProductCard product={product} /></div>
@@ -76,29 +65,99 @@ function CategoryRail({ category, products, subcategories }: { category: MainCat
   );
 }
 
-/** One rail per section (in the home grid's order) with its orderable products and subsection chips. */
-export default function HomeCategoryRails({ categories, catalog, loading }: { categories: MainCategory[]; catalog: Product[]; loading: boolean }) {
+/**
+ * Product groups under the fixed rails. Instead of one long row per section,
+ * the groups are specific subsections ("زبادي", "شيبس", "بن"...) that are
+ * selling this week, plus a rotating share of the others, so every open
+ * shows a different handful. At most one group per section in the first
+ * pass (two if needed to fill), and a section with no subsections falls
+ * back to a single group for the whole section.
+ */
+export default function HomeCategoryRails({ categories, catalog, sold, exclude, loading }: {
+  categories: MainCategory[];
+  catalog: Product[];
+  sold?: Map<string, number>;
+  exclude?: Set<string>;
+  loading: boolean;
+}) {
   const subcategoriesQuery = useQuery({
     queryKey: ['categories', 'subcategories-all'],
     queryFn: () => getSubcategories() as Promise<Subcategory[]>,
     staleTime: 15 * 60_000,
   });
 
-  const byCategory = React.useMemo(() => {
-    const grouped: Record<string, Product[]> = {};
+  const groups = React.useMemo(() => {
+    const categoryById = new Map(categories.map(category => [category.id, category]));
+    const bySub = new Map<string, Product[]>();
+    const byCategoryNoSub = new Map<string, Product[]>();
     for (const product of catalog) {
-      if (product.main_category_id && inStock(product)) (grouped[product.main_category_id] ||= []).push(product);
+      if (!inStock(product) || !product.main_category_id || !categoryById.has(product.main_category_id)) continue;
+      if (product.subcategory_id) {
+        const list = bySub.get(product.subcategory_id) || [];
+        list.push(product);
+        bySub.set(product.subcategory_id, list);
+      } else {
+        const list = byCategoryNoSub.get(product.main_category_id) || [];
+        list.push(product);
+        byCategoryNoSub.set(product.main_category_id, list);
+      }
     }
-    return grouped;
-  }, [catalog]);
 
-  const subsByCategory = React.useMemo(() => {
-    const grouped: Record<string, Subcategory[]> = {};
-    for (const sub of subcategoriesQuery.data || []) (grouped[sub.category_id] ||= []).push(sub);
-    return grouped;
-  }, [subcategoriesQuery.data]);
+    // Selling this week counts most; the random share rotates the rest in.
+    const scoreOf = (products: Product[]) =>
+      products.reduce((sum, product) => sum + Math.log1p(sold?.get(product.id) || 0), 0);
+    // Stable per app open, different next open.
+    const rotation = (key: string) => {
+      let h = Math.floor(OPEN_SEED * 2 ** 31);
+      for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 0x5bd1e995) ^ (h >>> 15);
+      return ((h >>> 0) / 4294967296) * 3;
+    };
 
-  if (loading) {
+    const candidates: (Group & { categoryId: string })[] = [];
+    for (const sub of subcategoriesQuery.data || []) {
+      const products = bySub.get(sub.id) || [];
+      const category = categoryById.get(sub.category_id);
+      if (!category || products.length < MIN_GROUP_PRODUCTS) continue;
+      candidates.push({
+        key: sub.id,
+        categoryId: category.id,
+        title: sub.name.trim(),
+        subtitle: category.name.trim(),
+        icon: categoryArt(category.id),
+        href: `/category/${category.id}/subcategory/${sub.id}`,
+        products,
+        score: scoreOf(products) + rotation(sub.id),
+      });
+    }
+    for (const [categoryId, products] of byCategoryNoSub) {
+      const category = categoryById.get(categoryId);
+      if (!category || products.length < MIN_GROUP_PRODUCTS) continue;
+      candidates.push({
+        key: `cat:${categoryId}`,
+        categoryId,
+        title: category.name.trim(),
+        icon: categoryArt(categoryId),
+        href: `/category/${categoryId}`,
+        products,
+        score: scoreOf(products) + rotation(categoryId),
+      });
+    }
+    candidates.sort((a, b) => b.score - a.score);
+
+    const picked: typeof candidates = [];
+    const perCategory = new Map<string, number>();
+    for (const cap of [1, 2]) {
+      for (const candidate of candidates) {
+        if (picked.length >= GROUPS_PER_OPEN) break;
+        if (picked.includes(candidate) || (perCategory.get(candidate.categoryId) || 0) >= cap) continue;
+        picked.push(candidate);
+        perCategory.set(candidate.categoryId, (perCategory.get(candidate.categoryId) || 0) + 1);
+      }
+    }
+    return picked.sort((a, b) => b.score - a.score);
+  }, [categories, catalog, sold, subcategoriesQuery.data]);
+
+  if (loading || subcategoriesQuery.isLoading) {
     return (
       <section className={HOME_SECTION_CARD}>
         <div className="mb-4 h-7 w-40 rounded-full bg-[#eef3f0]" />
@@ -109,9 +168,9 @@ export default function HomeCategoryRails({ categories, catalog, loading }: { ca
 
   return (
     <div className="space-y-7">
-      {categories.filter(category => byCategory[category.id]?.length).map(category => (
-        <NearScreen key={category.id} minHeight={290}>
-          <CategoryRail category={category} products={byCategory[category.id]} subcategories={subsByCategory[category.id] || []} />
+      {groups.map(group => (
+        <NearScreen key={group.key} minHeight={250}>
+          <GroupRail group={group} sold={sold} exclude={exclude} />
         </NearScreen>
       ))}
     </div>

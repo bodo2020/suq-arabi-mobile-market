@@ -24,20 +24,6 @@ export function useBranchCatalog(enabled = true) {
 
 export const inStock = (product: Product) => Number(product.quantity || 0) > 0;
 
-const isCroppedPhoto = (product: Product) =>
-  Array.isArray(product.image_urls) && product.image_urls.some(url => typeof url === 'string' && url.includes('/cropped/'));
-
-/** Orderable products first, clean (cropped) photos before the rest; stable otherwise. */
-export function displayOrder(products: Product[]): Product[] {
-  return products
-    .map((product, index) => ({ product, index }))
-    .sort((a, b) =>
-      Number(inStock(b.product)) - Number(inStock(a.product))
-      || Number(isCroppedPhoto(b.product)) - Number(isCroppedPhoto(a.product))
-      || a.index - b.index)
-    .map(entry => entry.product);
-}
-
 /** Orderable products per main category. */
 export function inStockCounts(products: Product[]): Record<string, number> {
   const counts: Record<string, number> = {};

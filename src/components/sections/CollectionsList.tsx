@@ -4,6 +4,7 @@ import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { getProductListWithVariants } from '@/utils/productUtils';
+import { pickForRail } from '@/lib/homeRanking';
 import HomeSectionHeader, { HOME_SECTION_CARD } from './HomeSectionHeader';
 
 interface CollectionData {
@@ -42,7 +43,8 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
   return (
     <>
       {collections.map(collection => {
-        const collectionProducts = getProductsByIds(collection.products);
+        // Hand-picked list, but a rotating dozen of it each time the app opens.
+        const collectionProducts = pickForRail(getProductsByIds(collection.products), { limit: 12, perFamily: 3 });
         
         if (collectionProducts.length === 0) return null;
         

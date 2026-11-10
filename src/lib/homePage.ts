@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type HomeSectionType = 'hero_banners' | 'categories' | 'featured_products' | 'product_collection' | 'smart_recommendations' | 'new_arrivals' | 'category_rails';
+export type HomeSectionType = 'hero_banners' | 'categories' | 'featured_products' | 'product_collection' | 'smart_recommendations' | 'new_arrivals' | 'category_rails' | 'best_sellers' | 'buy_again';
 export type HomeEventType = 'impression' | 'click' | 'add_to_cart';
 export type HomeExperimentVariant = 'A' | 'B';
 
@@ -68,7 +68,8 @@ export const getHomeAnalyticsSessionKey = () => {
 export const defaultHomeSections: HomeSectionConfig[] = [
   { id: 'fallback-banners', section_key: 'fallback-banners', section_type: 'hero_banners', title: 'العروض', sort_order: 10, is_active: true },
   { id: 'fallback-categories', section_key: 'fallback-categories', section_type: 'categories', title: 'تسوق حسب القسم', subtitle: 'وصل للي محتاجه بسرعة', sort_order: 20, is_active: true },
-  { id: 'fallback-popular', section_key: 'fallback-popular', section_type: 'smart_recommendations', title: 'الأكثر طلبًا', sort_order: 40, is_active: true, data_source: { limit: 12 } },
+  { id: 'fallback-buy-again', section_key: 'fallback-buy-again', section_type: 'buy_again', title: 'اشتريها تاني', sort_order: 25, is_active: true, data_source: { limit: 12 } },
+  { id: 'fallback-best', section_key: 'fallback-best', section_type: 'best_sellers', title: 'الأكثر مبيعًا', sort_order: 28, is_active: true, data_source: { limit: 12 } },
   { id: 'fallback-new', section_key: 'fallback-new', section_type: 'new_arrivals', title: 'وصل جديد', sort_order: 50, is_active: true, data_source: { limit: 12 } },
   { id: 'fallback-rails', section_key: 'fallback-rails', section_type: 'category_rails', title: 'تسوق من كل قسم', sort_order: 60, is_active: true },
 ];
@@ -96,6 +97,39 @@ export const getPublicHomePage = async (
   } catch (error) {
     console.warn('Using cached/default home configuration:', error);
     return readCachedHome(branchId, cacheScope);
+  }
+};
+
+export type HomeBestSellers = { windowDays: number; sold: Map<string, number>; ids: string[] };
+
+/** Store-wide best sellers (POS + online), last 30 days; the server widens the window while sales are thin. */
+export const getHomeBestSellers = async (branchId?: string | null): Promise<HomeBestSellers> => {
+  try {
+    const client = supabase as any;
+    const { data, error } = await client.rpc('get_home_best_sellers_v1', { p_branch_id: branchId || null, p_min: 24 });
+    if (error) throw error;
+    const items: { id: string; sold: number }[] = Array.isArray(data?.items) ? data.items : [];
+    return {
+      windowDays: Number(data?.window_days || 30),
+      sold: new Map(items.map(item => [item.id, Number(item.sold) || 0])),
+      ids: items.map(item => item.id),
+    };
+  } catch (error) {
+    console.warn('Home best sellers unavailable:', error);
+    return { windowDays: 30, sold: new Map(), ids: [] };
+  }
+};
+
+/** The signed-in customer's usual products; empty until they have bought more than 5 different ones. */
+export const getMyBuyAgainIds = async (): Promise<string[]> => {
+  try {
+    const client = supabase as any;
+    const { data, error } = await client.rpc('get_my_buy_again_v1', { p_limit: 24 });
+    if (error) throw error;
+    return Array.isArray(data) ? data.filter((id): id is string => typeof id === 'string') : [];
+  } catch (error) {
+    console.warn('Buy again unavailable:', error);
+    return [];
   }
 };
 

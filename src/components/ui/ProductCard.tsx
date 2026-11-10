@@ -13,6 +13,7 @@ import FavoriteButton from './FavoriteButton';
 import WeightSelector from './WeightSelector';
 import SmartImage from './SmartImage';
 import { productCardImage } from '@/lib/productCardImage';
+import { useIsBestSeller } from '@/hooks/useBestSellers';
 import './product-badges.css';
 
 // Warm the lazily loaded detail page once the catalog is on screen, instead
@@ -66,6 +67,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const price = bulk ? Number(product.bulk_price || 0) : productUnitPrice(product);
   const regularPrice = Number(product.price || 0);
   const discount = !bulk && regularPrice > price && price > 0 ? Math.round((1 - price / regularPrice) * 100) : 0;
+  const bestSeller = useIsBestSeller(product.id);
   const unavailable = stock <= 0 || (wantsBulk && (!bulk || maxCartQuantity <= 0));
   const reachedStockLimit = Boolean(item && item.quantity >= maxCartQuantity);
   const limitedStock = !weighted && !unavailable && maxCartQuantity > 0 && maxCartQuantity <= 5;
@@ -237,6 +239,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div className="absolute right-1 top-1 z-20 flex flex-col items-start gap-1 sm:right-2 sm:top-2 sm:gap-1.5">
           {discount > 0 && <span className="pb-sale" aria-label={`خصم ${money(discount)}٪`}>-{money(discount)}٪</span>}
           {bulk && <span className="pb-bulk">{bulkUnitType}</span>}
+          {bestSeller && !unavailable && <span className="pb-hot">الأكثر طلبًا</span>}
         </div>
 
         {unavailable && <span className="pb-out">خلص</span>}
