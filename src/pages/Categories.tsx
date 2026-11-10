@@ -8,7 +8,7 @@ import CategoryTile, { CategoryOffersBanner } from '@/components/categories/Cate
 import { useCustomerDeliveryHeader } from '@/hooks/useCustomerDeliveryHeader';
 import { getBranchCatalog, getCategories, getCurrentDeliveryBranchId } from '@/lib/supabase';
 import { buildCategoryCovers } from '@/lib/categoryCovers';
-import { categoryStyle } from '@/lib/categoryStyle';
+import { categoryArt, categoryStyle } from '@/lib/categoryStyle';
 import '@/components/categories/category-tiles.css';
 
 const Categories = () => {
@@ -84,6 +84,7 @@ const Categories = () => {
                 name={category.name}
                 color={color}
                 images={covers?.byCategory[category.id] || []}
+                art={categoryArt(category.id)}
                 fallbackImage={category.image_url}
                 onClick={() => navigate(`/category/${category.id}`)}
               />

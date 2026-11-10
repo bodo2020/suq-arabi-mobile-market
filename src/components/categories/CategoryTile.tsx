@@ -13,13 +13,24 @@ type Props = {
   name: string;
   color: string;
   images: string[];
+  /** Section artwork (transparent 3D render); preferred over product photos. */
+  art?: string | null;
   fallbackImage?: string | null;
   onClick: () => void;
 };
 
 /** Rectangle category card: name on top, real product photos below. */
-export default function CategoryTile({ name, color, images, fallbackImage, onClick }: Props) {
+export default function CategoryTile({ name, color, images, art, fallbackImage, onClick }: Props) {
+  const [artFailed, setArtFailed] = useState(false);
   const pictures = images.length ? images : fallbackImage ? [fallbackImage] : [];
+  if (art && !artFailed) {
+    return (
+      <button type="button" onClick={onClick} className="cat-tile" style={{ '--tile': color } as CSSProperties}>
+        <span className="cat-tile__name">{name.trim()}</span>
+        <img src={art} alt="" decoding="async" className="cat-tile__art" draggable={false} onError={() => setArtFailed(true)} />
+      </button>
+    );
+  }
   return (
     <button type="button" onClick={onClick} className="cat-tile" style={{ '--tile': color } as CSSProperties}>
       <span className="cat-tile__name">{name.trim()}</span>

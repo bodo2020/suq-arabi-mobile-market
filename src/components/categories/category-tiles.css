@@ -39,6 +39,20 @@
   overflow-wrap: anywhere;
 }
 
+/* Section artwork: transparent render sitting at the bottom of the card. */
+.cat-tile__art {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  bottom: 5%;
+  width: 86%;
+  height: 62%;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
 .cat-tile__pics { position: absolute; inset: auto 0 0 0; height: 66%; pointer-events: none; }
 
 .cat-tile__img {
