@@ -1,4 +1,5 @@
 import { getBranchCatalog, getCurrentDeliveryBranchId, supabase, type Product } from '@/lib/supabase';
+import { fuzzyFindProducts } from '@/lib/fuzzySearch';
 import { rankSearchProducts, searchAlternates, relatedSearches, type SearchMatchProduct } from '@/lib/arabicSearch';
 
 const rpc = supabase.rpc.bind(supabase) as unknown as (
@@ -117,6 +118,20 @@ export async function searchBranchProductsIncludingUnavailable(
       const related = relatedSearches(cleaned);
       await Promise.all(related.map(term =>
         addSecondary(term, 'related', Math.min(count, 12))));
+    }
+  }
+
+  // Few hits usually means a typo: add typo-tolerant matches from the
+  // (server-cached) branch catalog, ranked below exact and synonym results.
+  if (merged.size < 6 && cleaned.length >= 3 && !/^\d+$/.test(cleaned)) {
+    try {
+      const catalog = await getBranchCatalog({ limit: 1500 });
+      for (const row of fuzzyFindProducts(catalog, cleaned, 24)) {
+        const key = keyFor(row);
+        if (!merged.has(key)) merged.set(key, { ...row, search_match_type: 'fuzzy' });
+      }
+    } catch (error) {
+      console.warn('Fuzzy search skipped', error);
     }
   }
 
