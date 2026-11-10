@@ -3,7 +3,7 @@ import React, { memo } from 'react';
 import { Product } from '@/lib/supabase';
 import ProductCard from '@/components/ui/ProductCard';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { getProductListWithVariants } from '@/utils/productUtils';
+import { getRegularVariants } from '@/utils/productUtils';
 import { pickForRail } from '@/lib/homeRanking';
 import HomeSectionHeader, { HOME_SECTION_CARD } from './HomeSectionHeader';
 
@@ -54,7 +54,7 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
             
             <ScrollArea className="w-full whitespace-nowrap rounded-2xl" dir="rtl">
               <div className="flex gap-3 pb-3">
-                {getProductListWithVariants(collectionProducts).map(product => (
+                {getRegularVariants(collectionProducts).map(product => (
                   <div key={product.variantKey} className="w-[112px] flex-shrink-0 sm:w-[148px]">
                     <ProductCard 
                       product={product}

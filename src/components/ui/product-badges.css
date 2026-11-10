@@ -28,6 +28,25 @@
 }
 @media (min-width: 640px) { .pb-bulk { padding: 4px 8px; font-size: 10.5px; } }
 
+/* Carton count on a carton card that reuses the piece photo. */
+.pb-carton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 38px;
+  border-radius: 9px;
+  border: 1.5px solid #b07a3c;
+  background: #f6e3c4;
+  padding: 2px 6px 3px;
+  color: #6b4314;
+  line-height: 1.05;
+  box-shadow: 0 3px 8px rgba(107, 67, 20, .22);
+  pointer-events: none;
+}
+.pb-carton b { font-size: 13px; font-weight: 900; }
+.pb-carton small { font-size: 8px; font-weight: 800; }
+@media (min-width: 640px) { .pb-carton { min-width: 48px; padding: 3px 8px 4px; } .pb-carton b { font-size: 16px; } .pb-carton small { font-size: 10px; } }
+
 /* Week's best sellers: small green sticker with a flame dot. */
 .pb-hot {
   display: inline-flex;

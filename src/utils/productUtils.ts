@@ -1,4 +1,5 @@
 import { Product } from '@/lib/supabase';
+import { productUnitPrice } from '@/lib/productPurchase';
 
 // Function to create product variants (regular and bulk) for display
 export const getProductVariants = (product: Product) => {
@@ -23,7 +24,9 @@ export const getProductVariants = (product: Product) => {
       id: product.id, // Keep original ID for linking
       variantKey: `${product.id}_bulk`, // Unique key for React rendering
       price: product.bulk_price, // Override price with bulk price
-      offer_price: undefined // Remove offer price for bulk
+      offer_price: undefined, // Remove offer price for bulk
+      // What one piece sells for, so the card can show the carton bought piece by piece.
+      unit_reference_price: productUnitPrice(product),
     });
   }
   
@@ -34,3 +37,6 @@ export const getProductVariants = (product: Product) => {
 export const getProductListWithVariants = (products: Product[]) => {
   return products.flatMap(product => getProductVariants(product));
 };
+
+/** Home rails and groups: the piece only, no carton card next to it. */
+export const getRegularVariants = (products: Product[]) => products.map(product => getProductVariants(product)[0]);

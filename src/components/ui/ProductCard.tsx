@@ -65,9 +65,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const stock = Math.max(0, Number(product.quantity || 0));
   const maxCartQuantity = weighted ? Math.floor(stock * 1000) : bulk ? Math.floor(stock / Math.max(pack, 1)) : Math.floor(stock);
   const price = bulk ? Number(product.bulk_price || 0) : productUnitPrice(product);
-  const regularPrice = Number(product.price || 0);
-  const discount = !bulk && regularPrice > price && price > 0 ? Math.round((1 - price / regularPrice) * 100) : 0;
-  const bestSeller = useIsBestSeller(product.id);
+  // Carton: compare with buying the same pieces one by one (shown like an offer).
+  const unitReference = Number((product as Product & { unit_reference_price?: number }).unit_reference_price ?? productUnitPrice(product));
+  const regularPrice = bulk ? unitReference * pack : Number(product.price || 0);
+  const discount = regularPrice > price && price > 0 ? Math.round((1 - price / regularPrice) * 100) : 0;
+  const isBestSeller = useIsBestSeller(product.id);
+  // The sticker belongs to the piece; the carton card has its own carton badge.
+  const bestSeller = isBestSeller && !bulk;
   const unavailable = stock <= 0 || (wantsBulk && (!bulk || maxCartQuantity <= 0));
   const reachedStockLimit = Boolean(item && item.quantity >= maxCartQuantity);
   const limitedStock = !weighted && !unavailable && maxCartQuantity > 0 && maxCartQuantity <= 5;
@@ -84,6 +88,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ? `/product/${product.id}?unit=bulk${variantId ? `&variant=${encodeURIComponent(variantId)}` : ''}${storeQuery ? `&${storeQuery}` : ''}`
     : `/product/${product.id}${storeQuery ? `?${storeQuery}` : ''}`;
   const imageSrc = bulkImageUrl || product.image_urls?.[0] || PRODUCT_PLACEHOLDER;
+  // Carton without its own photo: mark the piece photo with the pack count.
+  const cartonOnPiecePhoto = bulk && (!bulkImageUrl || bulkImageUrl === product.image_urls?.[0]);
   useEffect(() => {
     registerBrowsableProduct(detailHref, product);
     scheduleDetailWarmup();
@@ -238,7 +244,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         <div className="absolute right-1 top-1 z-20 flex flex-col items-start gap-1 sm:right-2 sm:top-2 sm:gap-1.5">
           {discount > 0 && <span className="pb-sale" aria-label={`خصم ${money(discount)}٪`}>-{money(discount)}٪</span>}
-          {bulk && <span className="pb-bulk">{bulkUnitType}</span>}
+          {cartonOnPiecePhoto ? (
+            <span className="pb-carton" aria-label={`${bulkUnitType} فيها ${money(pack)} قطعة`}>
+              <b>{money(pack)}×</b>
+              <small>{bulkUnitType}</small>
+            </span>
+          ) : bulk && <span className="pb-bulk">{bulkUnitType}</span>}
           {bestSeller && !unavailable && <span className="pb-hot">الأكثر طلبًا</span>}
         </div>
 

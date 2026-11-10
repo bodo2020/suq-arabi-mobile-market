@@ -7,7 +7,7 @@ import { categoryArt } from '@/lib/categoryStyle';
 import { getSubcategories, type MainCategory, type Product } from '@/lib/supabase';
 import { inStock } from '@/hooks/useBranchCatalog';
 import { pickForRail } from '@/lib/homeRanking';
-import { getProductListWithVariants } from '@/utils/productUtils';
+import { getRegularVariants } from '@/utils/productUtils';
 
 type Subcategory = { id: string; name: string; category_id: string };
 
@@ -49,7 +49,7 @@ function NearScreen({ minHeight, children }: { minHeight: number; children: Reac
 
 function GroupRail({ group, sold, exclude }: { group: Group; sold?: Map<string, number>; exclude?: Set<string> }) {
   const shown = React.useMemo(
-    () => getProductListWithVariants(pickForRail(group.products, { limit: GROUP_LIMIT, sold, exclude })),
+    () => getRegularVariants(pickForRail(group.products, { limit: GROUP_LIMIT, sold, exclude })),
     [group.products, sold, exclude],
   );
   if (!shown.length) return null;

@@ -26,7 +26,7 @@ import {
   trackHomeEvent,
 } from '@/lib/homePage';
 import { getCategories, getCurrentDeliveryBranchId, MainCategory, Product, supabase } from '@/lib/supabase';
-import { getProductListWithVariants } from '@/utils/productUtils';
+import { getRegularVariants } from '@/utils/productUtils';
 import { useUser } from '@/contexts/UserContext';
 
 const eventMetadata = (section: HomeSectionConfig) => ({
@@ -228,7 +228,7 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
       {loading ? (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">{Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}</div>
       ) : products.length ? (
-        <div className="hide-scrollbar flex gap-3 overflow-x-auto pb-3" dir="rtl">{getProductListWithVariants(products).map(product => <div key={product.variantKey} className="w-[112px] shrink-0 sm:w-[148px]"><ProductCard product={product} /></div>)}</div>
+        <div className="hide-scrollbar flex gap-3 overflow-x-auto pb-3" dir="rtl">{getRegularVariants(products).map(product => <div key={product.variantKey} className="w-[112px] shrink-0 sm:w-[148px]"><ProductCard product={product} /></div>)}</div>
       ) : null}
     </section>
   );

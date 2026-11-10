@@ -545,9 +545,11 @@ const ProductDetail = () => {
   const originalWeightedPrice = product && weighted
     ? Number(product.price || 0) * currentWeight / 1000
     : 0;
-  const regularPrice = Number(product?.price || 0);
-  const discount = !bulkMode && regularPrice > unitPrice && unitPrice > 0
-    ? Math.round((1 - unitPrice / regularPrice) * 100)
+  // Carton: shown as an offer against buying the same pieces one by one.
+  const regularPrice = bulkMode ? unitPrice * pack : Number(product?.price || 0);
+  const comparedPrice = bulkMode ? Number(product?.bulk_price || 0) : unitPrice;
+  const discount = regularPrice > comparedPrice && comparedPrice > 0
+    ? Math.round((1 - comparedPrice / regularPrice) * 100)
     : 0;
   const unavailable = isPreviewOnly || (bulkMode ? maxBulkQuantity <= 0 : weighted ? maxWeight <= 0 : maxRegularQuantity <= 0);
   const limitedStock = !weighted && !unavailable && (bulkMode ? maxBulkQuantity : maxRegularQuantity) <= 5;
