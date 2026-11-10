@@ -12,6 +12,8 @@ const run = (command, args, cwd) => {
 };
 
 run('npm', ['run', 'android:sync'], process.cwd());
-const gradlew = process.platform === 'win32' ? 'gradlew.bat' : './gradlew';
-run(gradlew, ['bundleRelease'], path.join(process.cwd(), 'android'));
+const androidDir = path.join(process.cwd(), 'android');
+// Full path: Windows does not always look in the working folder for a bare name.
+const gradlew = path.join(androidDir, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew');
+run(process.platform === 'win32' ? `"${gradlew}"` : gradlew, ['bundleRelease'], androidDir);
 console.log('\nPlay bundle: android/app/build/outputs/bundle/release/app-release.aab');
