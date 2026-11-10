@@ -15,7 +15,8 @@ export const CATEGORY_GROUPS: Array<{ value: CategoryGroup | 'all'; label: strin
 ];
 
 const RULES: Array<{ match: RegExp; color: string; group?: CategoryGroup }> = [
-  { match: /خضر|فاكه/, color: '#e6f5e9', group: 'fresh' },
+  { match: /خضار|خضر|فاكه/, color: '#e6f5e9', group: 'fresh' },
+  { match: /آيس|ايس كريم/, color: '#fde8ef', group: 'snacks' },
   { match: /البان|ألبان|بيض|جبن/, color: '#e7f0fb', group: 'fresh' },
   { match: /لحو|دواجن|فراخ/, color: '#fcebeb', group: 'fresh' },
   { match: /خبز|مخبوز/, color: '#fdf2df', group: 'fresh' },
