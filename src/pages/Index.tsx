@@ -5,6 +5,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import StoreStructuredData from '@/components/seo/StoreStructuredData';
 import DynamicHomeSections from '@/components/sections/DynamicHomeSections';
+import ActiveDeliveryStrip from '@/components/orders/ActiveDeliveryStrip';
 import { useCustomerDeliveryHeader } from '@/hooks/useCustomerDeliveryHeader';
 
 const Index = () => {
@@ -47,6 +48,7 @@ const Index = () => {
             </strong>
         </button>
 
+        <div className="mb-5 empty:hidden"><ActiveDeliveryStrip /></div>
         <DynamicHomeSections hidePromotions showBanners />
       </div>
     </MainLayout>
