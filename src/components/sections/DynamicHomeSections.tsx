@@ -1,10 +1,11 @@
 import React from 'react';
+import CategoryTile from '@/components/categories/CategoryTile';
+import { categoryArt, categoryStyle } from '@/lib/categoryStyle';
 import { useQuery } from '@tanstack/react-query';
 import { Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BannersContainer from '@/components/ui/BannersContainer';
 import BannerSkeleton from '@/components/ui/BannerSkeleton';
-import CategoryItem from '@/components/ui/CategoryItem';
 import CategorySkeleton from '@/components/ui/CategorySkeleton';
 import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import ProductCard from '@/components/ui/ProductCard';
@@ -206,8 +207,20 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
           ) : categoriesQuery.isError && !categoriesQuery.data ? (
             <div className="rounded-2xl bg-gray-50 p-6 text-center"><p className="mb-3 text-sm text-gray-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
           ) : (
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-              {categories.map((cat: MainCategory) => <div key={cat.id} className="min-w-0"><CategoryItem category={cat} hideTitle onClick={() => navigate(`/category/${cat.id}`)} /></div>)}
+            // Same cards as the categories page (3D artwork, brand mint); the first
+            // three rows here, the rest behind "عرض الكل".
+            <div className="cat-grid">
+              {categories.slice(0, 9).map((cat: MainCategory, index: number) => (
+                <CategoryTile
+                  key={cat.id}
+                  name={cat.name}
+                  color={categoryStyle(cat.name, index).color}
+                  images={[]}
+                  art={categoryArt(cat.id)}
+                  fallbackImage={cat.image_url}
+                  onClick={() => navigate(`/category/${cat.id}`)}
+                />
+              ))}
             </div>
           )}
         </section>
