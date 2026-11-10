@@ -6,7 +6,8 @@ import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import CategoryTile, { CategoryOffersBanner } from '@/components/categories/CategoryTile';
 import { useCustomerDeliveryHeader } from '@/hooks/useCustomerDeliveryHeader';
-import { getBranchCatalog, getCategories, getCurrentDeliveryBranchId } from '@/lib/supabase';
+import { getCategories } from '@/lib/supabase';
+import { useBranchCatalog } from '@/hooks/useBranchCatalog';
 import { buildCategoryCovers } from '@/lib/categoryCovers';
 import { categoryArt, categoryStyle } from '@/lib/categoryStyle';
 import '@/components/categories/category-tiles.css';
@@ -23,21 +24,9 @@ const Categories = () => {
     staleTime: 10 * 60_000,
   });
 
-  const branchQuery = useQuery({
-    queryKey: ['delivery-branch-id'],
-    queryFn: getCurrentDeliveryBranchId,
-    staleTime: 30_000,
-  });
-
-  // One request to the server's shared catalog copy; the card photos are picked here.
-  const coversQuery = useQuery({
-    queryKey: ['categories', 'covers', branchQuery.data],
-    enabled: Boolean(branchQuery.data),
-    queryFn: async () => buildCategoryCovers(await getBranchCatalog({ limit: 1500 })),
-    staleTime: 15 * 60_000,
-  });
-
-  const covers = coversQuery.data;
+  // Same cached catalog as the home page; the card photos are picked here.
+  const catalogQuery = useBranchCatalog();
+  const covers = useMemo(() => (catalogQuery.data ? buildCategoryCovers(catalogQuery.data) : undefined), [catalogQuery.data]);
   const tiles = useMemo(() => {
     const list = (categoriesQuery.data || []).map((category, index) => ({ category, ...categoryStyle(category.name, index) }));
     // Hide sections with nothing to order in this branch (once we know).

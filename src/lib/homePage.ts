@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type HomeSectionType = 'hero_banners' | 'categories' | 'featured_products' | 'product_collection' | 'smart_recommendations';
+export type HomeSectionType = 'hero_banners' | 'categories' | 'featured_products' | 'product_collection' | 'smart_recommendations' | 'new_arrivals' | 'category_rails';
 export type HomeEventType = 'impression' | 'click' | 'add_to_cart';
 export type HomeExperimentVariant = 'A' | 'B';
 
@@ -68,7 +68,9 @@ export const getHomeAnalyticsSessionKey = () => {
 export const defaultHomeSections: HomeSectionConfig[] = [
   { id: 'fallback-banners', section_key: 'fallback-banners', section_type: 'hero_banners', title: 'العروض', sort_order: 10, is_active: true },
   { id: 'fallback-categories', section_key: 'fallback-categories', section_type: 'categories', title: 'تسوق حسب القسم', subtitle: 'وصل للي محتاجه بسرعة', sort_order: 20, is_active: true },
-  { id: 'fallback-collections', section_key: 'fallback-collections', section_type: 'product_collection', title: 'مختارات سوبر ماركو', sort_order: 30, is_active: true, data_source: { all: true } },
+  { id: 'fallback-popular', section_key: 'fallback-popular', section_type: 'smart_recommendations', title: 'الأكثر طلبًا', sort_order: 40, is_active: true, data_source: { limit: 12 } },
+  { id: 'fallback-new', section_key: 'fallback-new', section_type: 'new_arrivals', title: 'وصل جديد', sort_order: 50, is_active: true, data_source: { limit: 12 } },
+  { id: 'fallback-rails', section_key: 'fallback-rails', section_type: 'category_rails', title: 'تسوق من كل قسم', sort_order: 60, is_active: true },
 ];
 
 export const getPublicHomePage = async (

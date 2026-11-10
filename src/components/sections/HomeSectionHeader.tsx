@@ -11,21 +11,26 @@ type HomeSectionHeaderProps = {
   subtitle?: string | null;
   href?: string;
   hrefLabel?: string;
+  /** Small picture shown instead of the gold accent bar (e.g. section artwork). */
+  icon?: string | null;
 };
 
 /** Brand section title: green heading with a gold accent bar and a mint "see all" pill. */
-export default function HomeSectionHeader({ title, subtitle, href, hrefLabel = 'عرض الكل' }: HomeSectionHeaderProps) {
+export default function HomeSectionHeader({ title, subtitle, href, hrefLabel = 'عرض الكل', icon }: HomeSectionHeaderProps) {
   if (!title && !subtitle && !href) return null;
   return (
-    <div className="mb-4 flex items-end justify-between gap-3">
-      <div className="min-w-0">
-        {title && (
-          <div className="flex items-center gap-2">
-            <span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-[#FFC120] to-[#cf9700]" />
-            <h2 className="truncate text-[19px] font-black leading-7 text-[#005931]"><BrandText>{title}</BrandText></h2>
-          </div>
-        )}
-        {subtitle && <p className="mt-0.5 pr-3.5 text-xs font-medium leading-5 text-slate-500"><BrandText>{subtitle}</BrandText></p>}
+    <div className={`mb-4 flex justify-between gap-3 ${icon ? 'items-center' : 'items-end'}`}>
+      <div className="flex min-w-0 items-center gap-2.5">
+        {icon && <img src={icon} alt="" decoding="async" className="h-10 w-10 shrink-0 rounded-xl bg-[#e8f5ed] object-contain p-0.5" draggable={false} />}
+        <div className="min-w-0">
+          {title && (
+            <div className="flex items-center gap-2">
+              {!icon && <span aria-hidden="true" className="h-6 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-[#FFC120] to-[#cf9700]" />}
+              <h2 className="truncate text-[19px] font-black leading-7 text-[#005931]"><BrandText>{title}</BrandText></h2>
+            </div>
+          )}
+          {subtitle && <p className={`mt-0.5 text-xs font-medium leading-5 text-slate-500 ${icon ? '' : 'pr-3.5'}`}><BrandText>{subtitle}</BrandText></p>}
+        </div>
       </div>
       {href && (
         <Link

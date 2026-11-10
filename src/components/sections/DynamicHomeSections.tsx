@@ -11,6 +11,9 @@ import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import ProductCard from '@/components/ui/ProductCard';
 import { Button } from '@/components/ui/button';
 import ProductCollectionsSection from '@/components/sections/ProductCollectionsSection';
+import HomeQuickLinks from '@/components/sections/HomeQuickLinks';
+import HomeCategoryRails from '@/components/sections/HomeCategoryRails';
+import { inStock, inStockCounts, orderCategoriesForHome, useBranchCatalog } from '@/hooks/useBranchCatalog';
 import HomeSectionHeader, { HOME_SECTION_CARD } from '@/components/sections/HomeSectionHeader';
 import {
   defaultHomeSections,
@@ -20,7 +23,7 @@ import {
   HomeSectionConfig,
   trackHomeEvent,
 } from '@/lib/homePage';
-import { getCategories, getCurrentDeliveryBranchId, getProducts, MainCategory, Product, supabase } from '@/lib/supabase';
+import { getCategories, getCurrentDeliveryBranchId, MainCategory, Product, supabase } from '@/lib/supabase';
 import { getProductListWithVariants } from '@/utils/productUtils';
 import { useUser } from '@/contexts/UserContext';
 
@@ -30,15 +33,23 @@ const eventMetadata = (section: HomeSectionConfig) => ({
   experiment_variant: section.experiment_variant || null,
 });
 
+/** Targets for the home shortcuts ("الأكثر طلبًا" / "وصل جديد"). */
+const SECTION_ANCHORS: Partial<Record<HomeSectionConfig['section_type'], string>> = {
+  smart_recommendations: 'home-popular',
+  new_arrivals: 'home-new',
+};
+
 const TrackedSection = ({
   pageId,
   branchId,
   section,
+  anchor,
   children,
 }: {
   pageId?: string | null;
   branchId?: string | null;
   section: HomeSectionConfig;
+  anchor?: string;
   children: React.ReactNode;
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -62,6 +73,8 @@ const TrackedSection = ({
   return (
     <div
       ref={ref}
+      id={anchor}
+      className={anchor ? 'scroll-mt-28' : undefined}
       onClickCapture={event => {
         if (!pageId || section.id.startsWith('fallback-')) return;
         const metadata = eventMetadata(section);
@@ -122,7 +135,10 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
   const needsCategories = sections.some(section => section.section_type === 'categories');
   const needsFeatured = sections.some(section => section.section_type === 'featured_products');
   const needsSmart = sections.some(section => section.section_type === 'smart_recommendations');
-  const needsCatalog = needsFeatured || needsSmart;
+  const needsRails = sections.some(section => section.section_type === 'category_rails');
+  const needsNew = sections.some(section => section.section_type === 'new_arrivals');
+  // The catalog also tells the categories grid which sections have stock.
+  const needsCatalog = needsFeatured || needsSmart || needsRails || needsNew || needsCategories;
   const recommendationLimit = React.useMemo(() => Math.max(12, ...sections
     .filter(section => section.section_type === 'smart_recommendations')
     .map(section => Math.max(3, Math.min(24, Number(section.data_source?.limit || 12))))), [sections]);
@@ -147,18 +163,18 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
   const categoriesQuery = useQuery({
     queryKey: ['categories'],
     queryFn: getCategories,
-    enabled: needsCategories,
+    enabled: needsCategories || needsRails,
     staleTime: 300_000,
     refetchOnWindowFocus: false,
   });
 
-  const catalogQuery = useQuery({
-    queryKey: ['home-catalog-products', branchQuery.data],
-    queryFn: () => getProducts(),
-    enabled: needsCatalog && Boolean(branchQuery.data),
-    staleTime: 30_000,
-    refetchOnWindowFocus: true,
-  });
+  const catalogQuery = useBranchCatalog(needsCatalog);
+  const catalog = catalogQuery.data || [];
+  const availableCatalog = React.useMemo(() => (catalogQuery.data || []).filter(inStock), [catalogQuery.data]);
+  const homeCategories = React.useMemo(
+    () => orderCategoriesForHome(categoriesQuery.data || [], catalogQuery.data ? inStockCounts(catalogQuery.data) : null),
+    [categoriesQuery.data, catalogQuery.data],
+  );
 
   const recommendationQuery = useQuery({
     queryKey: ['home-recommendations', branchQuery.data, user?.id || 'guest', recommendationLimit],
@@ -198,8 +214,12 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
     }
 
     if (section.section_type === 'categories') {
-      const categories = categoriesQuery.data || [];
+      const categories = homeCategories;
+      // Shortcuts sit right above the sections grid, so they show even when
+      // the banners are switched off or hidden by an A/B test.
       return (
+        <div className="space-y-5">
+        <HomeQuickLinks />
         <section className={HOME_SECTION_CARD}>
           <HomeSectionHeader title={sectionTitle || 'تسوق حسب القسم'} subtitle={sectionSubtitle || 'وصل للي محتاجه بسرعة'} href="/categories" />
           {categoriesQuery.isLoading ? (
@@ -207,10 +227,10 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
           ) : categoriesQuery.isError && !categoriesQuery.data ? (
             <div className="rounded-2xl bg-gray-50 p-6 text-center"><p className="mb-3 text-sm text-gray-600">تعذّر تحميل الأقسام</p><Button variant="outline" onClick={() => categoriesQuery.refetch()}>إعادة المحاولة</Button></div>
           ) : (
-            // Same cards as the categories page (3D artwork, brand mint); the first
-            // three rows here, the rest behind "عرض الكل".
-            <div className="cat-grid">
-              {categories.slice(0, 9).map((cat: MainCategory, index: number) => (
+            // Same cards as the categories page (3D artwork, brand mint), smaller,
+            // and every section that has something to order.
+            <div className="cat-grid cat-grid--compact">
+              {categories.map((cat: MainCategory, index: number) => (
                 <CategoryTile
                   key={cat.id}
                   name={cat.name}
@@ -224,12 +244,13 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
             </div>
           )}
         </section>
+        </div>
       );
     }
 
     if (section.section_type === 'featured_products') {
       const limit = Math.max(3, Math.min(24, Number(source.limit || 12)));
-      const products = (catalogQuery.data || []).slice(0, limit);
+      const products = availableCatalog.slice(0, limit);
       if (!branchQuery.data) return null;
       return renderProductRail(products, catalogQuery.isLoading, sectionTitle || 'منتجات مميزة', sectionSubtitle);
     }
@@ -237,10 +258,9 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
     if (section.section_type === 'smart_recommendations') {
       if (!branchQuery.data) return null;
       const limit = Math.max(3, Math.min(24, Number(source.limit || 12)));
-      const catalog = catalogQuery.data || [];
-      const productMap = new Map(catalog.map(product => [product.id, product]));
+      const productMap = new Map(availableCatalog.map(product => [product.id, product]));
       const recommended = (recommendationQuery.data || []).map(id => productMap.get(id)).filter((product): product is Product => Boolean(product)).slice(0, limit);
-      const fallback = recommended.length ? recommended : catalog.slice(0, limit);
+      const fallback = recommended.length ? recommended : availableCatalog.slice(0, limit);
       return renderProductRail(
         fallback,
         catalogQuery.isLoading || recommendationQuery.isLoading,
@@ -248,6 +268,21 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
         sectionSubtitle || (user ? 'اختيارات مبنية على تسوقك السابق' : 'الأكثر طلبًا عند عملائنا'),
         true,
       );
+    }
+
+    if (section.section_type === 'new_arrivals') {
+      if (!branchQuery.data) return null;
+      const limit = Math.max(3, Math.min(24, Number(source.limit || 12)));
+      const newest = [...availableCatalog]
+        .filter(product => product.created_at)
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+        .slice(0, limit);
+      return renderProductRail(newest, catalogQuery.isLoading, sectionTitle || 'وصل جديد', sectionSubtitle || 'أحدث المنتجات اللي نزلت المحل');
+    }
+
+    if (section.section_type === 'category_rails') {
+      if (!branchQuery.data) return null;
+      return <HomeCategoryRails categories={homeCategories} catalog={catalog} loading={catalogQuery.isLoading || categoriesQuery.isLoading} />;
     }
 
     if (section.section_type === 'product_collection') {
@@ -265,7 +300,7 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
         const content = renderSection(section);
         if (!content) return null;
         return (
-          <TrackedSection key={section.section_key || section.id} pageId={homeQuery.data?.id} branchId={branchQuery.data} section={section}>
+          <TrackedSection key={section.section_key || section.id} pageId={homeQuery.data?.id} branchId={branchQuery.data} section={section} anchor={SECTION_ANCHORS[section.section_type]}>
             {content}
           </TrackedSection>
         );

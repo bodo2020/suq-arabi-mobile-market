@@ -35,7 +35,8 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
     // Use the map for faster lookups
     return productIds
       .map(id => productMap.get(id))
-      .filter((product): product is Product => !!product);
+      // Hand-picked lists go stale; only show what can be ordered now.
+      .filter((product): product is Product => !!product && Number(product.quantity || 0) > 0);
   };
 
   return (
@@ -52,7 +53,7 @@ const CollectionsList = memo(({ collections, products }: CollectionsListProps) =
             <ScrollArea className="w-full whitespace-nowrap rounded-2xl" dir="rtl">
               <div className="flex gap-3 pb-3">
                 {getProductListWithVariants(collectionProducts).map(product => (
-                  <div key={product.variantKey} className="w-[158px] flex-shrink-0 sm:w-[180px]">
+                  <div key={product.variantKey} className="w-[112px] flex-shrink-0 sm:w-[148px]">
                     <ProductCard 
                       product={product}
                       hideIfUnavailable={false}
