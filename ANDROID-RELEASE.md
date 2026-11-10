@@ -31,7 +31,7 @@ path of `release.properties`.
 npm run android:release
 ```
 
-Output: `android/app/build/outputs/bundle/release/app-release.aab`, upload it in Play Console.
+The file to upload is copied to **`Desktop\Super Marko releases\SuperMarko-<versionName>-v<versionCode>.aab`** (OneDrive Desktop when it exists); the command prints the exact path. The original stays at `android/app/build/outputs/bundle/release/app-release.aab`.
 
 ## 3. Every new upload
 
