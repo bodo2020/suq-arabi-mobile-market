@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import VirtualProductGrid from '@/components/ui/VirtualProductGrid';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
@@ -183,10 +184,12 @@ const CategoryProducts = () => {
                 data-next-category-path={nextCategory ? `/category/${nextCategory.id}` : undefined}
                 data-next-category-name={nextCategory?.name}
               >
-              <div ref={productsRef} className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
-                {getProductListWithVariants(products).map(product => (
-                  <ProductCard key={product.variantKey} product={product} />
-                ))}
+              <div ref={productsRef}>
+                <VirtualProductGrid
+                  items={getProductListWithVariants(products)}
+                  getKey={product => product.variantKey}
+                  renderItem={product => <ProductCard product={product} />}
+                />
               </div>
 
               {nextCategory && <NextCategoryPrompt name={nextCategory.name} onNext={() => navigate(`/category/${nextCategory.id}`)} />}

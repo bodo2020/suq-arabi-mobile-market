@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { identifyCustomer } from '@/lib/analytics';
 import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { deactivateCurrentPushDevice } from '@/services/pushNotifications';
@@ -84,6 +85,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, [queryClient]);
+
+  // Analytics profile follows the signed-in customer (by id only).
+  useEffect(() => { identifyCustomer(user?.id ?? null); }, [user?.id]);
 
   const signIn = async (username: string, password: string) => {
     try {

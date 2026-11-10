@@ -15,7 +15,7 @@ import ProductStructuredData from '@/components/seo/ProductStructuredData';
 import BreadcrumbStructuredData from '@/components/seo/BreadcrumbStructuredData';
 import SEOHead from '@/components/seo/SEOHead';
 import FavoriteButton from '@/components/ui/FavoriteButton';
-import WeightSelector from '@/components/ui/WeightSelector';
+import WeightSelector from '@/components/ui/LazyWeightSelector';
 import {
   detailCompanyKey, detailProductKey, detailRelatedKey, fetchDetailProduct,
   getCachedDetailProduct, prefetchAdjacentProductDetails, PRODUCT_DETAIL_GC_MS, PRODUCT_DETAIL_STALE_MS, seedProductBrowseCache, warmAdjacentProductPages,

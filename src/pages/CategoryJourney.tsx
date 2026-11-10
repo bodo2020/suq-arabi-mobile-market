@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import VirtualProductGrid from '@/components/ui/VirtualProductGrid';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PackageSearch } from 'lucide-react';
@@ -143,11 +144,11 @@ const JourneyCategory = React.memo(function JourneyCategory({
                   <p className="text-xs text-slate-400">{section.products.length} منتج</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
-                {getProductListWithVariants(section.products).map(item => (
-                  <ProductCard key={item.variantKey || item.id} product={item} />
-                ))}
-              </div>
+              <VirtualProductGrid
+                items={getProductListWithVariants(section.products)}
+                getKey={item => item.variantKey || item.id}
+                renderItem={item => <ProductCard product={item} />}
+              />
             </div>
           ))}
           {!sections.length && (

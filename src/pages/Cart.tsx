@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, BadgePercent, Check, Package, Plus, Minus, Trash2, Scale, AlertCircle, RefreshCw, Clock3 } from 'lucide-react';
@@ -7,7 +8,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import CartEmptyState from '@/components/cart/CartEmptyState';
 import CartSuggestions from '@/components/cart/CartSuggestions';
 import BrandBagIcon from '@/components/brand/BrandBagIcon';
-import WeightSelector from '@/components/ui/WeightSelector';
+import WeightSelector from '@/components/ui/LazyWeightSelector';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/useCart';
 import { useUser } from '@/contexts/UserContext';
@@ -23,6 +24,8 @@ const itemKey = (item: CartItem) => `${item.product.id}:${!!item.is_bulk}:${item
 const quoteLineKey = (line: CartQuoteLine) => `${line.product_id}:${!!line.is_bulk}:${line.unit_of_measure}`;
 
 export default function Cart() {
+  // Lines slide in and out smoothly when added, removed or changed.
+  const [cartListRef] = useAutoAnimate<HTMLElement>({ duration: 180 });
   const { items, updateQuantity, removeFromCart, getTotalPrice, isInitialized, syncError, isSaving, retrySync } = useCart();
   const { user, authLoading } = useUser();
   const { branch, branchLoading, branchError, refreshBranch } = useBranch();
@@ -108,7 +111,7 @@ export default function Cart() {
         <span><strong>{quote.delivery_campaign.name}</strong> · وفّرت {money(Number(quote.delivery_campaign.discount || 0))} ج.م من التوصيل</span>
       </div>}
 
-      <div className="cart-grid"><section className="cart-list" aria-label="منتجات الشنطة">
+      <div className="cart-grid"><section ref={cartListRef} className="cart-list" aria-label="منتجات الشنطة">
         {items.map(item => {
           const line = quoteLines.get(itemKey(item));
           const unitPrice = Number(line?.price ?? localItemPrice(item));

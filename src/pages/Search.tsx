@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import VirtualProductGrid from '@/components/ui/VirtualProductGrid';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowUpLeft, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -302,18 +303,21 @@ export default function Search() {
                 <BrandLoader size="md" /><span className="text-sm text-slate-500">بنبحث في منتجات فرعك…</span>
               </div>
             ) : visible.length ? (
-              <div className="brand-search-results-enter grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
-                {visible.map(product => (
-                  <div className="min-w-0" key={product.variantKey || (product.displayType || 'regular') + ':' + product.id}>
+              <VirtualProductGrid
+                className="brand-search-results-enter"
+                items={visible}
+                getKey={product => product.variantKey || (product.displayType || 'regular') + ':' + product.id}
+                renderItem={product => (
+                  <>
                     {product.search_match_type === 'related' && (
                       <p className="mb-1 rounded-md bg-amber-50 px-2 py-1 text-center text-[11px] font-bold text-amber-800">
                         صنف قريب، مش نفس المنتج
                       </p>
                     )}
                     <ProductCard product={product} />
-                  </div>
-                ))}
-              </div>
+                  </>
+                )}
+              />
             ) : (
               <div className="rounded-[22px] bg-white px-5 py-10 text-center">
                 <SearchIcon size={30} className="mx-auto mb-3 text-[#005931]" />

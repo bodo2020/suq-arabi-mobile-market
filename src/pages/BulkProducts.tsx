@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import VirtualProductGrid from '@/components/ui/VirtualProductGrid';
 import { useNavigate } from 'react-router-dom';
 import { Package, Search } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -104,11 +105,11 @@ const BulkProducts = () => {
             </section>
 
             {products.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
-                {products.map(product => (
-                  <ProductCard key={product.id} product={{ ...product, displayType: 'bulk' }} />
-                ))}
-              </div>
+              <VirtualProductGrid
+                items={products}
+                getKey={product => product.id}
+                renderItem={product => <ProductCard product={{ ...product, displayType: 'bulk' }} />}
+              />
             ) : (
               <section className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
                 <Package className="mx-auto text-gray-300" size={40} />

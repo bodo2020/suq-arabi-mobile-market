@@ -1,4 +1,7 @@
 import React from 'react';
+import NetworkStatusBar from './NetworkStatusBar';
+import { tapFeedback } from '@/lib/nativeFeel';
+import { track } from '@/lib/analytics';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Grid, User, Tag } from 'lucide-react';
 import BrandBagIcon from '@/components/brand/BrandBagIcon';
@@ -18,7 +21,8 @@ const MainLayout: React.FC<{children:React.ReactNode; hideBottomNav?:boolean}> =
  const {pathname}=useLocation(); const {getTotalItems}=useCart(); const mobile=useIsMobile(); const count=getTotalItems();
  React.useEffect(()=>{document.body.dir='rtl';},[]);
  const bagHop=lastNavCartCount!==null&&count>lastNavCartCount;
- React.useEffect(()=>{lastNavCartCount=count;},[count]);
+ // A light tap on the phone whenever something lands in the bag.
+ React.useEffect(()=>{if(lastNavCartCount!==null&&count>lastNavCartCount){tapFeedback();track('added_to_bag',{items:count});}lastNavCartCount=count;},[count]);
  const active=(to:string)=>to==='/'?pathname==='/':to==='/offers'?(pathname==='/offers'||pathname==='/flash-sale'):pathname.startsWith(to);
  const activeIndex = links.findIndex(link => active(link.to));
  const [bubbleIndex, setBubbleIndex] = React.useState(() => (lastNavIndex !== null && lastNavIndex >= 0 && activeIndex >= 0 ? lastNavIndex : activeIndex));
@@ -27,7 +31,7 @@ const MainLayout: React.FC<{children:React.ReactNode; hideBottomNav?:boolean}> =
   lastNavIndex = activeIndex;
   return () => window.cancelAnimationFrame(frame);
  }, [activeIndex]);
- return <div className={`app-main-layout min-h-screen bg-[#f6f8f7] ${hideBottomNav?'pb-6':'pb-24 md:pb-0'}`} dir="rtl"><main>{children}</main>{mobile&&!hideBottomNav&&(
+ return <div className={`app-main-layout min-h-screen bg-[#f6f8f7] ${hideBottomNav?'pb-6':'pb-24 md:pb-0'}`} dir="rtl"><NetworkStatusBar/><main>{children}</main>{mobile&&!hideBottomNav&&(
   <nav className="bottom-nav" aria-label="التنقل السفلي">
    {/* Green bubble that slides behind the current tab. */}
    <span aria-hidden="true" className={`bottom-nav__indicator ${activeIndex < 0 ? 'is-hidden' : ''}`} style={{ '--i': Math.max(0, bubbleIndex) } as React.CSSProperties} />

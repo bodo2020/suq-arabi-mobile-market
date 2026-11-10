@@ -3,7 +3,7 @@ import { Minus, Plus, Trash2 } from 'lucide-react';
 import type { Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/useCart';
 import { formatWeightAmount, productWeightStepGrams } from '@/lib/productPurchase';
-import WeightSelector from './WeightSelector';
+import WeightSelector from './LazyWeightSelector';
 
 const MAX_WEIGHT_GRAMS = 100000;
 

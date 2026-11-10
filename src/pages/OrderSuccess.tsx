@@ -1,4 +1,6 @@
 import React from 'react';
+import { tapFeedback } from '@/lib/nativeFeel';
+import { track } from '@/lib/analytics';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BellRing, Check, Home, PackageSearch, Copy, CheckCheck, ShieldCheck, Store } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -34,6 +36,8 @@ const OrderSuccess = () => {
     try { window.sessionStorage.setItem(celebratedKey(key), '1'); } catch { /* private mode */ }
   }, [orderId, orderGroupId]);
   const finishCelebration = React.useCallback(() => setCelebrating(false), []);
+  // A success vibration with the celebration (phones only).
+  React.useEffect(() => { if (celebrating) { tapFeedback('success'); track('order_placed', { combined: Boolean(combined), stores: storesCount || 1 }); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: orderEta } = useQuery({
     queryKey: ['order-eta', orderId],

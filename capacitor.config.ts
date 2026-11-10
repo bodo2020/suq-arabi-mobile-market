@@ -16,6 +16,13 @@ const config: CapacitorConfig = {
     SystemBars: {
       insetsHandling: 'css',
     },
+    // Live updates (Capgo) stay off until a channel is configured; see
+    // src/lib/liveUpdates.ts. No calls to Capgo servers while off.
+    CapacitorUpdater: {
+      autoUpdate: false,
+      statsUrl: '',
+      channelUrl: '',
+    },
   },
   server: liveReloadUrl
     ? {

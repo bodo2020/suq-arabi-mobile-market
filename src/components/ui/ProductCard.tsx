@@ -10,7 +10,7 @@ import { Product } from '@/lib/supabase';
 import { formatWeightAmount, hasBulkPurchase, isWeightedProduct, productUnitPrice, productWeightStepGrams } from '@/lib/productPurchase';
 import { useCart } from '@/contexts/useCart';
 import FavoriteButton from './FavoriteButton';
-import WeightSelector from './WeightSelector';
+import WeightSelector from './LazyWeightSelector';
 import SmartImage from './SmartImage';
 import { productCardImage } from '@/lib/productCardImage';
 import { useIsBestSeller } from '@/hooks/useBestSellers';

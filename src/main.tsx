@@ -4,6 +4,8 @@ import App from './App.tsx'
 import './index.css'
 import { installThmanyahFont } from './lib/installThmanyahFont'
 import { startErrorReporting } from './lib/errorReporting'
+import { startAnalytics } from './lib/analytics'
+import { confirmAppStarted } from './lib/liveUpdates'
 import './styles/product-card-layout.css'
 // Dark counterparts of hard-coded colours (generated) + runtime-colour pieces. Must load last.
 import './styles/dark-theme.generated.css'
@@ -17,6 +19,8 @@ import { DEVICE_CACHE_BUSTER, DEVICE_CACHE_MAX_AGE, deviceQueryPersister, isSave
 // Bundled font faces are provided inside the app, not via public /fonts URLs.
 installThmanyahFont()
 startErrorReporting('customer')
+startAnalytics()
+confirmAppStarted()
 
 // Create a client. Queries stay paused while the device is offline and refetch
 // automatically when connectivity returns; mutations are never forced offline.
