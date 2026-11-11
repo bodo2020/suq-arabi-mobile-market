@@ -6,6 +6,7 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import StoreStructuredData from '@/components/seo/StoreStructuredData';
 import DynamicHomeSections from '@/components/sections/DynamicHomeSections';
 import ActiveDeliveryStrip from '@/components/orders/ActiveDeliveryStrip';
+import SeasonRail from '@/components/sections/SeasonRail';
 import { useCustomerDeliveryHeader } from '@/hooks/useCustomerDeliveryHeader';
 
 const Index = () => {
@@ -49,6 +50,7 @@ const Index = () => {
         </button>
 
         <div className="mb-5 empty:hidden"><ActiveDeliveryStrip /></div>
+        <SeasonRail />
         <DynamicHomeSections hidePromotions showBanners />
       </div>
     </MainLayout>
