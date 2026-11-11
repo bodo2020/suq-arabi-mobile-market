@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import BoughtTogetherRail from '@/components/sections/BoughtTogetherRail';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { readProductBrowseState } from '@/lib/productBrowsing';
@@ -1240,6 +1241,7 @@ const ProductDetail = () => {
             <div ref={mobileExtraTriggerRef} className="h-px" aria-hidden="true" />
             {shouldLoadExtras && (
               <React.Suspense fallback={<div className="h-40 animate-pulse rounded-[24px] bg-slate-100" />}>
+                {product && <BoughtTogetherRail productIds={[product.id]} title="بيتشروا معاه" subtitle="حاجات العملاء بياخدوها مع المنتج ده" className="mb-5" />}
                 <ProductSuggestions
                   products={suggestionProducts}
                   loading={relatedLoading}
@@ -1392,6 +1394,7 @@ const ProductDetail = () => {
         <div ref={desktopExtraTriggerRef} className="h-px" aria-hidden="true" />
         {shouldLoadExtras && (
           <React.Suspense fallback={<div className="mt-5 h-40 animate-pulse rounded-[26px] bg-slate-100" />}>
+            {product && <BoughtTogetherRail productIds={[product.id]} title="بيتشروا معاه" subtitle="حاجات العملاء بياخدوها مع المنتج ده" className="mb-5" />}
             <ProductSuggestions
               products={suggestionProducts}
               loading={relatedLoading}

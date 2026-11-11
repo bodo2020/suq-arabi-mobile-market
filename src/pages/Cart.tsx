@@ -7,6 +7,7 @@ import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
 import CartEmptyState from '@/components/cart/CartEmptyState';
 import CartSuggestions from '@/components/cart/CartSuggestions';
+import BoughtTogetherRail from '@/components/sections/BoughtTogetherRail';
 import BrandBagIcon from '@/components/brand/BrandBagIcon';
 import WeightSelector from '@/components/ui/LazyWeightSelector';
 import { Button } from '@/components/ui/button';
@@ -190,7 +191,7 @@ export default function Cart() {
         {!user && <p className="cart-help">سجّل برقم موبايلك وكلمة المرور عشان تكمّل الطلب.</p>}
       </aside></div>
 
-      <div className="cart-after-list"><CartSuggestions title="كمّل شنطتك" subtitle="حاجات ممكن تكون نسيتها" excludeIds={items.map(item => item.product.id)} /></div>
+      <div className="cart-after-list"><BoughtTogetherRail productIds={items.map(item => item.product.id)} title="ناس كمان بتاخد معاهم" subtitle="حاجات بتتشري مع اللي في شنطتك" /><CartSuggestions title="كمّل شنطتك" subtitle="حاجات ممكن تكون نسيتها" excludeIds={items.map(item => item.product.id)} /></div>
 
       <div className="cart-mobile-action"><div className="border-r-[3px] border-brand-yellow pr-2"><span>الإجمالي شامل التوصيل</span><strong>{quotePending ? '...' : `${money(total)} ج.م`}</strong></div>{cta}</div>
     </>}
