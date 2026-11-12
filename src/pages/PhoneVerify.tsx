@@ -15,6 +15,7 @@ import { safeReturnTo } from '@/lib/onboarding';
 import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
 import { shouldRouteRegisteredPhone } from '@/utils/otpRequest';
 import { savePhoneRecoveryProof } from '@/utils/phoneRecovery';
+import { listenForSmsCode, stopSmsCode } from '@/lib/smsCodeAutofill';
 
 export default function PhoneVerify() {
   const navigate = useNavigate();
@@ -48,6 +49,8 @@ export default function PhoneVerify() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
+
+  useEffect(() => () => { void stopSmsCode(); }, []);
 
   const formatPhoneNumber = (value: string) => egyptianMobileDigits(value);
   const formatInternationalPhone = (value: string) => egyptianMobileE164(value);
@@ -92,6 +95,8 @@ export default function PhoneVerify() {
         }
       }
 
+      // Android: listen before asking, so the texted code fills itself (one "allow" tap) and is confirmed.
+      void listenForSmsCode(value => { setCode(value); void verify(value); });
       const { data, error } = await signInWithPhone(fullPhone, !isRecovery);
       if (error) throw error;
 
@@ -133,9 +138,9 @@ export default function PhoneVerify() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const verify = async () => {
-    if (loading || resendLoading) return;
-    if (!/^\d{6}$/.test(code)) {
+  const verify = async (value: string = code) => {
+    if (resendLoading) return;
+    if (!/^\d{6}$/.test(value)) {
       setErrors(prev => ({ ...prev, code: 'اكتب الرمز المكون من 6 أرقام.' }));
       return;
     }
@@ -143,7 +148,7 @@ export default function PhoneVerify() {
     setLoading(true);
     try {
       const fullPhone = formatInternationalPhone(phone);
-      const { data, error } = await verifyPhone(fullPhone, code);
+      const { data, error } = await verifyPhone(fullPhone, value);
       if (error) throw error;
       const verifiedUser = data?.user;
       if (!verifiedUser?.id) throw new Error('تعذر إنشاء جلسة بعد التحقق');

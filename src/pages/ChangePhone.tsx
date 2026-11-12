@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { normalizeDigits } from '@/utils/authUi';
 import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
+import { listenForSmsCode, stopSmsCode } from '@/lib/smsCodeAutofill';
 
 const ChangePhone = () => {
   const navigate = useNavigate();
@@ -56,7 +57,11 @@ const ChangePhone = () => {
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
 
+  useEffect(() => () => { void stopSmsCode(); }, []);
+
   const formatInternationalPhone = (value: string) => egyptianMobileE164(value);
+  // Android: listen before asking, so the texted code fills itself (one "allow" tap) and is confirmed.
+  const listen = () => void listenForSmsCode(value => { setCode(value); void handleVerify(value); });
 
   const validatePhone = () => {
     const local = egyptianMobileDigits(newPhone);
@@ -86,6 +91,7 @@ const ChangePhone = () => {
     setError('');
     try {
       const fullPhone = formatInternationalPhone(newPhone);
+      listen();
       const { error: updateError } = await supabase.auth.updateUser({ phone: fullPhone });
       if (updateError) throw updateError;
 
@@ -111,6 +117,7 @@ const ChangePhone = () => {
     setError('');
     try {
       const fullPhone = formatInternationalPhone(newPhone);
+      listen();
       const { error: resendError } = await supabase.auth.resend({
         type: 'phone_change',
         phone: fullPhone,
@@ -128,9 +135,9 @@ const ChangePhone = () => {
     }
   };
 
-  const handleVerify = async () => {
-    const normalizedCode = normalizeDigits(code).replace(/\D/g, '');
-    if (loading || !/^\d{6}$/.test(normalizedCode) || !userId) {
+  const handleVerify = async (value?: unknown) => {
+    const normalizedCode = normalizeDigits(typeof value === 'string' ? value : code).replace(/\D/g, '');
+    if ( !/^\d{6}$/.test(normalizedCode) || !userId) {
       if (!/^\d{6}$/.test(normalizedCode)) setError('أدخل رمز التحقق المكون من 6 أرقام');
       return;
     }

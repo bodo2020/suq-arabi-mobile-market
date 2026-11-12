@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const mainActivityPath = 'android/app/src/main/java/com/elmadawy/market/customer/MainActivity.java';
@@ -18,6 +18,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // SMS code autofill on the OTP screens (Google SMS User Consent), see android-native/SmsCodePlugin.java
+        registerPlugin(SmsCodePlugin.class);
         super.onCreate(savedInstanceState);
         // Android 16 always draws the app under the status and navigation bars;
         // the page pads itself with the safe-area insets (Capacitor SystemBars, css mode).
@@ -64,4 +66,5 @@ public class MainActivity extends BridgeActivity {
 `;
 
 await writeFile(mainActivityPath, mainActivity, 'utf8');
+await copyFile('android-native/SmsCodePlugin.java', path.join(path.dirname(mainActivityPath), 'SmsCodePlugin.java'));
 console.log('Android hardware back behavior applied: WebView history first, exit confirmation at root.');
