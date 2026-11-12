@@ -40,6 +40,7 @@ export default function PhoneVerify() {
   const [errors, setErrors] = useState({ phone: '', code: '' });
   const [initialSendDone, setInitialSendDone] = useState(false);
   const sendInFlight = useRef(false);
+  const verifyInFlight = useRef(false);
   const initialStarted = useRef(false);
 
   useEffect(() => {
@@ -139,12 +140,14 @@ export default function PhoneVerify() {
   }, []);
 
   const verify = async (value: string = code) => {
-    if (resendLoading) return;
+    // Autofill (SMS prompt, keyboard suggestion, paste) and the button can fire together: confirm once.
+    if (resendLoading || verifyInFlight.current) return;
     if (!/^\d{6}$/.test(value)) {
       setErrors(prev => ({ ...prev, code: 'اكتب الرمز المكون من 6 أرقام.' }));
       return;
     }
 
+    verifyInFlight.current = true;
     setLoading(true);
     try {
       const fullPhone = formatInternationalPhone(phone);
@@ -167,6 +170,7 @@ export default function PhoneVerify() {
         variant: 'destructive',
       });
     } finally {
+      verifyInFlight.current = false;
       setLoading(false);
     }
   };
@@ -228,6 +232,7 @@ export default function PhoneVerify() {
                     maxLength={6}
                     value={code}
                     onChange={value => { setCode(normalizeDigits(value).replace(/\D/g, '')); setErrors(prev => ({ ...prev, code: '' })); }}
+                    onComplete={(value: string) => void verify(normalizeDigits(value).replace(/\D/g, ''))}
                   >
                     <InputOTPGroup className="auth-otp-group">
                       {[0, 1, 2, 3, 4, 5].map(index => <InputOTPSlot key={index} index={index} className="auth-otp-slot" />)}

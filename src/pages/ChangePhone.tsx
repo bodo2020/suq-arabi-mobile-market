@@ -26,6 +26,7 @@ const ChangePhone = () => {
   const [resendSeconds, setResendSeconds] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const verifyInFlight = React.useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -137,11 +138,13 @@ const ChangePhone = () => {
 
   const handleVerify = async (value?: unknown) => {
     const normalizedCode = normalizeDigits(typeof value === 'string' ? value : code).replace(/\D/g, '');
+    if (verifyInFlight.current) return;
     if ( !/^\d{6}$/.test(normalizedCode) || !userId) {
       if (!/^\d{6}$/.test(normalizedCode)) setError('أدخل رمز التحقق المكون من 6 أرقام');
       return;
     }
 
+    verifyInFlight.current = true;
     setLoading(true);
     setError('');
     try {
@@ -176,6 +179,7 @@ const ChangePhone = () => {
       setError(message);
       toast({ title: 'تعذر تأكيد الرقم', description: message, variant: 'destructive' });
     } finally {
+      verifyInFlight.current = false;
       setLoading(false);
     }
   };
@@ -232,6 +236,9 @@ const ChangePhone = () => {
                     setCode(normalizeDigits(value).replace(/\D/g, ''));
                     setError('');
                   }}
+                  onComplete={(value: string) => void handleVerify(value)}
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
                   dir="ltr"
                 >
                   <InputOTPGroup>
