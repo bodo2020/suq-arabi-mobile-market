@@ -1,4 +1,4 @@
-import { copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const mainActivityPath = 'android/app/src/main/java/com/elmadawy/market/customer/MainActivity.java';
@@ -67,4 +67,12 @@ public class MainActivity extends BridgeActivity {
 
 await writeFile(mainActivityPath, mainActivity, 'utf8');
 await copyFile('android-native/SmsCodePlugin.java', path.join(path.dirname(mainActivityPath), 'SmsCodePlugin.java'));
+// SmsCodePlugin needs Google's SMS Retriever / User Consent library. Release builds also get it from
+// prepare-android-release.mjs; adding it here keeps every build (CI debug APK included) compiling.
+const appGradlePath = 'android/app/build.gradle';
+const smsDependency = 'com.google.android.gms:play-services-auth-api-phone:18.1.0';
+const appGradle = await readFile(appGradlePath, 'utf8');
+if (!appGradle.includes('play-services-auth-api-phone')) {
+  await writeFile(appGradlePath, appGradle.replace(/\ndependencies\s*\{/, match => `${match}\n    implementation "${smsDependency}"`), 'utf8');
+}
 console.log('Android hardware back behavior applied: WebView history first, exit confirmation at root.');
