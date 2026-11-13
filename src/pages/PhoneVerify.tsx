@@ -16,6 +16,7 @@ import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
 import { shouldRouteRegisteredPhone } from '@/utils/otpRequest';
 import { savePhoneRecoveryProof } from '@/utils/phoneRecovery';
 import { listenForSmsCode, stopSmsCode } from '@/lib/smsCodeAutofill';
+import SmsSpamHint from '@/components/auth/SmsSpamHint';
 
 export default function PhoneVerify() {
   const navigate = useNavigate();
@@ -241,6 +242,8 @@ export default function PhoneVerify() {
                 </div>
                 {errors.code && <p role="alert" className="mt-3 text-center text-sm text-red-700">{errors.code}</p>}
               </div>
+
+              <SmsSpamHint resendSeconds={resendSeconds} codeLength={code.length} />
 
               <Button onClick={() => void verify()} disabled={loading || code.length !== 6} className="auth-primary-button">
                 {loading ? <><BrandLoader size="sm" tone="onGreen" className="ml-2" />جاري التحقق</> : 'تأكيد الرمز'}

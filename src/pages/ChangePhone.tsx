@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { normalizeDigits } from '@/utils/authUi';
 import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 import { listenForSmsCode, stopSmsCode } from '@/lib/smsCodeAutofill';
+import SmsSpamHint from '@/components/auth/SmsSpamHint';
 
 const ChangePhone = () => {
   const navigate = useNavigate();
@@ -254,6 +255,8 @@ const ChangePhone = () => {
             </div>
 
             {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-700">{error}</p>}
+
+            <SmsSpamHint resendSeconds={resendSeconds} codeLength={normalizeDigits(code).replace(/\D/g, '').length} />
 
             <Button onClick={handleVerify} disabled={loading || normalizeDigits(code).replace(/\D/g, '').length !== 6} className="min-h-12 w-full rounded-xl text-base">
               {loading && <BrandLoader size="sm" tone="onGreen" className="ml-2" />}
