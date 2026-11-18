@@ -61,6 +61,12 @@
     -webkit-backdrop-filter: blur(14px);
   }
 
+  /* While typing the address details the keyboard is up: the fixed save bar would sit
+     on top of the text box, so hide it and keep the in-form button instead. */
+  .address-form.is-typing ~ .address-mobile-action,
+  .address-form.is-typing .address-mobile-action { display: none; }
+  .address-form.is-typing .address-desktop-submit { display: inline-flex !important; width: 100%; }
+
   .address-mobile-action .cart-primary {
     margin-top: 0;
     min-height: 52px;

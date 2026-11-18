@@ -48,16 +48,47 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   });
 }
 
-export async function resolveDeliveryLocation(latitude: number, longitude: number): Promise<DeliveryMatch | null> {
+type BranchCandidate = Omit<DeliveryMatch, 'road_distance_km' | 'road_duration_minutes'>;
+
+// Same pin (to ~10 m) → same answer: moving the map back and forth or reopening the
+// screen must not wait on the network again. Short-lived, so zone changes still apply.
+const CACHE_MS = 5 * 60_000;
+const branchCache = new Map<string, { at: number; value: BranchCandidate | null }>();
+const routeCache = new Map<string, { at: number; value: DeliveryMatch | null }>();
+const cacheKey = (latitude: number, longitude: number) => `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+function cached<T>(cache: Map<string, { at: number; value: T }>, key: string): { value: T } | null {
+  const hit = cache.get(key);
+  if (!hit || Date.now() - hit.at > CACHE_MS) return null;
+  return { value: hit.value };
+}
+
+/** Step 1 (fast, ~0.2 s): which branch/zone serves this point, by straight-line distance. */
+export async function findDeliveryBranch(latitude: number, longitude: number): Promise<BranchCandidate | null> {
+  const key = cacheKey(latitude, longitude);
+  const hit = cached(branchCache, key);
+  if (hit) return hit.value;
   const { data, error } = await withTimeout(rpc('find_delivery_branch', {
     p_latitude: latitude,
     p_longitude: longitude,
   }), 15000, 'FIND_BRANCH');
   if (error) throw error;
-
   const rows = Array.isArray(data) ? data : [];
-  const candidate = rows[0] as Omit<DeliveryMatch, 'road_distance_km' | 'road_duration_minutes'> | undefined;
-  if (!candidate) return null;
+  const candidate = (rows[0] as BranchCandidate | undefined) || null;
+  branchCache.set(key, { at: Date.now(), value: candidate });
+  return candidate;
+}
+
+/** The match from step 1 alone, before the road distance is known. */
+export function straightLineMatch(candidate: BranchCandidate): DeliveryMatch {
+  const km = Number(candidate.distance_km);
+  return { ...candidate, distance_km: km, road_distance_km: km, road_duration_minutes: null };
+}
+
+/** Step 2: road distance for the branch from step 1. null when the road distance is outside the radius. */
+export async function refineWithRoadDistance(candidate: BranchCandidate, latitude: number, longitude: number): Promise<DeliveryMatch | null> {
+  const key = `${candidate.branch_id}:${cacheKey(latitude, longitude)}`;
+  const hit = cached(routeCache, key);
+  if (hit) return hit.value;
 
   // The branch/zone is already confirmed above. If the road-distance helper is slow or down, keep the
   // straight-line distance instead of blocking the customer (the helper does the same when its map providers fail).
@@ -66,16 +97,22 @@ export async function resolveDeliveryLocation(latitude: number, longitude: numbe
     route = await withTimeout(getRoadDistance(candidate.branch_id, latitude, longitude), 10000, 'ROAD_DISTANCE');
   } catch (routeError) {
     console.warn('road distance unavailable, using straight-line distance', routeError);
+    return straightLineMatch(candidate); // not cached: try the road distance again next time
   }
-  if (route && (!route.deliverable || route.road_distance_km == null)) return null;
-
-  const km = route ? Number(route.road_distance_km) : Number(candidate.distance_km);
-  return {
+  const value = !route.deliverable || route.road_distance_km == null ? null : {
     ...candidate,
-    distance_km: km,
-    road_distance_km: km,
-    road_duration_minutes: route ? route.duration_minutes : null,
+    distance_km: Number(route.road_distance_km),
+    road_distance_km: Number(route.road_distance_km),
+    road_duration_minutes: route.duration_minutes,
   };
+  routeCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
+export async function resolveDeliveryLocation(latitude: number, longitude: number): Promise<DeliveryMatch | null> {
+  const candidate = await findDeliveryBranch(latitude, longitude);
+  if (!candidate) return null;
+  return refineWithRoadDistance(candidate, latitude, longitude);
 }
 
 export function readGuestAddress(): GuestDeliveryAddress | null {

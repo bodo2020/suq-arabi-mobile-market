@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
@@ -12,9 +12,11 @@ import { safeReturnTo } from '@/lib/onboarding';
 import { customerRpc } from '@/lib/customerPersistence';
 import { invalidateMyAddresses } from '@/lib/customerProfileCache';
 import {
+  findDeliveryBranch,
   readGuestAddress,
-  resolveDeliveryLocation,
+  refineWithRoadDistance,
   saveGuestAddress,
+  straightLineMatch,
   type DeliveryMatch,
 } from '@/lib/deliveryAddress';
 
@@ -40,6 +42,9 @@ export default function Address() {
   const [verificationStatus, setVerificationStatus] = useState<DeliveryVerificationStatus>('idle');
   const [verifiedMatch, setVerifiedMatch] = useState<DeliveryMatch | null>(null);
   const [verificationRetry, setVerificationRetry] = useState(0);
+  // Road distance for the current pin, still on its way after the zone check passed.
+  const roadCheck = useRef<Promise<DeliveryMatch | null> | null>(null);
+  const [typing, setTyping] = useState(false);
   const back = required || onboarding ? returnTo : checkout ? '/addresses?returnTo=%2Fpayment' : user ? '/addresses' : returnTo;
   const saveLabel = user
     ? (required ? 'حفظ العنوان وابدأ التسوق' : onboarding ? 'حفظ العنوان والمتابعة' : 'حفظ العنوان')
@@ -105,20 +110,36 @@ export default function Address() {
     }
 
     let active = true;
+    const { lat, lng } = coordinates;
     setVerificationStatus('checking');
     setVerifiedMatch(null);
+    roadCheck.current = null;
 
+    // Two steps: the zone check (~0.2 s) decides right away; the road distance follows in the
+    // background and only refines the numbers (or, rarely, finds the road route too long).
     const timer = window.setTimeout(() => {
-      void resolveDeliveryLocation(coordinates.lat, coordinates.lng)
-        .then(match => {
+      void findDeliveryBranch(lat, lng)
+        .then(candidate => {
           if (!active) return;
-          if (!match) {
+          if (!candidate) {
             setVerificationStatus('outside');
-            setVerifiedMatch(null);
             return;
           }
-          setVerifiedMatch(match);
+          setVerifiedMatch(straightLineMatch(candidate));
           setVerificationStatus('valid');
+          const road = refineWithRoadDistance(candidate, lat, lng);
+          roadCheck.current = road;
+          void road.then(match => {
+            if (!active) return;
+            if (!match) {
+              setVerifiedMatch(null);
+              setVerificationStatus('outside');
+              return;
+            }
+            setVerifiedMatch(match);
+          }).catch(() => undefined).finally(() => {
+            if (roadCheck.current === road) roadCheck.current = null;
+          });
         })
         .catch(verificationError => {
           if (!active) return;
@@ -126,7 +147,7 @@ export default function Address() {
           setVerifiedMatch(null);
           setVerificationStatus('error');
         });
-    }, 350);
+    }, 200);
 
     return () => {
       active = false;
@@ -161,7 +182,17 @@ export default function Address() {
     setSaving(true);
     setError('');
     try {
-      const match = verifiedMatch;
+      // Save with the road distance when it is still on its way (it has its own 10 s limit).
+      let match = verifiedMatch;
+      if (roadCheck.current) {
+        const refined = await roadCheck.current.catch(() => match);
+        if (!refined) {
+          setVerificationStatus('outside');
+          setError('العنوان خارج نطاق التوصيل.');
+          return;
+        }
+        match = refined;
+      }
 
       if (!user) {
         saveGuestAddress({
@@ -255,7 +286,7 @@ export default function Address() {
     </div>
 
     {loading || authLoading ? <div className="cart-loading"><BrandLoader size="lg" /></div> : loadError ? <div className="cart-alert" role="alert">{loadError}<Button variant="outline" onClick={() => navigate(back)}>رجوع</Button></div> :
-      <form onSubmit={save} className="address-form grid gap-6 lg:grid-cols-[1.25fr_.75fr]" aria-busy={saving || verificationStatus === 'checking'}>
+      <form onSubmit={save} className={`address-form grid gap-6 lg:grid-cols-[1.25fr_.75fr] ${typing ? 'is-typing' : ''}`} aria-busy={saving || verificationStatus === 'checking'}>
         <section className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-xl bg-green-50 p-2.5 text-primary"><MapPin size={20} /></div>
@@ -278,7 +309,8 @@ export default function Address() {
         </section>
 
         <section className="rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
-          <h2 className="text-lg font-bold mb-4">تفاصيل العنوان</h2>
+          <h2 className="text-lg font-bold mb-1">تفاصيل العنوان والملاحظات</h2>
+          <p className="mb-4 text-sm text-gray-500">اكتب أي حاجة تساعد المندوب يوصلك أسرع.</p>
           <label htmlFor="delivery-details" className="block font-medium mb-2">العنوان بالتفصيل</label>
           <textarea
             id="delivery-details"
@@ -288,7 +320,14 @@ export default function Address() {
               setAddressEdited(true);
               setError('');
             }}
-            rows={5}
+            onFocus={event => {
+              setTyping(true);
+              // After the keyboard opens, bring the box (not the map) into view.
+              const box = event.currentTarget;
+              window.setTimeout(() => box.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+            }}
+            onBlur={() => setTyping(false)}
+            rows={4}
             maxLength={1000}
             required
             placeholder="الشارع، رقم البيت، الدور، الشقة أو علامة مميزة"
