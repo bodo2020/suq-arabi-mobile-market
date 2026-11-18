@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import TopNavBar from '@/components/layout/TopNavBar';
 import AccountHero from '@/components/account/AccountHero';
+import PushPermissionCard from '@/components/notifications/PushPermissionCard';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/contexts/UserContext';
@@ -152,6 +153,8 @@ const Notifications = () => {
                 </button>
               ) : undefined}
             />
+
+            <PushPermissionCard />
 
             <div className="acc-tabs grid-cols-2">
               <button type="button" onClick={() => setFilter('all')} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${filter === 'all' ? 'is-active' : ''}`}>الكل</button>

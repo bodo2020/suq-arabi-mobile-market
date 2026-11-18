@@ -29,6 +29,17 @@ try {
   throw error;
 }
 
+// Firebase client config for push notifications. Capacitor applies the google-services
+// plugin only when this file exists; without it FCM registration fails. Keep a config
+// that is already there (CI writes the GOOGLE_SERVICES_JSON secret first).
+const firebaseFallback = 'config/firebase/google-services.customer.json';
+const firebaseTarget = 'android/app/google-services.json';
+const hasFile = async file => { try { await readFile(file); return true; } catch { return false; } };
+if (!(await hasFile(firebaseTarget)) && (await hasFile(firebaseFallback))) {
+  await copyFile(firebaseFallback, firebaseTarget);
+  console.log('Firebase google-services.json copied for push notifications.');
+}
+
 for (const permission of requiredPermissions) {
   if (!manifest.includes(`android:name="${permission}"`)) {
     manifest = manifest.replace(

@@ -11,12 +11,18 @@ import path from 'node:path';
  * (Desktop = OneDrive\Desktop when it exists, else %USERPROFILE%\Desktop).
  * Original: android/app/build/outputs/bundle/release/app-release.aab
  */
-const run = (command, args, cwd) => {
-  const result = spawnSync(command, args, { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
+const run = (command, args, cwd, env = process.env) => {
+  const result = spawnSync(command, args, { cwd, env, stdio: 'inherit', shell: process.platform === 'win32' });
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
 
-run('npm', ['run', 'android:sync'], process.cwd());
+// Push notifications are compiled out unless the web build says Firebase is configured
+// (see src/services/pushNotifications.ts). prepare-android.mjs copies this config into
+// android/app, so turn push on for every Play build that has it.
+const firebaseConfig = 'config/firebase/google-services.customer.json';
+const pushEnv = existsSync(firebaseConfig) ? { ...process.env, VITE_NATIVE_PUSH_CONFIGURED: 'true' } : process.env;
+if (!existsSync(firebaseConfig)) console.warn(`No ${firebaseConfig}: this bundle ships WITHOUT push notifications.`);
+run('npm', ['run', 'android:sync'], process.cwd(), pushEnv);
 const androidDir = path.join(process.cwd(), 'android');
 // Full path: Windows does not always look in the working folder for a bare name.
 const gradlew = path.join(androidDir, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew');
