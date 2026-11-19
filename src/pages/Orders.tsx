@@ -24,6 +24,8 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import OrderTimeline from '@/components/orders/OrderTimeline';
 import OrderSubstitutionPanel from '@/components/orders/OrderSubstitutionPanel';
 import OrderEtaPanel from '@/components/orders/OrderEtaPanel';
+import OrderRatingPanel from '@/components/orders/OrderRatingPanel';
+import LiveDriverMap from '@/components/orders/LiveDriverMap';
 import { getMyOrderEtas, type OrderEta } from '@/lib/orderEta';
 import {
   getCustomerOrderGroupsOperations,
@@ -779,6 +781,16 @@ const Orders = () => {
                               <div className="flex justify-between text-base font-bold"><span>الإجمالي</span><span className="text-primary">{formatMoney(order.total)}</span></div>
                             </div>
                           </section>
+
+                          {order.status === 'shipped' && (order.is_combined ? order.child_order_ids?.[0] : order.id) && (
+                            <LiveDriverMap orderId={(order.is_combined ? order.child_order_ids?.[0] : order.id) as string} />
+                          )}
+                          {order.status === 'delivered' && (order.is_combined ? order.child_order_ids?.[0] : order.id) && (
+                            <OrderRatingPanel
+                              orderId={(order.is_combined ? order.child_order_ids?.[0] : order.id) as string}
+                              hasDriver={Boolean(order.delivery_person)}
+                            />
+                          )}
 
                           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                             {order.status === 'delivered' && (
