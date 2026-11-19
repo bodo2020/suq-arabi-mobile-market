@@ -17,7 +17,7 @@ import { shouldRouteRegisteredPhone } from '@/utils/otpRequest';
 import { savePhoneRecoveryProof } from '@/utils/phoneRecovery';
 import { listenForSmsCode, stopSmsCode } from '@/lib/smsCodeAutofill';
 import { supabase } from '@/lib/supabase';
-import SmsSpamHint from '@/components/auth/SmsSpamHint';
+import SmsSpamHint, { OTP_COOLDOWN_SECONDS } from '@/components/auth/SmsSpamHint';
 
 export default function PhoneVerify() {
   const navigate = useNavigate();
@@ -114,8 +114,9 @@ export default function PhoneVerify() {
       setIsTestOtp(testOtp);
       setStep('verification');
       setCode('');
-      setResendSeconds(60);
-      try { sessionStorage.setItem(cooldownKey, String(Date.now() + 60_000)); } catch { /* server cooldown still applies */ }
+      // 3 minutes: the code stays valid that long and the gateway keeps trying other wordings meanwhile.
+      setResendSeconds(OTP_COOLDOWN_SECONDS);
+      try { sessionStorage.setItem(cooldownKey, String(Date.now() + OTP_COOLDOWN_SECONDS * 1000)); } catch { /* server cooldown still applies */ }
       setInitialSendDone(true);
       toast({
         title: isResend ? 'تم إعادة إرسال الرمز' : 'تم إرسال رمز التحقق',

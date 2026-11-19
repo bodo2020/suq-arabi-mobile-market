@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { normalizeDigits } from '@/utils/authUi';
 import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 import { listenForSmsCode, stopSmsCode } from '@/lib/smsCodeAutofill';
-import SmsSpamHint from '@/components/auth/SmsSpamHint';
+import SmsSpamHint, { OTP_COOLDOWN_SECONDS } from '@/components/auth/SmsSpamHint';
 
 const ChangePhone = () => {
   const navigate = useNavigate();
@@ -98,7 +98,7 @@ const ChangePhone = () => {
       if (updateError) throw updateError;
 
       setStep('otp');
-      setResendSeconds(60);
+      setResendSeconds(OTP_COOLDOWN_SECONDS);
       toast({
         title: 'تم إرسال رمز التحقق',
         description: 'أدخل الرمز المرسل لتأكيد رقم الهاتف الجديد.',
@@ -126,7 +126,7 @@ const ChangePhone = () => {
       });
       if (resendError) throw resendError;
 
-      setResendSeconds(60);
+      setResendSeconds(OTP_COOLDOWN_SECONDS);
       toast({ title: 'تم إعادة إرسال الرمز' });
     } catch (resendError: any) {
       const message = resendError?.message || 'تعذر إعادة إرسال الرمز';

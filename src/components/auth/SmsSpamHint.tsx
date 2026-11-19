@@ -12,8 +12,12 @@ type SmsSpamHintProps = {
  * (Google Messages, Xiaomi, Samsung, Truecaller) file them as spam. After 30s
  * with no code, tell the customer where to look and how to stop it for good.
  */
+/** Code lifetime and resend countdown, in seconds (matches the SMS OTP expiry in Supabase Auth). */
+export const OTP_COOLDOWN_SECONDS = 180;
+
 export default function SmsSpamHint({ resendSeconds, codeLength }: SmsSpamHintProps) {
-  if (resendSeconds > 30 || codeLength >= 6) return null;
+  // Show the hint once 30 s have passed since the send.
+  if (resendSeconds > OTP_COOLDOWN_SECONDS - 30 || codeLength >= 6) return null;
   return (
     <div role="note" className="brand-search-suggestion-enter flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-right">
       <MailWarning size={19} className="mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
