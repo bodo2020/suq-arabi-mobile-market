@@ -64,6 +64,15 @@ if (!manifest.includes('android:screenOrientation=')) {
   );
 }
 
+// A portrait lock makes Android assume the app REQUIRES a portrait screen, which Play then uses to hide the
+// app from some devices (desktop, XR, some tablets). Declare it optional so availability is not restricted.
+if (!manifest.includes('android.hardware.screen.portrait')) {
+  manifest = manifest.replace(
+    /\s*<application\b/,
+    '\n    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />\n\n    <application',
+  );
+}
+
 await writeFile(manifestPath, manifest, 'utf8');
 
 let styles;
