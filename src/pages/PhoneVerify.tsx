@@ -16,6 +16,7 @@ import { customerPhoneIsRegistered } from '@/services/customerAuthRoute';
 import { shouldRouteRegisteredPhone } from '@/utils/otpRequest';
 import { savePhoneRecoveryProof } from '@/utils/phoneRecovery';
 import { listenForSmsCode, stopSmsCode } from '@/lib/smsCodeAutofill';
+import { supabase } from '@/lib/supabase';
 import SmsSpamHint from '@/components/auth/SmsSpamHint';
 
 export default function PhoneVerify() {
@@ -99,6 +100,13 @@ export default function PhoneVerify() {
 
       // Android: listen before asking, so the texted code fills itself (one "allow" tap) and is confirmed.
       void listenForSmsCode(value => { setCode(value); void verify(value); });
+      // Password recovery gets its own SMS wording: tell the gateway before the code is requested (best effort).
+      if (isRecovery) {
+        await Promise.race([
+          Promise.resolve(supabase.rpc('announce_otp_purpose_v1' as never, { p_phone: fullPhone, p_purpose: 'reset' } as never)).catch(() => undefined),
+          new Promise(resolve => window.setTimeout(resolve, 1500)),
+        ]);
+      }
       const { data, error } = await signInWithPhone(fullPhone, !isRecovery);
       if (error) throw error;
 
