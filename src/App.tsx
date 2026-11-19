@@ -4,6 +4,7 @@ import AddressGuard from './components/AddressGuard';
 import CheckoutAttemptRecovery from './components/CheckoutAttemptRecovery';
 import PushNotificationsBootstrap from './components/PushNotificationsBootstrap';
 import NativeStatusBarSync from './components/NativeStatusBarSync';
+import AppUpdatePrompt from './components/AppUpdatePrompt';
 import { NavigationBridge } from './lib/appNavigation';
 import CustomerNotificationRealtimeBridge from './components/CustomerNotificationRealtimeBridge';
 import NetworkStatus from './components/NetworkStatus';
@@ -149,6 +150,7 @@ function App() {
               <BrandCartFeedback />
               <PushNotificationsBootstrap />
               <NativeStatusBarSync />
+              <AppUpdatePrompt />
               <CustomerNotificationRealtimeBridge />
               <ProfileCompletionGate />
               <CheckoutAttemptRecovery />
