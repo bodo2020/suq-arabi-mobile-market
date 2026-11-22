@@ -190,7 +190,7 @@ export default function Search() {
   };
 
   return (
-    <MainLayout hideBottomNav>
+    <MainLayout>
       {query && <SEOHead title={'البحث عن ' + query + ' - سوبر ماركو'} description={'نتائج البحث عن ' + query} type="search" />}
       {query && products.length > 0 && <ProductListStructuredData products={products} listName={'البحث عن ' + query} />}
       <TopNavBar

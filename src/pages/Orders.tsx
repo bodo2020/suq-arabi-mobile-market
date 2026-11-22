@@ -24,6 +24,7 @@ import TopNavBar from '@/components/layout/TopNavBar';
 import OrderTimeline from '@/components/orders/OrderTimeline';
 import OrderSubstitutionPanel from '@/components/orders/OrderSubstitutionPanel';
 import OrderEtaPanel from '@/components/orders/OrderEtaPanel';
+import RatingPopup from '@/components/orders/RatingPopup';
 import { getMyOrderEtas, type OrderEta } from '@/lib/orderEta';
 import {
   getCustomerOrderGroupsOperations,
@@ -375,9 +376,15 @@ const Orders = () => {
     return () => window.clearTimeout(timer);
   }, [targetOrderId, orders]);
 
+  const ratableOrders = orders
+    .filter(order => order.status === 'delivered')
+    .map(order => ({ orderId: (order.is_combined ? order.child_order_ids?.[0] : order.id) as string, hasDriver: Boolean(order.delivery_person) }))
+    .filter(order => order.orderId);
+
   return (
     <MainLayout>
       <TopNavBar hideLogo hideSearch hideCart pageTitle="طلباتي" />
+      {session && <RatingPopup orders={ratableOrders} />}
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         {!session ? (
