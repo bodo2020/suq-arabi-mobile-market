@@ -5,6 +5,7 @@ import CheckoutAttemptRecovery from './components/CheckoutAttemptRecovery';
 import PushNotificationsBootstrap from './components/PushNotificationsBootstrap';
 import NativeStatusBarSync from './components/NativeStatusBarSync';
 import AppUpdatePrompt from './components/AppUpdatePrompt';
+import AndroidAppBanner from './components/AndroidAppBanner';
 import { NavigationBridge } from './lib/appNavigation';
 import CustomerNotificationRealtimeBridge from './components/CustomerNotificationRealtimeBridge';
 import NetworkStatus from './components/NetworkStatus';
@@ -151,6 +152,7 @@ function App() {
               <PushNotificationsBootstrap />
               <NativeStatusBarSync />
               <AppUpdatePrompt />
+              <AndroidAppBanner />
               <CustomerNotificationRealtimeBridge />
               <ProfileCompletionGate />
               <CheckoutAttemptRecovery />
