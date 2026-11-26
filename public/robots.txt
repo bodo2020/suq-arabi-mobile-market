@@ -1,3 +1,4 @@
+# Search engines and link previews are welcome.
 User-agent: Googlebot
 Allow: /
 
@@ -10,6 +11,39 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+# Content may be indexed for search, but not used to train AI models.
 User-agent: *
+Content-Signal: search=yes,ai-train=no,use=reference
 Allow: /
 
+# AI crawlers and data scrapers (same list Cloudflare blocks by default).
+User-agent: Amazonbot
+User-agent: Applebot-Extended
+User-agent: Bytespider
+User-agent: CCBot
+User-agent: ClaudeBot
+User-agent: Claude-Web
+User-agent: anthropic-ai
+User-agent: Diffbot
+User-agent: Google-Extended
+User-agent: GoogleOther
+User-agent: Google-CloudVertexBot
+User-agent: GPTBot
+User-agent: omgili
+User-agent: cohere-ai
+User-agent: MistralAI-Training
+User-agent: meta-externalagent
+User-agent: PerplexityBot
+User-agent: Baiduspider
+User-agent: PetalBot
+User-agent: AwarioSmartBot
+User-agent: AwarioRssBot
+User-agent: QualifiedBot
+User-agent: Cotoyogi
+User-agent: ICC-Crawler
+User-agent: atlassian-bot
+User-agent: FishBot
+User-agent: KimiBot
+User-agent: SemrushBot-SWA
+User-agent: magpie-crawler
+Disallow: /
