@@ -323,7 +323,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
       <div className="mt-auto pt-1.5 sm:pt-2.5">
         <div className="flex items-baseline gap-1">
-          <strong className="text-[17px] font-black leading-none tracking-tight text-[#005931] sm:text-[21px]">{money(price)}</strong>
+          <strong className="text-[17px] font-black leading-none tracking-tight tabular-nums text-[#005931] sm:text-[21px]">{money(price)}</strong>
           <span className="text-[9px] font-bold text-[#cf9700] sm:text-[11px]">ج.م</span>
         </div>
         {discount > 0 && (

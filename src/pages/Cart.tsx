@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, BadgePercent, Check, Package, Plus, Minus, Trash2, Scale, AlertCircle, RefreshCw, Clock3 } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
+import MainLayout from '@/components/layout/MainLayout';
 import BrandLoader from '@/components/ui/BrandLoader';
 import CartEmptyState from '@/components/cart/CartEmptyState';
 import CartSuggestions from '@/components/cart/CartSuggestions';
@@ -85,7 +86,8 @@ export default function Cart() {
   );
   const deliveryEtaEnd = deliveryEtaStart + 5;
 
-  return <CheckoutLayout showSteps={!(isInitialized && items.length === 0)}>
+  const bagEmpty = isInitialized && items.length === 0;
+  const page = <CheckoutLayout showSteps={!bagEmpty}>
     {syncError && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{syncError}</span><Button variant="outline" onClick={retrySync}>إعادة المحاولة</Button></div>}
     {(branchError || quoteError) && <div role="alert" className="cart-alert"><AlertCircle size={20} /><span>{branchError || quoteError}</span><Button variant="outline" onClick={() => void retryQuote()}><RefreshCw size={16} />إعادة المراجعة</Button></div>}
 
@@ -198,4 +200,7 @@ export default function Cart() {
 
     {weightItem && <WeightSelector product={weightItem.product} isOpen onClose={() => setWeightItem(null)} />}
   </CheckoutLayout>;
+
+  // An empty bag is not a checkout: keep the bottom nav so the customer can go shopping.
+  return bagEmpty ? <MainLayout>{page}</MainLayout> : page;
 }

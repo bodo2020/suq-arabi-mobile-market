@@ -4,8 +4,14 @@ import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import BrandMark from './BrandMark';
 import BrandWordmark from './BrandWordmark';
+import { tapFeedback } from '@/lib/nativeFeel';
 
 const THRESHOLD = 96;
+// Elastic pull: follows the finger at first, then resists more the further it goes.
+const MAX_PULL = 160;
+const RESISTANCE = 220;
+// While refreshing the page stays slightly lowered so the customer sees it working.
+const HOLD = 64;
 // Little brand-coloured pieces that pop around the logo once the pull is far enough.
 const CONFETTI = [
   { x: -150, y: -30, r: 20, c: '#FFC120' }, { x: -168, y: 10, r: -15, c: '#005931' },
@@ -46,10 +52,12 @@ export default function BrandPullToRefresh() {
     let startY: number | null = null;
     let disposed = false;
     let finishTimer: number | undefined;
+    let armed = false;
 
     const resetGesture = () => {
       startX = null;
       startY = null;
+      armed = false;
       pullRef.current = 0;
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
@@ -73,7 +81,10 @@ export default function BrandPullToRefresh() {
       if (dy < 8 || dx > dy * .7 ||
           window.scrollY > 0 || (document.scrollingElement?.scrollTop ?? 0) > 0) return;
       if (event.cancelable) event.preventDefault();
-      pullRef.current = Math.min(150, dy * .55);
+      pullRef.current = MAX_PULL * (1 - Math.exp(-(dy - 8) / RESISTANCE));
+      // One tick when the pull is far enough to refresh, and again only after going back below.
+      if (!armed && pullRef.current >= THRESHOLD) { armed = true; tapFeedback(); }
+      else if (armed && pullRef.current < THRESHOLD) armed = false;
       if (frameRef.current === null) {
         frameRef.current = requestAnimationFrame(() => {
           frameRef.current = null;
@@ -95,7 +106,7 @@ export default function BrandPullToRefresh() {
           const remaining = Math.max(0, 650 - (Date.now() - started));
           finishTimer = window.setTimeout(() => {
             refreshingRef.current = false;
-            if (!disposed) setRefreshing(false);
+            if (!disposed) { setRefreshing(false); tapFeedback('success'); }
           }, remaining);
         });
     };
@@ -121,8 +132,8 @@ export default function BrandPullToRefresh() {
   // The whole app slides down with the finger (like a native pull-to-refresh)
   // and reveals the brand panel behind it. The transform is removed entirely
   // when idle so fixed headers/bottom nav go back to normal positioning.
-  // On release the page slides straight back; the refresh runs in the background.
-  const offset = pull;
+  // On release the page settles at HOLD while refreshing, then slides back.
+  const offset = pull || (refreshing ? HOLD : 0);
   const [panelVisible, setPanelVisible] = useState(false);
   useEffect(() => {
     const root = document.getElementById('root');
@@ -163,10 +174,10 @@ export default function BrandPullToRefresh() {
 
   if (!enabled || (!panelVisible && !pull)) return null;
   const progress = Math.min(1, pull / THRESHOLD);
-  const label = pull >= THRESHOLD ? 'سيب وهنحدّثلك' : 'اسحب لتحت عشان تحدّث';
+  const label = refreshing && !pull ? 'بنحدّث…' : pull >= THRESHOLD ? 'سيب وهنحدّثلك' : 'اسحب لتحت عشان تحدّث';
   return createPortal(
     <div
-      className="brand-pull-panel"
+      className={`brand-pull-panel${refreshing && !pull ? ' is-refreshing' : ''}`}
       style={{ height: `calc(var(--safe-area-top, 0px) + ${Math.max(offset, 0)}px)`, '--pull-progress': progress } as CSSProperties}
       role="status"
       aria-live="polite"

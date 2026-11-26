@@ -204,6 +204,15 @@ export async function getSubcategories(categoryId?: string) {
   return data || [];
 }
 
+/** Discounted, in-stock products of the delivering branch (not capped by the 1000-newest catalog). */
+export async function getBranchOffers(): Promise<Product[]> {
+  const runtime = await loadBranchRuntimeContext();
+  if (!runtime?.delivery_branch_id) throw new Error('DELIVERY_ADDRESS_REQUIRED');
+  const { data, error } = await catalogRpc('get_customer_branch_offers_v1', { p_branch_id: runtime.delivery_branch_id });
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []) as Product[];
+}
+
 export async function getProducts(categoryIdOrSubcategoryId?: string, isSubcategory: boolean = false) {
   return getBranchCatalog(isSubcategory
     ? { subcategoryId: categoryIdOrSubcategoryId || null }

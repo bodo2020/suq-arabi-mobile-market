@@ -21,8 +21,8 @@ const MainLayout: React.FC<{children:React.ReactNode; hideBottomNav?:boolean}> =
  const {pathname}=useLocation(); const {getTotalItems}=useCart(); const mobile=useIsMobile(); const count=getTotalItems();
  React.useEffect(()=>{document.body.dir='rtl';},[]);
  const bagHop=lastNavCartCount!==null&&count>lastNavCartCount;
- // A light tap on the phone whenever something lands in the bag.
- React.useEffect(()=>{if(lastNavCartCount!==null&&count>lastNavCartCount){tapFeedback();track('added_to_bag',{items:count});}lastNavCartCount=count;},[count]);
+ // A light tap on the phone whenever the bag changes (added, reduced or removed).
+ React.useEffect(()=>{if(lastNavCartCount!==null&&count!==lastNavCartCount){tapFeedback();if(count>lastNavCartCount)track('added_to_bag',{items:count});}lastNavCartCount=count;},[count]);
  const active=(to:string)=>to==='/'?pathname==='/':to==='/offers'?(pathname==='/offers'||pathname==='/flash-sale'):pathname.startsWith(to);
  const activeIndex = links.findIndex(link => active(link.to));
  const [bubbleIndex, setBubbleIndex] = React.useState(() => (lastNavIndex !== null && lastNavIndex >= 0 && activeIndex >= 0 ? lastNavIndex : activeIndex));

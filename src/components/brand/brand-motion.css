@@ -138,7 +138,17 @@
   gap: 8px;
   direction: rtl;
 }
-.brand-pull-panel__mark { width: 38px; height: auto; }
+.brand-pull-panel__mark { width: 38px; height: auto; transition: transform .12s linear; }
+.brand-pull-panel.is-refreshing .brand-pull-panel__mark { animation: brand-pull-bounce .7s cubic-bezier(.3,.7,.4,1) infinite; }
+.brand-pull-panel.is-refreshing .brand-pull-panel__wordmark { display: none; }
+@keyframes brand-pull-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-7px) scale(1.06); }
+  70% { transform: translateY(1px) scale(.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-pull-panel.is-refreshing .brand-pull-panel__mark { animation: none; }
+}
 .brand-pull-panel__mark img { width: 100%; height: auto; display: block; }
 .brand-pull-panel .brand-pull-panel__wordmark { font-size: 34px; line-height: 1.2; }
 /* #root slides down during the pull; keep the fixed bottom nav where it is. */

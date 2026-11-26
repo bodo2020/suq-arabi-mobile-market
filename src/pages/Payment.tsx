@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { getMyLoyaltyVouchers, type LoyaltyVoucher } from '@/lib/loyalty';
+import { RECEIPT_MAX_BYTES, RECEIPT_TYPES, uploadPaymentReceipt } from '@/lib/paymentReceipt';
 import {
   checkoutError,
   checkoutLines,
@@ -54,6 +55,35 @@ const Payment = () => {
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptUploading, setReceiptUploading] = useState(false);
+
+  const pickReceipt = (file?: File) => {
+    if (!file) return;
+    if (!RECEIPT_TYPES.includes(file.type) || file.size > RECEIPT_MAX_BYTES) {
+      toast({ title: 'الصورة لازم تكون JPG أو PNG أو WEBP وأقل من 5 ميجا', variant: 'destructive' });
+      return;
+    }
+    setReceiptFile(file);
+  };
+
+  // The receipt goes up first; the order is only confirmed after the upload succeeds.
+  const confirmWalletOrder = async () => {
+    if (!receiptFile) {
+      toast({ title: 'ارفع صورة وصل التحويل الأول', variant: 'destructive' });
+      return;
+    }
+    setReceiptUploading(true);
+    try {
+      await uploadPaymentReceipt(receiptFile, requestId);
+    } catch {
+      setReceiptUploading(false);
+      toast({ title: 'تعذر رفع الوصل', description: 'حاول مرة تانية.', variant: 'destructive' });
+      return;
+    }
+    setReceiptUploading(false);
+    void handleSubmitOrder();
+  };
   const [notes, setNotes] = useState('');
   const [notesOpen, setNotesOpen] = useState(false);
   const [substitutionPolicy, setSubstitutionPolicy] = useState<SubstitutionPolicy>(DEFAULT_SUBSTITUTION_POLICY);
@@ -592,7 +622,8 @@ const Payment = () => {
             <div className="rounded-2xl bg-[#fffaeb] p-4 text-center ring-1 ring-[#f1d78a]"><p className="mb-1 text-sm">المبلغ المطلوب</p><p className="text-2xl font-black text-[#005931]">{money(payableTotal)} ج.م</p>{voucherAmount > 0 && <p className="mt-1 text-xs text-emerald-700">تم خصم {money(voucherAmount)} ج.م بكوبون الخصم</p>}</div>
             <div className="space-y-2"><p className="text-sm">حوّل المبلغ عبر فودافون كاش أو انستا باي إلى:</p><div className="flex items-center justify-between rounded-xl bg-muted p-3"><span className="font-mono text-lg font-bold">{WALLET_PHONE_NUMBER}</span><Button variant="ghost" size="sm" onClick={() => copyToClipboard(WALLET_PHONE_NUMBER, 'phone')} className="h-8 w-8 p-0">{copiedPhone ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}</Button></div></div>
             <div className="space-y-2"><p className="text-sm">مرجع الطلب:</p><div className="flex items-center justify-between gap-2 rounded-xl bg-muted p-3"><span className="min-w-0 break-all font-mono text-xs font-medium">{orderReference}</span><Button variant="ghost" size="sm" onClick={() => copyToClipboard(orderReference, 'order')} className="h-8 w-8 shrink-0 p-0">{copiedOrderNumber ? <CheckCheck className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}</Button></div></div>
-            <button type="button" onClick={handleSubmitOrder} className="pay-confirm" disabled={isLoading}>{isLoading ? 'جاري تأكيد الطلب...' : 'حوّلت، أكّد الطلب'}</button>
+            <div className="space-y-2"><p className="text-sm">ارفع صورة وصل التحويل:</p><label className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-dashed p-3 text-sm"><span className="min-w-0 truncate">{receiptFile ? receiptFile.name : 'اختار صورة الوصل'}</span><input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={event => pickReceipt(event.target.files?.[0])} /><ReceiptText className="h-4 w-4 shrink-0" /></label></div>
+            <button type="button" onClick={() => void confirmWalletOrder()} className="pay-confirm" disabled={isLoading || receiptUploading}>{receiptUploading ? 'جاري رفع الوصل...' : isLoading ? 'جاري تأكيد الطلب...' : 'حوّلت، أكّد الطلب'}</button>
           </div>
         </DialogContent>
       </Dialog>

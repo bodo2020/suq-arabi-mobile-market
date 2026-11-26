@@ -44,6 +44,8 @@ export default function PhoneVerify() {
   const sendInFlight = useRef(false);
   const verifyInFlight = useRef(false);
   const initialStarted = useRef(false);
+  const [otpStatus, setOtpStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
+  const [shakeKey, setShakeKey] = useState(0);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -54,6 +56,7 @@ export default function PhoneVerify() {
   }, [resendSeconds]);
 
   useEffect(() => () => { void stopSmsCode(); }, []);
+
 
   const formatPhoneNumber = (value: string) => egyptianMobileDigits(value);
   const formatInternationalPhone = (value: string) => egyptianMobileE164(value);
@@ -159,12 +162,14 @@ export default function PhoneVerify() {
 
     verifyInFlight.current = true;
     setLoading(true);
+    setOtpStatus('verifying');
     try {
       const fullPhone = formatInternationalPhone(phone);
       const { data, error } = await verifyPhone(fullPhone, value);
       if (error) throw error;
       const verifiedUser = data?.user;
       if (!verifiedUser?.id) throw new Error('تعذر إنشاء جلسة بعد التحقق');
+      setOtpStatus('success');
 
       if (isRecovery) {
         savePhoneRecoveryProof(verifiedUser.id, fullPhone);
@@ -174,6 +179,9 @@ export default function PhoneVerify() {
 
       navigate(`/register?returnTo=${encodeURIComponent(returnTo)}`, { replace: true });
     } catch (error: any) {
+      setOtpStatus('error');
+      setShakeKey(key => key + 1);
+      setCode('');
       toast({
         title: 'تعذر التحقق',
         description: authErrorMessage(error, 'راجع الرمز وحاول مرة أخرى.'),
@@ -215,7 +223,7 @@ export default function PhoneVerify() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className={`space-y-5 auth-otp-stage is-${otpStatus}`} data-state={otpStatus}>
               <div className="auth-recipient">
                 <div className="min-w-0">
                   <p className="auth-recipient-label">{isTestOtp ? 'كود الاختبار للرقم' : 'بعتنالك الكود على'}</p>
@@ -232,8 +240,9 @@ export default function PhoneVerify() {
               </div>
 
               <div className="auth-otp-entry">
-                <div dir="ltr">
+                <div dir="ltr" key={shakeKey} className="auth-otp-shake">
                   <InputOTP
+                    autoFocus
                     aria-label="رمز التحقق المكون من 6 أرقام"
                     autoComplete="one-time-code"
                     inputMode="numeric"
@@ -241,11 +250,11 @@ export default function PhoneVerify() {
                     disabled={loading || resendLoading}
                     maxLength={6}
                     value={code}
-                    onChange={value => { setCode(normalizeDigits(value).replace(/\D/g, '')); setErrors(prev => ({ ...prev, code: '' })); }}
+                    onChange={value => { setCode(normalizeDigits(value).replace(/\D/g, '')); setErrors(prev => ({ ...prev, code: '' })); setOtpStatus(status => (status === 'error' ? 'idle' : status)); }}
                     onComplete={(value: string) => void verify(normalizeDigits(value).replace(/\D/g, ''))}
                   >
                     <InputOTPGroup className="auth-otp-group">
-                      {[0, 1, 2, 3, 4, 5].map(index => <InputOTPSlot key={index} index={index} className="auth-otp-slot" />)}
+                      {[0, 1, 2, 3, 4, 5].map(index => <InputOTPSlot key={index} index={index} className={index < code.length ? 'auth-otp-slot is-filled' : 'auth-otp-slot'} />)}
                     </InputOTPGroup>
                   </InputOTP>
                 </div>

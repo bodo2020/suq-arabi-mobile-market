@@ -85,7 +85,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
             if (!fromDisk) saveImageToDisk(finalSource);
           }}
           onError={() => (fromDisk ? setSkipDisk(true) : retry())}
-          className={`${className} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`${className} transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none ${loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.04]'}`}
           {...props}
         />
       )}

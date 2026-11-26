@@ -48,8 +48,29 @@ const centreInRail = (rail: HTMLElement | null, item: HTMLElement | null) => {
 
 const jumpTo = (element: HTMLElement | null, smooth = true) => {
   if (!element) return;
-  const y = element.getBoundingClientRect().top + window.scrollY - topOffset();
-  window.scrollTo({ top: Math.max(0, y), behavior: smooth && !window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'auto' });
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const drift = () => element.getBoundingClientRect().top - topOffset();
+  const aim = (behavior: ScrollBehavior) => window.scrollTo({ top: Math.max(0, drift() + window.scrollY), behavior });
+  // Long jumps go instantly: a smooth scroll across lazy sections stalls and lands short.
+  const far = Math.abs(drift()) > window.innerHeight * 1.5;
+  aim(smooth && !reduceMotion && !far ? 'smooth' : 'auto');
+  if (!smooth) return;
+
+  // Sections above the target load and change height as we arrive, so keep re-aiming until the
+  // target stays put (8 s at most). Stop as soon as the customer touches or scrolls the page.
+  let timer = 0;
+  const stop = () => {
+    window.clearInterval(timer);
+    window.removeEventListener('touchstart', stop);
+    window.removeEventListener('wheel', stop);
+  };
+  const startedAt = Date.now();
+  timer = window.setInterval(() => {
+    if (Math.abs(drift()) <= 8 || Date.now() - startedAt > 8000) return stop();
+    aim('auto');
+  }, 150);
+  window.addEventListener('touchstart', stop, { passive: true });
+  window.addEventListener('wheel', stop, { passive: true });
 };
 
 /** A permanently mounted category section. Its content is only fetched near the viewport. */
@@ -174,6 +195,22 @@ export default function CategoryJourney() {
   });
   const categories = categoriesQuery.data || [];
   const initialIndex = categories.findIndex(category => category.id === id);
+
+  // Load every category above the target first, so the page no longer grows while the customer lands.
+  const jumpToCategory = async (targetId: string) => {
+    const targetIndex = categories.findIndex(category => category.id === targetId);
+    const above = targetIndex > 0 ? categories.slice(0, targetIndex) : [];
+    await Promise.allSettled(above
+      .filter(category => client.getQueryData(categoryContentKey(category.id)) === undefined)
+      .map(category => client.fetchQuery({
+        queryKey: categoryContentKey(category.id),
+        queryFn: () => getCategoryContent(category.id),
+        staleTime: 60_000,
+      })));
+    // Let React paint the loaded sections before measuring the target.
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    jumpTo(document.getElementById(`journey-category-${targetId}`));
+  };
   const [activeCategory, setActiveCategory] = useState(id || '');
   const [readyForId, setReadyForId] = useState<string | null>(null);
   const [activeSubcategory, setActiveSubcategory] = useState('');
@@ -341,7 +378,7 @@ export default function CategoryJourney() {
                   type="button"
                   role="tab"
                   aria-selected={selected}
-                  onClick={() => jumpTo(document.getElementById(`journey-category-${category.id}`))}
+                  onClick={() => void jumpToCategory(category.id)}
                   className={`relative h-full shrink-0 whitespace-nowrap text-sm font-black transition-colors sm:text-[15px] ${selected ? 'text-[#005931]' : 'text-slate-400'}`}
                 >
                   {category.name}

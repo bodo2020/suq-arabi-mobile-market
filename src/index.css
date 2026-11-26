@@ -47,6 +47,21 @@ html.native-platform body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Native feel: no long-press image menu, no text selection on tappable chrome.
+   Inputs and text areas keep normal selection. */
+html.native-platform img {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+html.native-platform button,
+html.native-platform a,
+html.native-platform nav,
+html.native-platform [role="tab"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Android's outer window uses brand green at the top; the actual app surface stays soft white/green. */
 html.native-android {
   background: #005931;

@@ -323,3 +323,53 @@
 @media (prefers-reduced-motion: reduce) {
   .auth-page *, .auth-page *::before, .auth-page *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* OTP step: borderless tiles on the normal card colour, feedback per state. */
+.auth-otp-stage {
+  position: relative;
+  border-radius: 22px;
+  padding: 18px 14px 16px;
+}
+.auth-otp-stage .auth-recipient { border-bottom: 0; padding-bottom: 0; }
+.auth-otp-stage .auth-recipient-label,
+.auth-otp-stage .auth-recipient-phone { color: #0b3b2a; }
+.auth-otp-stage .auth-otp-slot {
+  border: 0 !important;
+  border-radius: 14px;
+  background: #f1f6f3;
+  color: #0b3b2a;
+  box-shadow: 0 6px 16px rgba(10, 60, 45, .14);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.auth-otp-stage .auth-otp-slot.is-filled { animation: otp-pop .28s ease-out; }
+.auth-otp-stage .auth-otp-slot.ring-2 {
+  box-shadow: 0 0 0 3px #005931, 0 8px 18px rgba(10, 60, 45, .18);
+  transform: translateY(-2px);
+}
+.auth-otp-stage.is-verifying .auth-otp-slot { animation: otp-breathe 1s ease-in-out infinite; }
+.auth-otp-stage.is-success .auth-otp-slot { background: #f1fff7; box-shadow: 0 0 0 2px #1f9d5b; color: #0b5b35; }
+.auth-otp-stage.is-error .auth-otp-slot { box-shadow: 0 0 0 2px #d93838; }
+.auth-otp-shake.is-shaking, .auth-otp-stage.is-error .auth-otp-shake { animation: otp-shake .45s ease; }
+.auth-otp-stage .auth-otp-resend { border-top-color: rgba(11, 59, 42, .14); }
+.auth-otp-stage .auth-otp-resend .auth-inline-link { color: #0b3b2a; }
+.auth-otp-stage [role="alert"] { color: #9b1c1c; font-weight: 700; }
+
+@keyframes otp-pop {
+  0% { transform: scale(.82); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes otp-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+@keyframes otp-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-otp-stage .auth-otp-slot { animation: none !important; }
+}

@@ -9,7 +9,7 @@ import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton';
 import BrandWordmark from '@/components/brand/BrandWordmark';
 import HomeSectionHeader, { HOME_SECTION_CARD } from '@/components/sections/HomeSectionHeader';
 import { Button } from '@/components/ui/button';
-import { getCategories, getProducts, type Product } from '@/lib/supabase';
+import { getBranchOffers, getCategories, type Product } from '@/lib/supabase';
 import { productUnitPrice } from '@/lib/productPurchase';
 import { getCatalogCampaigns, campaignState, countdown, type CatalogCampaign } from '@/lib/catalogCampaigns';
 
@@ -55,7 +55,7 @@ export default function Offers() {
   useEffect(() => { setCampaignId(''); setLimit(30); }, [flash]);
   useEffect(() => setLimit(30), [search, category, sort, campaignId, minDiscount]);
 
-  const products = useQuery({ queryKey: ['offers-catalog'], queryFn: () => getProducts(), staleTime: 15000, refetchInterval: 60000 });
+  const products = useQuery({ queryKey: ['offers-catalog'], queryFn: getBranchOffers, staleTime: 15000, refetchInterval: 60000 });
   const campaigns = useQuery({ queryKey: ['catalog-campaigns'], queryFn: getCatalogCampaigns, staleTime: 15000, refetchInterval: 60000 });
   const categories = useQuery({ queryKey: ['categories'], queryFn: getCategories });
 
