@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { cdnHome, pickHomeSections } from '@/lib/catalogCdn';
 
 export type HomeSectionType = 'hero_banners' | 'categories' | 'featured_products' | 'product_collection' | 'smart_recommendations' | 'new_arrivals' | 'category_rails' | 'best_sellers' | 'buy_again';
 export type HomeEventType = 'impression' | 'click' | 'add_to_cart';
@@ -80,6 +81,13 @@ export const getPublicHomePage = async (
   experimentSeed = getHomeAnalyticsSessionKey(),
 ): Promise<PublicHomePageConfig | null> => {
   try {
+    // Same sections from the CDN when the branch's home is published there (the API answers otherwise).
+    const home = branchId ? await cdnHome(branchId) : null;
+    if (home?.page) {
+      const config = { ...home.page, sections: pickHomeSections(home.page.sections, experimentSeed) } as unknown as PublicHomePageConfig;
+      writeCachedHome(branchId, cacheScope, config);
+      return config;
+    }
     const client = supabase as any;
     const { data, error } = await client.rpc('get_public_home_page', {
       p_branch_id: branchId || null,
@@ -105,9 +113,14 @@ export type HomeBestSellers = { windowDays: number; sold: Map<string, number>; i
 /** Store-wide best sellers (POS + online), last 30 days; the server widens the window while sales are thin. */
 export const getHomeBestSellers = async (branchId?: string | null): Promise<HomeBestSellers> => {
   try {
-    const client = supabase as any;
-    const { data, error } = await client.rpc('get_home_best_sellers_v1', { p_branch_id: branchId || null, p_min: 24 });
-    if (error) throw error;
+    const home = branchId ? await cdnHome(branchId) : null;
+    let data = home?.best_sellers ?? null;
+    if (!data) {
+      const client = supabase as any;
+      const result = await client.rpc('get_home_best_sellers_v1', { p_branch_id: branchId || null, p_min: 24 });
+      if (result.error) throw result.error;
+      data = result.data;
+    }
     const items: { id: string; sold: number }[] = Array.isArray(data?.items) ? data.items : [];
     return {
       windowDays: Number(data?.window_days || 30),

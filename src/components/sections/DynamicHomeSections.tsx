@@ -26,6 +26,7 @@ import {
   trackHomeEvent,
 } from '@/lib/homePage';
 import { getCategories, getCurrentDeliveryBranchId, MainCategory, Product, supabase } from '@/lib/supabase';
+import { cdnHome } from '@/lib/catalogCdn';
 import { getRegularVariants } from '@/utils/productUtils';
 import { useUser } from '@/contexts/UserContext';
 
@@ -141,8 +142,14 @@ const DynamicHomeSections = ({ hidePromotions = false, showBanners = false }: { 
     queryKey: ['active-banners'],
     enabled: needsBanners,
     queryFn: async () => {
-      const { data, error } = await supabase.from('banners').select('*').eq('active', true).order('position');
-      if (error) throw error;
+      const fromApi = async () => {
+        const { data, error } = await supabase.from('banners').select('*').eq('active', true).order('position');
+        if (error) throw error;
+        return data || [];
+      };
+      // Banners come with the home file on the CDN; the API answers when it is not published.
+      const home = branchQuery.data ? await cdnHome(branchQuery.data) : null;
+      const data = home ? (home.banners as unknown as Awaited<ReturnType<typeof fromApi>>) : await fromApi();
       const now = Date.now();
       return (data || []).filter(banner => {
         const starts = banner.start_date ? new Date(banner.start_date).getTime() : null;

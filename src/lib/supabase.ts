@@ -1,6 +1,6 @@
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 import { loadBranchRuntimeContext, loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
-import { cdnCatalogPage } from '@/lib/catalogCdn';
+import { cdnCatalogPage, cdnHome } from '@/lib/catalogCdn';
 import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 
 export const supabase = configuredSupabase;
@@ -197,6 +197,9 @@ export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Pr
 }
 
 export async function getCategories() {
+  const branchId = await getCurrentDeliveryBranchId().catch(() => null);
+  const home = branchId ? await cdnHome(branchId) : null;
+  if (home?.categories?.length) return home.categories as unknown as MainCategory[];
   const { data, error } = await supabase.from('main_categories').select('*').order('position').order('name');
   if (error) console.error('Error fetching categories:', error);
   return data as MainCategory[] || [];

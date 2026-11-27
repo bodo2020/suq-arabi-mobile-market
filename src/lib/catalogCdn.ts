@@ -47,3 +47,61 @@ export async function cdnCatalogPage<T>(branchId: string, mainCategoryId: string
     return null;
   }
 }
+
+/* ---------- Home screen from the CDN ---------- */
+
+/** <branch>/home/<hash>.json: home sections (both A/B variants), banners, categories and best sellers. */
+export type CdnHome = {
+  personalized: boolean;
+  page: { id: string; name: string; version: number; published_at: string | null; segments: string[]; sections: CdnHomeSection[] } | null;
+  banners: Array<Record<string, unknown>>;
+  categories: Array<Record<string, unknown>>;
+  best_sellers: { window_days?: number; items?: Array<{ id: string; sold: number }> } | null;
+};
+type CdnHomeSection = { sort_order?: number | null; starts_at?: string | null; ends_at?: string | null; experiment_key?: string | null; experiment_variant?: string | null };
+
+/** Home data for the branch, or null to use the API (no manifest, sections aimed at customer segments, network error). */
+export async function cdnHome(branchId: string): Promise<CdnHome | null> {
+  const manifest = await loadManifest(branchId) as (Manifest & { home?: string }) | null;
+  if (!manifest?.home) return null;
+  const url = `${BASE}/${branchId}/home/${manifest.home}.json`;
+  if (!pageCache.has(url)) pageCache.set(url, getJson<unknown[]>(url).catch(error => { pageCache.delete(url); throw error; }));
+  try {
+    const home = (await pageCache.get(url)) as unknown as CdnHome;
+    return home && !home.personalized ? home : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Stable 0-99 bucket for a visit and an experiment (FNV-1a), so a visitor keeps the same variant all session. */
+export function experimentBucket(seed: string, key: string): number {
+  let hash = 0x811c9dc5;
+  const text = `${seed}:${key}`;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash % 100;
+}
+
+/**
+ * The sections a visitor sees, as the server picks them: inside their time window, and for an A/B experiment with both
+ * variants live, variant A for buckets 0-49 and B for 50-99 (a single live variant is shown to everyone).
+ */
+export function pickHomeSections<T extends CdnHomeSection>(sections: T[], seed: string, now = Date.now()): T[] {
+  const live = sections.filter(s => (!s.starts_at || new Date(s.starts_at).getTime() <= now) && (!s.ends_at || new Date(s.ends_at).getTime() > now));
+  const variants = new Map<string, Set<string>>();
+  for (const s of live) if (s.experiment_key && s.experiment_variant) {
+    if (!variants.has(s.experiment_key)) variants.set(s.experiment_key, new Set());
+    variants.get(s.experiment_key)!.add(s.experiment_variant);
+  }
+  const chosen = (key: string) => {
+    const set = variants.get(key)!;
+    if (set.has("A") && set.has("B")) return experimentBucket(seed, key) < 50 ? "A" : "B";
+    return set.has("A") ? "A" : "B";
+  };
+  return live
+    .filter(s => !s.experiment_key || !variants.has(s.experiment_key) || s.experiment_variant === chosen(s.experiment_key))
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+}
