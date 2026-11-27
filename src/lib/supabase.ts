@@ -1,5 +1,6 @@
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 import { loadBranchRuntimeContext, loadSelectedDeliveryPoint } from '@/lib/branchRuntime';
+import { cdnCatalogPage } from '@/lib/catalogCdn';
 import { invalidateMyAddresses, invalidateMyCustomer } from '@/lib/customerProfileCache';
 
 export const supabase = configuredSupabase;
@@ -173,6 +174,11 @@ export async function getBranchCatalog(filters: CatalogFilters = {}): Promise<Pr
 
   const point = await loadSelectedDeliveryPoint();
   if (!point) throw new Error('DELIVERY_ADDRESS_REQUIRED');
+  // Browsing (all products or one main category) is served from the CDN; anything it cannot answer goes to the API.
+  if (!filters.productId && !filters.subcategoryId && !filters.companyId && !filters.search?.trim() && !filters.barcode?.trim()) {
+    const fromCdn = await cdnCatalogPage<Product>(runtime.delivery_branch_id, filters.mainCategoryId || null, filters.limit || 1000);
+    if (fromCdn) return fromCdn;
+  }
   // Shared 60-second server copy for category browsing (search/barcode stay live).
   const { data, error } = await catalogRpc('get_customer_discovery_catalog_cached_v1', {
     p_branch_id: runtime.delivery_branch_id,
